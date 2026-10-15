@@ -403,6 +403,19 @@ footer p { max-width: 90ch; }
               <input type="range" id="ctl-valve_tau-r" min="0.02" max="0.5" step="0.01" aria-label="Valve time constant slider">
               <div class="derived">A real valve takes time: it chases the opening it needs and closes about two-thirds of
                 the gap in this time.</div></div>
+            <div class="toggle" role="group" aria-label="How fast the valve closes">
+              <button type="button" id="ctl-vcls-same" aria-pressed="true">Closes at the same speed</button>
+              <button type="button" id="ctl-vcls-own" aria-pressed="false">Closes at its own speed</button></div>
+            <div id="ctl-vtc-box">
+              <div class="knob"><label for="ctl-valve_tau_close">Time to close <small>spool time constants</small></label><input type="number" id="ctl-valve_tau_close" step="0.01">
+                <input type="range" id="ctl-valve_tau_close-r" min="0.02" max="0.5" step="0.01" aria-label="Valve closing time constant slider">
+                <div class="derived">The time above is then only for opening; this one is for closing.</div></div>
+              <p class="note" id="ctl-vtc-note">Each valve is priced by one of its two speeds. The valve watching blade incidence
+                is set by how fast it OPENS: its margin is lowest before it ever starts closing, so a slow close only
+                holds extra air on the way down. The valve watching the flow coefficient is set by how fast it CLOSES:
+                its margin is lowest while it is closing, so a slow close lets it run a lower target and bleed less. In
+                the project's test grid a slow close made the flow-coefficient valve the cheaper one at every opening
+                speed, and a fast close handed the incidence valve the slow openings too (rung 89).</p></div>
             <p class="note">A slow valve falls behind where it has to open quickly. The valve watching blade incidence
               waits until the margin is actually needed and then has to open fast, so a slow one loses protection there.
               The valve watching the flow coefficient holds more margin than it needs, and that extra absorbs the delay.
@@ -955,7 +968,7 @@ const CTL_NUM = { "ctl-rho": "rho", "ctl-from": "from", "ctl-to": "to", "ctl-ram
                   "ctl-redline": "redline", "ctl-gov_lag": "gov_lag", "ctl-accel_margin": "accel_margin",
                   "ctl-floor_phi": "floor_phi", "ctl-tau_att": "tau_att", "ctl-tau_rel": "tau_rel", "ctl-v_max": "v_max",
                   "ctl-v_n_lo": "v_n_lo", "ctl-b_max": "b_max", "ctl-b_n_lo": "b_n_lo", "ctl-valve_phi": "valve_phi",
-                  "ctl-valve_tau": "valve_tau" };
+                  "ctl-valve_tau": "valve_tau", "ctl-valve_tau_close": "valve_tau_close" };
 const CTL_SW = ["redline_on", "gov_lag_on", "accel_on", "floor_on", "release_on"];
 const CTL_VIEW = ["ctl-set", "ctl-sw-set", "ctl-lever-set", "ctl-out", "ctl-card"];
 // The burner (slice 5, turbojet::sandbox_burner): BK holds its knobs; it reads the Design engine S. BN_NUM maps
@@ -1038,6 +1051,8 @@ function showSettings() {
     press("ctl-vref-phi", C.valve_ref === "phi"); press("ctl-vref-inc", C.valve_ref === "incidence");
     press("ctl-vspd-inst", C.valve_speed === "instant"); press("ctl-vspd-slow", C.valve_speed === "slow");
     $("ctl-vtau-box").hidden = C.valve_speed !== "slow";
+    press("ctl-vcls-same", C.valve_close === "same"); press("ctl-vcls-own", C.valve_close === "own");
+    $("ctl-vtc-box").hidden = C.valve_close !== "own";
     $("ctl-bsched-box").hidden = C.bleed_mode !== "schedule"; $("ctl-valve-box").hidden = C.bleed_mode !== "valve";
     $("ctl-redline-box").hidden = C.redline_on !== 1; $("ctl-gov_lag-box").hidden = C.gov_lag_on !== 1;
     $("ctl-accel-box").hidden = C.accel_on !== 1; $("ctl-floor-box").hidden = C.floor_on !== 1;
@@ -2352,6 +2367,7 @@ function wire() {
   cclick("ctl-bmode-sched", () => { C.bleed_mode = "schedule"; }); cclick("ctl-bmode-valve", () => { C.bleed_mode = "valve"; });
   cclick("ctl-vref-phi", () => { C.valve_ref = "phi"; }); cclick("ctl-vref-inc", () => { C.valve_ref = "incidence"; });
   cclick("ctl-vspd-inst", () => { C.valve_speed = "instant"; }); cclick("ctl-vspd-slow", () => { C.valve_speed = "slow"; });
+  cclick("ctl-vcls-same", () => { C.valve_close = "same"; }); cclick("ctl-vcls-own", () => { C.valve_close = "own"; });
   for (const q of Object.keys(CTL_Q)) $("ctlq-" + q).addEventListener("click", () => { ctlQ = q; showSettings(); drawCtl(); });
   $("mode-controls").addEventListener("click", enterControls);
   // The burner: its own knobs write BK; slow mixing models compute when a slider is let go (bnChanged).

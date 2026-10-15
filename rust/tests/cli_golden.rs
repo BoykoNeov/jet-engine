@@ -38,8 +38,9 @@ const SEGMENTS: &str = include_str!("../oracle/main_segments.tsv");
 /// rungs 78–84 — every `print_*` panel; 86 after AR: `plot_ts_diagram`'s line, RE-CUT below).
 const PORTED: usize = 86;
 
-/// How many panels are born in Rust and held to their own capture. 1 since rung 85, 2 since 86, 3 since 87.
-const RUST_OWNED_PANELS: usize = 4;
+/// How many panels are born in Rust and held to their own capture. 1 since rung 85, 2 since 86, 3 since 87,
+/// 4 since 88, 5 since 89.
+const RUST_OWNED_PANELS: usize = 5;
 
 /// The Python-backed panels, in order — [`PANELS`] with the declared Rust-owned names taken out.
 fn python_panels() -> Vec<&'static (&'static str, turbojet::panels::Panel)> {

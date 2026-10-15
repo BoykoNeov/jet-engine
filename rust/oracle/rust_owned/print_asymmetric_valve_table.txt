@@ -1,0 +1,38 @@
+
+THE ASYMMETRIC VALVE (rung 89): rung 88's slow bleed valve beside the LP stator schedule,
+opening at one time constant and closing at another. Shaped maps, r = 0.5, both valves
+re-tuned at every pair to hold the same incidence margin m_lim (set point sm = 0.46).
+
+  1. Who is cheaper: the phi valve's bleed over the incidence valve's (below 1: the phi valve).
+     Rows: how fast it OPENS; columns: how fast it CLOSES (spool time constants).
+
+  open\close      0.01      0.05       0.2
+        0.01     1.446     1.116     0.843
+        0.05     1.201     0.917     0.741
+        0.20     0.921     0.744     0.772
+
+  2. The set points each valve needs (sm), and the phi valve's FLOOR: the lowest any closing
+     speed can buy it (its margin before it first closes, which no closing speed touches).
+
+    open  close    inc sm    phi sm     floor
+    0.01   0.01    0.4657    0.3805    0.3402
+    0.01   0.05    0.4657    0.3611    0.3402
+    0.01   0.20    0.4657    0.3423    0.3402
+    0.05   0.01    0.4814    0.3807    0.3465
+    0.05   0.05    0.4814    0.3613    0.3465
+    0.05   0.20    0.4814    0.3465    0.3465
+    0.20   0.01    0.5077    0.3812    0.3669
+    0.20   0.05    0.5077    0.3669    0.3669
+    0.20   0.20    0.5077    0.3669    0.3669
+
+  Each valve is priced by ONE edge. The incidence valve's set point is its OPENING speed's:
+  its margin bottoms out before it ever closes, so how fast it closes only adds or saves the
+  air it holds on the way down. The phi valve's margin bottoms out AFTER it starts closing, so
+  its set point is its CLOSING speed's (0.3805-0.3812 down the 0.01 column, whatever the
+  opening) - until the closing is slow enough that the minimum comes first, and it sits on its
+  floor. (At an opening of 0.2 the symmetric valve's minimum already comes first: its 'floor'
+  is its own set point.) So the closing speed moves the verdict BOTH ways: a slow close makes
+  the phi valve the cheaper one at every opening speed; a fast close hands the incidence valve
+  the slow openings too. Over the 19 scored cells (spec section 3) the incidence valve is cheaper
+  in 68 of 95 runs closing at 0.01 and in 0 of 95 closing at 0.2 - against 54 and 11 of 95 when
+  the OPENING is held at 0.01 or 0.2: the closing speed is the stronger dial.

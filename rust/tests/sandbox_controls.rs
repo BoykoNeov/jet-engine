@@ -73,6 +73,7 @@ fn direct(s: &ControlsSettings) -> Vec<FuelPoint> {
         BleedMode::Schedule => LeverArm::scheduled(BleedSchedule::new(s.b_max, s.b_n_lo)),
         BleedMode::Valve => {
             let v = BleedLimiter::with_tau(s.valve_phi, s.b_max, s.valve_lag_on.then_some(s.valve_tau));
+            let v = if s.valve_lag_on && s.valve_close_own { v.closing(s.valve_tau_close) } else { v };
             LeverArm::floored(if s.valve_ref == FloorRef::Incidence { v.on_incidence() } else { v })
         }
     };
@@ -157,6 +158,14 @@ fn valve_cases() -> Vec<(&'static str, ControlsSettings)> {
         ("slow valve, incidence, stators, redline + accel", ControlsSettings { lever: LeverChoice::Both,
                                                                                valve_ref: FloorRef::Incidence, valve_lag_on: true,
                                                                                valve_tau: 0.2, redline_on: true, accel_on: true, ..v }),
+        // rung 89: the slow valve closing at its own speed — fast open / slow close, and the reverse
+        ("slow valve, phi, stators, fast open slow close", ControlsSettings { lever: LeverChoice::Both, valve_lag_on: true,
+                                                                               valve_tau: 0.02, valve_close_own: true,
+                                                                               valve_tau_close: 0.2, ..v }),
+        ("slow valve, incidence, stators, slow open fast close", ControlsSettings { lever: LeverChoice::Both,
+                                                                                    valve_ref: FloorRef::Incidence, valve_lag_on: true,
+                                                                                    valve_tau: 0.2, valve_close_own: true,
+                                                                                    valve_tau_close: 0.02, ..v }),
     ]
 }
 
@@ -434,6 +443,14 @@ fn each_precheck_fires_on_its_case_and_only_on_it() {
     assert!(controls_precheck(&ControlsSettings { valve_tau: DS, ..slow }).is_ok(), "one step: ds/tau = 1");
     refused(ControlsSettings { redline_on: true, gov_lag_on: true, ..slow }, "two-lag cascade");
     refused(ControlsSettings { floor_on: true, release_on: true, ..slow }, "two-lag cascade");
+    // rung 89: the closing constant has the same one-step floor, and is read only when it is the valve's own
+    let own = ControlsSettings { valve_close_own: true, ..slow };
+    assert!(controls_precheck(&own).is_ok());
+    refused(ControlsSettings { valve_tau_close: DS - 1e-4, ..own }, "closing time constant");
+    assert!(controls_precheck(&ControlsSettings { valve_tau_close: DS, ..own }).is_ok(), "one step");
+    assert!(controls_precheck(&ControlsSettings { valve_tau_close: 0.0, ..slow }).is_ok(), "closing at the same speed does not read it");
+    assert!(controls_precheck(&ControlsSettings { valve_close_own: true, valve_tau_close: 0.0, ..valve }).is_ok(),
+            "an instant valve does not read its closing speed");
     assert!(controls_precheck(&ControlsSettings { valve_tau: 0.0, ..valve }).is_ok(), "an instant valve does not read its tau");
     assert!(controls_precheck(&ControlsSettings { lever: LeverChoice::Bleed, valve_lag_on: true, valve_tau: 0.0, ..ok }).is_ok(),
             "the schedule does not read the valve's speed");
@@ -460,7 +477,7 @@ fn settings_round_trip_and_the_entry_point_answers() {
                                release_on: true, tau_att: 0.03, tau_rel: 0.4, lever: LeverChoice::Bleed,
                                stator_spool: Spool::Hp, v_max: 0.12, v_n_lo: 0.55, b_max: 0.07, b_n_lo: 0.6,
                                bleed_mode: BleedMode::Valve, valve_phi: 0.77, valve_ref: FloorRef::Incidence,
-                               valve_lag_on: true, valve_tau: 0.13 };
+                               valve_lag_on: true, valve_tau: 0.13, valve_close_own: true, valve_tau_close: 0.31 };
     let back = ControlsSettings::from_json(&Json::parse(&s.to_json().dump_compact())).unwrap();
     assert_eq!(back, s);
     let d = Json::parse(&call(r#"{"op":"controls_defaults"}"#));

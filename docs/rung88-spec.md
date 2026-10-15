@@ -179,6 +179,9 @@ At each re-tuned slow run, the `M_i` minimum's place and the valve's lag there (
 edge — so a fast-opening, slow-closing valve should move the crossover, and which way is a prediction to
 register. Still open beside it: the **station-3 customer bleed** (rung 86's).
 
+**BUILT BY RUNG 89** (`docs/rung89-spec.md`): it moves the crossover BOTH ways — a slow close makes the `φ`
+valve cheaper at every opening speed, a fast close hands the incidence valve the slow openings too.
+
 ## 9. Step check and scripts
 
 `ds` 0.005 and 0.0025 give the same H verdicts and counts (H1–H4 19/19, 14/14; H5 39/95) and the same

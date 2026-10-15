@@ -382,9 +382,21 @@ try {
   check('the_slow_valve_runs_on_its_own_march_and_lags_the_instant_one', vSlow && slv[0] === 'valve_lag' && slv[1] && slv[2]
         && !tauVis && slv[3] > instPeakAt, JSON.stringify([vSlow, slv, tauVis, instPeakAt]));
   if (process.env.SANDBOX_SHOTS) { await ev(`document.getElementById('ctlq-lever').click()`); await shot('controls-slow-valve'); }
+  // Rung 89: the slow valve CLOSING at its own speed, through its own button — the same march (route 'valve_lag'), its
+  // knob shown, and a slower close (0.2 against the 0.05 opening) holding bleed to a LATER point than the symmetric valve.
+  const lastOpen = `(() => { const b = window.sandbox.last.bleed; let j = -1; b.forEach((x, i) => { if (x > 1e-6) j = i; }); return j; })()`;
+  const symLast = await ev(lastOpen);
+  await ev(`document.getElementById('ctl-vcls-own').click()`);
+  const vOwn = await waitFor(`window.sandbox.ctlState === 'done' && window.sandbox.last.controls && window.sandbox.last.controls.valve_close === 'own'`, 30000);
+  const own = await ev(`(() => { const r = window.sandbox.last; return [r.route, r.stop === null, r.s.length === r.expected_points]; })()`);
+  const ownLast = await ev(lastOpen);
+  const tcVis = await ev(`document.getElementById('ctl-vtc-box').hidden`);
+  check('the_slow_valve_closes_at_its_own_speed_and_holds_its_bleed_longer', vOwn && own[0] === 'valve_lag' && own[1] && own[2]
+        && !tcVis && ownLast > symLast, JSON.stringify([vOwn, own, tcVis, symLast, ownLast]));
+  if (process.env.SANDBOX_SHOTS) { await ev(`document.getElementById('ctlq-lever').click()`); await shot('controls-asym-valve'); }
   await ev(`document.getElementById('ctlq-Tt4').click()`);
   await ev(`window.sandbox.controls({lever: 'none', floor_on: 0, floor_phi: 0.75, floor_ref: 'phi', bleed_mode: 'schedule',
-            valve_ref: 'phi', valve_speed: 'instant'}).then(r => r.run)`);
+            valve_ref: 'phi', valve_speed: 'instant', valve_close: 'same'}).then(r => r.run)`);
   if (process.env.SANDBOX_SHOTS) {
     await ev(`window.sandbox.controls({settle: 2, ramp: 0.5, lever: 'bleed'})`);
     await shot('controls-light'); await shot('controls-dark', 1280, true); await shot('controls-phone', 390);

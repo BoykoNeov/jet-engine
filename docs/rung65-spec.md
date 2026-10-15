@@ -289,6 +289,9 @@ Every one rungs 62/63/64 list, all inherited, plus:
   pre-crossing march is bit-identical across a `tau_close` sweep and rung 52's one line already
   says what it would find. A second constant also doubles a sweep over marches that each carry
   an outer root per sub-evaluation. Named as this rung's next seam.
+  **BUILT BY RUNG 89** (`docs/rung89-spec.md`): rung 52's argument holds only for a valve whose minimum
+  comes before it closes (the incidence valve beside the stators); the `φ` valve's minimum comes after,
+  and its set point is then the CLOSING constant's.
 - **`τ` is a swept coordinate on the march's own `s`**, like rungs 47/51/52's constants. No
   attempt is made to anchor a real actuator's bandwidth, so the MAGNITUDE of every deficit is
   disclaimed; the ORDERING, the SIGNS and the invariances are the claims.
@@ -329,6 +332,7 @@ shape; and a lagged valve beside rungs 47/52's lagged FUEL leg is the cascade �
 two clocks, and the first plant in the ladder where § 3's marginal mode has a second dynamic
 object to interact with. Rung 52 § 3 predicts the cascade should not be additive; § 3 here
 predicts something sharper, that the second clock cannot reach the marginal mode either.
+The asymmetric valve: **BUILT BY RUNG 89** (on rung 87's plant, beside the stators). The cascade is still open.
 
 Still open beside it: **fuel + bleed + STATOR**, all three on one plant (rung 63's, untouched
 by 64 and by this).

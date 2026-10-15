@@ -1316,3 +1316,29 @@ page gets it as the valve's speed.
 - **Crash map** (§ 14.3's instrument, every request the SLOW valve, levers bleed / both, 1 000 requests,
   seed 11): no panic — 585 complete, 328 refused before the run, 87 stopped with a reason (78 floor
   unreachable, 7 lean, 2 rich).
+
+## 18. The asymmetric valve — rung 89 (2026-10-15) — not a slice
+
+Rung 89 (`docs/rung89-spec.md`) gave rung 88's slow valve a second time constant: it opens at one speed and
+closes at another. The page gets it as the slow valve's closing speed.
+
+- **The knobs:** a slow valve *closes at the same speed* (rung 88's, the default — every saved setting stays
+  valid) or *closes at its own speed*, with its closing time constant (`valve_close` `same` / `own`,
+  `valve_tau_close`, default 0.2); "Time to move" is then the OPENING constant. An instant valve does not
+  read either. A note under the knob says what the rung found: each valve is priced by one edge.
+- **Built through rung 65's builder and march** (route `valve_lag`, unchanged): the valve is
+  `lagged(valve_tau).closing(valve_tau_close)`; the step re-run (`der_valve_lag`) reads the same
+  `lag_rate`, so the replay stays bit for bit.
+- **Prechecks:** the closing constant at least one march step (0.02), as the opening one — RK4's bound reads
+  the smaller. Measured at the page's own step (rung 88's lesson) with opening 0.05 and closing 0.02–0.3,
+  five cases, against a 4× finer step: at one step the LP flow coefficient is ≤ 9.2e-5 off on the default
+  move (≤ 1.7e-4 on a 0.1 ramp, where the ramp sets the error at every closing speed) — rung 88's ≤ 9e-5
+  for the opening one.
+- **Gates:** `tests/sandbox_controls.rs` replays two closing-own cases (fast open / slow close, and the
+  reverse) against the model's own march bit for bit, checks the precheck's floor (refused below one step,
+  accepted at it, unread when closing at the same speed or when instant) and the round trip of both keys;
+  `check_requests` adds three; `browser.mjs` clicks *Closes at its own speed* and checks the route, the knob
+  and that a slower close (0.2 against 0.05) holds bleed to a later point than the symmetric valve.
+- **Crash map** (§ 14.3's instrument, every request a slow valve closing at its own speed, levers bleed /
+  both, 1 000 requests, seed 11): no panic — 578 complete, 329 refused before the run, 93 stopped with a
+  reason (77 floor unreachable, 11 lean, 5 rich).

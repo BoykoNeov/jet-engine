@@ -199,6 +199,10 @@ pub struct ControlsSettings {
     /// `valve_tau` (rung 65's, which rung 88 gave the incidence reference).
     pub valve_lag_on: bool,
     pub valve_tau: f64,
+    /// Rung 89: a slow valve CLOSING at its own time constant `valve_tau_close` (`valve_tau` is then its
+    /// opening one); off, it closes at `valve_tau` — rung 88's valve, bit for bit.
+    pub valve_close_own: bool,
+    pub valve_tau_close: f64,
 }
 
 impl ControlsSettings {
@@ -215,7 +219,7 @@ impl ControlsSettings {
             release_on: false, tau_att: 0.02, tau_rel: 0.10,
             lever: LeverChoice::None, stator_spool: Spool::Lp, v_max: 0.20, v_n_lo: 0.65, b_max: 0.10, b_n_lo: 0.65,
             bleed_mode: BleedMode::Schedule, valve_phi: 0.78, valve_ref: FloorRef::Phi,
-            valve_lag_on: false, valve_tau: 0.05,
+            valve_lag_on: false, valve_tau: 0.05, valve_close_own: false, valve_tau_close: 0.2,
         }
     }
 
@@ -241,6 +245,7 @@ impl ControlsSettings {
             "v_max" => self.v_max, "v_n_lo" => self.v_n_lo, "b_max" => self.b_max, "b_n_lo" => self.b_n_lo,
             "bleed_mode" => self.bleed_mode.key(), "valve_phi" => self.valve_phi, "valve_ref" => self.valve_ref.key(),
             "valve_speed" => if self.valve_lag_on { "slow" } else { "instant" }, "valve_tau" => self.valve_tau,
+            "valve_close" => if self.valve_close_own { "own" } else { "same" }, "valve_tau_close" => self.valve_tau_close,
         }
     }
 
@@ -281,7 +286,8 @@ impl ControlsSettings {
                           ("accel_margin", &mut s.accel_margin), ("floor_phi", &mut s.floor_phi),
                           ("tau_att", &mut s.tau_att), ("tau_rel", &mut s.tau_rel), ("v_max", &mut s.v_max),
                           ("v_n_lo", &mut s.v_n_lo), ("b_max", &mut s.b_max), ("b_n_lo", &mut s.b_n_lo),
-                          ("valve_phi", &mut s.valve_phi), ("valve_tau", &mut s.valve_tau)] {
+                          ("valve_phi", &mut s.valve_phi), ("valve_tau", &mut s.valve_tau),
+                          ("valve_tau_close", &mut s.valve_tau_close)] {
             num(k, into)?;
         }
         for (k, into) in [("redline_on", &mut s.redline_on), ("gov_lag_on", &mut s.gov_lag_on),
@@ -308,6 +314,13 @@ impl ControlsSettings {
                 "instant" => false,
                 "slow" => true,
                 _ => return Err(format!("unknown valve speed {t:?} (\"instant\" or \"slow\")")),
+            };
+        }
+        if let Some(t) = text("valve_close")? {
+            s.valve_close_own = match t.as_str() {
+                "same" => false,
+                "own" => true,
+                _ => return Err(format!("unknown valve closing {t:?} (\"same\" or \"own\")")),
             };
         }
         if let Some(t) = text("lever")? {
@@ -344,7 +357,11 @@ impl ControlsSettings {
     pub fn valve(&self) -> BleedLimiter {
         let v = BleedLimiter::new(self.valve_phi, self.b_max);
         let v = match self.valve_ref { FloorRef::Phi => v, FloorRef::Incidence => v.on_incidence() };
-        if self.valve_lag_on { v.lagged(self.valve_tau) } else { v }
+        match (self.valve_lag_on, self.valve_close_own) {
+            (false, _) => v,
+            (true, false) => v.lagged(self.valve_tau),
+            (true, true) => v.lagged(self.valve_tau).closing(self.valve_tau_close),
+        }
     }
 
     /// The bleed is the controlled valve (rung 64's machine is needed: rung 62's drops the valve silently).
@@ -369,7 +386,7 @@ pub fn controls_precheck(s: &ControlsSettings) -> Result<(), DoesNotRun> {
                  ("redline", s.redline), ("gov_lag", s.gov_lag), ("accel_margin", s.accel_margin),
                  ("floor_phi", s.floor_phi), ("tau_att", s.tau_att), ("tau_rel", s.tau_rel), ("v_max", s.v_max),
                  ("v_n_lo", s.v_n_lo), ("b_max", s.b_max), ("b_n_lo", s.b_n_lo), ("valve_phi", s.valve_phi),
-                 ("valve_tau", s.valve_tau)];
+                 ("valve_tau", s.valve_tau), ("valve_tau_close", s.valve_tau_close)];
     if let Some((k, _)) = named.iter().find(|(_, v)| !v.is_finite()) {
         return Err(DoesNotRun(format!("Setting {k} is not a number.")));
     }
@@ -445,6 +462,13 @@ pub fn controls_precheck(s: &ControlsSettings) -> Result<(), DoesNotRun> {
                     "The slow valve's time constant must be at least one march step ({DS} spool time constants): \
                      a faster valve than that is worked out too coarsely at this step — measured, half a step moves \
                      the flow coefficient by up to 0.001 against a finer step. Switch the valve to instant instead.")));
+            }
+            // Rung 89: the same floor on the CLOSING constant — the march's bound reads the smaller one.
+            if s.valve_close_own && !(s.valve_tau_close >= DS - 1e-12) {
+                return Err(DoesNotRun(format!(
+                    "The valve's closing time constant must be at least one march step ({DS} spool time constants), \
+                     as its opening one: a faster close than that is worked out too coarsely at this step. Let it close \
+                     at the same speed instead.")));
             }
             if s.gov_lag_on || s.release_on {
                 return no("A slow valve cannot run beside the temperature limiter's lag or the realistic release: a \
@@ -1270,6 +1294,13 @@ pub fn check_requests() -> Vec<String> {
         ControlsSettings { lever: LeverChoice::Bleed, bleed_mode: BleedMode::Valve, valve_lag_on: true, ..d },
         ControlsSettings { lever: LeverChoice::Both, bleed_mode: BleedMode::Valve, valve_ref: FloorRef::Incidence,
                            valve_lag_on: true, valve_tau: 0.2, accel_on: true, ..d },
+        // rung 89: the slow valve closing at its own speed — slower, and faster, than it opens
+        ControlsSettings { lever: LeverChoice::Both, bleed_mode: BleedMode::Valve, valve_lag_on: true, valve_tau: 0.02,
+                           valve_close_own: true, valve_tau_close: 0.2, ..d },
+        ControlsSettings { lever: LeverChoice::Both, bleed_mode: BleedMode::Valve, valve_ref: FloorRef::Incidence,
+                           valve_lag_on: true, valve_tau: 0.2, valve_close_own: true, valve_tau_close: 0.02, ..d },
+        ControlsSettings { lever: LeverChoice::Bleed, bleed_mode: BleedMode::Valve, valve_lag_on: true,
+                           valve_close_own: true, valve_tau_close: 0.01, ..d },                     // refused: one step
         ControlsSettings { lever: LeverChoice::Bleed, bleed_mode: BleedMode::Valve, valve_lag_on: true,
                            floor_on: true, release_on: true, ..d },                                 // refused: two lags
         ControlsSettings { from: 1400.0, to: 1000.0, ..d },

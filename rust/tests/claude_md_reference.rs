@@ -24,7 +24,9 @@
 ///   one-line-per-rung growth; the slack stays 20 B.
 /// * 2026-10-15, rung 88: 36 605 → 36 985. The rung row (345 B) plus its family label and the layout's
 ///   module name — real one-line-per-rung growth; the slack stays 20 B.
-const MAX_BYTES: usize = 36_985;
+/// * 2026-10-15, rung 89: 36 985 → 37 358. The rung row (336 B) plus its family label and the layout's
+///   module name — real one-line-per-rung growth; the slack stays 20 B.
+const MAX_BYTES: usize = 37_358;
 const MAX_LINES: usize = 300;
 
 /// The file, as bytes. `include_bytes!` makes cargo rebuild this test whenever `CLAUDE.md` changes.

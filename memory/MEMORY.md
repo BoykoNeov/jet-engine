@@ -44,7 +44,7 @@ new slices and step links go THERE, not here.
 - [Visuals artifact](visuals-artifact.md) — the CHARTS page, re-minted 2026-10-06 at G5uobeC9…; read its prose for staleness before a republish
 - [Cutaway artifact](cutaway-artifact.md) — the animated engine cutaway is a SECOND artifact (968af1ea…, favicon ⚙️); file:// is refused, serve locally and kill by PID
 - [Visuals ↔ model binding](visuals-model-binding.md) — the pages had NO test and looked fine; in SYNC is not BOUND, and the page's own design point was typed markup
-- [Windows file-tooling hazards](windows-tooling-file-hazards.md) — PyPy unflushed writes, PowerShell double-encoding, backticks in `-m`, a status read off the runner, a log still being written, and a text-mode rewrite that flips every line ending, `cmd`'s parse-time `%ERRORLEVEL%`, a `start /b` batch that never exits, the EOL check that was itself the hazard, a silent `pytest.exe` launcher, a scripted Windows path that becomes a TAB, and a `Copy-Item` restore whose OLD mtime cargo never rebuilds
+- [Windows file-tooling hazards](windows-tooling-file-hazards.md) — PyPy unflushed writes, PowerShell double-encoding, backticks in `-m`, a status read off the runner, a log still being written, and a text-mode rewrite that flips every line ending, `cmd`'s parse-time `%ERRORLEVEL%`, a `start /b` batch that never exits, the EOL check that was itself the hazard, a silent `pytest.exe` launcher, a scripted Windows path that becomes a TAB, and a `Copy-Item` restore whose OLD mtime cargo never rebuilds, and `python` being the Store stub that hangs
 
 ## The Rust port — DONE 2026-10-05 (phases 0–8; slice AU deleted the Python on top of tag `python-final`; the gate is `rust/test-all.ps1`)
 - [Rust port status](rust-port-status.md) — the running tally: phases, slices, and the numbers each closed slice landed on. **Update THAT file, not this line.**
@@ -149,6 +149,7 @@ new slices and step links go THERE, not here.
 - [Rung 86 three levers](rung86-three-levers.md) — I called a result "genuine" before checking its own condition and step size; the READING is not the RUN
 - [Rung 87 valve reference](rung87-valve-reference.md) — a prediction against a device built as the pointwise optimum is construction; equal set points are rung 66's degeneracy, not dormant
 - [Rung 88 slow valve](rung88-slow-valve.md) — the optimum's lack of slack is why a perturbation FLIPS it: predict the sign; the model's stability bound is not the product's accuracy bound
+- [Rung 89 asymmetric valve](rung89-asymmetric-valve.md) — a fixed-set-point forecast cannot bound a perturbation that can move a run into the other case
 
 ## Margin sweeps — confirmations, not rungs
 - Margin sweeps — [72–77 march audit](rungs72-77-march-audit.md), [74 arrest interval](rung74-arrest-interval.md), [79 gap](rung79-gap-margin.md), [29 π_c](rung29-pi-c-margin.md), [29 M0](rung29-M0-margin.md), [28 β](rung28-beta-margin-hardened.md) — a liveness counter on a FROZEN plant reports FULL activity (one lesson per file)
