@@ -70,6 +70,22 @@ pub struct BleedLimiter {
     /// **not** `Some(0.0)`; Python's own assert says so and rung 65's finding is that the
     /// difference does not vanish as `tau -> 0`.
     pub tau: Option<f64>,
+    /// RUNG 87: the wall the valve watches. [`ValveReference::Phi`] IS rung 64's valve. It lives
+    /// HERE, on the floor, rather than beside it, so every sibling constructor that carries the
+    /// floor carries its reference too — rung 87's G1 found the sibling trap live and silent.
+    pub reference: ValveReference,
+}
+
+/// RUNG 87. What the valve holds above its set point (`docs/rung87-spec.md`; anchor
+/// `docs/plans/rung87-anchor-valve-reference.md` § 1).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum ValveReference {
+    /// The LP flow coefficient, `φ_LP ≥ φ_lim` — rungs 64–80.
+    #[default]
+    Phi,
+    /// The LP rotor INCIDENCE, `T_c − 1/φ + v ≥ m_lim` with `m_lim = T_c − 1/φ_lim`, i.e. `φ_lim` is
+    /// the set point AT `v = 0`. Rung 60's re-reference of rung 49's fuel floor, one lever over.
+    Incidence,
 }
 
 impl BleedLimiter {
@@ -91,7 +107,35 @@ impl BleedLimiter {
                 "rung-65 tau is a time constant on the march coordinate; the INSTANTANEOUS valve \
                  is rung 64 (tau=None), not tau=0. The two are different objects and rung 65's \
                  finding is that the difference does not vanish as tau -> 0; got tau = {tau:?}");
-        BleedLimiter { phi_lim, b_max, tau }
+        BleedLimiter { phi_lim, b_max, tau, reference: ValveReference::Phi }
+    }
+
+    /// RUNG 87. The same valve watching the rotor INCIDENCE, its set point unchanged at `v = 0`.
+    ///
+    /// **INSTANTANEOUS ONLY.** Rung 65's lagged valve and every reader above it (65–80) read
+    /// `phi_lim` as a flow coefficient, so a lagged incidence valve is refused rather than
+    /// silently read in the wrong coordinate.
+    pub fn on_incidence(self) -> Self {
+        assert!(self.tau.is_none(),
+                "rung-87's incidence valve is INSTANTANEOUS: rung 65's lagged valve and its readers \
+                 read phi_lim as a flow coefficient; got tau = {:?}", self.tau);
+        BleedLimiter { reference: ValveReference::Incidence, ..self }
+    }
+
+    /// RUNG 87. The flow coefficient this valve must hold at stator setting `v`:
+    ///
+    /// ```text
+    ///     T_c − 1/φ + v ≥ T_c − 1/φ_lim   ⇔   φ ≥ φ_lim / (1 + v·φ_lim)
+    /// ```
+    ///
+    /// `T_c` CANCELS, and at `v = 0` this is `φ_lim / 1.0` — the `φ` valve BIT FOR BIT (`0·x` and
+    /// `/1.0` are exact), which is why it is spelled this way and not `1/(1/φ_lim + v)`. For the
+    /// `φ` reference `v` is not read at all.
+    pub fn target(&self, v: f64) -> f64 {
+        match self.reference {
+            ValveReference::Phi => self.phi_lim,
+            ValveReference::Incidence => self.phi_lim / (1.0 + v * self.phi_lim),
+        }
     }
 
     /// `phi_lim = (1+sm) * phi_surge` off the map's OWN imposed surge line — rung 49's
@@ -276,24 +320,41 @@ where
     T: HasPhiLp,
     F: Fn(f64) -> Result<T, Abort>,
 {
+    // RUNG 87: every caller of THIS spelling (rungs 64's own cells aside, which solve against
+    // `lim.target(v)`) reads `phi_lim` as a flow coefficient — so an incidence valve is refused
+    // here rather than silently solved in the wrong coordinate.
+    assert!(lim.reference == ValveReference::Phi,
+            "rung-87: an INCIDENCE valve reached a reader that solves it as a phi valve; only \
+             rung 64's own close/close_fuel/b_at_point cells take the incidence target");
+    r64_solve_b_at(lim, lim.phi_lim, closer)
+}
+
+/// [`r64_solve_b`] against an explicit `target` — RUNG 87's `lim.target(v)`. With
+/// `target = lim.phi_lim` it is rung 64's solve operation for operation.
+pub fn r64_solve_b_at<T, F>(lim: &BleedLimiter, target: f64, closer: F)
+    -> Result<(T, f64, Regime), Abort>
+where
+    T: HasPhiLp,
+    F: Fn(f64) -> Result<T, Abort>,
+{
     bump(&SOLVE_B_CALLS);
     let guard = |r: Result<T, Abort>| -> Result<T, Abort> {
         if r.is_err() { bump(&SOLVE_B_ABORTS); }
         r
     };
     let c0 = guard(closer(0.0))?;
-    if c0.phi_lp() >= lim.phi_lim {
+    if c0.phi_lp() >= target {
         bump(&REGIME_DORMANT);
         return Ok((c0, 0.0, Regime::Dormant));
     }
     let c1 = guard(closer(lim.b_max))?;
-    if c1.phi_lp() <= lim.phi_lim {
+    if c1.phi_lp() <= target {
         bump(&REGIME_SATURATED);
         return Ok((c1, lim.b_max, Regime::Saturated));
     }
-    let f0 = c0.phi_lp() - lim.phi_lim;
-    let f1 = c1.phi_lp() - lim.phi_lim;
-    let b = match try_illinois(|b| closer(b).map(|c| c.phi_lp() - lim.phi_lim),
+    let f0 = c0.phi_lp() - target;
+    let f1 = c1.phi_lp() - target;
+    let b = match try_illinois(|b| closer(b).map(|c| c.phi_lp() - target),
                                0.0, lim.b_max, f0, f1, 1e-13, ILLINOIS_MAXIT) {
         Ok(b) => b,
         Err(e) => { bump(&SOLVE_B_ABORTS); return Err(e); }
@@ -415,10 +476,22 @@ pub fn r64_try_close(
         bump(&CLOSE_UNFLOORED);
         return r62_try_close(t, nu_lp, nu_hp, tt4, tt2, pt2);
     };
-    Ok(r64_solve_b(&lim, |b| {
+    Ok(r64_solve_b_at(&lim, r87_target(&lim, t, nu_lp, nu_hp, tt2), |b| {
         let _g = ForcedBleed::set(t, b);
         r62_try_close(t, nu_lp, nu_hp, tt4, tt2, pt2)
     })?.0)
+}
+
+/// RUNG 87: the flow coefficient this state's valve holds — `phi_lim` itself for the `φ` valve
+/// (no `v` is read, so every rung-64 path is unchanged to the operation), `lim.target(v)` at the
+/// LP stator setting the schedule arms at THIS shaft state for the incidence valve. `v` is a
+/// function of the state alone, so it is constant across the outer solve's trial positions and
+/// rung 64's monotone bracket stands (anchor § 1).
+fn r87_target(lim: &BleedLimiter, t: &TwoSpoolTransientCore, nu_lp: f64, nu_hp: f64, tt2: f64) -> f64 {
+    match lim.reference {
+        ValveReference::Phi => lim.phi_lim,
+        ValveReference::Incidence => lim.target(t.v_of(Spool::Lp, nu_lp, nu_hp, Some(tt2))),
+    }
 }
 
 /// RUNG 64's `_close_fuel` — the same, on the fuel-metered closure.
@@ -429,7 +502,7 @@ pub fn r64_try_close_fuel(
         bump(&CLOSE_FUEL_UNFLOORED);
         return r62_try_close_fuel(ft, nu_lp, nu_hp, mdot_fuel, tt2, pt2);
     };
-    Ok(r64_solve_b(&lim, |b| {
+    Ok(r64_solve_b_at(&lim, r87_target(&lim, &ft.inner, nu_lp, nu_hp, tt2), |b| {
         let _g = ForcedBleed::set(&ft.inner, b);
         r62_try_close_fuel(ft, nu_lp, nu_hp, mdot_fuel, tt2, pt2)
     })?.0)
@@ -452,7 +525,7 @@ pub fn r64_b_at_point(core: &ScheduledStatorCore, flight: &FlightCondition, p: &
     };
     bump(&B_AT_POINT_RESOLVED);
     let ft = &core.fuel;
-    r64_solve_b(&lim, |b| {
+    r64_solve_b_at(&lim, r87_target(&lim, &ft.inner, p.nu_lp, p.nu_hp, tt2), |b| {
         let _g = ForcedBleed::set(&ft.inner, b);
         r62_try_close_fuel(ft, p.nu_lp, p.nu_hp, p.mf, tt2, pt2)
     })

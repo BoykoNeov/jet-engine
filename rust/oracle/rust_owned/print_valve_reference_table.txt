@@ -1,0 +1,22 @@
+
+THE CONTROLLED VALVE BESIDE THE STATOR SCHEDULE (rung 87): rung 64's bleed valve, opening
+just enough to hold an LP stall margin, beside the LP stator schedule (0.20 below 0.65).
+It can watch the flow coefficient (phi) or the rotor INCIDENCE (the margin to the metal).
+Each row: the incidence valve, then the phi valve MATCHED to the same incidence minimum;
+bleed = time integral of the opening, dF = thrust integral against the valve-shut run.
+
+      r    sm  M_i held   inc bleed inc no-stat      inc dF   phi* sm   phi bleed      phi dF   ratio
+   0.50  0.42   0.53777   9.4847e-3   2.4212e-2     -0.7837    0.3447   2.1596e-2     -2.3780   2.277
+   0.50  0.46   0.57285   2.3905e-2   4.0528e-2     -2.1472    0.3896   4.1020e-2     -5.3999   1.716
+   0.50  0.50   0.60606   3.9571e-2   5.2649e-2     -4.4894    0.4344   5.1423e-2     -7.5972   1.300
+   1.00  0.42   0.53777   2.2103e-3   1.9567e-2     -0.1690    0.3223   7.6384e-3     -0.5705   3.456
+   1.00  0.46   0.57285   1.8236e-2   4.1147e-2     -1.6159    0.3753   3.5402e-2     -5.0209   1.941
+   1.00  0.50   0.60606   3.9294e-2   6.5534e-2     -4.7346    0.4265   6.4351e-2     -9.5238   1.638
+   1.00  0.54   0.63754   6.3343e-2   8.2311e-2     -8.1021    0.4798   8.0214e-2    -11.6740   1.266
+
+  At EQUAL protection the phi valve bleeds 1.3-3.5x more and costs more thrust: it holds a
+  CONSTANT flow coefficient, so it over-protects early in the ramp where the stators are most
+  closed, to be safe late where they have reopened. The incidence valve opens only as far as
+  each moment needs -- and the stators pay part of its bill (it bleeds less with them than
+  without), where the phi valve fights them (more). Beside a phi FUEL floor the incidence
+  valve lets phi fall and the floor starves the run: watch the same wall with both.
