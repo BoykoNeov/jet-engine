@@ -20,7 +20,9 @@
 /// History since the port (earlier entries: the Python file at `python-final`):
 /// * 2026-10-14, rung 86: 35 970 → 36 256. The rung row (346 B) less the OPEN entry it closes,
 ///   plus the scope/family/layout touches — real one-line-per-rung growth; the slack stays 20 B.
-const MAX_BYTES: usize = 36_256;
+/// * 2026-10-15, rung 87: 36 256 → 36 605. The rung row (322 B) plus its family label — real
+///   one-line-per-rung growth; the slack stays 20 B.
+const MAX_BYTES: usize = 36_605;
 const MAX_LINES: usize = 300;
 
 /// The file, as bytes. `include_bytes!` makes cargo rebuild this test whenever `CLAUDE.md` changes.

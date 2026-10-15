@@ -1257,3 +1257,35 @@ bleed schedule together beside any fuel limiter — and found it runs on the mod
   21 lean, 4 rich, 6 cause unknown — the kind earlier maps also found).
 - **What the page now shows**, rung 86's knob finding: a stall floor read as a flow coefficient
   fights the stators and can starve the engine; the bleed lifts it back.
+
+## 16. The controlled valve — rung 87 (2026-10-15) — not a slice
+
+Rung 87 (`docs/rung87-spec.md`) measured rung 64's controlled bleed valve beside the stator schedule and
+gave it an incidence reference. The page gets it as a mode of the bleed lever.
+
+- **The knobs:** the bleed valve moves *on a speed schedule* (today's, the default — every saved setting
+  stays valid) or *opens on its own*: the LP flow coefficient it holds (`valve_phi`, at the design stator
+  setting, as the floor's), its widest opening (the existing "most air bled", `b_max`), and what it
+  watches — the flow coefficient or blade incidence (`valve_ref`). Allowed alone or with the stators
+  ("both") and beside every fuel limiter. The LP flow-coefficient chart draws what the valve holds at each
+  point (an incidence valve's target moves with the LP stators); the lever chart's bleed is the model's
+  own committed opening at the point, re-solved — never `b_of` (rung 64 § 5.22 (ii)).
+- **Built through rung 64's builder whenever the valve is on**: rung 62's, which the view used for
+  everything, drops a floor SILENTLY (rung 87's G1). Every other setting still builds through rung 62's,
+  bit for bit as before.
+- **Prechecks:** the valve's widest opening must be above 0 (a valve that cannot open holds nothing) and
+  below 0.5; its target above 0. Each fires only on its case.
+- **Gates:** `tests/sandbox_controls.rs` replays five valve cases against the model's own march bit for
+  bit (and re-reads and re-steps every point), checks the valve holds its own target while it rides and
+  that only the incidence valve's target moves (and only with the LP stators), and drives H5 — the
+  incidence valve beside a flow-coefficient floor stops at "floor unreachable", the matched floor runs
+  on; `check_requests` adds four; `browser.mjs` clicks the valve on and to incidence, checks the target
+  line is drawn, and drives the same pair.
+- **Found while gating — rung 66 on the page.** The matched pair at the SAME set point (valve and floor
+  both 0.78, both on incidence) split one pin by rounding: the browser build and the native model, equal
+  to the last place elsewhere, landed 1e−4 apart in shaft speed (65 % in the bleed at one point). The
+  check case sets the floor just below (0.77, where it never acts — rung 87's D4) and the page's note
+  says so: set the floor a little below the valve.
+- **Crash map** (§ 14.3's instrument, every request the controlled valve, levers bleed / both, 1 000
+  requests, seed 11): no panic — 559 complete, 345 refused before the run, 96 stopped with a reason (78
+  floor unreachable, 9 lean, 9 cause unknown — the kinds earlier maps also found).
