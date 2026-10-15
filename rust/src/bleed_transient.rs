@@ -649,6 +649,11 @@ pub mod counters {
 pub fn r62_try_close(
     t: &TwoSpoolTransientCore, nu_lp: f64, nu_hp: f64, tt4: f64, tt2: f64, pt2: f64,
 ) -> Result<CloseState, Abort> {
+    // RUNG 90: an ACTIVE customer bleed takes its own body at every `b`, 0 included — rung 57's
+    // would refuse it. Inactive, nothing below this line changes.
+    if t.inner.base.customer_active() {
+        return crate::customer_bleed::r90_try_close(t, nu_lp, nu_hp, tt4, tt2, pt2);
+    }
     let b = t.b_of(nu_lp, Some(tt2));
     if b == 0.0 {
         bump(&CLOSE_REDUCED);
@@ -699,6 +704,7 @@ pub fn r62_try_close(
             // IMPOSED face flow; the local of the same name three lines up is the m_lp-derived
             // TRIAL. They agree only at the root, and the shadowing is Python's own.
             mdot_face: Some(mdot_imp / (1.0 - b)),
+            customer: None,
         })
     };
 
@@ -752,6 +758,10 @@ pub fn r62_try_close(
 pub fn r62_try_close_fuel(
     ft: &FuelTransientCore, nu_lp: f64, nu_hp: f64, mdot_fuel: f64, tt2: f64, pt2: f64,
 ) -> Result<FuelCloseState, Abort> {
+    // RUNG 90 — see `r62_try_close`.
+    if ft.inner.inner.base.customer_active() {
+        return crate::customer_bleed::r90_try_close_fuel(ft, nu_lp, nu_hp, mdot_fuel, tt2, pt2);
+    }
     let b = ft.inner.b_of(nu_lp, Some(tt2));
     if b == 0.0 {
         bump(&CLOSE_FUEL_REDUCED);
@@ -799,6 +809,7 @@ pub fn r62_try_close_fuel(
                 pi_lpc, pi_hpc, pt4, f, wgas, eta_lpc, eta_hpc, mdot_air: mdot_imp, mdot4,
                 bleed: Some(b),
                 mdot_face: Some(mdot_imp / (1.0 - b)),
+                customer: None,
             },
             tt4,
             // Python's `mdot_air_face` key — the m_lp-derived TRIAL face flow, a DIFFERENT
@@ -887,6 +898,10 @@ fn r62_powers(
     t: &TwoSpoolTransientCore, c: &CloseState, flight: &FlightCondition, nu_lp: f64, nu_hp: f64,
     tt4: f64,
 ) -> Result<(f64, f64), Abort> {
+    // RUNG 90: dispatched on the CLOSURE's own field, as this cell dispatches on its `bleed`.
+    if c.customer.is_some() {
+        return crate::customer_bleed::r90_powers(t, c, nu_lp, nu_hp, tt4);
+    }
     let b = c.bleed.unwrap_or(0.0);
     if b == 0.0 {
         bump(&POWERS_REDUCED);
@@ -924,6 +939,10 @@ fn r62_try_instant_tail(
     t: &TwoSpoolTransientCore, flight: &FlightCondition, c: &CloseState, nu_lp: f64, nu_hp: f64,
     tt4: f64, v0: f64,
 ) -> Result<Instant2, Abort> {
+    // RUNG 90 — see `r62_powers`.
+    if c.customer.is_some() {
+        return crate::customer_bleed::r90_try_instant_tail(t, flight, c, nu_lp, nu_hp, tt4, v0);
+    }
     let b = c.bleed.unwrap_or(0.0);
     if b == 0.0 {
         bump(&TAIL_REDUCED);

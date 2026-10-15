@@ -301,12 +301,27 @@ pub struct TwoSpoolEngine {
     /// A bare [`Engine`] held ONLY to reuse [`Engine::freestream`]. It owns the gas; see
     /// [`TwoSpoolEngine::gas`].
     fs_engine: Engine,
+    /// RUNG 90's CUSTOMER BLEED — the aircraft's demand on the HPC delivery (station 3).
+    ///
+    /// **[`run`](Self::run) NEVER READS IT**: the hardware is captured with the customer bleed
+    /// OFF, as rung 42 captures its valve shut. It lives HERE, on the design engine, and not on a
+    /// solver, because it is the aircraft's load and not a lever: every sibling a reader rebuilds
+    /// from the design engine (rung 64's sibling trap) keeps it. Rung 38's core copies it; every
+    /// solver that cannot model it REFUSES an active one rather than dropping it.
+    pub customer: Option<crate::customer_bleed::CustomerBleed>,
 }
 
 impl TwoSpoolEngine {
     pub fn new(gas: Gas, components: Vec<(&'static str, Component)>, eta_m: f64) -> Self {
         let fs_engine = Engine::new(gas.clone(), Vec::new(), eta_m);
-        TwoSpoolEngine { gas, components, eta_m, fs_engine }
+        TwoSpoolEngine { gas, components, eta_m, fs_engine, customer: None }
+    }
+
+    /// RUNG 90: the same engine with the aircraft drawing `cb` off station 3 when it flies off
+    /// design. The design run is unchanged (see [`customer`](Self::customer)).
+    pub fn with_customer_bleed(mut self, cb: crate::customer_bleed::CustomerBleed) -> Self {
+        self.customer = Some(cb);
+        self
     }
 
     /// Propagate the flow 0 → 9, closing both shafts.
@@ -607,11 +622,30 @@ pub struct TwoSpoolCore {
     /// [`OffDesignMatcher::tau_calls`], same reason. § 5.7 P3 gates the per-call count, which
     /// lives inside the shipped bisection.
     pub tau_calls: std::cell::Cell<u64>,
+    /// RUNG 90's customer bleed, copied off the design engine — see
+    /// [`TwoSpoolEngine::customer`]. Read by rung 90's bodies alone; every other body refuses an
+    /// ACTIVE one ([`refuse_customer`](Self::refuse_customer)).
+    pub customer: Option<crate::customer_bleed::CustomerBleed>,
 }
 
 impl TwoSpoolCore {
     pub const TOL: f64 = 1e-13;
     pub const MAX: usize = 200;
+
+    /// RUNG 90: does this core carry a customer bleed that takes any air? `None`, a zero share
+    /// and a zero amount are all INACTIVE — and an inactive one dispatches to the earlier code.
+    pub fn customer_active(&self) -> bool {
+        self.customer.is_some_and(|c| c.is_active())
+    }
+
+    /// RUNG 90's refusal, for every body that cannot model the customer bleed: an explicit
+    /// demand is never silently dropped (rung 89's precedent).
+    pub fn refuse_customer(&self, who: &str) {
+        assert!(!self.customer_active(),
+                "rung-90: {who} cannot model a customer bleed (station-3 air the aircraft takes); \
+                 build the engine's solver through rung 90 (customer_bleed.rs) or rung 62's \
+                 transient machine");
+    }
 
     pub fn gas(&self) -> &Gas { &self.fs_engine.gas }
 
@@ -648,6 +682,7 @@ impl TwoSpoolCore {
     ) -> Self {
         let eta_m = design_engine.eta_m;
         let hf_fuel_molar = design_engine.gas.spec.hf_fuel_molar;
+        let customer = design_engine.customer;
 
         let by = |label: &str| -> Component {
             design_engine.components.iter().find(|(l, _)| *l == label)
@@ -704,6 +739,7 @@ impl TwoSpoolCore {
             eta_hpt, eta_lpt, p_ambient, pi_n, pi_d_max, f_design, a4, a45, a8, reference,
             fs_engine: Engine::new(gas, Vec::new(), eta_m),
             tau_calls: std::cell::Cell::new(0),
+            customer,
         }
     }
 
@@ -924,6 +960,7 @@ impl TwoSpoolCore {
     /// **whether it caps is interpreter-dependent** — CPython and PyPy disagree at 29 of 126
     /// cells, between ~8 passes and never (§ 5.7 (c)).
     pub fn match_point(&self, flight: &FlightCondition, tt4: f64) -> TwoSpoolResult {
+        self.refuse_customer("rung 38's two-spool matcher");
         let pi_d = self.pi_d_max * ram_recovery(flight.m0);
         let (state0, _v0) = self.freestream_for(flight);
         let (tt2, pt2) = (state0.tt, pi_d * state0.pt);
@@ -1551,6 +1588,7 @@ fn r39_lp_eta_loop(
 fn r39_try_match_point(
     core: &TwoSpoolMapCore, flight: &FlightCondition, tt4: f64,
 ) -> Result<TwoSpoolMapResult, Abort> {
+    core.base.refuse_customer("rung 39's map matcher");
     let b = &core.base;
     let pi_d = b.pi_d_max * ram_recovery(flight.m0);
     let (state0, _v0) = b.try_freestream_for(flight)?;

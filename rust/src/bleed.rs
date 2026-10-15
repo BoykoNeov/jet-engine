@@ -318,6 +318,7 @@ pub fn try_match_bleed(
         return Ok(TwoSpoolBleedResult { base, booking: None });
     }
 
+    core.base.refuse_customer("rung 42's interstage-bleed matcher");
     let b = core.bleed;
     let base = &core.base;
     let pi_d = base.pi_d_max * ram_recovery(flight.m0);
