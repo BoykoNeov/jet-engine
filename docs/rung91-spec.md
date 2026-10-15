@@ -55,8 +55,9 @@ turbine's pin keeps its form, and on the perfect gas `τ_LPT`, `π_LPT` stay whe
 (gated, to 1e−11).
 
 **The steady cascade loses its triangle**: both mixers need `Tt3`, which the HP balance makes from
-the HPT — closed by a fixed point on `Tt3` inside the turbine-efficiency loop (contraction ≈ 0.02:
-the mixers barely feel `Tt3`). The transient closure has no loop: `Tt3` comes from the maps first.
+the HPT — closed by a fixed point on `Tt3` inside the turbine-efficiency loop (the mixers' own
+balance puts its sensitivity near `μ₁κθ` ≈ 0.02 at 5 % vane air — estimated, not measured; it
+converges on every point the suites reach). The transient closure has no loop: `Tt3` comes from the maps first.
 
 Rung 90's efficiency loops are CALLED with the extraction `c + ε` (their bodies carry it only in
 the face referrals, where cooling air is as absent as customer air); everything else is a copy.
@@ -80,8 +81,9 @@ bit for bit at three throttles × two valves × customer off/share (steady) and 
 customer off/share (transient, both closures and the fuel path); the closure carries no `cooling`
 field then. The design run is unchanged (gated). **Plant gate**: the transient equilibrium equals
 the steady match to 1e−9 in speeds, flow coefficients, pressure ratios, the HP turbine's `π` and
-`τ`, `Tt45`, burner and face flow, customer share and thrust — vane alone, blade alone, both; with
-the valve; with a customer share; with a customer amount and the valve. The cascade's mixers and
+`τ`, `Tt45`, burner and face flow, customer share and thrust — the anchor's full set: vane alone,
+blade alone and both × customer off / share / amount × valve shut / open, each at 1400 and 1000 K
+(36 points). The cascade's mixers and
 both shaft balances close to 1e−9 on the rebuilt stations. No oracle, no CLI golden and no earlier
 rung's gate moved.
 
@@ -119,8 +121,9 @@ The named likeliest miss (the vane HP through the amplified HP-work term) did no
   (1454 K). The model has no metal temperature, so at a fixed burner temperature cooling can only
   look like a cost — what it buys is THIS number (concession).
 * **Vane cooling's HP is the open one in the slam**: § 1's crossing sits inside the ramp; measured,
-  vane 5 % lowers `min φ_HP` slightly in all 6 cells (by 0.002–0.004 — the slam's minimum sits on
-  the high-power side), far less than blade's.
+  vane 5 % lowers `min φ_HP` slightly in all 6 cells (by 0.002–0.004), far less than blade's —
+  consistent with the steady crossing (1116 K) sitting inside the ramp; where along the march the
+  minimum sits was not read.
 * **A valve that held can no longer hold.** Where the valve rode without cooling (shaped `r` 0.25,
   `sm` 0.38, peak 0.071) it saturates with vane air (violation `min φ_LP` 0.7531 < 0.759).
 

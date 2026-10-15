@@ -170,16 +170,19 @@ fn plant_gate(cb: Option<CustomerBleed>, tc: TurbineCooling, b: f64, tt4: f64) {
             "{cb:?} {tc:?} b={b} Tt4={tt4} thrust: {thrust} vs {}", od.base.base.thrust);
 }
 
-#[test] fn plant_gate_vane_1400() { plant_gate(None, VANE, 0.0, 1400.0); }
-#[test] fn plant_gate_vane_1000() { plant_gate(None, VANE, 0.0, 1000.0); }
-#[test] fn plant_gate_blade_1400() { plant_gate(None, BLADE, 0.0, 1400.0); }
-#[test] fn plant_gate_blade_1000() { plant_gate(None, BLADE, 0.0, 1000.0); }
-#[test] fn plant_gate_both_with_valve() { plant_gate(None, BOTH, 0.05, 1200.0); }
-#[test] fn plant_gate_both_with_customer_share() {
-    plant_gate(Some(CustomerBleed::share(0.05)), BOTH, 0.0, 1200.0);
-}
-#[test] fn plant_gate_both_with_customer_amount_and_valve() {
-    plant_gate(Some(CustomerBleed::amount(0.05)), BOTH, 0.05, 1200.0);
+/// The anchor's full set (§ 3, construction): vane, blade, both × customer off / share / amount ×
+/// valve shut / open — 18 cells, each at a high and a low throttle.
+#[test]
+fn plant_gate_every_stream_customer_and_valve() {
+    for tc in [VANE, BLADE, BOTH] {
+        for cb in [None, Some(CustomerBleed::share(0.05)), Some(CustomerBleed::amount(0.05))] {
+            for b in [0.0, 0.05] {
+                for tt4 in [1400.0, 1000.0] {
+                    plant_gate(cb, tc, b, tt4);
+                }
+            }
+        }
+    }
 }
 
 // =============================================================================================
