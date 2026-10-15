@@ -147,6 +147,7 @@ new slices and step links go THERE, not here.
 - [Rung 84 staircase law](rung84-staircase-law.md) — a small integer COUNT cannot carry a RATE
 - [Rung 85 blade speed](rung85-blade-speed.md) — list EVERY parameter two cases differ in before extrapolating; an identity gate fed (1,1) by hand compared a function with itself
 - [Rung 86 three levers](rung86-three-levers.md) — I called a result "genuine" before checking its own condition and step size; the READING is not the RUN
+- [Rung 87 valve reference](rung87-valve-reference.md) — a prediction against a device built as the pointwise optimum is construction; equal set points are rung 66's degeneracy, not dormant
 
 ## Margin sweeps — confirmations, not rungs
 - Margin sweeps — [72–77 march audit](rungs72-77-march-audit.md), [74 arrest interval](rung74-arrest-interval.md), [79 gap](rung79-gap-margin.md), [29 π_c](rung29-pi-c-margin.md), [29 M0](rung29-M0-margin.md), [28 β](rung28-beta-margin-hardened.md) — a liveness counter on a FROZEN plant reports FULL activity (one lesson per file)
