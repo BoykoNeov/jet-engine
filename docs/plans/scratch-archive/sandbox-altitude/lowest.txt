@@ -1,0 +1,10 @@
+    Finished `release` profile [optimized] target(s) in 46.37s
+     Running `W:/temp/claude/jet-altitude-probe/target\release\lowest.exe`
+      design T0 250:  flow/press 510 (below: off-map)  press/flow 520 (below: off-map)  tilted 510 (below: off-map)  flat-lp 750 (below: off-map)  | HP gen 0.05: 660 (generator) | customer 0.1: 500 ()
+     0 m -40 T0 248:  flow/press 520 (below: off-map)  press/flow 510 (below: off-map)  tilted 520 (below: off-map)  flat-lp 740 (below: off-map)  | HP gen 0.05: 520 (off-map) | customer 0.1: 510 (off-map)
+      0 m +0 T0 288:  flow/press 570 (below: off-map)  press/flow 570 (below: off-map)  tilted 560 (below: off-map)  flat-lp 860 (below: off-map)  | HP gen 0.05: 570 (off-map) | customer 0.1: 560 (off-map)
+     0 m +40 T0 328:  flow/press 620 (below: off-map)  press/flow 620 (below: off-map)  tilted 610 (below: off-map)  flat-lp 980 (below: off-map)  | HP gen 0.05: 620 (off-map) | customer 0.1: 600 (off-map)
+ 11000 m -40 T0 177:  flow/press 500 (below: )  press/flow 500 (below: )  tilted 500 (below: )  flat-lp 530 (below: off-map)  | HP gen 0.05: 870 (off-map) | customer 0.1: 500 ()
+  11000 m +0 T0 217:  flow/press 500 (below: )  press/flow 500 (below: )  tilted 500 (below: )  flat-lp 650 (below: off-map)  | HP gen 0.05: 1010 (off-map) | customer 0.1: 640 (customer)
+ 11000 m +40 T0 257:  flow/press 530 (below: off-map)  press/flow 530 (below: off-map)  tilted 530 (below: off-map)  flat-lp 770 (below: off-map)  | HP gen 0.05: 1140 (off-map) | customer 0.1: 930 (customer)
+  20000 m +0 T0 217:  flow/press 500 (below: )  press/flow 500 (below: )  tilted 500 (below: )  flat-lp 650 (below: off-map)  | HP gen 0.05: NaN (generator) | customer 0.1: NaN (customer)

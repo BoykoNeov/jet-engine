@@ -5,7 +5,8 @@
 //! (57–63) is two-shaft by assertion — its finding is a split BETWEEN spools — so this view has its
 //! own engine (plan § 12.1): the *Size the blades* view's, at its opening settings (rung 43's rig:
 //! `π_LPC` 3 × `π_HPC` 6, `Tt4` 1500, a convergent nozzle, the panels' two-spool losses, at 250 K /
-//! 50 kPa / Mach 0.85, the perfect gas), on rungs 43/45's fuel-metered march.
+//! 50 kPa / Mach 0.85, the perfect gas), on rungs 43/45's fuel-metered march. Since plan § 27 it is FLOWN
+//! at the knobs' air temperature and pressure (Mach kept), its hardware still captured at that design flight.
 //!
 //! **The switches** (plan § 12.3, the user's answers § 12.8): the turbine-temperature limiter
 //! (rung 46) and its response lag (47); the acceleration schedule (48); the stall floor (49), read
@@ -252,6 +253,12 @@ pub struct ControlsSettings {
     /// generator-off engine (`table_clean`, inert with the generator off) or on this one.
     pub thrust_by: ThrustBy,
     pub table_clean: bool,
+    /// The flight FLOWN (plan § 27): ambient static temperature, K, and pressure, Pa — the page's altitude and
+    /// deviation from the standard day, linked to these through the standard atmosphere as on *Fly it*. The hardware
+    /// stays captured at the DESIGN flight ([`ControlsSettings::design_flight`]); Mach stays the design's 0.85. The
+    /// defaults ARE the design flight, so every saved setting stays valid.
+    pub t0: f64,
+    pub p0: f64,
 }
 
 /// Rung 96's switch: where a governed thrust is read from.
@@ -350,6 +357,7 @@ impl ControlsSettings {
     /// (48), LP floor 0.75 (49), attack/release 0.02/0.10 τ (52), stator 0.20 below 0.65 and bleed
     /// 0.10 below 0.65 (62); the valve, when chosen, holds 0.78 (rung 87's middle set point, `sm` ≈ 0.42).
     pub fn defaults() -> Self {
+        let fd = BladeSettings::defaults().flight();
         ControlsSettings {
             shape: 0, rho: 1.0, from: 1000.0, to: 1400.0, ramp: 0.5, settle: 2.0,
             redline_on: false, redline: 1480.0, gov_lag_on: false, gov_lag: 0.2,
@@ -367,6 +375,7 @@ impl ControlsSettings {
             hold: Hold::BurnerTemp, hold_cap: false,
             govern: false, speed_law: SpeedLaw::Rate, gov_tau: 0.1, gov_gain: 20.0,
             thrust_by: ThrustBy::True, table_clean: true,
+            t0: fd.t0, p0: fd.p0,
         }
     }
 
@@ -440,7 +449,19 @@ impl ControlsSettings {
     /// Rung 96: the ends are CALIBRATED — inferred, the table on the generator-off engine, and a generator to differ.
     pub fn calibrated(&self) -> bool { self.inferred() && self.table_clean && self.generator != GeneratorMode::Off }
 
-    pub fn flight(&self) -> FlightCondition { BladeSettings::defaults().flight() }
+    /// The flight the hardware was captured at — the *Size the blades* rig's (250 K, 50 kPa, Mach 0.85). Every
+    /// CONSTRUCTOR takes this one; the flight flown is [`ControlsSettings::flight`].
+    pub fn design_flight(&self) -> FlightCondition { BladeSettings::defaults().flight() }
+
+    /// The flight FLOWN: the knobs' `T0`/`p0` at the design's Mach. Every solve and the march take this one.
+    pub fn flight(&self) -> FlightCondition { FlightCondition::new(self.t0, self.p0, self.design_flight().m0) }
+
+    /// The air's density over the design flight's, `(p0/p0d)·(T0d/T0)` — exactly 1 at the design flight. The governor's
+    /// step-checked knob limits scale by it (plan § 27): the shafts answer fuel harder in denser air.
+    pub fn density_ratio(&self) -> f64 {
+        let d = self.design_flight();
+        (self.p0 / d.p0) * (d.t0 / self.t0)
+    }
 
     pub fn s_end(&self) -> f64 { self.ramp + self.settle }
 
@@ -474,6 +495,7 @@ impl ControlsSettings {
             "govern" => b(self.govern), "speed_law" => self.speed_law.key(), "gov_tau" => self.gov_tau,
             "gov_gain" => self.gov_gain,
             "thrust_by" => self.thrust_by.key(), "table_clean" => b(self.table_clean),
+            "T0" => self.t0, "p0" => self.p0,
         }
     }
 
@@ -519,7 +541,8 @@ impl ControlsSettings {
                           ("customer_amount", &mut s.customer_amount), ("cool_vane", &mut s.cool_vane),
                           ("cool_blade", &mut s.cool_blade), ("generator_share", &mut s.generator_share),
                           ("generator_power", &mut s.generator_power), ("metal_year", &mut s.metal_year),
-                          ("metal_life", &mut s.metal_life), ("gov_tau", &mut s.gov_tau), ("gov_gain", &mut s.gov_gain)] {
+                          ("metal_life", &mut s.metal_life), ("gov_tau", &mut s.gov_tau), ("gov_gain", &mut s.gov_gain),
+                          ("T0", &mut s.t0), ("p0", &mut s.p0)] {
             num(k, into)?;
         }
         if let Some(t) = text("customer")? {
@@ -639,6 +662,30 @@ impl ControlsSettings {
     }
 }
 
+/// A time-constant floor as the refusal states it: rounded UP to 0.001, so the value named is one the page accepts.
+fn tau_text(t: f64) -> String { format!("{}", ((t * 1000.0) - 1e-6).ceil() / 1000.0) }
+
+/// A gain ceiling as the refusal states it: rounded DOWN to 0.1, for the same reason.
+fn gain_text(g: f64) -> String { format!("{}", ((g * 10.0) + 1e-6).floor() / 10.0) }
+
+/// The flight clause of a time-constant refusal: empty at or below the design flight's density.
+fn thin_words(s: &ControlsSettings) -> String {
+    match s.density_ratio() < 1.0 {
+        false => " (two march steps)".to_string(),
+        true => format!(" here: the air is {:.0} % as dense as at the design flight, so the shafts answer the fuel more \
+                         slowly and a fast commanded rate rides the rich edge", 100.0 * s.density_ratio()),
+    }
+}
+
+/// The flight clause of a gain refusal: empty at or below the design flight's density.
+fn dense_words(s: &ControlsSettings) -> String {
+    match s.density_ratio() > 1.0 {
+        false => String::new(),
+        true => format!(" here (the air is {:.2} times as dense as at the design flight, so the shafts answer the fuel \
+                         harder)", s.density_ratio()),
+    }
+}
+
 /// The checks made before the engine is built — every one the model would otherwise ASSERT
 /// (`r43_integrate_fuel`'s, the constructors'), in plain words.
 pub fn controls_precheck(s: &ControlsSettings) -> Result<(), DoesNotRun> {
@@ -651,9 +698,12 @@ pub fn controls_precheck(s: &ControlsSettings) -> Result<(), DoesNotRun> {
                  ("customer_share", s.customer_share), ("customer_amount", s.customer_amount),
                  ("cool_vane", s.cool_vane), ("cool_blade", s.cool_blade),
                  ("generator_share", s.generator_share), ("generator_power", s.generator_power),
-                 ("gov_tau", s.gov_tau), ("gov_gain", s.gov_gain)];
+                 ("gov_tau", s.gov_tau), ("gov_gain", s.gov_gain), ("T0", s.t0), ("p0", s.p0)];
     if let Some((k, _)) = named.iter().find(|(_, v)| !v.is_finite()) {
         return Err(DoesNotRun(format!("Setting {k} is not a number.")));
+    }
+    if s.t0 <= 0.0 || s.p0 <= 0.0 {
+        return no("The air's temperature and pressure must be above zero.");
     }
     // Rung 94: the metal cap binds a FLOATING burner, so it needs a hold, the metal read, and cooling (uncooled, the
     // 1985 metals allow about 990 K — below every opening throttle, so the cap would clamp both ends).
@@ -773,15 +823,19 @@ pub fn controls_precheck(s: &ControlsSettings) -> Result<(), DoesNotRun> {
             return no("The governor runs with the instant valve only: a slow valve is a state on its own march, and a \
                        governor on that march is a different model. Make the valve instant.");
         }
-        if s.hold == Hold::HpSpeed && s.speed_law == SpeedLaw::Rate && !(s.gov_tau >= TAU_MIN - 1e-12) {
+        // Plan § 27: both limits were set by the step check AT the design flight. The shafts answer the governor's fuel
+        // harder in denser air, so the gain limit falls by the density ratio there; in thinner air the shafts are slower,
+        // a fast commanded rate rides the rich edge, and the time constant's floor rises by it. Both 1 at the design flight.
+        let (tau_min, gain_max) = (TAU_MIN / s.density_ratio().min(1.0), GAIN_MAX / s.density_ratio().max(1.0));
+        if s.hold == Hold::HpSpeed && s.speed_law == SpeedLaw::Rate && !(s.gov_tau >= tau_min - 1e-12) {
             return Err(DoesNotRun(format!(
-                "The speed governor's time constant must be at least {TAU_MIN} spool time constants (two march steps): \
-                 measured, one step moves the flow coefficients by about 0.001 against a finer step.")));
+                "The speed governor's time constant must be at least {} spool time constants{}: measured, a faster one \
+                 moves the flow coefficients by about 0.001 against a finer step.", tau_text(tau_min), thin_words(s))));
         }
-        if s.hold == Hold::HpSpeed && s.speed_law == SpeedLaw::Prop && !(s.gov_gain > 0.0 && s.gov_gain <= GAIN_MAX) {
+        if s.hold == Hold::HpSpeed && s.speed_law == SpeedLaw::Prop && !(s.gov_gain > 0.0 && s.gov_gain <= gain_max) {
             return Err(DoesNotRun(format!(
-                "The speed governor's gain must be above 0 and at most {GAIN_MAX:.0}: a larger gain is worked out too \
-                 coarsely at this march's step.")));
+                "The speed governor's gain must be above 0 and at most {}{}: a larger gain is worked out too \
+                 coarsely at this march's step.", gain_text(gain_max), dense_words(s))));
         }
         // Rung 96: an inferred thrust — the cap would saturate the control's table (a capped end lies below its span),
         // and the LP laws' knobs have their own step check.
@@ -791,15 +845,16 @@ pub fn controls_precheck(s: &ControlsSettings) -> Result<(), DoesNotRun> {
                            below the control's table, which then cannot turn it back into a reading. Read the thrust \
                            itself, or switch the cap off.");
             }
-            if s.thrust_by == ThrustBy::N1 && s.speed_law == SpeedLaw::Rate && !(s.gov_tau >= TAU_MIN_LP - 1e-12) {
+            let (tau_min, gain_max) = (TAU_MIN_LP / s.density_ratio().min(1.0), GAIN_MAX_LP / s.density_ratio().max(1.0));
+            if s.thrust_by == ThrustBy::N1 && s.speed_law == SpeedLaw::Rate && !(s.gov_tau >= tau_min - 1e-12) {
                 return Err(DoesNotRun(format!(
-                    "The fan-speed governor's time constant must be at least {TAU_MIN_LP} spool time constants: a \
-                     faster one is worked out too coarsely at this march's step.")));
+                    "The fan-speed governor's time constant must be at least {} spool time constants{}: a faster one is \
+                     worked out too coarsely at this march's step.", tau_text(tau_min), thin_words(s))));
             }
-            if s.thrust_by == ThrustBy::N1 && s.speed_law == SpeedLaw::Prop && !(s.gov_gain > 0.0 && s.gov_gain <= GAIN_MAX_LP) {
+            if s.thrust_by == ThrustBy::N1 && s.speed_law == SpeedLaw::Prop && !(s.gov_gain > 0.0 && s.gov_gain <= gain_max) {
                 return Err(DoesNotRun(format!(
-                    "The fan-speed governor's gain must be above 0 and at most {GAIN_MAX_LP:.0}: a larger gain is worked \
-                     out too coarsely at this march's step.")));
+                    "The fan-speed governor's gain must be above 0 and at most {}{}: a larger gain is worked out too \
+                     coarsely at this march's step.", gain_text(gain_max), dense_words(s))));
             }
         }
     }
@@ -898,7 +953,10 @@ pub const HOLD_HI: f64 = 2000.0;
 pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
     controls_precheck(s)?;
     let (ml, mh) = control_maps(CONTROL_SHAPES[s.shape]).expect("CONTROL_SHAPES lists only buildable shapes");
-    let fl = s.flight();
+    // Plan § 27: the hardware is captured at the DESIGN flight (every constructor below takes `fd`); every solve and
+    // the march run at the flight FLOWN (`fl`). Rung 96's control table is built at `fl` too — a table made at one
+    // flight and flown at another is that rung's open seam, not this knob.
+    let (fd, fl) = (s.design_flight(), s.flight());
     // A slow valve needs rung 65's machine (rung 64's refuses a lag); an instant one rung 64's (rung 62's
     // drops the valve silently).
     let builder = if s.valve_slow() { build_lagged_bleed } else if s.valve_on() { build_limited_bleed }
@@ -926,7 +984,7 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
         None => design,
     };
     let gen_check = (s.shaft_offtake().is_some() && s.lever == LeverChoice::None).then(|| design.clone());
-    let core = match builder(design, fl, MDOT_DESIGN, Some(ml), Some(mh), s.rho, &s.lever_arm()) {
+    let core = match builder(design, fd, MDOT_DESIGN, Some(ml), Some(mh), s.rho, &s.lever_arm()) {
         ScheduledStatorTransient::Full(c) => c,
         ScheduledStatorTransient::Degenerate(_) => unreachable!("the Controls engine has both shafts"),
     };
@@ -934,14 +992,14 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
         core.fuel.inner.try_equilibrium(&fl, tt4, None).map(|(i, _, _)| i).map_err(|e| {
             let mut m = e.0;
             if let Some(de) = gen_check.as_ref().filter(|_| !m.contains("rung-92:")) {
-                let st = ShaftOfftakeMatcher::new(de.clone(), fl, MDOT_DESIGN, ml, mh, 0.0);
+                let st = ShaftOfftakeMatcher::new(de.clone(), fd, MDOT_DESIGN, ml, mh, 0.0);
                 if let Err(e2) = st.try_match_point(&fl, tt4) {
                     if e2.0.contains("rung-92:") { m = e2.0; }
                 }
             }
             let mut words = format!("At the {which} throttle ({tt4:.0} K): {}", endpoint_words(&m));
             if let Some(de) = unloaded.as_ref().filter(|_| !m.contains("rung-92:")) {
-                let bare = match builder(de.clone(), fl, MDOT_DESIGN, Some(ml), Some(mh), s.rho, &s.lever_arm()) {
+                let bare = match builder(de.clone(), fd, MDOT_DESIGN, Some(ml), Some(mh), s.rho, &s.lever_arm()) {
                     ScheduledStatorTransient::Full(c) => c,
                     ScheduledStatorTransient::Degenerate(_) => unreachable!("the Controls engine has both shafts"),
                 };
@@ -966,7 +1024,7 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
     // steady reading equals the table's.
     let clean = match (s.calibrated(), unloaded.as_ref()) {
         (true, Some(de)) => {
-            let bare = match builder(de.clone(), fl, MDOT_DESIGN, Some(ml), Some(mh), s.rho, &s.lever_arm()) {
+            let bare = match builder(de.clone(), fd, MDOT_DESIGN, Some(ml), Some(mh), s.rho, &s.lever_arm()) {
                 ScheduledStatorTransient::Full(c) => c,
                 ScheduledStatorTransient::Degenerate(_) => unreachable!("the Controls engine has both shafts"),
             };
@@ -1017,7 +1075,7 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
         let Some(de) = unloaded.as_ref().filter(|_| s.hold != Hold::BurnerTemp) else {
             return Ok((steady(which, t_set)?, None));
         };
-        let bare = match builder(de.clone(), fl, MDOT_DESIGN, Some(ml), Some(mh), s.rho, &s.lever_arm()) {
+        let bare = match builder(de.clone(), fd, MDOT_DESIGN, Some(ml), Some(mh), s.rho, &s.lever_arm()) {
             ScheduledStatorTransient::Full(c) => c,
             ScheduledStatorTransient::Degenerate(_) => unreachable!("the Controls engine has both shafts"),
         };
@@ -1102,10 +1160,16 @@ pub fn endpoint_words(message: &str) -> String {
     } else if message.contains("did not converge") {
         "the search for the steady shaft speeds does not settle. Measured only with a lever whose schedule does \
          nearly all its travel just below the design speed; start the lever's schedule lower"
+    } else if message.contains("nozzle back-pressure") {
+        // Plan § 27: met only off the design flight (crash map: 3 of 1 400 requests, 600–800 K, every one in air above 250 K).
+        "at this low a throttle the gas leaving the turbine has less pressure than the air outside, so the nozzle \
+         cannot push it out (met only at very low throttles, 600–800 K, in air warmer than at the design flight, 250 K). Raise the \
+         throttle"
     } else if message.contains("does not bracket") || message.contains("off-map compressor trial") {
         "the compressors would have to run off the part of their maps the model covers. This happens at a low \
-         throttle (on the flat-LP map, below about 700–900 K) or with a lever whose schedule does nearly all its \
-         travel just below the design speed. Raise the throttle, or start the lever's schedule lower"
+         throttle (on the flat-LP map at the design flight, below about 700–900 K; warmer air raises that, colder \
+         air lowers it), with a large fixed load or amount of air in thin air, or with a lever whose schedule does \
+         nearly all its travel just below the design speed. Raise the throttle, or start the lever's schedule lower"
     } else {
         "the model's steady solve fails"
     };
@@ -1906,6 +1970,8 @@ pub fn controls_json(sv: &ControlsSolver, o: &ControlsOutcome) -> Json {
     jobj! {
         "ok" => Json::Int(1),
         "controls" => o.settings.to_json(),
+        "ambient" => crate::sandbox::ambient_json(o.settings.t0, o.settings.p0),
+        "density_ratio" => o.settings.density_ratio(),
         "start" => steady_json(sv, &sv.start, sv.hold_start), "end" => steady_json(sv, &sv.end, sv.hold_end),
         "expected_points" => Json::Int(o.settings.expected_points() as i64),
         "route" => match sv.route() { Route::Plain => "plain", Route::GovLag => "gov_lag", Route::Release => "release",
@@ -2089,6 +2155,23 @@ pub fn check_requests() -> Vec<String> {
         ControlsSettings { release_on: true, ..d },                                  // refused: nothing to lag
         ControlsSettings { floor_on: true, lever: LeverChoice::Stator, ..d },        // stop: the floor unreachable
         ControlsSettings { shape: 2, from: 1485.0, to: 614.0, ramp: 0.66, settle: 1.0, ..d },   // stop: lean
+    ] {
+        out.push(req(s));
+    }
+    // Plan § 27: the altitude knob — sea level, a hot sea-level day with the floor, 15 km governed beside the redline,
+    // the gain refused in dense air, and the crash map's one new end failure (the nozzle).
+    let at = |z: f64, dt: f64, s: ControlsSettings| {
+        let (t, p) = crate::atmosphere::standard(z);
+        ControlsSettings { t0: t + dt, p0: p, ..s }
+    };
+    for s in [
+        at(0.0, 0.0, d),
+        at(0.0, 30.0, ControlsSettings { floor_on: true, lever: LeverChoice::Bleed, ..d }),
+        at(15_000.0, 0.0, ControlsSettings { govern: true, hold: Hold::Thrust, redline_on: true, ..d }),
+        at(0.0, -20.0, ControlsSettings { govern: true, hold: Hold::HpSpeed, speed_law: SpeedLaw::Prop, gov_gain: 50.0, ..d }),
+        ControlsSettings { t0: 281.025575242416, p0: 110666.3721625535, redline_on: true, generator: GeneratorMode::Hp,
+                           generator_power: 0.05, customer: CustomerMode::Amount, customer_amount: 0.13, cool_vane: 0.04,
+                           cool_blade: 0.12, from: 600.0, to: 870.0, ramp: 0.02, settle: 3.3, rho: 2.3, ..d },
     ] {
         out.push(req(s));
     }

@@ -305,8 +305,9 @@ footer p { max-width: 90ch; }
     <fieldset id="ctl-set" hidden>
       <legend>The two-shaft engine, throttle slammed</legend>
       <p class="frozen">A separate engine, not the one in <b>Design</b> or <b>Fly it</b>: the <b>Size the blades</b> engine at
-        its opening settings (pressure ratios 3 and 6, designed for 1500 K at the turbine inlet, flying at 250 K, 50 kPa,
-        Mach 0.85, on the perfect gas). The fuel moves from one throttle's steady fuel flow to the other's; the controls below cut it.</p>
+        its opening settings (pressure ratios 3 and 6, designed for 1500 K at the turbine inlet while flying at 250 K, 50 kPa,
+        Mach 0.85, on the perfect gas). Its hardware stays as designed; <b>Flight</b> below sets the air it flies in (Mach stays
+        0.85). The fuel moves from one throttle's steady fuel flow to the other's; the controls below cut it.</p>
       <div class="knob"><label for="ctl-shape">Compressor map shape</label>
         <select id="ctl-shape" style="grid-column: 1 / -1">
           <option value="flow/press">LP curved along flow, HP along pressure</option>
@@ -449,12 +450,12 @@ footer p { max-width: 90ch; }
           <div class="knob" id="ctl-gtau-box"><label for="ctl-gov_tau">Time to close the gap <small>τ</small></label><input type="number" id="ctl-gov_tau" step="0.01">
             <input type="range" id="ctl-gov_tau-r" min="0.04" max="1" step="0.01" aria-label="Speed governor time constant slider">
             <div class="derived">The governor picks the fuel that makes the shaft it reads (the HP shaft, or the fan's LP
-              shaft) close its speed gap in this time, at every power. At least 0.04 τ: faster is worked out too coarsely at
+              shaft) close its speed gap in this time, at every power. At least 0.04 τ at the design flight's air (longer in thinner air): faster is worked out too coarsely at
               this step.</div></div>
           <div class="knob" id="ctl-ggain-box"><label for="ctl-gov_gain">Gain <small>fuel fraction per unit of speed short</small></label><input type="number" id="ctl-gov_gain" step="1">
             <input type="range" id="ctl-gov_gain-r" min="1" max="50" step="1" aria-label="Speed governor gain slider">
             <div class="derived">Fuel = the steady fuel at the asked speed × (1 + gain × the speed gap). A fixed gain closes the
-              gap about twice as slowly at idle as near full power on this engine: the turbine has less power to give there.</div></div></div>
+              gap about twice as slowly at idle as near full power on this engine: the turbine has less power to give there. At most 50 at the design flight's air, less in denser air.</div></div></div>
         <p class="note" id="ctl-gov-note">The throttle now asks for its quantity all along the move, not just at the two ends:
           it rises in a straight line from the start's value to the end's over the move, and a governor sets the fuel to give
           it. The temperature limiter, the acceleration schedule, the stall floor and (with the cap on) the turbine metal
@@ -687,8 +688,15 @@ footer p { max-width: 90ch; }
       <div class="knob"><label for="T0">Air temperature T0 <small>K</small></label><input type="number" id="T0" step="0.5"></div>
       <div class="knob"><label for="p0">Air pressure p0 <small>Pa</small></label><input type="number" id="p0" step="100">
         <div class="derived" id="atmo-note"></div></div>
-      <div class="knob"><label for="M0">Flight Mach number</label><input type="number" id="M0" step="0.01">
+      <div class="knob" id="M0-row"><label for="M0">Flight Mach number</label><input type="number" id="M0" step="0.01">
         <input type="range" id="M0-r" min="0.05" max="3.5" step="0.01" aria-label="Mach slider"></div>
+      <p class="note" id="ctl-flight-note" hidden>The two-shaft engine keeps the hardware it was designed with and flies here at
+        Mach 0.85. Thinner air passes less of it through the engine, so the shafts spin up more slowly: time stays in the
+        spool time constant of the design flight, so the same throttle move reads slower up high, and runs hotter while the
+        shafts catch up. The throttles stay in kelvin: in colder air the same turbine temperature runs the shafts faster. The
+        speed governor's limits scale with the air's density: a smaller gain in denser air, a longer time constant in thinner.
+        Even so, on a cold day, or where the governor sits at its rich edge in thin air, its run is somewhat rougher (up to
+        about 0.0007 in flow coefficient against a finer step, measured; elsewhere about 0.0001).</p>
     </fieldset>
     <fieldset id="cycle-set">
       <legend>Cycle</legend>
@@ -1029,7 +1037,11 @@ footer p { max-width: 90ch; }
   full scheduled fuel had no answer while a limiter held the fuel far below it (a limit of the model's method); the
   mixture became leaner or richer than the model's fuel solver searches (0.004 and 0.065 kg of fuel per kg of air). With
   the temperature limiter's lag on, the model does not record the lag's state, so a stop there is reported without a cause.
-  Time is in the high-pressure shaft's response time τ; the bleed thrust counts the dumped air's full ram drag.</p>
+  Time is in the high-pressure shaft's response time τ; the bleed thrust counts the dumped air's full ram drag. The
+  engine can be flown at another altitude and air temperature (Mach stays 0.85): its hardware stays as designed, every
+  steady point and the march itself are worked out in the new air, and τ stays the design flight's, so in thin air the
+  same move reads slower. There is no Reynolds-number effect: in the model a component's efficiency does not fall in
+  thin air, as a real one's does.</p>
   <p><b>Burner.</b> The project's rungs 7–24, beside the cycle: they never change a cycle number. They read four numbers off
   the <b>Design</b> engine run on the equilibrium gas (compressor exit temperature, turbine inlet temperature, fuel-air ratio,
   burner pressure) and do their own chemistry: an equilibrium flame in the front zone, the extended Zeldovich reactions for
@@ -1180,7 +1192,7 @@ const SLAM_NUM = { "slam-from": "from", "slam-ramp": "ramp", "slam-settle": "set
 const SLOW = ["equilibrium"];                 // ~1 s a point: run when a slider is let go
 const GAS_WORDS = { perfect: "perfect gas", thermally_perfect: "thermally perfect gas", reacting: "reacting-products gas",
                     fork_b: "reacting gas with formation enthalpies", equilibrium: "equilibrium-chemistry gas" };
-const target = () => (mode === "fly" ? F : S);
+const target = () => (mode === "fly" ? F : mode === "controls" ? C : S);
 const slow = () => mode === "fly" && SLOW.includes(F.gas);
 // Size the blades (slice 2): B is the blade settings (turbojet::sandbox_blades::BladeSettings) on its
 // own two-spool engine. BLADE_NUM maps an engine knob's id to its setting; BLADE_KNOB a blade knob's
@@ -1236,6 +1248,7 @@ function fmt(x, sig = 4) {
 function showSettings() {
   for (const k of NUM) {
     const v = FLIGHT.includes(k) ? target()[k] : S[k];
+    if (v === undefined) continue;                // Controls flies at the design's Mach: it has no M0 of its own
     const n = $(k); if (n && document.activeElement !== n) n.value = +v.toPrecision(8);
     const r = $(k + "-r"); if (r) r.value = v;
   }
@@ -1266,7 +1279,10 @@ function showSettings() {
   for (const id of BN_VIEW) $(id).hidden = !burner;
   for (const id of CL_VIEW) $(id).hidden = !cooling;
   $("bn-jet-card").hidden = !burner || !BK || BK.quench !== "jets";
-  $("flight-set").hidden = blades || controls || cooling;
+  // Plan § 27: the Controls engine flies too -- the same linked knobs, set beside its engine, without Mach.
+  $("flight-set").hidden = blades || cooling;
+  if (controls) $("ctl-set").after($("flight-set")); else $("cycle-set").before($("flight-set"));
+  $("M0-row").hidden = controls; $("ctl-flight-note").hidden = !controls;
   for (const id of ["out", "ts-card", "stations-card", "perf-card"]) $(id).hidden = blades || controls || burner || cooling;
   $("mode-note").innerHTML = fly
     ? "The hardware is frozen. Move the throttle or the flight; press <b>Design the engine</b> to change the design."
@@ -1731,11 +1747,15 @@ async function runCtl() {
     $("bad-raw").textContent = t.trap ? "Model message: " + t.trap.message : "";
     $("bad").classList.add("show");
     $("status").textContent = "This run does not start.";
+    // A refused run carries no reading of the air: ask for it, so typed T0/p0 still move the altitude knobs.
+    const a = (await model.ask(JSON.stringify({ op: "atmosphere", T0: C.T0, p0: C.p0 }))).reply;
+    if (my === ctlGen && mode === "controls") showAmbient(a && a.ok !== 0 ? a : null);
     window.sandbox.state = "does-not-run"; window.sandbox.trap = t.trap || { plain: t.reply.reason };
     window.sandbox.ctlState = "done";
     return;
   }
   crun = t.reply;
+  showAmbient(crun.ambient);
   $("bad").classList.remove("show");
   for (const id of ["ctl-out", "ctl-card"]) $(id).classList.remove("stale");
   $("status").textContent = crun.stopped
@@ -1843,6 +1863,10 @@ function to90(r, k, f = 0.9) {
   const i = r[k].findIndex(v => (v - r.start[k]) / d >= f); return i < 0 ? NaN : r.s[i];
 }
 const CTL_ROWS = [
+  ["The air: altitude (m), warmer than standard (K)", r => r.ambient
+    ? `${fmt(r.ambient.altitude, 5)} m, ${r.ambient.delta_t >= 0 ? "+" : ""}${fmt(r.ambient.delta_t, 3)} K`
+    : `${fmt(r.controls.T0, 4)} K, ${fmt(r.controls.p0, 5)} Pa`],
+  ["Air density, × the design flight's", r => r.density_ratio, 3],
   ["Peak turbine inlet temperature (K)", r => Math.max(...r.Tt4), 5],
   ["Above the final steady temperature (K)", r => Math.max(...r.Tt4) - r.end.Tt4, 3],
   ["Lowest LP flow coefficient", r => Math.min(...r.phi_lp), 4],
@@ -1904,7 +1928,12 @@ function ctlTable() {
   }
   if (r && r.s.length && Math.max(r.settled_lp, r.settled_hp) > 0.005 && !r.stop) {
     const d = document.createElement("div"); d.className = "note";
-    d.textContent = `The run ends before the shafts settle (still ${fmt(Math.max(r.settled_lp, r.settled_hp) * 100, 2)} % short of a final steady speed). A slow LP shaft (response time ${fmt(C.rho, 2)} × the HP's) needs a longer run.`;
+    // Plan § 27: in thin air the shafts are slow too, on the design flight's clock.
+    const why = [];
+    if (r.density_ratio < 1) why.push(`the air is ${fmt(r.density_ratio * 100, 2)} % as dense as at the design flight, so both shafts spin up more slowly`);
+    if (r.controls.rho > 1) why.push(`a slow LP shaft (response time ${fmt(r.controls.rho, 2)} × the HP's)`);
+    d.textContent = `The run ends before the shafts settle (still ${fmt(Math.max(r.settled_lp, r.settled_hp) * 100, 2)} % short of a final steady speed).` +
+      (why.length ? ` Here ${why.join(", and ")}: a longer run settles further.` : " A longer run settles further.");
     notes.appendChild(d);
   }
   $("ctl-pin-head").textContent = p ? "Pinned run" : "";

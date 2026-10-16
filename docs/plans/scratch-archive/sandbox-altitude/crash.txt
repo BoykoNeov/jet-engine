@@ -1,0 +1,88 @@
+    Finished `release` profile [optimized] target(s) in 0.84s
+     Running `W:/temp/claude/jet-altitude-probe/target\release\crash.exe`
+SOLVEFAILS #32 z -750 dT -12: At the starting throttle (600 K): the engine has no steady operating point: the model's steady solve fails. (The model says: nozzle back-pressure p9=110666 Pa exceeds total pressure pt9=101336 Pa \u2014 the nozzle cannot expand to it (raise pi_n / lower p_exit)) With the generator off this throttle does have a steady point, so the generator's load is what removes it: ask for less power, or raise t
+unknown #677 z 1400 dT 3: 
+other #687 z 14250 dT -42: "message":"rung-46 topping cannot reach Tt4_max=1480.0 at nu=(0.9571,0.6612) -- redline below the flow's floor Tt4.","s_last":0.7600000000000003,"s":0.7800000000000004,"mixture":0.03351469683692824,"min_fuel_fraction":1.0},"s":[0.0,0.02,0.04,0.06,0.08,0.1,0.12000000000000001,0.14,0.16,0.18,0.1999999
+SOLVEFAILS #825 z 11400 dT 44.5: At the final throttle (610 K): the engine has no steady operating point: the model's steady solve fails. (The model says: nozzle back-pressure p9=21317 Pa exceeds total pressure pt9=19755 Pa \u2014 the nozzle cannot expand to it (raise pi_n / lower p_exit))"}
+unknown #932 z 17350 dT 26: 
+  393  [z  -1000.. 24950]  ran to the end
+   45  [z   -800.. 24750]  ran, stopped early
+    2  [z  14950.. 18400]  refused: A slow valve cannot run beside the temperatur
+    1  [z  12750.. 12750]  refused: At the final throttle (1650 K), holding HP sp
+    1  [z   4400..  4400]  refused: At the final throttle (690 K), the control ho
+    1  [z   2600..  2600]  refused: At the final throttle (870 K), holding HP spe
+    1  [z   3800..  3800]  refused: At the final throttle (990 K), holding HP spe
+    1  [z  12950.. 12950]  refused: At the starting throttle (1090 K), holding HP
+    2  [z   -750..  8600]  refused: At the starting throttle (1110 K), holding HP
+    1  [z   9600..  9600]  refused: At the starting throttle (1160 K), holding HP
+    1  [z   6050..  6050]  refused: At the starting throttle (1230 K), the contro
+    2  [z   6600..  8000]  refused: At the starting throttle (1260 K), holding HP
+    1  [z  14400.. 14400]  refused: At the starting throttle (1260 K), the contro
+    1  [z   5100..  5100]  refused: At the starting throttle (1390 K), holding HP
+    1  [z  16650.. 16650]  refused: At the starting throttle (1430 K), the contro
+    1  [z  18150.. 18150]  refused: At the starting throttle (1570 K), holding HP
+    1  [z  24450.. 24450]  refused: At the starting throttle (1620 K), the contro
+    2  [z  13900.. 22700]  refused: At the starting throttle (630 K), holding HP 
+    1  [z   7950..  7950]  refused: At the starting throttle (680 K), holding HP 
+    1  [z   4050..  4050]  refused: At the starting throttle (690 K), holding HP 
+    1  [z  18400.. 18400]  refused: At the starting throttle (700 K), holding HP 
+    1  [z  19750.. 19750]  refused: At the starting throttle (810 K), holding HP 
+    1  [z  22250.. 22250]  refused: At the starting throttle (820 K), holding HP 
+    1  [z  18150.. 18150]  refused: At the starting throttle (870 K), the control
+    1  [z  22650.. 22650]  refused: At the starting throttle (910 K), the control
+    1  [z  13000.. 13000]  refused: At the starting throttle (930 K), the control
+    1  [z  16900.. 16900]  refused: At the starting throttle (940 K), holding HP 
+    1  [z  15350.. 15350]  refused: At the starting throttle (960 K), holding HP 
+    1  [z  14800.. 14800]  refused: At the starting throttle (970 K), the control
+    1  [z  14500.. 14500]  refused: At the starting throttle (980 K), the control
+    1  [z   1600..  1600]  refused: At the starting throttle (990 K), holding HP 
+    1  [z   2700..  2700]  refused: The fan-speed governor's gain must be above 0
+    3  [z  22600.. 24900]  refused: The fan-speed governor's time constant must b
+   30  [z   1850.. 24000]  refused: The governor runs with the instant limiters o
+   17  [z   1850.. 23250]  refused: The governor runs with the instant valve only
+    4  [z   5000.. 20600]  refused: The realistic release and the temperature lim
+    4  [z   -450..  3850]  refused: The speed governor's gain must be above 0 and
+    2  [z  20150.. 23900]  refused: The speed governor's time constant must be at
+   88  [z   -600.. 24750]  refused: The temperature limiter's lag delays the limi
+    1  [z   1900..  1900]  refused: [ 0-5  km] With this
+   14  [z   -650..  4650]  refused: [ 0-5  km] acceleration schedule
+    2  [z    450..   850]  refused: [ 0-5  km] generator would take
+   19  [z   -750..  4700]  refused: [ 0-5  km] off the part of their maps
+    1  [z   -750..  -750]  refused: [ 0-5  km] steady solve fails
+    5  [z   2150..  4450]  refused: [ 0-5  km] thrust asked
+    1  [z   9300..  9300]  refused: [ 5-10 km] With this
+   22  [z   5050..  9450]  refused: [ 5-10 km] acceleration schedule
+    4  [z   5550..  8500]  refused: [ 5-10 km] cooling together
+    1  [z   9150..  9150]  refused: [ 5-10 km] customer bleed would take
+    2  [z   7850..  8150]  refused: [ 5-10 km] does not settle
+    2  [z   5700..  7150]  refused: [ 5-10 km] generator would take
+   16  [z   5050..  9600]  refused: [ 5-10 km] off the part of their maps
+   10  [z   5000..  9050]  refused: [ 5-10 km] thrust asked
+    5  [z  11100.. 14500]  refused: [10-15 km] With this
+   22  [z  10100.. 14750]  refused: [10-15 km] acceleration schedule
+    5  [z  12100.. 14400]  refused: [10-15 km] cooling together
+    7  [z  12550.. 14950]  refused: [10-15 km] customer bleed would take
+   10  [z  10550.. 13850]  refused: [10-15 km] generator would take
+   20  [z  10000.. 14300]  refused: [10-15 km] off the part of their maps
+    1  [z  11400.. 11400]  refused: [10-15 km] steady solve fails
+    6  [z  10700.. 13750]  refused: [10-15 km] thrust asked
+    6  [z  16800.. 19650]  refused: [15-20 km] With this
+   20  [z  15000.. 19850]  refused: [15-20 km] acceleration schedule
+   11  [z  15300.. 19950]  refused: [15-20 km] cooling together
+   21  [z  15200.. 19900]  refused: [15-20 km] customer bleed would take
+    4  [z  15800.. 19300]  refused: [15-20 km] does not settle
+    6  [z  15100.. 19600]  refused: [15-20 km] generator would take
+   10  [z  15050.. 18450]  refused: [15-20 km] off the part of their maps
+    8  [z  15200.. 19800]  refused: [15-20 km] thrust asked
+   27  [z  20200.. 24750]  refused: [20-25 km] With this
+   13  [z  20000.. 23550]  refused: [20-25 km] acceleration schedule
+    7  [z  20350.. 24800]  refused: [20-25 km] cooling together
+   13  [z  20000.. 24750]  refused: [20-25 km] customer bleed would take
+    8  [z  21250.. 24800]  refused: [20-25 km] does not settle
+   10  [z  20150.. 22950]  refused: [20-25 km] generator would take
+   31  [z  20200.. 24950]  refused: [20-25 km] off the part of their maps
+    8  [z  20050.. 24300]  refused: [20-25 km] thrust asked
+    1  [z  25000.. 25000]  refused: [25-30 km] off the part of their maps
+stop kinds: {"floor_unreachable": 30, "lean": 4, "other": 1, "rich": 8, "unknown": 2}
+0 panics; total 61.8 s, median 0.011 s, slowest 1.31 / 1.29 / 1.01 s
+slowest request: {"op":"controls","controls":{"T0":218.76563591404718,"p0":3361.44664827578,"shape":"tilted","lever":"bleed","bleed_mode":"schedule","valve_speed":"instant","redline_on":0,"gov_lag_on":0,"accel_on":1,"floor_on":0,"floor_ref":"phi","floor_phi":0.75,"release_on":0,"govern":1,"hold":"thrust","thrust_by":"true","speed_law":"prop","gov_tau":0.44,"gov_gain":21,"generator":"off","generator_power":0.005,"customer":"share","customer_share":0.05,"customer_amount":0.05,"cool_vane":0,"cool_blade":0,"metal_on":1,"from":1010,"to":1640,"ramp":1.2,"settle":5.800000000000001,"rho":0.8}}

@@ -1,0 +1,142 @@
+    Finished `release` profile [optimized] target(s) in 0.43s
+     Running `W:/temp/claude/jet-altitude-probe/target\release\stepcheck.exe`
+bare default                     flow/press design : pts 126/126 fine 501  max dphi 2.4e-9  max dTt4 0.00 K  peak 1695.4 vs 1695.4
+bare default                     flow/press SL std : pts 126/126 fine 501  max dphi 9.0e-9  max dTt4 0.00 K  peak 1586.9 vs 1586.9
+bare default                     flow/press SL +40 : pts 126/126 fine 501  max dphi 3.4e-9  max dTt4 0.00 K  peak 1597.2 vs 1597.2
+bare default                     flow/press SL -40 : pts 126/126 fine 501  max dphi 2.4e-8  max dTt4 0.00 K  peak 1563.5 vs 1563.5
+bare default                     flow/press 15 km  : pts 126/126 fine 501  max dphi 1.1e-10  max dTt4 0.00 K  peak 1936.6 vs 1936.6
+bare default                     flat-lp    design : pts 126/126 fine 501  max dphi 3.8e-9  max dTt4 0.00 K  peak 1690.5 vs 1690.5
+bare default                     flat-lp    SL std : pts 126/126 fine 501  max dphi 1.4e-8  max dTt4 0.00 K  peak 1581.5 vs 1581.5
+bare default                     flat-lp    SL +40 : pts 126/126 fine 501  max dphi 4.3e-9  max dTt4 0.00 K  peak 1594.7 vs 1594.7
+bare default                     flat-lp    SL -40 : pts 126/126 fine 501  max dphi 5.6e-8  max dTt4 0.00 K  peak 1553.4 vs 1553.4
+bare default                     flat-lp    15 km  : pts 126/126 fine 501  max dphi 9.9e-11  max dTt4 0.00 K  peak 1955.7 vs 1955.7
+bare ramp 0.02                   flow/press design : pts 102/102 fine 405  max dphi 1.0e-6  max dTt4 0.00 K  peak 2027.8 vs 2027.8
+bare ramp 0.02                   flow/press SL std : pts 102/102 fine 405  max dphi 1.2e-6  max dTt4 0.00 K  peak 1937.6 vs 1937.6
+bare ramp 0.02                   flow/press SL +40 : pts 102/102 fine 405  max dphi 7.2e-7  max dTt4 0.00 K  peak 1863.4 vs 1863.4
+bare ramp 0.02                   flow/press SL -40 : pts 102/102 fine 405  max dphi 2.3e-6  max dTt4 0.01 K  peak 2007.1 vs 2007.1
+bare ramp 0.02                   flow/press 15 km  : pts 102/102 fine 405  max dphi 3.9e-7  max dTt4 0.00 K  peak 2106.0 vs 2106.0
+bare ramp 0.02                   flat-lp    design : pts 102/102 fine 405  max dphi 9.4e-7  max dTt4 0.00 K  peak 2039.8 vs 2039.8
+bare ramp 0.02                   flat-lp    SL std : pts 102/102 fine 405  max dphi 1.1e-6  max dTt4 0.00 K  peak 1939.2 vs 1939.2
+bare ramp 0.02                   flat-lp    SL +40 : pts 102/102 fine 405  max dphi 6.8e-7  max dTt4 0.00 K  peak 1863.0 vs 1863.0
+bare ramp 0.02                   flat-lp    SL -40 : pts 102/102 fine 405  max dphi 2.1e-6  max dTt4 0.00 K  peak 2018.9 vs 2018.9
+bare ramp 0.02                   flat-lp    15 km  : pts 102/102 fine 405  max dphi 3.7e-7  max dTt4 0.00 K  peak 2145.2 vs 2145.2
+redline                          flow/press design : pts 126/126 fine 501  max dphi 1.2e-5  max dTt4 0.01 K  peak 1480.0 vs 1480.0
+redline                          flow/press SL std : pts 126/126 fine 501  max dphi 2.9e-6  max dTt4 0.00 K  peak 1480.0 vs 1480.0
+redline                          flow/press SL +40 : pts 126/126 fine 501  max dphi 1.5e-6  max dTt4 0.00 K  peak 1480.0 vs 1480.0
+redline                          flow/press SL -40 : pts 126/126 fine 501  max dphi 4.3e-6  max dTt4 0.01 K  peak 1480.0 vs 1480.0
+redline                          flow/press 15 km  : pts 126/126 fine 501  max dphi 7.2e-8  max dTt4 0.00 K  peak 1480.0 vs 1480.0
+redline                          flat-lp    design : pts 126/126 fine 501  max dphi 9.6e-6  max dTt4 0.01 K  peak 1480.0 vs 1480.0
+redline                          flat-lp    SL std : pts 126/126 fine 501  max dphi 3.8e-6  max dTt4 0.01 K  peak 1480.0 vs 1480.0
+redline                          flat-lp    SL +40 : pts 126/126 fine 501  max dphi 3.4e-6  max dTt4 0.00 K  peak 1480.0 vs 1480.0
+redline                          flat-lp    SL -40 : pts 126/126 fine 501  max dphi 4.0e-6  max dTt4 0.01 K  peak 1480.0 vs 1480.0
+redline                          flat-lp    15 km  : pts 126/126 fine 501  max dphi 1.6e-6  max dTt4 0.00 K  peak 1480.0 vs 1480.0
+gov lag 0.02                     flow/press design : pts 126/126 fine 501  max dphi 9.4e-5  max dTt4 0.58 K  peak 1504.3 vs 1504.3
+gov lag 0.02                     flow/press SL std : pts 126/126 fine 501  max dphi 4.4e-5  max dTt4 0.24 K  peak 1497.0 vs 1497.0
+gov lag 0.02                     flow/press SL +40 : pts 126/126 fine 501  max dphi 4.1e-5  max dTt4 0.22 K  peak 1498.5 vs 1498.5
+gov lag 0.02                     flow/press SL -40 : pts 126/126 fine 501  max dphi 4.6e-5  max dTt4 0.25 K  peak 1494.9 vs 1494.9
+gov lag 0.02                     flow/press 15 km  : pts 126/126 fine 501  max dphi 4.9e-5  max dTt4 0.30 K  peak 1517.5 vs 1517.6
+gov lag 0.02                     flat-lp    design : pts 126/126 fine 501  max dphi 6.9e-5  max dTt4 0.43 K  peak 1504.0 vs 1504.0
+gov lag 0.02                     flat-lp    SL std : pts 126/126 fine 501  max dphi 4.4e-5  max dTt4 0.24 K  peak 1496.6 vs 1496.6
+gov lag 0.02                     flat-lp    SL +40 : pts 126/126 fine 501  max dphi 4.3e-5  max dTt4 0.22 K  peak 1498.3 vs 1498.3
+gov lag 0.02                     flat-lp    SL -40 : pts 126/126 fine 501  max dphi 4.5e-5  max dTt4 0.26 K  peak 1494.0 vs 1494.0
+gov lag 0.02                     flat-lp    15 km  : pts 126/126 fine 501  max dphi 8.4e-5  max dTt4 0.52 K  peak 1518.5 vs 1518.5
+release 0.02/0.02 floor          flow/press design : pts 126/126 fine 501  max dphi 5.7e-5  max dTt4 0.39 K  peak 1702.7 vs 1703.7
+release 0.02/0.02 floor          flow/press SL std : pts 31/126 fine 123  max dphi 2.8e-4  max dTt4 0.97 K  peak 1000.0 vs 1000.0
+release 0.02/0.02 floor          flow/press SL +40 : pts 7/126 fine 26  max dphi 6.9e-4  max dTt4 2.10 K  peak 1000.0 vs 1000.0
+release 0.02/0.02 floor          flow/press SL -40 : pts 126/126 fine 501  max dphi 2.4e-8  max dTt4 0.00 K  peak 1563.5 vs 1563.5
+release 0.02/0.02 floor          flow/press 15 km  : pts 126/126 fine 501  max dphi 1.1e-10  max dTt4 0.00 K  peak 1936.6 vs 1936.6
+release 0.02/0.02 floor          flat-lp    design : pts 51/126 fine 201  max dphi 1.7e-4  max dTt4 0.65 K  peak 1000.0 vs 1000.0
+release 0.02/0.02 floor          flat-lp    SL std : pts 4/126 fine 13  max dphi 8.7e-4  max dTt4 2.62 K  peak 1000.0 vs 1000.0
+release 0.02/0.02 floor          flat-lp    SL +40 : pts 0/126 fine 0  max dphi 0.0e0  max dTt4 0.00 K  peak 0.0 vs 0.0
+release 0.02/0.02 floor          flat-lp    SL -40 : pts 31/126 fine 124  max dphi 1.7e-4  max dTt4 0.62 K  peak 1000.0 vs 1000.0
+release 0.02/0.02 floor          flat-lp    15 km  : pts 126/126 fine 501  max dphi 7.0e-5  max dTt4 0.38 K  peak 1836.9 vs 1837.5
+accel + release                  flow/press design : pts 126/126 fine 501  max dphi 6.9e-5  max dTt4 0.34 K  peak 1498.8 vs 1498.8
+accel + release                  flow/press SL std : pts 126/126 fine 501  max dphi 3.7e-5  max dTt4 0.17 K  peak 1467.6 vs 1467.6
+accel + release                  flow/press SL +40 : pts 126/126 fine 501  max dphi 7.6e-5  max dTt4 0.40 K  peak 1464.0 vs 1464.1
+accel + release                  flow/press SL -40 : pts 126/126 fine 501  max dphi 5.2e-5  max dTt4 0.28 K  peak 1489.0 vs 1489.0
+accel + release                  flow/press 15 km  : pts 126/126 fine 501  max dphi 9.8e-5  max dTt4 0.49 K  peak 1428.6 vs 1428.6
+accel + release                  flat-lp    design : pts 126/126 fine 501  max dphi 4.7e-5  max dTt4 0.28 K  peak 1490.8 vs 1490.8
+accel + release                  flat-lp    SL std : pts 126/126 fine 501  max dphi 6.7e-5  max dTt4 0.32 K  peak 1463.0 vs 1463.0
+accel + release                  flat-lp    SL +40 : pts 126/126 fine 501  max dphi 7.3e-5  max dTt4 0.38 K  peak 1461.7 vs 1461.7
+accel + release                  flat-lp    SL -40 : pts 126/126 fine 501  max dphi 3.2e-5  max dTt4 0.16 K  peak 1488.8 vs 1488.8
+accel + release                  flat-lp    15 km  : pts 126/126 fine 501  max dphi 5.9e-5  max dTt4 0.31 K  peak 1425.9 vs 1425.9
+slow valve 0.02                  flow/press design : pts 126/126 fine 501  max dphi 9.1e-5  max dTt4 0.02 K  peak 1704.6 vs 1704.6
+slow valve 0.02                  flow/press SL std : pts 126/126 fine 501  max dphi 6.7e-5  max dTt4 0.01 K  peak 1608.6 vs 1608.6
+slow valve 0.02                  flow/press SL +40 : pts 126/126 fine 501  max dphi 4.4e-5  max dTt4 0.01 K  peak 1624.5 vs 1624.5
+slow valve 0.02                  flow/press SL -40 : pts 126/126 fine 501  max dphi 5.4e-5  max dTt4 0.01 K  peak 1564.4 vs 1564.4
+slow valve 0.02                  flow/press 15 km  : pts 126/126 fine 501  max dphi 7.2e-5  max dTt4 0.02 K  peak 1943.6 vs 1943.6
+slow valve 0.02                  flat-lp    design : pts 126/126 fine 501  max dphi 6.8e-5  max dTt4 0.00 K  peak 1725.2 vs 1725.2
+slow valve 0.02                  flat-lp    SL std : pts 126/126 fine 501  max dphi 1.2e-4  max dTt4 0.00 K  peak 1614.8 vs 1614.8
+slow valve 0.02                  flat-lp    SL +40 : REFUSED At the starting throttle (1000 K): the engine has no steady operating point: the compresso
+slow valve 0.02                  flat-lp    SL -40 : pts 126/126 fine 501  max dphi 6.4e-5  max dTt4 0.00 K  peak 1566.5 vs 1566.5
+slow valve 0.02                  flat-lp    15 km  : pts 126/126 fine 501  max dphi 7.2e-5  max dTt4 0.00 K  peak 1962.6 vs 1962.6
+slow valve 0.02 close own 0.02   flow/press design : pts 126/126 fine 501  max dphi 9.2e-5  max dTt4 0.02 K  peak 1704.4 vs 1704.4
+slow valve 0.02 close own 0.02   flow/press SL std : pts 126/126 fine 501  max dphi 6.6e-5  max dTt4 0.01 K  peak 1608.5 vs 1608.5
+slow valve 0.02 close own 0.02   flow/press SL +40 : pts 126/126 fine 501  max dphi 4.4e-5  max dTt4 0.01 K  peak 1624.5 vs 1624.5
+slow valve 0.02 close own 0.02   flow/press SL -40 : pts 126/126 fine 501  max dphi 3.8e-5  max dTt4 0.01 K  peak 1564.4 vs 1564.4
+slow valve 0.02 close own 0.02   flow/press 15 km  : pts 126/126 fine 501  max dphi 4.6e-5  max dTt4 0.02 K  peak 1943.2 vs 1943.2
+slow valve 0.02 close own 0.02   flat-lp    design : pts 126/126 fine 501  max dphi 7.5e-5  max dTt4 0.00 K  peak 1724.9 vs 1724.9
+slow valve 0.02 close own 0.02   flat-lp    SL std : pts 126/126 fine 501  max dphi 1.2e-4  max dTt4 0.00 K  peak 1614.8 vs 1614.8
+slow valve 0.02 close own 0.02   flat-lp    SL +40 : REFUSED At the starting throttle (1000 K): the engine has no steady operating point: the compresso
+slow valve 0.02 close own 0.02   flat-lp    SL -40 : pts 126/126 fine 501  max dphi 5.6e-5  max dTt4 0.00 K  peak 1566.4 vs 1566.4
+slow valve 0.02 close own 0.02   flat-lp    15 km  : pts 126/126 fine 501  max dphi 5.5e-5  max dTt4 0.00 K  peak 1961.9 vs 1961.9
+gov speed rate 0.04              flow/press design : pts 126/126 fine 501  max dphi 4.6e-5  max dTt4 0.26 K  peak 2051.7 vs 2051.7
+gov speed rate 0.04              flow/press SL std : pts 126/126 fine 501  max dphi 3.2e-5  max dTt4 0.15 K  peak 1783.8 vs 1783.8
+gov speed rate 0.04              flow/press SL +40 : pts 126/126 fine 501  max dphi 3.7e-5  max dTt4 0.18 K  peak 1870.1 vs 1870.1
+gov speed rate 0.04              flow/press SL -40 : pts 126/126 fine 501  max dphi 2.7e-5  max dTt4 0.12 K  peak 1699.5 vs 1699.5
+gov speed rate 0.04              flow/press 15 km  : pts 126/126 fine 501  max dphi 1.2e-4  max dTt4 1.09 K  peak 2606.7 vs 2607.6
+gov speed rate 0.04              flat-lp    design : pts 126/126 fine 501  max dphi 4.6e-5  max dTt4 0.27 K  peak 2043.4 vs 2043.4
+gov speed rate 0.04              flat-lp    SL std : pts 126/126 fine 501  max dphi 3.2e-5  max dTt4 0.15 K  peak 1779.6 vs 1779.6
+gov speed rate 0.04              flat-lp    SL +40 : pts 126/126 fine 501  max dphi 3.7e-5  max dTt4 0.18 K  peak 1865.8 vs 1865.8
+gov speed rate 0.04              flat-lp    SL -40 : pts 126/126 fine 501  max dphi 2.6e-5  max dTt4 0.12 K  peak 1695.6 vs 1695.6
+gov speed rate 0.04              flat-lp    15 km  : pts 126/126 fine 501  max dphi 3.7e-4  max dTt4 2.84 K  peak 2611.0 vs 2611.0
+gov speed prop 50                flow/press design : pts 126/126 fine 501  max dphi 5.0e-5  max dTt4 0.31 K  peak 2083.5 vs 2083.5
+gov speed prop 50                flow/press SL std : pts 126/126 fine 501  max dphi 2.2e-4  max dTt4 1.26 K  peak 1804.9 vs 1804.9
+gov speed prop 50                flow/press SL +40 : pts 126/126 fine 501  max dphi 8.0e-5  max dTt4 0.46 K  peak 1893.3 vs 1893.3
+gov speed prop 50                flow/press SL -40 : pts 126/126 fine 501  max dphi 6.8e-4  max dTt4 3.98 K  peak 1720.5 vs 1720.5
+gov speed prop 50                flow/press 15 km  : pts 126/126 fine 501  max dphi 2.5e-4  max dTt4 2.24 K  peak 2601.2 vs 2601.6
+gov speed prop 50                flat-lp    design : pts 126/126 fine 501  max dphi 6.5e-5  max dTt4 0.37 K  peak 2071.1 vs 2071.1
+gov speed prop 50                flat-lp    SL std : pts 126/126 fine 501  max dphi 2.5e-4  max dTt4 1.47 K  peak 1799.0 vs 1799.0
+gov speed prop 50                flat-lp    SL +40 : pts 126/126 fine 501  max dphi 8.8e-5  max dTt4 0.52 K  peak 1887.9 vs 1887.9
+gov speed prop 50                flat-lp    SL -40 : pts 126/126 fine 501  max dphi 9.1e-4  max dTt4 4.87 K  peak 1714.7 vs 1714.7
+gov speed prop 50                flat-lp    15 km  : pts 126/126 fine 501  max dphi 5.7e-5  max dTt4 0.44 K  peak 2602.4 vs 2603.4
+gov thrust                       flow/press design : pts 126/126 fine 501  max dphi 8.5e-8  max dTt4 0.00 K  peak 1927.4 vs 1927.4
+gov thrust                       flow/press SL std : pts 126/126 fine 501  max dphi 2.2e-7  max dTt4 0.00 K  peak 1699.7 vs 1699.7
+gov thrust                       flow/press SL +40 : pts 126/126 fine 501  max dphi 1.1e-7  max dTt4 0.00 K  peak 1765.0 vs 1765.0
+gov thrust                       flow/press SL -40 : pts 126/126 fine 501  max dphi 4.4e-7  max dTt4 0.00 K  peak 1636.2 vs 1636.2
+gov thrust                       flow/press 15 km  : pts 126/126 fine 501  max dphi 4.6e-6  max dTt4 0.03 K  peak 2564.7 vs 2565.6
+gov thrust                       flat-lp    design : pts 126/126 fine 501  max dphi 1.5e-7  max dTt4 0.00 K  peak 1898.7 vs 1898.7
+gov thrust                       flat-lp    SL std : pts 126/126 fine 501  max dphi 4.7e-7  max dTt4 0.00 K  peak 1683.3 vs 1683.3
+gov thrust                       flat-lp    SL +40 : pts 126/126 fine 501  max dphi 1.7e-7  max dTt4 0.00 K  peak 1758.0 vs 1758.0
+gov thrust                       flat-lp    SL -40 : pts 126/126 fine 501  max dphi 1.4e-6  max dTt4 0.00 K  peak 1611.1 vs 1611.1
+gov thrust                       flat-lp    15 km  : pts 126/126 fine 501  max dphi 3.9e-5  max dTt4 0.23 K  peak 2563.7 vs 2564.2
+gov n1 rate 0.04                 flow/press design : pts 126/126 fine 501  max dphi 5.3e-5  max dTt4 0.32 K  peak 2029.4 vs 2029.5
+gov n1 rate 0.04                 flow/press SL std : pts 126/126 fine 501  max dphi 3.6e-5  max dTt4 0.19 K  peak 1714.7 vs 1714.7
+gov n1 rate 0.04                 flow/press SL +40 : pts 126/126 fine 501  max dphi 4.9e-5  max dTt4 0.27 K  peak 1773.5 vs 1773.5
+gov n1 rate 0.04                 flow/press SL -40 : pts 126/126 fine 501  max dphi 3.0e-5  max dTt4 0.14 K  peak 1657.2 vs 1657.2
+gov n1 rate 0.04                 flow/press 15 km  : pts 126/126 fine 501  max dphi 1.1e-3  max dTt4 9.23 K  peak 2614.2 vs 2614.2
+gov n1 rate 0.04                 flat-lp    design : pts 126/126 fine 501  max dphi 4.9e-5  max dTt4 0.32 K  peak 1864.5 vs 1864.5
+gov n1 rate 0.04                 flat-lp    SL std : pts 126/126 fine 501  max dphi 4.4e-5  max dTt4 0.22 K  peak 1634.8 vs 1634.8
+gov n1 rate 0.04                 flat-lp    SL +40 : pts 126/126 fine 501  max dphi 6.3e-5  max dTt4 0.34 K  peak 1705.0 vs 1705.0
+gov n1 rate 0.04                 flat-lp    SL -40 : pts 126/126 fine 501  max dphi 2.7e-5  max dTt4 0.13 K  peak 1569.5 vs 1569.5
+gov n1 rate 0.04                 flat-lp    15 km  : pts 126/126 fine 501  max dphi 4.9e-4  max dTt4 4.19 K  peak 2589.7 vs 2590.7
+gov n1 prop 50                   flow/press design : pts 126/126 fine 501  max dphi 6.8e-5  max dTt4 0.42 K  peak 2068.5 vs 2068.5
+gov n1 prop 50                   flow/press SL std : pts 126/126 fine 501  max dphi 3.4e-4  max dTt4 1.99 K  peak 1727.6 vs 1727.6
+gov n1 prop 50                   flow/press SL +40 : pts 126/126 fine 501  max dphi 1.3e-4  max dTt4 0.74 K  peak 1787.3 vs 1787.3
+gov n1 prop 50                   flow/press SL -40 : pts 126/126 fine 501  max dphi 1.0e-3  max dTt4 6.04 K  peak 1670.7 vs 1670.6
+gov n1 prop 50                   flow/press 15 km  : pts 126/126 fine 501  max dphi 1.1e-4  max dTt4 1.02 K  peak 2608.1 vs 2608.6
+gov n1 prop 50                   flat-lp    design : pts 126/126 fine 501  max dphi 8.9e-5  max dTt4 0.54 K  peak 1904.5 vs 1904.5
+gov n1 prop 50                   flat-lp    SL std : pts 126/126 fine 501  max dphi 4.3e-4  max dTt4 2.47 K  peak 1649.8 vs 1649.8
+gov n1 prop 50                   flat-lp    SL +40 : pts 126/126 fine 501  max dphi 1.5e-4  max dTt4 0.85 K  peak 1720.5 vs 1720.5
+gov n1 prop 50                   flat-lp    SL -40 : pts 126/126 fine 501  max dphi 1.5e-3  max dTt4 8.40 K  peak 1585.8 vs 1585.7
+gov n1 prop 50                   flat-lp    15 km  : pts 126/126 fine 501  max dphi 1.0e-5  max dTt4 0.05 K  peak 2586.3 vs 2586.3
+gov epr                          flow/press design : pts 126/126 fine 501  max dphi 4.8e-7  max dTt4 0.00 K  peak 1936.5 vs 1936.5
+gov epr                          flow/press SL std : pts 126/126 fine 501  max dphi 1.7e-6  max dTt4 0.01 K  peak 1703.7 vs 1703.7
+gov epr                          flow/press SL +40 : pts 126/126 fine 501  max dphi 1.2e-6  max dTt4 0.01 K  peak 1771.9 vs 1771.9
+gov epr                          flow/press SL -40 : pts 126/126 fine 501  max dphi 2.7e-6  max dTt4 0.01 K  peak 1640.5 vs 1640.5
+gov epr                          flow/press 15 km  : pts 126/126 fine 501  max dphi 9.5e-6  max dTt4 0.06 K  peak 2576.5 vs 2577.8
+gov epr                          flat-lp    design : pts 126/126 fine 501  max dphi 7.4e-7  max dTt4 0.00 K  peak 1908.0 vs 1908.1
+gov epr                          flat-lp    SL std : pts 126/126 fine 501  max dphi 2.4e-6  max dTt4 0.01 K  peak 1682.9 vs 1682.9
+gov epr                          flat-lp    SL +40 : pts 126/126 fine 501  max dphi 1.5e-6  max dTt4 0.01 K  peak 1758.7 vs 1758.7
+gov epr                          flat-lp    SL -40 : pts 126/126 fine 501  max dphi 5.9e-6  max dTt4 0.02 K  peak 1613.2 vs 1613.2
+gov epr                          flat-lp    15 km  : pts 126/126 fine 501  max dphi 2.8e-5  max dTt4 0.17 K  peak 2576.9 vs 2576.9

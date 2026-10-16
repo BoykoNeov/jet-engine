@@ -143,6 +143,12 @@ pressure ratio across the engine or from the fan speed, turned into thrust by a 
 engine with the generator off, or on this one). The thrust chart then shows the thrust the control believes beside the
 thrust the engine gives.
 
+**Flight (plan § 27, 2026-10-16):** the *Flight* fieldset's altitude and "warmer than a standard day" (linked to the
+air temperature and pressure, as on *Fly it*) also fly this engine; Mach stays 0.85. The hardware stays as designed at
+250 K / 50 kPa; every steady point and the march run in the new air, and time stays in the design flight's spool time
+constant, so the same move reads slower — and runs hotter — up high. The speed governor's two step-checked limits scale
+with the air's density (a smaller gain in denser air, a longer time constant in thinner).
+
 **Readouts:** turbine temperature against the redline, both shaft speeds, burnt vs scheduled fuel, each
 compressor's flow coefficient against its (moving) stall line and the floor, thrust (the bleed's dumped air
 pays its ram drag), the lever's setting; a strip showing which control holds the fuel at each moment; tiles
@@ -263,6 +269,11 @@ red until the page is rebuilt and committed — the numbers have not changed.
 - `tests/sandbox_cooling.rs` — rung 93: every sweep point and the knob form IS `FixedEngine` / `try_limited_design` /
   `try_max_tt4`, bit for bit, on a rig built in the test; the slam's metal readout reads rung 93's correlation at the
   march's own instants and moves nothing else in the run; each refusal in words.
+- `tests/sandbox_altitude.rs` — the Controls view's altitude knob (plan § 27): missing knobs are the earlier page; the
+  ends scale with the air pressure (same corrected point, airflow and thrust ∝ p0); the hardware stays captured at the
+  design flight (the 1500 K point leaves design speed at sea level and 11 km); the march runs in the new air on the
+  design clock (accelerations ∝ p0; a march with time ÷ k retraces the design run); the governor's limits scale with
+  the density; each new refusal in words.
 - `tests/sandbox_page.rs` — the joints: the page is its template + its build; every element the
   script looks up exists; every knob (design and fly) is a setting and back; the dropdowns offer the
   model's choices; every export and op the page uses exists.

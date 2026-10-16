@@ -303,8 +303,8 @@ try {
   const cOpen = await waitFor(`window.sandbox.view() === 'controls' && window.sandbox.ctlState === 'done' && window.sandbox.last && window.sandbox.last.controls !== undefined`, 30000);
   const c0 = await ev('window.sandbox.last');
   const ec = c0 ? close(c0, nativeOf('{"op":"controls","controls":{}}')) : 'no run';
-  const cvis = await ev(`['ctl-set','ctl-sw-set','ctl-lever-set','ctl-out','ctl-card','flight-set','ts-card','blades-set'].map(i => document.getElementById(i).hidden)`);
-  check('controls_open_on_the_bare_run_and_match_native', cOpen && !ec && JSON.stringify(cvis) === '[false,false,false,false,false,true,true,true]', (ec || '') + JSON.stringify(cvis));
+  const cvis = await ev(`['ctl-set','ctl-sw-set','ctl-lever-set','ctl-out','ctl-card','flight-set','ts-card','blades-set','M0-row','ctl-flight-note'].map(i => document.getElementById(i).hidden)`);
+  check('controls_open_on_the_bare_run_and_match_native', cOpen && !ec && JSON.stringify(cvis) === '[false,false,false,false,false,false,true,true,true,false]', (ec || '') + JSON.stringify(cvis));
   // A switch: the temperature limiter, through its checkbox, cuts the fuel and holds the redline.
   await ev(`(() => { const c = document.getElementById('ctl-redline_on'); c.checked = true; c.dispatchEvent(new Event('change')); })()`);
   const capped = await waitFor(`window.sandbox.ctlState === 'done' && window.sandbox.last.controls && window.sandbox.last.controls.redline_on === 1`, 30000);
@@ -512,6 +512,31 @@ try {
   await ev(`document.getElementById('ctlq-Tt4').click()`);
   await ev(`window.sandbox.controls({lever: 'none', floor_on: 0, floor_phi: 0.75, floor_ref: 'phi', bleed_mode: 'schedule',
             valve_ref: 'phi', valve_speed: 'instant', valve_close: 'same', customer: 'off'}).then(r => r.run)`);
+  // Plan § 27: the altitude knob. Pin the design-flight run, drag the shared Flight fieldset's altitude to 15 km -- it
+  // sits under the engine's own fieldset, without Mach -- and the run flies in thin air: the pressure is the standard
+  // atmosphere's, the same move runs hotter than the pinned one, the table names the air, and the not-settled note says
+  // why. Then type a pressure: the altitude follows it (the pressure altitude).
+  await ev(`document.getElementById('unpin').click()`);
+  await ev(`window.sandbox.controls({}).then(r => r.run)`);
+  await ev(`document.getElementById('pin').click()`);
+  const basePeak = Math.max(...nativeOf('{"op":"controls","controls":{}}').Tt4);
+  await ev(`(() => { const a = document.getElementById('altitude'); a.value = '15000'; a.dispatchEvent(new Event('input', {bubbles: true})); })()`);
+  const aOn = await waitFor(`window.sandbox.ctlState === 'done' && window.sandbox.last.controls && window.sandbox.last.controls.p0 < 13000`, 30000);
+  const ar = await ev(`(() => { const r = window.sandbox.last, fs = document.getElementById('flight-set'); return [r.controls.p0,
+      r.controls.T0, Math.max(...r.Tt4), r.density_ratio, fs.hidden, fs.previousElementSibling && fs.previousElementSibling.id,
+      document.getElementById('M0-row').hidden, document.getElementById('ctl-flight-note').hidden,
+      [...document.getElementById('ctl-table').tBodies[0].rows].some(t => /^15,000 m/.test(t.cells[1].textContent)),
+      /as dense as at the design flight/.test(document.getElementById('ctl-stops').textContent),
+      document.getElementById('ctl-pin-head').textContent, document.getElementById('d-cpk').textContent]; })()`);
+  check('the_altitude_knob_flies_the_two_shaft_engine_in_thin_air', aOn && Math.abs(ar[0] - 12111.8) < 1 && ar[1] < 220
+        && ar[2] > basePeak + 100 && ar[3] < 0.3 && ar[4] === false && ar[5] === 'ctl-set' && ar[6] === true && ar[7] === false
+        && ar[8] && ar[9] && ar[10] === 'Pinned run' && /^\+/.test(ar[11]), JSON.stringify([aOn, basePeak, ar]));
+  if (process.env.SANDBOX_SHOTS) { await shot('controls-altitude'); await shot('controls-altitude-phone', 390); }
+  await ev(`(() => { const p = document.getElementById('p0'); p.value = '50000'; p.dispatchEvent(new Event('input', {bubbles: true})); })()`);
+  const pOn = await waitFor(`window.sandbox.ctlState === 'done' && window.sandbox.last.controls && window.sandbox.last.controls.p0 === 50000`, 30000);
+  const alt = await ev(`+document.getElementById('altitude').value`);
+  check('a_typed_pressure_moves_the_altitude_to_its_pressure_altitude', pOn && Math.abs(alt - 5579) <= 1, JSON.stringify([pOn, alt]));
+  await ev(`window.sandbox.controls({T0: 250, p0: 50000}).then(r => r.run)`);
   if (process.env.SANDBOX_SHOTS) {
     await ev(`window.sandbox.controls({settle: 2, ramp: 0.5, lever: 'bleed'})`);
     await shot('controls-light'); await shot('controls-dark', 1280, true); await shot('controls-phone', 390);

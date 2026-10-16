@@ -1,0 +1,16 @@
+design flight: pressure altitude 5579.3 m, deviation -1.916 K
+p0 x0.5 start: dnuL 0.00e0 dnuH 0.00e0 mdot/k 0.00e0 fuel/k 0.00e0 thrust/k 0.00e0
+p0 x0.5 end: dnuL 0.00e0 dnuH 0.00e0 mdot/k 0.00e0 fuel/k 0.00e0 thrust/k 0.00e0
+p0 x2 start: dnuL 0.00e0 dnuH 0.00e0 mdot/k 0.00e0 fuel/k 0.00e0 thrust/k 0.00e0
+p0 x2 end: dnuL 0.00e0 dnuH 0.00e0 mdot/k 0.00e0 fuel/k 0.00e0 thrust/k 0.00e0
+z  -1000: T0 294.7 p0 113931  start nuH 0.7854 end nuH 0.9464 thrust 364.6->928.4  pts 126/126 peakTt4 1571.0  last nuH 0.9464 (gap 5.46e-5)  9 ms
+z      0: T0 288.1 p0 101325  start nuH 0.7859 end nuH 0.9480 thrust 346.4->873.9  pts 126/126 peakTt4 1586.9  last nuH 0.9479 (gap 9.03e-5)  10 ms
+z   2000: T0 275.2 p0 79501  start nuH 0.7869 end nuH 0.9513 thrust 310.6->770.4  pts 126/126 peakTt4 1622.2  last nuH 0.9511 (gap 2.31e-4)  10 ms
+z   4000: T0 262.2 p0 61660  start nuH 0.7882 end nuH 0.9551 thrust 275.9->674.3  pts 126/126 peakTt4 1662.0  last nuH 0.9545 (gap 5.47e-4)  9 ms
+z   5574: T0 252.0 p0 50036  start nuH 0.7895 end nuH 0.9584 thrust 249.6->603.8  pts 126/126 peakTt4 1696.4  last nuH 0.9574 (gap 1.04e-3)  10 ms
+z   8000: T0 236.2 p0 35652  start nuH 0.7920 end nuH 0.9642 thrust 211.3->504.1  pts 126/126 peakTt4 1754.0  last nuH 0.9615 (gap 2.65e-3)  9 ms
+z  11000: T0 216.8 p0 22700  start nuH 0.7960 end nuH 0.9725 thrust 168.2->395.4  pts 126/126 peakTt4 1830.3  last nuH 0.9650 (gap 7.53e-3)  9 ms
+z  13000: T0 216.6 p0 16580  start nuH 0.7961 end nuH 0.9726 thrust 123.1->289.2  pts 126/126 peakTt4 1887.3  last nuH 0.9542 (gap 1.84e-2)  10 ms
+z  15000: T0 216.6 p0 12112  start nuH 0.7961 end nuH 0.9726 thrust 89.9->211.3  pts 126/126 peakTt4 1936.6  last nuH 0.9381 (gap 3.45e-2)  9 ms
+z  18000: T0 216.6 p0 7565  start nuH 0.7961 end nuH 0.9726 thrust 56.2->132.0  pts 126/126 peakTt4 1994.7  last nuH 0.9084 (gap 6.42e-2)  9 ms
+z  20000: T0 216.6 p0 5529  start nuH 0.7961 end nuH 0.9726 thrust 41.0->96.4  pts 126/126 peakTt4 2023.8  last nuH 0.8881 (gap 8.45e-2)  9 ms

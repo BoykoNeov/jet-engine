@@ -552,7 +552,7 @@ they need their own refusal map; rungs 64–84 (the bleed LIMITER, the lagged va
 reference/rank rungs) — each has its own constructor and its subject is loop structure, not a visible
 behaviour; a flight knob on the two-shaft view — every two-spool solver kept the DESIGN ambient
 pressure as the nozzle's back-pressure, and `fly_solver`'s override (§ 10.8) was
-single-spool (repaired 2026-10-16, § 26 — the knob itself is still unbuilt).
+single-spool (repaired 2026-10-16, § 26; the knob BUILT the same day, § 27).
 
 ### 12.2 Measured (2026-10-07, scratch crates `W:\temp\claude\jet-transient-timing` and
 `…\jet-transient-wasm`, not in the repo)
@@ -1596,6 +1596,55 @@ argument. `fly_solver`'s override is gone — the model does it.
   is a bigger share of a smaller engine, real physics) and rung 40's unbalanced instant. With the old code put
   back, all five tests failed — three refused or crashed, two (32's map matcher, 40's instant) gave a wrong number.
 - `tests/sandbox_fly.rs`'s discriminator now pins the other side: the model's own solver flies 12.5 kPa.
-- **Unlocked, not built:** a flight knob on the two-shaft *Controls* view (§ 12.1 refused it on this seam — a
+- **Unlocked, then BUILT (§ 27):** a flight knob on the two-shaft *Controls* view (§ 12.1 refused it on this seam — a
   sandbox slice), and rung 96's next seam (the control's own `δ`/`θ` corrections: a table made at one flight
   condition, flown at another).
+
+## 27. Altitude on the Controls view (2026-10-16) — a sandbox page change, not a rung
+
+§ 26 unlocked it; the user asked for it ("an altitude control on the sandbox's two-shaft Controls view — build it").
+The *Flight* fieldset (altitude + "warmer than a standard day", linked both ways to `T0`/`p0` through the standard
+atmosphere — § 9.1's convention) now also flies the Controls engine; Mach stays the design's 0.85 (its row is hidden
+there). Scratch scripts and outputs: `scratch-archive/sandbox-altitude/`.
+
+- **Built** in `sandbox_controls`: `ControlsSettings` gains `t0`/`p0` (keys `T0`/`p0`, defaults = the design flight, so
+  every saved setting stays valid). `build` splits the flight in two: every CONSTRUCTOR takes the DESIGN flight (the
+  hardware stays captured at 250 K / 50 kPa / Mach 0.85), every solve and the march the flight FLOWN. Rung 96's control
+  table is built at the flight flown, so its open seam (a table made at one flight, flown at another) stays open. The
+  reply carries `ambient` (the altitude and deviation the air reads as) and `density_ratio`. The page moves the
+  *Flight* fieldset under the engine's own fieldset on this view, adds a table row naming the air and one for its
+  density, and the not-settled note names thin air as a cause. Raw `T0`/`p0` need only be above zero (as *Fly it*).
+- **Default = the earlier page, character for character**: every Controls check request (61: 48 that run, 12 refusals)
+  through a copy of the previous commit and through this one, the new `ambient` key and settings left out — 2 105
+  lines identical. The design flight is NOT a standard day: pressure altitude 5 579.3 m, 1.92 K below standard.
+- **Time stays the design flight's spool time constant** (`dν/ds = ṁ·Δw/(P_ref,design·ν)`): in thinner air the shafts
+  spin up more slowly on the same clock. On the default move (bare, flow/press) the peak `Tt4` is 1 571 K at −1 km,
+  1 696 K at 5.6 km (standard day), 1 830 K at 11 km and 2 024 K at 20 km, and the HP shaft at the end of the 2.5 τ run is
+  5e−5 / 1e−3 / 7.5e−3 / 8.5e−2 short of its final speed. The same throttle in colder air runs the shafts faster
+  (final HP speed at 1 400 K: 0.948 at sea level, 0.973 above 11 km).
+- **The governor's two step-checked limits scale with the air's DENSITY** `σ = (p0/p0d)(T0d/T0)` (exactly 1 at the design
+  flight): gain ≤ 50/max(σ,1), time constant ≥ 0.04/min(σ,1), on both shafts' laws. Measured (0.02 vs 0.005, every map):
+  at the design flight the old limits give ≤ 7e−5; unscaled, gain 50 on a cold sea-level day gave 6.8e−4 (HP) / 1.0e−3
+  (LP) and τ 0.04 at 15 km +40 K 1.1e−3. The error follows the airflow at the end more closely than the density (cold days
+  are worse than σ says), so with the density rule 14 of 720 governed runs over 0–20 km (all below 10 km) that never touch a fuel edge still
+  exceed 1e−4 (worst 2.5e−4, a cold flat-LP day at 7.5 km). In thin air the governor rides its RICH edge, where the march
+  is rougher (up to 7e−4 at the scaled limits) — rung 95 § 4's edge roughness (lean 1e−3), met in a new place. Both are
+  said on the page's note, not refused. Every other step-checked knob (the lags at one step, the release, the slow valve)
+  stays within its design-flight figure over sea level ±40 K and 15 km (worst 1.2e−4, the slow valve on flat-LP; runs that
+  stop early are left out, since there the stopping point itself moves with the step).
+- **Crash map** (§ 14.3's instrument, 1 000 requests, seed 14, altitude −1 … 25 km and ±45 K, every knob at random; and
+  400 more, seed 15, −5 … 47 km and ±100 K): **no panic.** Seed 14: 393 ran to the end, 45 stopped with a reason, the rest
+  refused in words. Refusals grow with altitude where a FIXED amount is a larger share of a thinner engine (customer air,
+  generator power, cooling beside a customer amount) and where compressors leave their maps. One new end failure: the
+  nozzle cannot push the gas out (exhaust pressure below the outside air) at a very low throttle — 3 of 1 400, 600–800 K,
+  every one in air above 250 K — now in words (`endpoint_words`). The off-map words were made flight-neutral, measured:
+  the flat-LP map's lowest throttle at sea level is 740 / 860 / 980 K on a −40 / 0 / +40 K day (530 / 650 / 770 K at
+  11 km); a fixed 5 % HP generator lifts the lowest throttle from 660 K (design flight) to 1 010 K (11 km), none in range at
+  20 km. Native median 0.011 s a request, slowest 1.3 s.
+- **Gates:** `tests/sandbox_altitude.rs` — missing keys ≡ naming the design flight; the ends' speeds equal and airflow,
+  fuel, thrust ∝ `p0` at ×0.37 and ×1.9 (1e−9); the 1500 K point is design speed only at the design flight (the
+  discriminator for a hardware re-captured at the flight flown — red-checked: with that mutation 4 of 6 tests fail); the
+  accelerations ∝ `p0` and a march at `p0`×k with time ÷ k retracing the design run; the view's march is the core's at
+  the flight flown; the density rule at both ends; every new refusal. `check_requests` adds 5; `browser.mjs` drags the
+  altitude to 15 km against a pinned design-flight run and types a pressure (the altitude follows).
+- **No Reynolds-number effect** (none in the model): component efficiencies do not fall in thin air — said on the page.

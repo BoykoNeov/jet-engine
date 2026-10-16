@@ -181,6 +181,11 @@ fn every_controls_knob_and_switch_is_a_setting_and_every_one_has_its_knob() {
     let mut knobs: Vec<String> = js_map(&t, "CTL_NUM").into_iter().map(|(_, k)| k).collect();
     // Rung 93's part life is a number set from a dropdown of preset lives, not a slider.
     knobs.push("metal_life".to_string());
+    // Plan § 27: the air is set through the shared Flight fieldset (`FLIGHT`, written to the view's settings by
+    // `target()`); Mach is in that list but not a Controls setting (the design's Mach is kept).
+    let flight = js_list(&t, "FLIGHT");
+    assert!(t.contains(r#"mode === "controls" ? C"#), "target() writes the Flight knobs into the Controls settings");
+    knobs.extend(flight.into_iter().filter(|k| d.get(k).is_some()));
     knobs.sort();
     assert_eq!(knobs, numeric_keys(&d), "the Controls number knobs");
     // The switches: every 0/1 setting, and nothing else.
