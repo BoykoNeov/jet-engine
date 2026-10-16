@@ -133,7 +133,9 @@ blade incidence (rungs 64/87, plan § 16), instantly or slowly with its own time
 share at low power (rung 90, plan § 19) — and the turbines can be cooled with HP-compressor air that comes back,
 in front of the HP rotor (vane air) or behind it (blade air) (rung 91, plan § 20). A generator can load
 either shaft — a share of that turbine's work, or a fixed power that is a larger share at low power
-(rung 92, plan § 21).
+(rung 92, plan § 21). The turbine's metal can be read along the run (rung 93, plan § 22): both
+metal temperatures at every point against their limits, from a cooling technology, a material year and a part life —
+off by default, since uncooled the metal is over its limit at every opening throttle.
 
 **Readouts:** turbine temperature against the redline, both shaft speeds, burnt vs scheduled fuel, each
 compressor's flow coefficient against its (moving) stall line and the floor, thrust (the bleed's dumped air
@@ -178,6 +180,26 @@ is let go and their sweeps stream; the three per-pocket models (16, 23, 24) take
 the model's own failures (NO no longer a trace, a flame outside the model's range, a mixing spread too wide, …)
 each have plain words, found by a crash map and driven by a test.
 
+## Cool the turbine — rung 93 (shipped 2026-10-16)
+
+Press **Cool the turbine**: the *Controls* engine's turbine given a metal limit — vanes and rotor blades, each cooled
+by its own stream of HP-compressor air (rung 91's) — sized by Gauntner's 1980 NASA correlation
+(`sandbox_cooling.rs`, plan § 22).
+
+**Knobs:** *this engine, run hotter* (the hardware fixed) or *redesigned at each temperature* (a fresh cooled
+design); the cooling technology (convection, coated, film, transpiration); the material year and the part life,
+which set both limits by Gauntner's relation; the map shape (this engine only); and *your cooling*, the vane and
+blade shares on this engine.
+
+**Readouts:** a sweep of the burner temperature, 1300 → 2200 K, streamed one point at a time: the cooling air that
+holds both metals exactly at their limits, the thrust and fuel per unit thrust there against the same engine
+uncooled, the cooling air's own temperature, and (this engine) the shaft speeds; tiles for the knob form — the
+hottest burner temperature your cooling allows, which row sets it, and the same with no cooling. Pin & compare.
+
+**A request that does not run** says why: a year outside Gauntner's trend, a share past a quarter, a metal limit
+below the cooling air's own temperature, a burner temperature that needs more than a quarter of the air in one
+stream.
+
 ## How it is built
 
 | Piece | What it is |
@@ -187,6 +209,7 @@ each have plain words, found by a crash map and driven by a test.
 | `rust/src/sandbox_transient.rs` | Slice 4's ops (`slam_defaults`, `slam`), reached through `sandbox::call` (`tests/sandbox_transient.rs`). |
 | `rust/src/sandbox_controls.rs` | Slice 4 (B)'s ops (`controls_defaults`, `controls`), reached through `sandbox::call` (`tests/sandbox_controls.rs`). |
 | `rust/src/sandbox_burner.rs` | Slice 5's ops (`burner_*`), reached through `sandbox::call` (`tests/sandbox_burner.rs`). |
+| `rust/src/sandbox_cooling.rs` | Rung 93's view (`cooling_defaults`, `cooling_point`, `cooling_knob`), reached through `sandbox::call` (`tests/sandbox_cooling.rs`). |
 | `rust/src/atmosphere.rs` | The 1976 standard atmosphere (`tests/atmosphere.rs`, held to the published table). |
 | `rust/sandbox-wasm/` | A tiny separate crate: only the browser exports around `sandbox::call`, and the panic hook that keeps a crash's message readable. Not built by `cargo test`. |
 | `template.html` | The page; `/*__SANDBOX_WASM_B64__*/` receives the build as base64. |
@@ -231,6 +254,9 @@ red until the page is rebuilt and committed — the numbers have not changed.
   page's fixed grids stay within 1 % of the model's own and keep its best jet; the sweeps hold the notch; the
   nozzle readout and dilution path are rungs 14's and 10's calls; each refusal and plain-words entry driven by
   its case.
+- `tests/sandbox_cooling.rs` — rung 93: every sweep point and the knob form IS `FixedEngine` / `try_limited_design` /
+  `try_max_tt4`, bit for bit, on a rig built in the test; the slam's metal readout reads rung 93's correlation at the
+  march's own instants and moves nothing else in the run; each refusal in words.
 - `tests/sandbox_page.rs` — the joints: the page is its template + its build; every element the
   script looks up exists; every knob (design and fly) is a setting and back; the dropdowns offer the
   model's choices; every export and op the page uses exists.
@@ -246,7 +272,8 @@ red until the page is rebuilt and committed — the numbers have not changed.
   limiter switched on, pin & compare, a refused combination, an early stop in words, the incidence floor, a run
   stopped by a knob move; and the burner — the opening burner against native, the richness sweep, the jet
   sweep's notch, the lean refusal, a model failure in words, a per-pocket point and its sweep stopped by a
-  knob move, pin & compare; and a failure whose message is not ASCII getting its words).
+  knob move, pin & compare; and Cool the turbine — the opening knob form and sweep against native, pin & compare, the
+  redesigned framing, a refused year, a sweep stopped by a knob move, and the slam's metal readout; and a failure whose message is not ASCII getting its words).
   Needs Node ≥ 22 and Chrome. Each page call has a 300 s ceiling, so a page that never answers fails
   the check (and its Chrome is closed) instead of hanging. `SANDBOX_SHOTS=<folder>` also saves light, dark
   and phone screenshots of each view — look at them: a layout bug passes every behaviour check.

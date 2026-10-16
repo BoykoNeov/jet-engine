@@ -184,7 +184,8 @@ footer p { max-width: 90ch; }
       <button type="button" id="mode-fly" aria-pressed="false">Fly it</button>
       <button type="button" id="mode-blades" aria-pressed="false">Size the blades</button>
       <button type="button" id="mode-controls" aria-pressed="false">Controls</button>
-      <button type="button" id="mode-burner" aria-pressed="false">Burner</button></div>
+      <button type="button" id="mode-burner" aria-pressed="false">Burner</button>
+      <button type="button" id="mode-cooling" aria-pressed="false">Cool the turbine</button></div>
     <p class="note" id="mode-note">Every change redesigns the engine. Press <b>Fly it</b> to freeze this design's hardware and move the throttle instead.</p>
     <fieldset id="fly-set" hidden>
       <legend>Fly it</legend>
@@ -351,6 +352,28 @@ footer p { max-width: 90ch; }
         the LP one at every power, and blade air is worse than vane air. On this slam the LP bleed valve has to bleed several
         times what it bleeds for the same customer share. The thrust cost runs the other way: the air leaves through the
         nozzle, so it costs about a third of the thrust (rung 91). The engine was sized with no cooling.</p>
+      <label class="swrow"><input type="checkbox" id="ctl-metal_on"> Read the turbine metal <small>rung 93</small></label>
+      <div class="swbox" id="ctl-metal-box">
+        <div class="toggle" role="group" aria-label="How the turbine blades are cooled">
+          <button type="button" id="ctl-mtech-convection" aria-pressed="false">Convection</button>
+          <button type="button" id="ctl-mtech-coated" aria-pressed="false">Coated</button>
+          <button type="button" id="ctl-mtech-film" aria-pressed="true">Film</button>
+          <button type="button" id="ctl-mtech-transpiration" aria-pressed="false">Transpiration</button></div>
+        <div class="knob"><label for="ctl-metal_year">Material year</label><input type="number" id="ctl-metal_year" step="1">
+          <input type="range" id="ctl-metal_year-r" min="1950" max="2030" step="1" aria-label="Material year slider"></div>
+        <div class="knob"><label for="ctl-metal_life">Part life</label>
+          <select id="ctl-metal_life" style="grid-column: 1 / -1">
+            <option value="1000">1 000 hours</option><option value="3000">3 000 hours</option>
+            <option value="10000">10 000 hours</option><option value="30000">30 000 hours</option>
+            <option value="100000">100 000 hours</option></select>
+          <div class="derived" id="ctl-metal-limits">The limits come from the year and the life (Gauntner's 1980 relation).</div></div>
+        <p class="note">Reads the vane and blade metal temperatures at every point of the run, from the turbine inlet
+          temperature, the compressor's exit temperature (the cooling air) and the cooling shares above, with the NASA
+          correlation the project uses for the <b>Cool the turbine</b> view (Gauntner 1980). It changes nothing in the
+          run. Without cooling the metal is over its limit at every throttle here. Watch the peak: the slam's temperature
+          overshoot reaches the metal while the cooling air, from a compressor that has not yet sped up, is still cooler
+          than it will be. The metal is read as if it followed the gas instantly: a real blade lags, so the peak is an
+          upper bound.</p></div>
       <div class="toggle" role="group" aria-label="The aircraft's generator">
         <button type="button" id="ctl-gen-off" aria-pressed="true">No generator load</button>
         <button type="button" id="ctl-gen-hp" aria-pressed="false">On the HP shaft</button>
@@ -486,6 +509,49 @@ footer p { max-width: 90ch; }
       <p class="note">Each lever is back at its design setting by the design speed. Both together run beside any fuel
         limiter. Watch the stall floor read as a flow coefficient: the stators lower the flow coefficient, so that floor
         can cut the fuel from the first instant until the run stops; the bleed lifts it back.</p>
+    </fieldset>
+    <fieldset id="cool-set" hidden>
+      <legend>Cool the turbine</legend>
+      <p class="frozen">The two-shaft engine of <b>Controls</b> (pressure ratios 3 and 6, designed at 1500 K, perfect gas,
+        250 K, 50 kPa, Mach 0.85). Its turbine's metal has a temperature limit; air from the high-pressure compressor
+        cools it. The chart sweeps the burner temperature and shows the cooling that holds both metals exactly at their
+        limits, and what that costs.</p>
+      <div class="toggle" role="group" aria-label="Which engine the sweep uses">
+        <button type="button" id="cl-fr-fixed" aria-pressed="true">This engine, run hotter</button>
+        <button type="button" id="cl-fr-fresh" aria-pressed="false">Redesigned at each temperature</button></div>
+      <p class="note" id="cl-fr-note"></p>
+      <div class="toggle" role="group" aria-label="How the turbine blades are cooled">
+        <button type="button" id="cl-tech-convection" aria-pressed="false">Convection</button>
+        <button type="button" id="cl-tech-coated" aria-pressed="false">Coated</button>
+        <button type="button" id="cl-tech-film" aria-pressed="true">Film</button>
+        <button type="button" id="cl-tech-transpiration" aria-pressed="false">Transpiration</button></div>
+      <p class="note">How much air a row needs for a given cooling job: internal convection needs twice what full-coverage
+        film cooling does, a thermal-barrier coating 1.5 times, transpiration 0.8 times (Gauntner 1980).</p>
+      <div class="knob"><label for="cl-year">Material year</label><input type="number" id="cl-year" step="1">
+        <input type="range" id="cl-year-r" min="1950" max="2030" step="1" aria-label="Material year slider"></div>
+      <div class="knob"><label for="cl-life">Part life</label>
+        <select id="cl-life" style="grid-column: 1 / -1">
+          <option value="1000">1 000 hours</option><option value="3000">3 000 hours</option>
+          <option value="10000">10 000 hours</option><option value="30000">30 000 hours</option>
+          <option value="100000">100 000 hours</option></select>
+        <div class="derived" id="cl-limits"></div></div>
+      <div class="knob" id="cl-shape-row"><label for="cl-shape">Compressor map shape</label>
+        <select id="cl-shape" style="grid-column: 1 / -1">
+          <option value="flow/press">LP curved along flow, HP along pressure</option>
+          <option value="press/flow">LP curved along pressure, HP along flow</option>
+          <option value="tilted">Tilted efficiency island, both spools</option>
+          <option value="flat-lp">LP map flat, HP curved along pressure</option></select>
+        <div class="derived">The same invented maps as <b>Controls</b> (rungs 43 and 49); a redesigned engine runs at its
+          own design point, where the map does not enter.</div></div>
+    </fieldset>
+    <fieldset id="cool-knob-set" hidden>
+      <legend>Your cooling, on this engine</legend>
+      <div class="knob"><label for="cl-vane">Vane air <small>share of the HP compressor's air</small></label><input type="number" id="cl-vane" step="0.005">
+        <input type="range" id="cl-vane-r" min="0" max="0.24" step="0.005" aria-label="Vane cooling slider"></div>
+      <div class="knob"><label for="cl-blade">Blade air <small>share of the HP compressor's air</small></label><input type="number" id="cl-blade" step="0.005">
+        <input type="range" id="cl-blade-r" min="0" max="0.24" step="0.005" aria-label="Blade cooling slider"></div>
+      <p class="note">The hottest burner temperature this engine's metal allows with your cooling, and which row sets it.
+        Vane air also cools the gas the rotor blades see, so more vane air hands the limit to the blades.</p>
     </fieldset>
     <fieldset id="bn-set" hidden>
       <legend>The burner</legend>
@@ -654,7 +720,8 @@ footer p { max-width: 90ch; }
         <button type="button" id="ctlq-phi_lp" aria-pressed="false">LP flow vs stall</button>
         <button type="button" id="ctlq-phi_hp" aria-pressed="false">HP flow vs stall</button>
         <button type="button" id="ctlq-thrust" aria-pressed="false">Thrust</button>
-        <button type="button" id="ctlq-lever" aria-pressed="false">Lever setting</button></div>
+        <button type="button" id="ctlq-lever" aria-pressed="false">Lever setting</button>
+        <button type="button" id="ctlq-metal" aria-pressed="false">Turbine metal</button></div>
       <svg id="ctl-chart" viewBox="0 0 640 360" role="img" aria-label="The chosen quantity against time during the throttle move, with which fuel control holds the fuel"></svg>
       <div class="legend"><span id="ctl-legend"></span><span id="ctl-pin-legend" hidden><span class="sw pin"></span>pinned run</span>
         <span>shaded: the fuel move</span><span>×: the run stopped</span><span id="ctl-progress"></span></div>
@@ -669,6 +736,35 @@ footer p { max-width: 90ch; }
         asking for the least fuel wins. Values are read at the model's points, every 0.02 τ; a sharp temperature spike can
         peak up to about 11 K higher between two points (measured). The stall lines are imposed numbers on invented maps,
         so read the margins' trend, not their size.</p>
+    </div>
+    <div id="cool-out" hidden>
+      <div class="tiles">
+        <div class="tile"><div class="k">Hottest burner, your cooling</div><div class="v"><span id="v-clmax">–</span> <span class="u">K</span></div><div class="d" id="d-clmax"></div></div>
+        <div class="tile"><div class="k">Which metal sets it</div><div class="v"><span id="v-clrow">–</span></div><div class="d" id="d-clrow"></div></div>
+        <div class="tile"><div class="k">Hottest burner, no cooling</div><div class="v"><span id="v-clbare">–</span> <span class="u">K</span></div><div class="d" id="d-clbare"></div></div>
+        <div class="tile"><div class="k">Thrust there, your cooling</div><div class="v"><span id="v-clst">–</span> <span class="u">N per kg/s of air</span></div><div class="d" id="d-clst"></div></div>
+      </div>
+    </div>
+    <div class="card chart" id="cool-card" hidden>
+      <h2 class="sec">The cooling that holds both metals at their limits</h2>
+      <div class="toggle q" role="group" aria-label="Which quantity the chart shows">
+        <button type="button" id="clq-air" aria-pressed="true">Cooling air needed</button>
+        <button type="button" id="clq-st" aria-pressed="false">Thrust</button>
+        <button type="button" id="clq-tsfc" aria-pressed="false">Fuel per unit thrust</button>
+        <button type="button" id="clq-tt3" aria-pressed="false">Cooling air temperature</button>
+        <button type="button" id="clq-speed" aria-pressed="false">Shaft speeds</button></div>
+      <svg id="cool-chart" viewBox="0 0 640 360" role="img" aria-label="The chosen quantity against the burner temperature, with the cooling that holds both metals at their limits"></svg>
+      <div class="legend"><span id="cool-legend"></span><span id="cool-pin-legend" hidden><span class="sw pin"></span>pinned sweep</span>
+        <span id="cool-progress"></span></div>
+      <div class="scroll"><table id="cool-table"><thead><tr><th>Burner (K)</th><th>Vane air (%)</th><th>Blade air (%)</th>
+        <th>Thrust (N per kg/s)</th><th>Uncooled thrust</th><th>Fuel per thrust (mg/N·s)</th><th>Uncooled</th><th>Cooling air (K)</th></tr></thead><tbody></tbody></table></div>
+      <p class="note">Each point puts both metals exactly at their limits: the vanes, which see the burner's hottest gas,
+        and the rotor blades, which see gas the vane air has already cooled. The gas each row sees includes Gauntner's hot
+        spot and safety margin. "Uncooled" is the same engine (or the same fresh design) at the same burner temperature with
+        no cooling at all, its metal far past the limit: it shows what the cooling costs, not an engine anyone could run.
+        On this engine, cooling slows the high-pressure shaft and so cools its own cooling air; a fresh design's
+        compressor delivers the same air temperature at every burner temperature. No efficiency loss from cooling is
+        counted, and the engine's hardware was sized with no cooling.</p>
     </div>
     <div id="bn-out" hidden>
       <div class="tiles">
@@ -873,6 +969,14 @@ footer p { max-width: 90ch; }
   marked so: read trends, not sizes. The anchor is rung 8's: a stoichiometric front zone at this design gives an emission
   index inside the band airliner engines certify at. The nozzle readout is rung 14's frozen-against-re-reacting expansion,
   carrying the burner's NO; with a mixing model that NO is converted from its emission index the way rung 17 does.</p>
+  <p><b>Cool the turbine.</b> The project's rung 93 on the two-shaft engine of <b>Controls</b>: the turbine's vanes and
+  rotor blades each have a metal temperature limit, set from a material year and a part life by Gauntner's 1980 NASA
+  relation, and the air from the high-pressure compressor that cools them (rung 91's vane and blade air) is sized by
+  Gauntner's correlation: a row needs more air the hotter the gas it sees and the colder the metal must stay, scaled by
+  the cooling technology. The sweep finds, at each burner temperature, the cooling that holds both metals exactly at their
+  limits, on this engine run hotter or on an engine redesigned at that temperature. The knob form takes your cooling and
+  finds the hottest burner temperature the metal allows on this engine. The correlation is a fit to engines of its time:
+  read the trends and the comparisons, not the last kelvin.</p>
   <p><b>Efficiencies.</b> Overall efficiency is thrust power per fuel power. The model splits it into a thermal and a
   propulsive part using the jet's speed alone. When the jet leaves the nozzle above the outside pressure (a fixed
   convergent nozzle, especially high up), part of the thrust is that pressure push, which the speed-based split
@@ -926,6 +1030,7 @@ async function ask(text) {
       else if (op.startsWith("blade_")) view = "blades";
       else if (op === "controls") view = "controls";
       else if (op.startsWith("burner")) view = "burner";
+      else if (op.startsWith("cooling")) view = "cooling";
     } catch (_) {}
     // The words are a second call on the fresh instance; if THAT traps, the reply still goes out (with the
     // model's own message as the words) -- a worker that never answers leaves the page waiting forever.
@@ -1027,9 +1132,16 @@ const CTL_NUM = { "ctl-rho": "rho", "ctl-from": "from", "ctl-to": "to", "ctl-ram
                   "ctl-valve_tau": "valve_tau", "ctl-valve_tau_close": "valve_tau_close",
                   "ctl-customer_share": "customer_share", "ctl-customer_amount": "customer_amount",
                   "ctl-cool_vane": "cool_vane", "ctl-cool_blade": "cool_blade",
-                  "ctl-generator_power": "generator_power", "ctl-generator_share": "generator_share" };
-const CTL_SW = ["redline_on", "gov_lag_on", "accel_on", "floor_on", "release_on"];
+                  "ctl-generator_power": "generator_power", "ctl-generator_share": "generator_share",
+                  "ctl-metal_year": "metal_year" };
+const CTL_SW = ["redline_on", "gov_lag_on", "accel_on", "floor_on", "release_on", "metal_on"];
 const CTL_VIEW = ["ctl-set", "ctl-sw-set", "ctl-lever-set", "ctl-out", "ctl-card"];
+// Cool the turbine (rung 93, turbojet::sandbox_cooling): CL holds the view's knobs. The knob form runs first, then
+// the sweep streams one burner temperature at a time, both on the view's OWN worker, killed when a knob moves.
+let CL = null, CL_DEFAULTS = null, CL_GRID = [], clPts = [], clKnob = null, clPinned = null, clQ = "air";
+const CL_VIEW = ["cool-set", "cool-knob-set", "cool-out", "cool-card"];
+const CL_NUM = { "cl-year": "year", "cl-vane": "vane", "cl-blade": "blade" };
+const TECH = ["convection", "coated", "film", "transpiration"];
 // The burner (slice 5, turbojet::sandbox_burner): BK holds its knobs; it reads the Design engine S. BN_NUM maps
 // a knob's id to [setting, display scale, slider kind] ("log": the slider moves log10 of the displayed value).
 let BK = null, BK_DEFAULTS = null, BN_MODELS = {}, bnRun = null, bnPinned = null, bnInlet = null, bnPath = null, bnNozzle = null;
@@ -1072,18 +1184,20 @@ function showSettings() {
     for (const m of ["both", "temperature", "fuel"]) $("slam-" + m).setAttribute("aria-pressed", String(SL.mode === m));
     for (const q of Object.keys(SLAM_Q)) $("q-" + q).setAttribute("aria-pressed", String(slamQ === q));
   }
-  const fly = mode === "fly", blades = mode === "blades", controls = mode === "controls", burner = mode === "burner";
+  const fly = mode === "fly", blades = mode === "blades", controls = mode === "controls", burner = mode === "burner",
+        cooling = mode === "cooling";
   for (const [id, m] of [["mode-design", "design"], ["mode-fly", "fly"], ["mode-blades", "blades"], ["mode-controls", "controls"],
-                         ["mode-burner", "burner"]]) $(id).setAttribute("aria-pressed", String(mode === m));
+                         ["mode-burner", "burner"], ["mode-cooling", "cooling"]]) $(id).setAttribute("aria-pressed", String(mode === m));
   $("cycle-set").hidden = mode !== "design" && !burner;
   for (const id of ["components-set", "nozzle-set"]) $(id).hidden = mode !== "design";
   for (const id of ["fly-set", "fly-tiles", "map-card", "slam-set", "slam-card"]) $(id).hidden = !fly;
   for (const id of BLADE_VIEW) $(id).hidden = !blades;
   for (const id of CTL_VIEW) $(id).hidden = !controls;
   for (const id of BN_VIEW) $(id).hidden = !burner;
+  for (const id of CL_VIEW) $(id).hidden = !cooling;
   $("bn-jet-card").hidden = !burner || !BK || BK.quench !== "jets";
-  $("flight-set").hidden = blades || controls;
-  for (const id of ["out", "ts-card", "stations-card", "perf-card"]) $(id).hidden = blades || controls || burner;
+  $("flight-set").hidden = blades || controls || cooling;
+  for (const id of ["out", "ts-card", "stations-card", "perf-card"]) $(id).hidden = blades || controls || burner || cooling;
   $("mode-note").innerHTML = fly
     ? "The hardware is frozen. Move the throttle or the flight; press <b>Design the engine</b> to change the design."
     : blades
@@ -1092,8 +1206,11 @@ function showSettings() {
     ? "Slam the throttle of a separate two-shaft engine, and switch its fuel controls and an airflow lever on and off."
     : burner
     ? "Open the burner of the engine you design: how rich it burns first, and how the dilution air mixes in, decide the NO it makes."
+    : cooling
+    ? "Give a separate two-shaft engine's turbine a metal limit and cooling air, and see how hot its burner may run."
     : "Every change redesigns the engine. Press <b>Fly it</b> to freeze this design's hardware and move the throttle instead.";
-  $("pin").textContent = fly ? "Pin this point" : blades ? "Pin these blades" : controls ? "Pin this run" : burner ? "Pin this burner" : "Pin this design";
+  $("pin").textContent = fly ? "Pin this point" : blades ? "Pin these blades" : controls ? "Pin this run" : burner ? "Pin this burner"
+    : cooling ? "Pin this sweep" : "Pin this design";
   if (BK) showBurnerSettings();
   if (C) {
     for (const [id, k] of Object.entries(CTL_NUM)) {
@@ -1127,6 +1244,31 @@ function showSettings() {
     $("ctl-stator-box").hidden = !stators(C); $("ctl-bleed-box").hidden = !bleeds(C);
     for (const q of Object.keys(CTL_Q)) $("ctlq-" + q).setAttribute("aria-pressed", String(ctlQ === q));
     $("ctlq-lever").hidden = C.lever === "none";
+    for (const t of TECH) press("ctl-mtech-" + t, C.metal_tech === t);
+    $("ctl-metal-box").hidden = C.metal_on !== 1; $("ctlq-metal").hidden = C.metal_on !== 1;
+    $("ctl-metal_life").value = String(C.metal_life);
+    $("ctl-metal-limits").textContent = crun && crun.metal_limit
+      ? `With the last run's year and life: vane ${fmt(crun.metal_limit.vane, 5)} K, blade ${fmt(crun.metal_limit.blade, 5)} K.`
+      : "The limits come from the year and the life (Gauntner's 1980 relation).";
+  }
+  if (CL) {
+    for (const [id, k] of Object.entries(CL_NUM)) {
+      if (document.activeElement !== $(id)) $(id).value = +CL[k].toPrecision(8);
+      $(id + "-r").value = CL[k];
+    }
+    const press = (id, on) => $(id).setAttribute("aria-pressed", String(on));
+    press("cl-fr-fixed", CL.framing === "fixed"); press("cl-fr-fresh", CL.framing === "fresh");
+    for (const t of TECH) press("cl-tech-" + t, CL.tech === t);
+    $("cl-life").value = String(CL.life); $("cl-shape").value = CL.shape;
+    $("cl-shape-row").hidden = CL.framing !== "fixed";
+    for (const q of ["air", "st", "tsfc", "tt3", "speed"]) press("clq-" + q, clQ === q);
+    $("clq-speed").hidden = CL.framing !== "fixed";
+    $("cl-limits").textContent = clKnob
+      ? `Limits: vane ${fmt(clKnob.limit_vane, 5)} K, blade ${fmt(clKnob.limit_blade, 5)} K (Gauntner: the blade runs 56 K below the vane).`
+      : "";
+    $("cl-fr-note").textContent = CL.framing === "fixed"
+      ? "The hardware stays as built: turbine and nozzle throats sized with no cooling at 1500 K. Above that the shafts spin faster than design and the compressors move onto the invented maps' far reaches; read those points as trends."
+      : "At each burner temperature a new engine is designed with the same pressure ratios and efficiencies, its turbines cooled from the start. Its compressor delivers the same cooling air temperature at every point.";
   }
   if (B) {
     for (const [id, k] of Object.entries(BLADE_NUM)) {
@@ -1168,6 +1310,7 @@ async function runNow() {
   if (mode === "blades") return runBlades();
   if (mode === "controls") { scheduleCtl(); return; }
   if (mode === "burner") return bnChanged(true);
+  if (mode === "cooling") { scheduleCool(); return; }
   const my = ++gen;
   const fly = mode === "fly";
   if (fly && slow()) $("status").textContent = "Computing on the equilibrium gas (about half a second)…";
@@ -1217,6 +1360,7 @@ async function fromAltitude(run = true) {
 // ---------------------------------------------------------------- fly it
 async function enterFly() {
   if (mode === "fly") return;
+  if (mode === "cooling") stopCool();
   if (mode === "blades") stopLever();
   if (mode === "controls") stopCtl();
   if (mode === "burner") stopBurner();
@@ -1234,6 +1378,7 @@ async function enterFly() {
 }
 function leaveFly() {
   if (mode === "design") return;
+  if (mode === "cooling") stopCool();
   if (mode === "blades") stopLever();
   if (mode === "controls") stopCtl();
   if (mode === "burner") stopBurner();
@@ -1464,6 +1609,7 @@ function slamTable() {
 // the knobs settle, on its OWN worker, which the next change kills.
 function enterControls() {
   if (mode === "controls") return;
+  if (mode === "cooling") stopCool();
   if (mode === "blades") stopLever();
   if (mode === "burner") stopBurner();
   stopSlam();
@@ -1540,12 +1686,15 @@ const CTL_Q = {
                                          : C.lever === "both" ? [[r.v, "rline", "stator closing (0 = design setting)"],
                                                                  [r.bleed, "fsched", "air bled, fraction of the LP's flow"]]
                                          : [[r.v, "rline", "stator closing (0 = design setting)"]]), steady: r => [] },
+  metal: { label: "turbine metal temperature, K", lines: r => [[r.metal_vane, "rline", "vane metal"], [r.metal_blade, "fsched", "blade metal"]],
+           steady: r => [r.start.metal_vane, r.end.metal_vane, r.start.metal_blade, r.end.metal_blade].filter(v => v !== null) },
 };
 
 function drawCtl() {
   const svg = $("ctl-chart");
   if (!crun || !C) { svg.innerHTML = ""; ctlTable(); return; }
   if (ctlQ === "lever" && C.lever === "none") ctlQ = "Tt4";
+  if (ctlQ === "metal" && (!C.metal_on || !crun.metal_limit)) ctlQ = "Tt4";
   const q = CTL_Q[ctlQ], r = crun, p = cpinned;
   const lines = q.lines(r);
   const ys = [];
@@ -1554,6 +1703,8 @@ function drawCtl() {
   const pinLine = p && p.s.length ? q.lines(p)[0][0] : null;   // a pinned run that stopped at once has no line
   if (pinLine) for (const y of pinLine) if (y !== null && isFinite(y)) ys.push(y);
   if (ctlQ === "Tt4" && C.redline_on) ys.push(C.redline);
+  const lims = ctlQ === "metal" ? [[r.metal_limit.vane, "vane limit"], [r.metal_limit.blade, "blade limit"]] : [];
+  for (const [v] of lims) ys.push(v);
   if (!ys.length) { svg.innerHTML = ""; ctlTable(); return; }
   const x1 = Math.max(C.ramp + C.settle, p ? p.s[p.s.length - 1] : 0, r.s.length ? r.s[r.s.length - 1] : 0);
   let y0 = Math.min(...ys), y1 = Math.max(...ys); const py = (y1 - y0) * 0.1 || Math.abs(y1) * 0.05 || 1; y0 -= py; y1 += py;
@@ -1562,6 +1713,7 @@ function drawCtl() {
   let g = `<rect class="ramp" x="${X(0)}" y="${T}" width="${Math.max(1, X(r.controls.ramp) - X(0))}" height="${H - Bm - T}"/>` + g0;
   for (const v of q.steady(r)) g += `<line class="steady" x1="62" x2="624" y1="${Y(v)}" y2="${Y(v)}"/>`;
   if (ctlQ === "Tt4" && C.redline_on) g += `<line class="redline" x1="62" x2="624" y1="${Y(C.redline)}" y2="${Y(C.redline)}"/><text class="redl" x="620" y="${Y(C.redline) - 4}" text-anchor="end">redline</text>`;
+  for (const [v, words] of lims) g += `<line class="redline" x1="62" x2="624" y1="${Y(v)}" y2="${Y(v)}"/><text class="redl" x="620" y="${Y(v) - 4}" text-anchor="end">${words}</text>`;
   if (pinLine) g += `<path class="tpin" d="${pathOf(p.s.map((x, i) => (pinLine[i] === null ? null : [x, pinLine[i]])), X, Y)}"/>`;
   for (const [v, cls] of lines) g += `<path class="${cls}" d="${pathOf(r.s.map((x, i) => (v[i] === null ? null : [x, v[i]])), X, Y)}"/>`;
   // Who holds the fuel: a strip above the plot, one cell per point.
@@ -1612,6 +1764,11 @@ const CTL_ROWS = [
   ["Generator load, start / end (% of its turbine's work)", r => r.controls.generator === "off" ? "none"
     : `${fmt((r.controls.generator === "hp" ? r.start.generator_share_hp : r.start.generator_share_lp) * 100, 3)} / ${
         fmt((r.controls.generator === "hp" ? r.end.generator_share_hp : r.end.generator_share_lp) * 100, 3)} (${r.controls.generator.toUpperCase()} shaft)`],
+  ["Peak metal, vane / blade (K)", r => r.metal_limit
+    ? `${fmt(Math.max(...r.metal_vane.filter(v => v !== null)), 5)} / ${fmt(Math.max(...r.metal_blade.filter(v => v !== null)), 5)}` : "not read"],
+  ["Their limits, vane / blade (K)", r => r.metal_limit ? `${fmt(r.metal_limit.vane, 5)} / ${fmt(r.metal_limit.blade, 5)}` : "not read"],
+  ["Metal at the end, vane / blade (K)", r => r.metal_limit && r.end.metal_vane !== null
+    ? `${fmt(r.end.metal_vane, 5)} / ${fmt(r.end.metal_blade, 5)} (steady)` : "not read"],
   ["Points computed", r => `${r.s.length} of ${r.expected_points}`],
 ];
 function ctlTable() {
@@ -1651,6 +1808,134 @@ function ctlTable() {
   tile("cslp", x => closest(x, "lp"), true);
   tile("cshp", x => closest(x, "hp"), true);
   tile("ccut", x => Math.min(...x.fuel.map((v, i) => v / x.fuel_sched[i] * 100)), true);
+}
+
+// ---------------------------------------------------------------- cool the turbine (rung 93)
+function enterCooling() {
+  if (mode === "cooling") return;
+  if (mode === "blades") stopLever();
+  if (mode === "controls") stopCtl();
+  if (mode === "burner") stopBurner();
+  stopSlam();
+  mode = "cooling"; lineGen++; pinned = null; $("unpin").hidden = !clPinned; $("pin-legend").hidden = true;
+  $("bad").classList.remove("show");
+  showSettings(); clKey = null; scheduleCool();
+}
+
+let clW = null, clBusy = 0, clGen = 0, clTimer = null, clKey = null;
+async function clAsk(text) {
+  if (!model.kill) return model.ask(text);          // no Worker in this browser: a sweep can only be ignored
+  if (!clW) clW = await spawnWorker();
+  clBusy++;
+  try { return await clW.ask(text); } finally { clBusy--; }
+}
+function stopCool() {
+  clGen++; clearTimeout(clTimer); clKey = null;
+  if (clW && clBusy) { clW.kill(); clW = null; clBusy = 0; window.sandbox.kills++; }
+}
+function scheduleCool() { clearTimeout(clTimer); clTimer = setTimeout(runCool, 200); }
+async function runCool() {
+  if (mode !== "cooling" || !CL) return;
+  const text = JSON.stringify(CL);
+  if (text === clKey) return;
+  stopCool(); clKey = text;
+  const my = clGen, cl = JSON.parse(text);
+  window.sandbox.clState = "running";
+  $("cool-progress").textContent = "finding the hottest burner temperature for your cooling…";
+  for (const id of ["cool-out", "cool-card"]) $(id).classList.add("stale");
+  const t0 = performance.now();
+  const k = await clAsk(JSON.stringify({ op: "cooling_knob", cooling: cl }));
+  if (my !== clGen || k.killed) return;
+  $("bad-title").textContent = "These settings do not run";
+  if (k.trap || !k.reply.ok) {
+    $("bad-plain").textContent = k.trap ? k.trap.plain : k.reply.reason;
+    $("bad-raw").textContent = k.trap ? "Model message: " + k.trap.message : "";
+    $("bad").classList.add("show");
+    $("status").textContent = "These settings do not run.";
+    $("cool-progress").textContent = "";
+    window.sandbox.state = "does-not-run"; window.sandbox.trap = k.trap || { plain: k.reply.reason };
+    window.sandbox.clState = "done";
+    return;
+  }
+  $("bad").classList.remove("show");
+  clKnob = k.reply; clPts = []; showSettings(); drawCool();
+  $("cool-out").classList.remove("stale");
+  for (let i = 0; i < CL_GRID.length; i++) {
+    $("cool-progress").textContent = `computing ${Math.round(CL_GRID[i])} K (${i + 1} of ${CL_GRID.length})…`;
+    const t = await clAsk(JSON.stringify({ op: "cooling_point", cooling: cl, Tt4: CL_GRID[i] }));
+    if (my !== clGen || t.killed) return;
+    clPts.push(t.trap ? { ok: 0, Tt4: CL_GRID[i], reason: t.trap.plain, message: t.trap.message } : { ...t.reply, Tt4: CL_GRID[i] });
+    drawCool();
+  }
+  $("cool-card").classList.remove("stale");
+  const ok = clPts.filter(p => p.ok).length;
+  $("cool-progress").textContent = `${ok} of ${CL_GRID.length} burner temperatures modelled`;
+  const ms = performance.now() - t0;
+  $("timing").textContent = `${ms < 1000 ? ms.toFixed(0) + " ms" : (ms / 1000).toFixed(1) + " s"} in the ${model.mode}`;
+  $("status").textContent = cl.framing === "fixed" ? "Swept on this engine, its hardware fixed." : "Swept over fresh designs, one per burner temperature.";
+  window.sandbox.last = { knob: clKnob, points: clPts }; window.sandbox.state = "ran"; window.sandbox.trap = null;
+  window.sandbox.clState = "done";
+}
+
+const CL_Q = {
+  air: { label: "cooling air, % of the HP compressor's air", lines: [["vane", "lp", "vane air"], ["blade", "hp", "blade air"], ["total", "rline", "both"]],
+         get: (p, k) => (k === "total" ? p.vane + p.blade : p[k]) * 100 },
+  st: { label: "thrust, N per kg/s of inlet air", lines: [["st", "rline", "cooled to the limit"], ["st_bare", "fsched", "no cooling (metal too hot)"]],
+        get: (p, k) => p[k] },
+  tsfc: { label: "fuel per unit thrust, mg/(N·s)", lines: [["tsfc", "rline", "cooled to the limit"], ["tsfc_bare", "fsched", "no cooling (metal too hot)"]],
+          get: (p, k) => (p[k] === null ? null : p[k] * 1e6) },
+  tt3: { label: "temperature, K", lines: [["Tt3", "rline", "cooling air (compressor exit)"], ["Tt41", "fsched", "gas entering the rotor"]],
+         get: (p, k) => p[k] },
+  speed: { label: "shaft speed, % of design", lines: [["n_lp", "lp", "low-pressure shaft"], ["n_hp", "hp", "high-pressure shaft"]],
+           get: (p, k) => (p[k] === undefined ? null : p[k] * 100) },
+};
+function drawCool() {
+  const svg = $("cool-chart"), tb = $("cool-table").tBodies[0];
+  tb.innerHTML = "";
+  const q = CL_Q[clQ === "speed" && CL.framing !== "fixed" ? "air" : clQ];
+  const ok = clPts.filter(p => p.ok), pin = (clPinned ? clPinned.points : []).filter(p => p.ok);
+  const xs = CL_GRID.length ? CL_GRID : [1300, 2200];
+  const x0 = Math.min(...xs), x1 = Math.max(...xs);
+  const ys = [];
+  for (const p of ok.concat(pin)) for (const [k] of q.lines) { const v = q.get(p, k); if (v !== null && isFinite(v)) ys.push(v); }
+  if (!ys.length) { svg.innerHTML = ""; coolTiles(); return; }
+  let y0 = Math.min(...ys), y1 = Math.max(...ys); const py = (y1 - y0) * 0.1 || Math.abs(y1) * 0.05 || 1; y0 -= py; y1 += py;
+  const { X, Y, g: g0 } = frame(x0, x1, y0, y1, { L: 62, R: 16, T: 14, B: 54, W: 640, H: 360 }, "burner exit temperature, K", q.label);
+  let g = g0;
+  const series = (pts, k) => pts.map(p => { const v = q.get(p, k); return v === null || !isFinite(v) ? null : [p.Tt4, v]; });
+  if (pin.length > 1) g += `<path class="pinl" d="${pathOf(series(pin, q.lines[0][0]), X, Y)}"/>`;
+  for (const [k, cls] of q.lines) if (ok.length > 1) g += `<path class="${cls}" d="${pathOf(series(ok, k), X, Y)}"/>`;
+  for (const p of clPts.filter(z => !z.ok)) g += `<text class="nomod" x="${X(p.Tt4)}" y="${360 - 54 - 6}" text-anchor="middle">×<title>${Math.round(p.Tt4)} K: ${p.reason}</title></text>`;
+  svg.innerHTML = g;
+  $("cool-legend").innerHTML = q.lines.map(([, cls, words]) => `<span><span class="sw ${cls === "rline" ? "" : cls}"></span>${words}</span>`).join(" ")
+    + (clPts.some(z => !z.ok) ? " <span>×: not modelled</span>" : "");
+  $("cool-pin-legend").hidden = pin.length < 2;
+  for (const p of clPts) {
+    const tr = tb.insertRow();
+    tr.insertCell().textContent = String(Math.round(p.Tt4));
+    if (!p.ok) {
+      const c = tr.insertCell(); c.colSpan = 7; c.className = "nomod";
+      c.textContent = "Not modelled: " + p.reason.split(/[:.] /)[0]; c.title = p.reason + (p.message ? " Model message: " + p.message : "");
+      continue;
+    }
+    for (const v of [fmt(p.vane * 100, 3), fmt(p.blade * 100, 3), fmt(p.st, 4), fmt(p.st_bare, 4), fmt(p.tsfc * 1e6, 4),
+                     p.tsfc_bare === null ? "–" : fmt(p.tsfc_bare * 1e6, 4), fmt(p.Tt3, 4)]) tr.insertCell().textContent = v;
+  }
+  coolTiles();
+}
+function coolTiles() {
+  const y = clKnob ? clKnob.yours : null, b = clKnob ? clKnob.bare : null, p = clPinned ? clPinned.knob.yours : null;
+  const ok = z => z && z.ok;
+  $("v-clmax").textContent = ok(y) ? fmt(y.Tt4, 5) : "–";
+  $("d-clmax").textContent = ok(y) ? (ok(p) ? delta(y.Tt4, p.Tt4, true)[0] : `vane ${fmt(y.metal_vane, 5)} K, blade ${fmt(y.metal_blade, 5)} K there`)
+                                   : (y ? y.reason : "");
+  $("v-clrow").textContent = ok(y) ? (y.binding === "vane" ? "the vanes" : "the rotor blades") : "–";
+  $("d-clrow").textContent = ok(y) ? `shafts at ${fmt(y.n_lp * 100, 4)} / ${fmt(y.n_hp * 100, 4)} % of design (LP / HP)` : "";
+  $("v-clbare").textContent = ok(b) ? fmt(b.Tt4, 5) : "–";
+  $("d-clbare").textContent = ok(b) ? `the ${b.binding === "vane" ? "vanes" : "rotor blades"} set it` : (b ? b.reason : "");
+  $("v-clst").textContent = ok(y) ? fmt(y.st, 4) : "–";
+  $("d-clst").textContent = ok(y) && ok(p) ? delta(y.st, p.st, true)[0]
+    : ok(y) ? `fuel per unit thrust ${fmt(y.tsfc * 1e6, 4)} mg/(N·s)` : "";
 }
 
 // ---------------------------------------------------------------- the burner (slice 5)
@@ -1693,6 +1978,7 @@ const fromSlider = (x, kind) => (kind === "log" ? Math.pow(10, x) : x);
 
 function enterBurner() {
   if (mode === "burner") return;
+  if (mode === "cooling") stopCool();
   if (mode === "blades") stopLever();
   if (mode === "controls") stopCtl();
   stopSlam();
@@ -2048,6 +2334,7 @@ function drawPath() {
 // take seconds (plan § 11.2).
 function enterBlades() {
   if (mode === "blades") return;
+  if (mode === "cooling") stopCool();
   stopSlam();
   if (mode === "controls") stopCtl();
   if (mode === "burner") stopBurner();
@@ -2449,6 +2736,22 @@ function wire() {
   for (const m of ["power", "share"]) cclick("ctl-genby-" + m, () => { C.generator_by = m; });
   for (const q of Object.keys(CTL_Q)) $("ctlq-" + q).addEventListener("click", () => { ctlQ = q; showSettings(); drawCtl(); });
   $("mode-controls").addEventListener("click", enterControls);
+  // Rung 93's metal readout on the slam.
+  for (const t of TECH) cclick("ctl-mtech-" + t, () => { C.metal_tech = t; });
+  $("ctl-metal_life").addEventListener("change", () => { C.metal_life = +$("ctl-metal_life").value; scheduleCtl(); });
+  // Cool the turbine (rung 93): its knobs write CL; the knob form and the sweep follow.
+  $("mode-cooling").addEventListener("click", enterCooling);
+  for (const [id, k] of Object.entries(CL_NUM)) {
+    const put = v => { if (isFinite(v)) { CL[k] = v; scheduleCool(); } };
+    $(id).addEventListener("input", () => { const v = parseFloat($(id).value); put(v); if (isFinite(v)) $(id + "-r").value = v; });
+    $(id + "-r").addEventListener("input", () => { $(id).value = $(id + "-r").value; put(parseFloat($(id + "-r").value)); });
+  }
+  const lclick = (id, f) => $(id).addEventListener("click", () => { f(); showSettings(); scheduleCool(); });
+  lclick("cl-fr-fixed", () => { CL.framing = "fixed"; }); lclick("cl-fr-fresh", () => { CL.framing = "fresh"; });
+  for (const t of TECH) lclick("cl-tech-" + t, () => { CL.tech = t; });
+  $("cl-life").addEventListener("change", () => { CL.life = +$("cl-life").value; scheduleCool(); });
+  $("cl-shape").addEventListener("change", () => { CL.shape = $("cl-shape").value; scheduleCool(); });
+  for (const q of Object.keys(CL_Q)) $("clq-" + q).addEventListener("click", () => { clQ = q; showSettings(); drawCool(); });
   // The burner: its own knobs write BK; slow mixing models compute when a slider is let go (bnChanged).
   $("mode-burner").addEventListener("click", enterBurner);
   for (const [id, [k, sc, kind]] of Object.entries(BN_NUM)) {
@@ -2467,6 +2770,7 @@ function wire() {
   $("bn-sweep").addEventListener("click", () => { swKey = null; runSweep(); });
   $("pin").addEventListener("click", () => {
     if (mode === "controls") { if (!crun) return; cpinned = crun; $("unpin").hidden = false; drawCtl(); return; }
+    if (mode === "cooling") { if (!clKnob) return; clPinned = { knob: clKnob, points: clPts.slice() }; $("unpin").hidden = false; drawCool(); return; }
     if (mode === "burner") {
       if (!bnRun) return;
       bnPinned = { ...bnRun, path: bnPath, nozzle: bnNozzle }; bnPinnedSweep = clone(bnSweep);
@@ -2479,6 +2783,7 @@ function wire() {
   });
   $("unpin").addEventListener("click", () => {
     if (mode === "controls") { cpinned = null; $("unpin").hidden = true; drawCtl(); return; }
+    if (mode === "cooling") { clPinned = null; $("unpin").hidden = true; drawCool(); return; }
     if (mode === "burner") { bnPinned = null; bnPinnedSweep = null; $("unpin").hidden = true; renderBurner(); renderNozzle(); drawPath(); return; }
     if (mode === "blades") { bpinned = null; bpinnedLever = null; $("unpin").hidden = true; if (blast) renderBlades(); return; }
     pinned = null; slamPinned = null; $("unpin").hidden = true; $("pin-legend").hidden = true; render();
@@ -2491,6 +2796,7 @@ function wire() {
     }
     else if (mode === "blades") { B = clone(B_DEFAULTS); linked = true; editSpool = "lp"; }
     else if (mode === "controls") C = clone(C_DEFAULTS);
+    else if (mode === "cooling") CL = clone(CL_DEFAULTS);
     else if (mode === "burner") { BK = clone(BK_DEFAULTS); buildModelKnobs(); }
     else S = { ...DEFAULTS };
     showSettings(); change();
@@ -2523,6 +2829,13 @@ window.sandbox = {
     await runCtl(); return { state: window.sandbox.state, run: crun };
   },
   ctlState: null,
+  // Cool the turbine (rung 93): `patch` sets its knobs; resolves with the knob form and the sweep once all are in.
+  cooling: async patch => {
+    if (mode !== "cooling") enterCooling();
+    Object.assign(CL, patch || {}); showSettings(); clearTimeout(clTimer); clKey = null;
+    await runCool(); return { state: window.sandbox.state, knob: clKnob, points: clPts };
+  },
+  clState: null,
   // The burner (slice 5): `patch` sets burner knobs (a `knobs` object merges into the mixing model's, a
   // `design` object into the Design engine's); resolves once the burner, its path and its nozzle are in.
   burner: async patch => {
@@ -2557,6 +2870,8 @@ window.sandbox = {
     B_DEFAULTS = bd.blades; TI64 = bd.ti64; B = clone(B_DEFAULTS);
     const cd = (await model.ask(JSON.stringify({ op: "controls_defaults" }))).reply;
     C_DEFAULTS = cd.controls; CTL_DS = cd.ds; C = clone(C_DEFAULTS);
+    const kd = (await model.ask(JSON.stringify({ op: "cooling_defaults" }))).reply;
+    CL_DEFAULTS = kd.cooling; CL_GRID = kd.grid; CL = clone(CL_DEFAULTS);
     const bd5 = (await model.ask(JSON.stringify({ op: "burner_defaults" }))).reply;
     BK_DEFAULTS = bd5.burner; BK = clone(BK_DEFAULTS);
     for (const m of bd5.models) BN_MODELS[m.key] = m;

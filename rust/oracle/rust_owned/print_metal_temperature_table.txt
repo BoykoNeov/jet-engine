@@ -1,0 +1,37 @@
+
+METAL TEMPERATURE (rung 93): what the turbine's metal allows, and what cooling buys. Gauntner's
+correlation (NASA TM-81453, 1980): coolant/gas = FACTOR x 0.022 x (phi/(1-phi))^1.25, with his hot
+spot, safety margin and 1985 metals (vane 1227.8 K, blade 1172.2 K). Two-spool engine, pi 3 x 6.
+
+  1. The knob: full-coverage film (FACTOR 1.0), 2 % blade air, vane air rising. The hottest
+     burner temperature the metal allows on THIS engine, and which row sets it.
+
+    vane %     Tt4 max      row      vane K     blade K
+       0.0      988.99     vane     1227.78      839.52
+       2.0     1344.28     vane     1227.78     1075.12
+       4.0     1506.57    blade     1190.63     1172.22
+       8.0     1553.31    blade     1043.98     1172.22
+      16.0     1662.62    blade      915.70     1172.22
+
+  2. The cooling that holds BOTH metals at their limits: on this engine (B, its hardware sized
+     uncooled at 1500 K) and on a fresh design at each temperature (A). Shares of the HP
+     compressor's air; thrust per inlet air; fuel per unit thrust (mg/N.s).
+
+   FACTOR   Tt4   B vane  B blade    B F/m   A vane  A blade    A F/m   A TSFC
+      2.0  1300   0.0327   0.0134    606.2   0.0358   0.0150    583.4   35.848
+      2.0  1600   0.0780   0.0448    723.7   0.0831   0.0483    712.0   38.354
+      2.0  1900   0.1249   0.0774    809.8   0.1291   0.0803    802.7   40.404
+      2.0  2200   0.1684   0.1066    875.2   0.1715   0.1088    870.1   42.006
+      1.0  1300   0.0169   0.0075    615.2   0.0184   0.0083    595.6   36.008
+      1.0  1600   0.0435   0.0274    750.0   0.0444   0.0280    747.0   39.036
+      1.0  1900   0.0758   0.0523    855.1   0.0718   0.0490    863.9   41.746
+      1.0  2200   0.1099   0.0786    938.2   0.0990   0.0697    958.5   44.041
+
+  Cooling never stops the engine: each percent of vane air buys about 100 K of burner temperature
+  and costs about half a percent of thrust, so thrust at the metal limit keeps rising - on this engine
+  and on a fresh design. On fixed hardware the cooling also cools ITS OWN coolant (it slows the HP
+  spool, so the compressor delivers colder air), and below a crossing - which rises as the cooling
+  technology worsens - the fixed engine needs less air than a fresh design. Vane air relieves the
+  blade too: it dilutes the gas the rotor sees. And on a fresh design the metal-limited engine burns
+  LESS fuel per unit thrust than the uncooled one at the same burner temperature: the burner gets
+  less air at the same fuel ratio, while the thrust falls only half as fast.

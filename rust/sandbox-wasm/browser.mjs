@@ -441,6 +441,21 @@ try {
         && gn[3] > 0.02 && gn[4] && hpSum > noCool && lpSum < hpSum, JSON.stringify([gHp, gLp, gn, noCool, hpSum, lpSum]));
   if (process.env.SANDBOX_SHOTS) { await ev(`document.getElementById('ctlq-lever').click()`); await shot('controls-generator'); }
   await ev(`window.sandbox.controls({generator: 'off'}).then(r => r.run)`);
+  // Rung 93: the metal readout, switched on through its own box beside 5 % vane and 3 % blade air -- its knobs and the
+  // chart's metal button shown, both metals read at every point with both limits drawn, the slam's peak above the end's
+  // steady metal (the overshoot reaches the metal), and the run itself unmoved (the same Tt4 column as without it).
+  const mOff = await ev(`window.sandbox.controls({cool_vane: 0.05, cool_blade: 0.03, metal_on: 0, redline_on: 0}).then(r => r.run.Tt4)`);
+  await ev(`(() => { const e = document.getElementById('ctl-metal_on'); e.checked = true; e.dispatchEvent(new Event('change', {bubbles: true})); })()`);
+  const mOn = await waitFor(`window.sandbox.ctlState === 'done' && window.sandbox.last.controls && window.sandbox.last.controls.metal_on === 1`, 30000);
+  const mr = await ev(`(() => { const r = window.sandbox.last; return [document.getElementById('ctl-metal-box').hidden,
+      document.getElementById('ctlq-metal').hidden, r.metal_limit && r.metal_limit.vane, r.metal_vane.every(v => typeof v === 'number'),
+      Math.max(...r.metal_vane), r.end.metal_vane, JSON.stringify(r.Tt4)]; })()`);
+  await ev(`document.getElementById('ctlq-metal').click()`);
+  const mDrawn = await ev(`[document.querySelectorAll('#ctl-chart .rline').length, document.querySelectorAll('#ctl-chart .redline').length]`);
+  check('the_metal_readout_reads_both_metals_and_leaves_the_run_alone', mOn && !mr[0] && !mr[1] && mr[2] > 1200 && mr[3]
+        && mr[4] > mr[5] && mr[6] === JSON.stringify(mOff) && mDrawn[0] >= 1 && mDrawn[1] === 2, JSON.stringify([mOn, mr.slice(0, 6), mDrawn]));
+  if (process.env.SANDBOX_SHOTS) await shot('controls-metal');
+  await ev(`window.sandbox.controls({metal_on: 0, cool_vane: 0, cool_blade: 0}).then(r => r.run)`);
   await ev(`document.getElementById('ctlq-Tt4').click()`);
   await ev(`window.sandbox.controls({lever: 'none', floor_on: 0, floor_phi: 0.75, floor_ref: 'phi', bleed_mode: 'schedule',
             valve_ref: 'phi', valve_speed: 'instant', valve_close: 'same', customer: 'off'}).then(r => r.run)`);
@@ -502,6 +517,46 @@ try {
   const bpc = await ev(`[document.getElementById('bn-pin-head').textContent, document.getElementById('d-bei').textContent]`);
   check('pin_and_compare_shows_the_burners_change', bpc[0] === 'Pinned' && /^[−+]/.test(bpc[1]), JSON.stringify(bpc));
   await ev(`document.getElementById('unpin').click()`);
+
+  // 16d. COOL THE TURBINE (rung 93). The opening knob form and three sweep points match native; the view shows its
+  // own cards; the sweep streams all 19 burner temperatures into the table and the chart.
+  await ev(`document.getElementById('mode-cooling').click()`);
+  const kOpen = await waitFor(`window.sandbox.view() === 'cooling' && window.sandbox.clState === 'done' && window.sandbox.last && window.sandbox.last.points && window.sandbox.last.points.length === 19`, 180000);
+  const kl = await ev('window.sandbox.last');
+  const ek = kl ? close(kl.knob, nativeOf('{"op":"cooling_knob","cooling":{}}')) : 'no knob';
+  const ep = kl ? [[0, 1300], [9, 1750], [18, 2200]].map(([i, t]) => close(kl.points[i], nativeOf(`{"op":"cooling_point","cooling":{},"Tt4":${t}}`))).find(e => e) : 'no sweep';
+  const kvis = await ev(`['cool-set','cool-knob-set','cool-out','cool-card','flight-set','ts-card','out','ctl-card'].map(i => document.getElementById(i).hidden)`);
+  const kt = await ev(`[document.getElementById('v-clmax').textContent, document.getElementById('cool-table').tBodies[0].rows.length, document.querySelectorAll('#cool-chart path.rline').length]`);
+  check('cool_the_turbine_opens_on_the_native_knob_and_sweep', kOpen && !ek && !ep && JSON.stringify(kvis) === '[false,false,false,false,true,true,true,true]'
+        && kt[0] !== '–' && kt[1] === 19 && kt[2] === 1, (ek || '') + (ep || '') + JSON.stringify([kOpen, kvis, kt]));
+  if (process.env.SANDBOX_SHOTS) {
+    await shot('cooling-light'); await shot('cooling-dark', 1280, true); await shot('cooling-phone', 390);
+    await ev(`document.getElementById('clq-st').click()`); await shot('cooling-thrust');
+    await ev(`document.getElementById('clq-air').click()`);
+  }
+  // Pin & compare: pin the film sweep, switch to plain convection, and the hottest-burner tile shows its change.
+  await ev(`document.getElementById('pin').click()`);
+  await ev(`window.sandbox.cooling({tech: 'convection'})`);
+  const kpc = await ev(`[document.getElementById('d-clmax').textContent, document.getElementById('cool-pin-legend').hidden]`);
+  check('pin_and_compare_shows_the_coolings_change', /^[−+]/.test(kpc[0]) && kpc[1] === false, JSON.stringify(kpc));
+  await ev(`document.getElementById('unpin').click()`);
+  // The redesigned framing sweeps every point, and the shaft-speed button hides (a fresh design has no off-design speeds).
+  const fr = await ev(`window.sandbox.cooling({framing: 'fresh', tech: 'film'}).then(r => [r.state, r.points.length, r.points.every(p => p.ok === 1), document.getElementById('clq-speed').hidden])`);
+  check('the_redesigned_framing_sweeps', fr[0] === 'ran' && fr[1] === 19 && fr[2] && fr[3], JSON.stringify(fr));
+  // A material year outside Gauntner's trend is refused in words.
+  const yr = await ev(`window.sandbox.cooling({framing: 'fixed', year: 1900}).then(r => r.state)`);
+  const yrText = await ev(`document.getElementById('bad-plain').textContent`);
+  check('a_material_year_outside_the_trend_is_refused_in_words', yr === 'does-not-run' && /material year/.test(yrText), JSON.stringify([yr, yrText]));
+  // A knob move while the sweep streams stops it (the worker is killed) and the new sweep finishes.
+  await ev(`window.sandbox.cooling({year: 1985}).then(r => r.state)`);
+  const kk0 = await ev('window.sandbox.kills');
+  await ev(`(() => { window.sandbox.cooling({tech: 'transpiration'}); return null; })()`);
+  const kgoing = await waitFor(`window.sandbox.clState === 'running' && /of 19/.test(document.getElementById('cool-progress').textContent)`, 20000);
+  await ev(`(() => { const e = document.getElementById('cl-year'); e.value = '1990'; e.dispatchEvent(new Event('input', {bubbles: true})); })()`);
+  const knew = await waitFor(`window.sandbox.clState === 'done' && window.sandbox.last.knob && window.sandbox.last.knob.limit_vane > 1250 && window.sandbox.last.points.length === 19`, 180000);
+  check('a_knob_move_stops_the_cooling_sweep_and_the_new_one_finishes', kgoing && knew && (await ev('window.sandbox.kills')) > kk0,
+        `going ${kgoing}, new ${knew}, kills ${kk0} -> ${await ev('window.sandbox.kills')}`);
+  await ev(`window.sandbox.cooling({tech: 'film', year: 1985}).then(r => r.state)`);
 
   // 17. Back to design: the design result is the opening one exactly -- the fly and blade sessions changed no design knob.
   await ev(`document.getElementById('mode-design').click()`);

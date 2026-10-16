@@ -119,6 +119,10 @@ fn every_element_the_script_looks_up_is_declared() {
                 // Rung 92's generator switches: `["off", "hp", "lp"]` and `["power", "share"]`.
                 "ctl-gen-" => looked_up.extend(["off", "hp", "lp"].map(|m| format!("{id}{m}"))),
                 "ctl-genby-" => looked_up.extend(["power", "share"].map(|m| format!("{id}{m}"))),
+                // Rung 93's cooling technologies (`TECH`) and the Cool the turbine chart's quantities.
+                "ctl-mtech-" | "cl-tech-" =>
+                    looked_up.extend(["convection", "coated", "film", "transpiration"].map(|m| format!("{id}{m}"))),
+                "clq-" => looked_up.extend(["air", "st", "tsfc", "tt3", "speed"].map(|m| format!("{id}{m}"))),
                 _ => {
                     assert!(!id.ends_with('-'), "{helper}: the prefix #{id} has no expansion in this census");
                     looked_up.push(id.to_string());
@@ -171,6 +175,8 @@ fn every_controls_knob_and_switch_is_a_setting_and_every_one_has_its_knob() {
     let t = read(TEMPLATE);
     let d = turbojet::sandbox_controls::ControlsSettings::defaults().to_json();
     let mut knobs: Vec<String> = js_map(&t, "CTL_NUM").into_iter().map(|(_, k)| k).collect();
+    // Rung 93's part life is a number set from a dropdown of preset lives, not a slider.
+    knobs.push("metal_life".to_string());
     knobs.sort();
     assert_eq!(knobs, numeric_keys(&d), "the Controls number knobs");
     // The switches: every 0/1 setting, and nothing else.
@@ -291,6 +297,36 @@ fn the_selects_offer_exactly_the_models_choices() {
     let mut bm: Vec<String> = turbojet::sandbox_burner::Closure::ALL.iter().map(|c| c.key().to_string()).collect();
     bm.sort();
     assert_eq!(options("bn-closure"), bm);
+    // Cool the turbine (rung 93): the same maps as Controls; the part lives inside the model's range.
+    assert_eq!(options("cl-shape"), cs);
+    for id in ["cl-life", "ctl-metal_life"] {
+        for o in options(id) {
+            let h: f64 = o.parse().unwrap_or_else(|_| panic!("#{id} offers {o:?}, not a number of hours"));
+            assert!((turbojet::sandbox_cooling::LIFE_MIN..=turbojet::sandbox_cooling::LIFE_MAX).contains(&h), "#{id}: {h}");
+        }
+    }
+}
+
+#[test]
+fn every_cooling_knob_is_a_cooling_setting_and_every_toggle_is_a_choice() {
+    use turbojet::sandbox_cooling::{CoolingSettings, Framing, TECH_KEYS};
+    let t = read(TEMPLATE);
+    let d = CoolingSettings::defaults().to_json();
+    let mut knobs: Vec<String> = js_map(&t, "CL_NUM").into_iter().map(|(_, k)| k).collect();
+    knobs.push("life".to_string());   // a dropdown of preset lives
+    knobs.sort();
+    assert_eq!(knobs, numeric_keys(&d), "the Cool the turbine number knobs");
+    let mut tech = js_list(&t, "TECH");
+    tech.sort();
+    let mut want: Vec<String> = TECH_KEYS.iter().map(|s| s.to_string()).collect();
+    want.sort();
+    assert_eq!(tech, want, "the technology toggles are the model's technologies");
+    for f in Framing::ALL {
+        assert!(t.contains(&format!("id=\"cl-fr-{}\"", f.key())), "a toggle for framing {}", f.key());
+    }
+    for k in TECH_KEYS {
+        assert!(t.contains(&format!("id=\"cl-tech-{k}\"")) && t.contains(&format!("id=\"ctl-mtech-{k}\"")), "toggles for {k}");
+    }
 }
 
 #[test]

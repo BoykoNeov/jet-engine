@@ -36,6 +36,7 @@ pub mod asymmetric_valve;
 pub mod customer_bleed;
 pub mod turbine_cooling;
 pub mod shaft_offtake;
+pub mod metal_temperature;
 pub mod valve_reference;
 pub mod twospool;
 
@@ -102,7 +103,7 @@ pub const RUST_OWNED: &[&str] = &["print_blade_speed_table", "print_three_levers
                                   "print_valve_reference_table", "print_lagged_incidence_table",
                                   "print_asymmetric_valve_table", "print_customer_bleed_table",
                                   "print_turbine_cooling_table",
-                                  "print_shaft_offtake_table"];
+                                  "print_shaft_offtake_table", "print_metal_temperature_table"];
 
 /// `main()`'s calls, in order, each named as the golden's segment file names it (a `print_*`
 /// function's name, or `main:<what>` for text `main()` prints inline).
@@ -207,6 +208,7 @@ pub const PANELS: &[(&str, Panel)] = &[
     ("print_customer_bleed_table", customer_bleed::customer_bleed_table),
     ("print_turbine_cooling_table", turbine_cooling::turbine_cooling_table),
     ("print_shaft_offtake_table", shaft_offtake::shaft_offtake_table),
+    ("print_metal_temperature_table", metal_temperature::metal_temperature_table),
     // ---- slice AR: the chart's line (the data itself is written by `src/main.rs`)
     ("plot_ts_diagram", cycle::ts_diagram_line),
 ];

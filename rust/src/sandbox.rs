@@ -560,6 +560,9 @@ fn refusal(reason: &str) -> Json {
 ///   `"settings":{…}` — the design — and `"burner":{…}`) → slice 5's burner view,
 ///   [`crate::sandbox_burner::call_op`]. `explain` with `"view":"burner"` →
 ///   [`crate::sandbox_burner::explain_burner`].
+/// - `cooling_defaults`, `cooling_point` (with `"cooling":{…}` and `"Tt4"`), `cooling_knob` → the *Cool the
+///   turbine* view (rung 93), [`crate::sandbox_cooling::call_op`]. `explain` with `"view":"cooling"` →
+///   [`crate::sandbox_cooling::explain_cooling`].
 pub fn call(request: &str) -> String {
     let req = Json::parse(request);
     let op = match req.get("op") { Some(Json::Str(s)) => s.as_str(), _ => "" };
@@ -605,6 +608,8 @@ pub fn call(request: &str) -> String {
                 jobj! { "plain" => crate::sandbox_controls::explain_controls(m) },
             Some(Json::Str(m)) if matches!(req.get("view"), Some(Json::Str(v)) if v == "burner") =>
                 jobj! { "plain" => crate::sandbox_burner::explain_burner(m) },
+            Some(Json::Str(m)) if matches!(req.get("view"), Some(Json::Str(v)) if v == "cooling") =>
+                jobj! { "plain" => crate::sandbox_cooling::explain_cooling(m) },
             Some(Json::Str(m)) => jobj! { "plain" => explain(m) },
             _ => refusal("explain needs a message"),
         },
@@ -632,6 +637,7 @@ pub fn call(request: &str) -> String {
             .or_else(|| crate::sandbox_transient::call_op(other, &req))
             .or_else(|| crate::sandbox_controls::call_op(other, &req))
             .or_else(|| crate::sandbox_burner::call_op(other, &req))
+            .or_else(|| crate::sandbox_cooling::call_op(other, &req))
             .unwrap_or_else(|| refusal(&format!("unknown op {other:?}"))),
     };
     out.dump_compact()
@@ -1122,5 +1128,6 @@ pub fn check_requests() -> Vec<String> {
     out.extend(crate::sandbox_transient::check_requests());
     out.extend(crate::sandbox_controls::check_requests());
     out.extend(crate::sandbox_burner::check_requests());
+    out.extend(crate::sandbox_cooling::check_requests());
     out
 }

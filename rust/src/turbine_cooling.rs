@@ -401,7 +401,8 @@ pub struct CooledResult {
 /// Rung 1's scoring ([`crate::engine::try_score`]) with the fuel ratio passed EXPLICITLY: there it
 /// is read off station 4, which is the burner's — the nozzle passes the coolant too, so the ratio
 /// that scores the exhaust is the diluted `f45`. A copy, not a parameterisation of the shipped one.
-fn try_score_nozzle(
+/// Rung 93's cooled DESIGN run scores its exhaust with it too.
+pub(crate) fn try_score_nozzle(
     stations: &[(&'static str, FlowState)], f: f64, gas: &Gas, v0: f64, t9: f64, v9: f64,
     p9: f64, p0: f64, hpr: f64,
 ) -> Result<Performance, Abort> {

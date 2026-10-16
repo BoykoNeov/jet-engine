@@ -108,7 +108,10 @@ for (const [i, line] of lines.entries()) {
     : r.blades ? (r.blades.gas ?? 'perfect')
     : r.slam ? ((r.slam.fly && r.slam.fly.gas) ?? 'thermally_perfect')
     : undefined;
-  const kind = r.op && r.op.startsWith('controls') ? 'march' : gas === 'perfect' ? 'perfect' : 'table';
+  // Rung 93's Cool the turbine requests are iterated solves on the perfect gas (a fixed point through rung 91's
+  // matcher to 1e-12 a share, a bisection to 1e-9 K), so they take the Controls bar.
+  const kind = r.op && (r.op.startsWith('controls') || r.op.startsWith('cooling')) ? 'march'
+    : gas === 'perfect' ? 'perfect' : 'table';
   if (browser !== undefined) compare(browser, JSON.parse(native), `#${i}`, fails, kind);
   if (fails.length) { failed++; console.log(`test grid #${i} ... FAILED\n  ${fails.slice(0, 5).join('\n  ')}`); }
   else passed++;

@@ -1436,3 +1436,37 @@ Controls view, under the turbine cooling (part of the engine, not a lever).
   2026-10-15 (once in the full gate, once standalone just after it): a Chrome helper of the run outlived the 15 s
   wait, then exited on its own (none left a minute later). Its bar was NOT raised; a rerun passed. If it recurs,
   log which helper type lingers (`--type=`) before changing the wait.
+
+## 22. Cool the turbine — rung 93 (2026-10-16) — a new view, and a readout on Controls
+
+Rung 93 (`docs/rung93-spec.md`) gave the turbine's vanes and rotor blades a metal temperature (Gauntner's 1980 NASA
+correlation on rung 91's two streams). The user chose (2026-10-16) a NEW view for the steady trade, an opt-in readout on
+the Controls slam, and the limits set by a material year and a part life.
+
+- **The view, *Cool the turbine*** (`sandbox_cooling.rs`): the Controls engine. Knobs: the framing (*this engine, run
+  hotter* — rung 91's fixed hardware — or *redesigned at each temperature*), the cooling technology (Gauntner's four
+  FACTORs), the material year (1950–2030) and the part life (a dropdown of five lives), the map shape (this engine only),
+  and *your cooling* (vane and blade shares, 0–0.24). Requests: `cooling_knob` (the hottest burner temperature with your
+  cooling and with none, and which row sets it), then `cooling_point` streamed over 1300 → 2200 K by 50 (the cooling
+  that holds both metals at their limits, its thrust and fuel per unit thrust against the same engine uncooled, the
+  cooling air's temperature, the shaft speeds), all on the view's own Worker, killed by a knob move. Opens on film
+  cooling, 1985, 10 000 h, 5 % vane and 3 % blade air.
+- **The knob's search starts where the engine solves.** The crash map found much cooling unchokes the nozzle at the
+  search's 700 K floor (the two-spool model's open seam), so a search from there refused a hottest temperature far above
+  it (180 of 294 knob requests in the first map). The view now steps the floor up by 50 K to the first throttle the engine
+  solves at; the model's `try_max_tt4` stays strict.
+- **The Controls readout** (`metal_on`, `metal_tech`, `metal_year`, `metal_life`; off by default — uncooled, the metal is
+  over its limit at every opening throttle, so every saved setting stays valid): both metals at every recorded point
+  (`MetalInputs::of_shares` at the march's own instant) and at both steady ends, a *Turbine metal* chart button with both
+  limits drawn, and table rows (peak, limits, end). It moves nothing else in the run (gated: every other column bit for
+  bit). On the default slam with 5 % vane and 3 % blade air the overshoot lifts the blade 137 K above its end metal, to
+  within 9 K of its limit (gated).
+- **Gates:** `tests/sandbox_cooling.rs` (each request IS rung 93's call, bit for bit, on a rig built in the test; the
+  readout and its non-interference; the knob's floor; every refusal in words); `tests/sandbox_page.rs` (the new knobs,
+  toggles and dropdowns are the model's settings and choices); `check_requests` adds 20 — 16 for the view, 4 for the readout (under the Controls bar: worst
+  4.5e−12 relative over the whole iterated class); `browser.mjs` adds the readout and the view (the opening knob and
+  three sweep points against native, pin & compare, the redesigned framing, a refused year, a sweep stopped by a knob
+  move).
+- **Crash map** (§ 14.3's instrument, 1 000 requests over the view's knob box, seed 11; `scratch-archive/rung93/`): no
+  panic — 703 sweep points answered, 3 refused at the stream cap; 294 knob requests, 206 answered and 88 holding all the
+  way to 2400 K (much cooling), none refused after the floor fix.

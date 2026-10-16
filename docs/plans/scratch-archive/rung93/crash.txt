@@ -1,0 +1,5 @@
+   88  knob: yours holds to the top, bare ok
+  206  knob: yours ok, bare ok
+    3  point refused: stream cap
+  703  point: answered
+0 panics; 11.6 s

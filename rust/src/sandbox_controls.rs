@@ -34,6 +34,8 @@ use crate::blade_speed::shape_maps;
 use crate::customer_bleed::CustomerBleed;
 use crate::turbine_cooling::TurbineCooling;
 use crate::shaft_offtake::{self, Demand, ShaftOfftake, ShaftOfftakeMatcher};
+use crate::metal_temperature::{self as mt, MetalInputs, MetalLimit, MetalReading, Row, TECHNOLOGIES};
+use crate::sandbox_cooling::{LIFE_MAX, LIFE_MIN, TECH_KEYS, YEAR_MAX, YEAR_MIN};
 use crate::engine::FlightCondition;
 use crate::fuel_transient::{r43_cut_below_ceiling, release_weight, AccelSchedule, AsymmetricLag, FuelInstant, FuelLimiters,
                             FuelPoint, FuelTransientCore, PointExtra, SurgeLimiter};
@@ -223,6 +225,13 @@ pub struct ControlsSettings {
     pub generator_by: GeneratorBy,
     pub generator_share: f64,
     pub generator_power: f64,
+    /// Rung 93: read both turbine metals along the run (off by default: uncooled, the metal is over its
+    /// limit at every opening throttle), with Gauntner's cooling technology (an index into
+    /// [`TECHNOLOGIES`]) and the limits from a material year and a part life.
+    pub metal_on: bool,
+    pub metal_tech: usize,
+    pub metal_year: f64,
+    pub metal_life: f64,
 }
 
 /// Rung 92's switch: which shaft the generator loads.
@@ -288,6 +297,7 @@ impl ControlsSettings {
             cool_vane: 0.0, cool_blade: 0.0,
             generator: GeneratorMode::Off, generator_by: GeneratorBy::Power, generator_share: 0.05,
             generator_power: 0.02,
+            metal_on: false, metal_tech: 2, metal_year: 1985.0, metal_life: 1.0e4,
         }
     }
 
@@ -320,6 +330,23 @@ impl ControlsSettings {
         }
     }
 
+    /// Rung 93's limits (`None` when the metal readout is off).
+    pub fn metal_limit(&self) -> Option<MetalLimit> {
+        self.metal_on.then(|| MetalLimit::new(TECHNOLOGIES[self.metal_tech].1,
+                                              mt::allowable(Row::Vane, self.metal_year, self.metal_life),
+                                              mt::allowable(Row::Blade, self.metal_year, self.metal_life)))
+    }
+
+    /// Both metals at an instant — rung 93's reading from the instant's temperatures and this run's
+    /// shares (the transient carries no station table: [`MetalInputs::of_shares`]).
+    pub fn metal_at(&self, i: &Instant2) -> Option<MetalReading> {
+        let lim = self.metal_limit()?;
+        let cool = TurbineCooling { vane: self.cool_vane, blade: self.cool_blade };
+        let inp = MetalInputs::of_shares(&BladeSettings::defaults().gas.gas(), i.tt4, i.close.tt3, i.close.f,
+                                         i.close.customer.unwrap_or(0.0), cool);
+        Some(mt::read(&inp, &lim))
+    }
+
     pub fn flight(&self) -> FlightCondition { BladeSettings::defaults().flight() }
 
     pub fn s_end(&self) -> f64 { self.ramp + self.settle }
@@ -348,6 +375,8 @@ impl ControlsSettings {
             "cool_blade" => self.cool_blade,
             "generator" => self.generator.key(), "generator_by" => self.generator_by.key(),
             "generator_share" => self.generator_share, "generator_power" => self.generator_power,
+            "metal_on" => b(self.metal_on), "metal_tech" => TECH_KEYS[self.metal_tech], "metal_year" => self.metal_year,
+            "metal_life" => self.metal_life,
         }
     }
 
@@ -392,7 +421,8 @@ impl ControlsSettings {
                           ("valve_tau_close", &mut s.valve_tau_close), ("customer_share", &mut s.customer_share),
                           ("customer_amount", &mut s.customer_amount), ("cool_vane", &mut s.cool_vane),
                           ("cool_blade", &mut s.cool_blade), ("generator_share", &mut s.generator_share),
-                          ("generator_power", &mut s.generator_power)] {
+                          ("generator_power", &mut s.generator_power), ("metal_year", &mut s.metal_year),
+                          ("metal_life", &mut s.metal_life)] {
             num(k, into)?;
         }
         if let Some(t) = text("customer")? {
@@ -409,7 +439,7 @@ impl ControlsSettings {
         }
         for (k, into) in [("redline_on", &mut s.redline_on), ("gov_lag_on", &mut s.gov_lag_on),
                           ("accel_on", &mut s.accel_on), ("floor_on", &mut s.floor_on),
-                          ("release_on", &mut s.release_on)] {
+                          ("release_on", &mut s.release_on), ("metal_on", &mut s.metal_on)] {
             flag(k, into)?;
         }
         if let Some(t) = text("floor_spool")? { s.floor_spool = spool(&t)?; }
@@ -439,6 +469,10 @@ impl ControlsSettings {
                 "own" => true,
                 _ => return Err(format!("unknown valve closing {t:?} (\"same\" or \"own\")")),
             };
+        }
+        if let Some(t) = text("metal_tech")? {
+            s.metal_tech = TECH_KEYS.iter().position(|&k| k == t).ok_or_else(|| format!(
+                "unknown cooling technology {t:?} (\"convection\", \"coated\", \"film\" or \"transpiration\")"))?;
         }
         if let Some(t) = text("lever")? {
             s.lever = LeverChoice::ALL.into_iter().find(|l| l.key() == t)
@@ -509,6 +543,17 @@ pub fn controls_precheck(s: &ControlsSettings) -> Result<(), DoesNotRun> {
                  ("generator_share", s.generator_share), ("generator_power", s.generator_power)];
     if let Some((k, _)) = named.iter().find(|(_, v)| !v.is_finite()) {
         return Err(DoesNotRun(format!("Setting {k} is not a number.")));
+    }
+    // Rung 93: the metal readout's year and life, inside Gauntner's trend (the Cool the turbine view's own).
+    if s.metal_on {
+        if !(YEAR_MIN..=YEAR_MAX).contains(&s.metal_year) {
+            return Err(DoesNotRun(format!(
+                "The material year must be between {YEAR_MIN:.0} and {YEAR_MAX:.0}: Gauntner's relation is a straight-line \
+                 trend fitted to the materials of his time, not a law to extrapolate far.")));
+        }
+        if !(LIFE_MIN..=LIFE_MAX).contains(&s.metal_life) {
+            return no("The part life must be between 100 and 1 000 000 hours.");
+        }
     }
     // Rung 92: the model's own bounds, refused in words before it asserts.
     let gen_half = |x: f64| (0.0..Demand::SHARE_MAX).contains(&x);
@@ -1344,6 +1389,8 @@ pub struct PointRead {
     pub holder: Holder,
     /// Rung 90: the aircraft's share of the HP compressor's air here (0 with no customer bleed).
     pub customer: f64,
+    /// Rung 93: both turbine metals here, when the readout is on.
+    pub metal: Option<MetalReading>,
     /// Each armed limiter's relative residual at the applied state (`None` = not armed).
     pub res_redline: Option<f64>,
     pub res_accel: Option<f64>,
@@ -1415,6 +1462,7 @@ impl ControlsSolver {
             thrust: Self::thrust(i), stall_lp, stall_hp,
             v: match s.stator_spool { Spool::Lp => v_lp, Spool::Hp => v_hp },
             bleed: i.close.bleed.unwrap_or(0.0), floor, valve, holder, customer: i.close.customer.unwrap_or(0.0),
+            metal: s.metal_at(i),
             res_redline, res_accel, res_floor,
         })
     }
@@ -1440,6 +1488,9 @@ fn steady_json(sv: &ControlsSolver, i: &Instant2) -> Json {
         // Rung 92: the generator's share of each turbine's work.
         "generator_share_hp" => shaft_offtake::shares(&sv.core.fuel.inner, i).0,
         "generator_share_lp" => shaft_offtake::shares(&sv.core.fuel.inner, i).1,
+        // Rung 93: both metals at the steady point (null with the readout off).
+        "metal_vane" => sv.settings.metal_at(i).map(|m| Json::Float(m.vane)).unwrap_or(Json::Null),
+        "metal_blade" => sv.settings.metal_at(i).map(|m| Json::Float(m.blade)).unwrap_or(Json::Null),
     }
 }
 
@@ -1487,6 +1538,13 @@ pub fn controls_json(sv: &ControlsSolver, o: &ControlsOutcome) -> Json {
         "valve" => rcol(&|r| r.valve.unwrap_or(f64::NAN)), "customer" => rcol(&|r| r.customer),
         "holder" => Json::List(reads.iter().map(|r| Json::from(r.as_ref().map(|r| r.holder.key()).unwrap_or("none"))).collect()),
         "choked" => Json::List(p.iter().map(|x| Json::Int((x.branch == Branch::Choked) as i64)).collect()),
+        // Rung 93: both metals along the run and their limits (null columns with the readout off).
+        "metal_vane" => rcol(&|r| r.metal.map_or(f64::NAN, |m| m.vane)),
+        "metal_blade" => rcol(&|r| r.metal.map_or(f64::NAN, |m| m.blade)),
+        "metal_limit" => match o.settings.metal_limit() {
+            None => Json::Null,
+            Some(l) => jobj! { "vane" => l.vane, "blade" => l.blade, "factor" => l.factor },
+        },
     }
 }
 
@@ -1561,6 +1619,12 @@ pub fn check_requests() -> Vec<String> {
         ControlsSettings { generator: GeneratorMode::Hp, generator_by: GeneratorBy::Share, cool_vane: 0.04,
                            customer: CustomerMode::Share, ..d },
         ControlsSettings { generator: GeneratorMode::Lp, generator_by: GeneratorBy::Share, generator_share: 0.5, ..d }, // refused
+        // rung 93: the metal readout — uncooled, cooled with a customer amount, a newer material, and refused
+        ControlsSettings { metal_on: true, ..d },
+        ControlsSettings { metal_on: true, cool_vane: 0.05, cool_blade: 0.03, customer: CustomerMode::Amount, ..d },
+        ControlsSettings { metal_on: true, metal_tech: 3, metal_year: 2010.0, cool_vane: 0.04, cool_blade: 0.02,
+                           redline_on: true, ..d },
+        ControlsSettings { metal_on: true, metal_year: 1900.0, ..d },                              // refused: year
         ControlsSettings { from: 1400.0, to: 1000.0, ..d },
         ControlsSettings { release_on: true, ..d },                                  // refused: nothing to lag
         ControlsSettings { floor_on: true, lever: LeverChoice::Stator, ..d },        // stop: the floor unreachable
