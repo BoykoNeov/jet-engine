@@ -1453,7 +1453,8 @@ the Controls slam, and the limits set by a material year and a part life.
   cooling, 1985, 10 000 h, 5 % vane and 3 % blade air.
 - **The knob's search starts where the engine solves.** The crash map found much cooling unchokes the nozzle at the
   search's 700 K floor (the two-spool model's open seam), so a search from there refused a hottest temperature far above
-  it (180 of 294 knob requests in the first map). The view now steps the floor up by 50 K to the first throttle the engine
+  it: in the first map 114 of 294 knob requests were answered, against 206 after the fix (the rest hold all the way to
+  2400 K; how many of those also hit the floor before the fix was not counted). The view now steps the floor up by 50 K to the first throttle the engine
   solves at; the model's `try_max_tt4` stays strict.
 - **The Controls readout** (`metal_on`, `metal_tech`, `metal_year`, `metal_life`; off by default — uncooled, the metal is
   over its limit at every opening throttle, so every saved setting stays valid): both metals at every recorded point
