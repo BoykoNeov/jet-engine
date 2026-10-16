@@ -1,0 +1,60 @@
+flow/press monotone check: 1066 samples; non-rising steps thrust 0 / Tt4 0 / HP rate 0; lean wall f 0.00401..0.00418, rich wall f 0.06500..0.06500
+press/flow monotone check: 1066 samples; non-rising steps thrust 0 / Tt4 0 / HP rate 0; lean wall f 0.00401..0.00423, rich wall f 0.06500..0.06500
+tilted     monotone check: 1066 samples; non-rising steps thrust 0 / Tt4 0 / HP rate 0; lean wall f 0.00400..0.00419, rich wall f 0.06500..0.06500
+flat-lp    monotone check: 1066 samples; non-rising steps thrust 0 / Tt4 0 / HP rate 0; lean wall f 0.00400..0.00417, rich wall f 0.06500..0.06500
+accel default          flow/press Tt4: 126/126 pts; root/rich/lean 126/0/0 (ramp 26/0/0 of 26); legs none/redline/sched/floor 126/0/0/0
+accel default          flow/press Thrust: 126/126 pts; root/rich/lean 126/0/0 (ramp 26/0/0 of 26); legs none/redline/sched/floor 126/0/0/0
+accel default          flow/press SpeedRate(0.1): 126/126 pts; root/rich/lean 126/0/0 (ramp 26/0/0 of 26); legs none/redline/sched/floor 126/0/0/0
+accel default          flow/press SpeedRate(0.5): 126/126 pts; root/rich/lean 126/0/0 (ramp 26/0/0 of 26); legs none/redline/sched/floor 126/0/0/0
+accel default          flat-lp    Tt4: 126/126 pts; root/rich/lean 126/0/0 (ramp 26/0/0 of 26); legs none/redline/sched/floor 126/0/0/0
+accel default          flat-lp    Thrust: 126/126 pts; root/rich/lean 126/0/0 (ramp 26/0/0 of 26); legs none/redline/sched/floor 126/0/0/0
+accel default          flat-lp    SpeedRate(0.1): 126/126 pts; root/rich/lean 126/0/0 (ramp 26/0/0 of 26); legs none/redline/sched/floor 126/0/0/0
+accel default          flat-lp    SpeedRate(0.5): 126/126 pts; root/rich/lean 126/0/0 (ramp 26/0/0 of 26); legs none/redline/sched/floor 126/0/0/0
+accel +redline         flow/press Tt4: 126/126 pts; root/rich/lean 126/0/0 (ramp 26/0/0 of 26); legs none/redline/sched/floor 126/0/0/0
+accel +redline         flow/press Thrust: 126/126 pts; root/rich/lean 123/3/0 (ramp 24/2/0 of 26); legs none/redline/sched/floor 59/67/0/0
+accel +redline         flow/press SpeedRate(0.1): 126/126 pts; root/rich/lean 102/24/0 (ramp 16/10/0 of 26); legs none/redline/sched/floor 51/75/0/0
+accel +redline         flow/press SpeedRate(0.5): 126/126 pts; root/rich/lean 126/0/0 (ramp 26/0/0 of 26); legs none/redline/sched/floor 88/38/0/0
+accel +redline         flat-lp    Tt4: 126/126 pts; root/rich/lean 126/0/0 (ramp 26/0/0 of 26); legs none/redline/sched/floor 126/0/0/0
+accel +redline         flat-lp    Thrust: 126/126 pts; root/rich/lean 121/5/0 (ramp 23/3/0 of 26); legs none/redline/sched/floor 64/62/0/0
+accel +redline         flat-lp    SpeedRate(0.1): 126/126 pts; root/rich/lean 102/24/0 (ramp 16/10/0 of 26); legs none/redline/sched/floor 51/75/0/0
+accel +redline         flat-lp    SpeedRate(0.5): 126/126 pts; root/rich/lean 126/0/0 (ramp 26/0/0 of 26); legs none/redline/sched/floor 89/37/0/0
+accel +sched           flow/press Tt4: 126/126 pts; root/rich/lean 126/0/0 (ramp 26/0/0 of 26); legs none/redline/sched/floor 100/0/26/0
+accel +sched           flow/press Thrust: 126/126 pts; root/rich/lean 104/22/0 (ramp 18/8/0 of 26); legs none/redline/sched/floor 63/0/63/0
+accel +sched           flow/press SpeedRate(0.1): 126/126 pts; root/rich/lean 83/43/0 (ramp 11/15/0 of 26); legs none/redline/sched/floor 59/0/67/0
+accel +sched           flow/press SpeedRate(0.5): 126/126 pts; root/rich/lean 126/0/0 (ramp 26/0/0 of 26); legs none/redline/sched/floor 78/0/48/0
+accel +sched           flat-lp    Tt4: 126/126 pts; root/rich/lean 126/0/0 (ramp 26/0/0 of 26); legs none/redline/sched/floor 101/0/25/0
+accel +sched           flat-lp    Thrust: 126/126 pts; root/rich/lean 101/25/0 (ramp 17/9/0 of 26); legs none/redline/sched/floor 65/0/61/0
+accel +sched           flat-lp    SpeedRate(0.1): 126/126 pts; root/rich/lean 83/43/0 (ramp 11/15/0 of 26); legs none/redline/sched/floor 59/0/67/0
+accel +sched           flat-lp    SpeedRate(0.5): 126/126 pts; root/rich/lean 126/0/0 (ramp 26/0/0 of 26); legs none/redline/sched/floor 80/0/46/0
+accel +redline+sched   flow/press Tt4: 126/126 pts; root/rich/lean 126/0/0 (ramp 26/0/0 of 26); legs none/redline/sched/floor 100/0/26/0
+accel +redline+sched   flow/press Thrust: 126/126 pts; root/rich/lean 104/22/0 (ramp 18/8/0 of 26); legs none/redline/sched/floor 41/41/44/0
+accel +redline+sched   flow/press SpeedRate(0.1): 126/126 pts; root/rich/lean 82/44/0 (ramp 11/15/0 of 26); legs none/redline/sched/floor 34/48/44/0
+accel +redline+sched   flow/press SpeedRate(0.5): 126/126 pts; root/rich/lean 126/0/0 (ramp 26/0/0 of 26); legs none/redline/sched/floor 67/17/42/0
+accel +redline+sched   flat-lp    Tt4: 126/126 pts; root/rich/lean 126/0/0 (ramp 26/0/0 of 26); legs none/redline/sched/floor 101/0/25/0
+accel +redline+sched   flat-lp    Thrust: 126/126 pts; root/rich/lean 101/25/0 (ramp 17/9/0 of 26); legs none/redline/sched/floor 46/37/43/0
+accel +redline+sched   flat-lp    SpeedRate(0.1): 126/126 pts; root/rich/lean 82/44/0 (ramp 11/15/0 of 26); legs none/redline/sched/floor 35/47/44/0
+accel +redline+sched   flat-lp    SpeedRate(0.5): 126/126 pts; root/rich/lean 126/0/0 (ramp 26/0/0 of 26); legs none/redline/sched/floor 69/17/40/0
+accel ramp 2.0         flow/press Tt4: 201/201 pts; root/rich/lean 201/0/0 (ramp 101/0/0 of 101); legs none/redline/sched/floor 201/0/0/0
+accel ramp 2.0         flow/press Thrust: 201/201 pts; root/rich/lean 201/0/0 (ramp 101/0/0 of 101); legs none/redline/sched/floor 201/0/0/0
+accel ramp 2.0         flow/press SpeedRate(0.1): 201/201 pts; root/rich/lean 201/0/0 (ramp 101/0/0 of 101); legs none/redline/sched/floor 201/0/0/0
+accel ramp 2.0         flow/press SpeedRate(0.5): 201/201 pts; root/rich/lean 201/0/0 (ramp 101/0/0 of 101); legs none/redline/sched/floor 201/0/0/0
+accel ramp 2.0         flat-lp    Tt4: 201/201 pts; root/rich/lean 201/0/0 (ramp 101/0/0 of 101); legs none/redline/sched/floor 201/0/0/0
+accel ramp 2.0         flat-lp    Thrust: 201/201 pts; root/rich/lean 201/0/0 (ramp 101/0/0 of 101); legs none/redline/sched/floor 201/0/0/0
+accel ramp 2.0         flat-lp    SpeedRate(0.1): 201/201 pts; root/rich/lean 201/0/0 (ramp 101/0/0 of 101); legs none/redline/sched/floor 201/0/0/0
+accel ramp 2.0         flat-lp    SpeedRate(0.5): 201/201 pts; root/rich/lean 201/0/0 (ramp 101/0/0 of 101); legs none/redline/sched/floor 201/0/0/0
+decel 1400->1000       flow/press Tt4: 126/126 pts; root/rich/lean 126/0/0 (ramp 26/0/0 of 26); legs none/redline/sched/floor 126/0/0/0
+decel 1400->1000       flow/press Thrust: 126/126 pts; root/rich/lean 126/0/0 (ramp 26/0/0 of 26); legs none/redline/sched/floor 126/0/0/0
+decel 1400->1000       flow/press SpeedRate(0.1): 126/126 pts; root/rich/lean 104/0/22 (ramp 12/0/14 of 26); legs none/redline/sched/floor 126/0/0/0
+decel 1400->1000       flow/press SpeedRate(0.5): 126/126 pts; root/rich/lean 126/0/0 (ramp 26/0/0 of 26); legs none/redline/sched/floor 126/0/0/0
+decel 1400->1000       flat-lp    Tt4: 126/126 pts; root/rich/lean 126/0/0 (ramp 26/0/0 of 26); legs none/redline/sched/floor 126/0/0/0
+decel 1400->1000       flat-lp    Thrust: 126/126 pts; root/rich/lean 126/0/0 (ramp 26/0/0 of 26); legs none/redline/sched/floor 126/0/0/0
+decel 1400->1000       flat-lp    SpeedRate(0.1): 126/126 pts; root/rich/lean 104/0/22 (ramp 12/0/14 of 26); legs none/redline/sched/floor 126/0/0/0
+decel 1400->1000       flat-lp    SpeedRate(0.5): 126/126 pts; root/rich/lean 126/0/0 (ramp 26/0/0 of 26); legs none/redline/sched/floor 126/0/0/0
+decel ramp 2.0         flow/press Tt4: 201/201 pts; root/rich/lean 201/0/0 (ramp 101/0/0 of 101); legs none/redline/sched/floor 201/0/0/0
+decel ramp 2.0         flow/press Thrust: 201/201 pts; root/rich/lean 201/0/0 (ramp 101/0/0 of 101); legs none/redline/sched/floor 201/0/0/0
+decel ramp 2.0         flow/press SpeedRate(0.1): 201/201 pts; root/rich/lean 201/0/0 (ramp 101/0/0 of 101); legs none/redline/sched/floor 201/0/0/0
+decel ramp 2.0         flow/press SpeedRate(0.5): 201/201 pts; root/rich/lean 201/0/0 (ramp 101/0/0 of 101); legs none/redline/sched/floor 201/0/0/0
+decel ramp 2.0         flat-lp    Tt4: 201/201 pts; root/rich/lean 201/0/0 (ramp 101/0/0 of 101); legs none/redline/sched/floor 201/0/0/0
+decel ramp 2.0         flat-lp    Thrust: 201/201 pts; root/rich/lean 201/0/0 (ramp 101/0/0 of 101); legs none/redline/sched/floor 201/0/0/0
+decel ramp 2.0         flat-lp    SpeedRate(0.1): 201/201 pts; root/rich/lean 201/0/0 (ramp 101/0/0 of 101); legs none/redline/sched/floor 201/0/0/0
+decel ramp 2.0         flat-lp    SpeedRate(0.5): 201/201 pts; root/rich/lean 201/0/0 (ramp 101/0/0 of 101); legs none/redline/sched/floor 201/0/0/0

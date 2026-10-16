@@ -1,0 +1,4 @@
+flow/press start nu_H 0.78979 nu_L 0.75574 mf 9.537924e-3 | end nu_H 0.95906 nu_L 0.94952 mf 2.340547e-2 | (nu_H end/start)^2 1.4746
+press/flow start nu_H 0.79530 nu_L 0.73959 mf 9.550504e-3 | end nu_H 0.96040 nu_L 0.94508 mf 2.340540e-2 | (nu_H end/start)^2 1.4583
+tilted     start nu_H 0.79240 nu_L 0.74808 mf 9.523377e-3 | end nu_H 0.95970 nu_L 0.94722 mf 2.340304e-2 | (nu_H end/start)^2 1.4668
+flat-lp    start nu_H 0.78979 nu_L 0.81173 mf 9.634826e-3 | end nu_H 0.95906 nu_L 0.96496 mf 2.341879e-2 | (nu_H end/start)^2 1.4746

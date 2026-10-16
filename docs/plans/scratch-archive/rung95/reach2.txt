@@ -1,0 +1,28 @@
+accel +redline   flow/press Thrust: rich clamps with no leg cutting: 0
+accel +redline   flow/press SpeedRate(0.1): rich clamps with no leg cutting: 0
+accel +redline   flat-lp    Thrust: rich clamps with no leg cutting: 0
+accel +redline   flat-lp    SpeedRate(0.1): rich clamps with no leg cutting: 0
+accel +sched     flow/press Thrust: rich clamps with no leg cutting: 0
+accel +sched     flow/press SpeedRate(0.1): rich clamps with no leg cutting: 0
+accel +sched     flat-lp    Thrust: rich clamps with no leg cutting: 0
+accel +sched     flat-lp    SpeedRate(0.1): rich clamps with no leg cutting: 0
+accel flow/press P K=2: 126/126 pts; root/rich/lean 126/0/0
+accel flow/press P K=5: 126/126 pts; root/rich/lean 126/0/0
+accel flow/press P K=20: 126/126 pts; root/rich/lean 126/0/0
+accel flow/press P K=50: 126/126 pts; root/rich/lean 126/0/0
+accel flow/press P K=200: 126/126 pts; root/rich/lean 126/0/0
+accel flat-lp    P K=2: 126/126 pts; root/rich/lean 126/0/0
+accel flat-lp    P K=5: 126/126 pts; root/rich/lean 126/0/0
+accel flat-lp    P K=20: 126/126 pts; root/rich/lean 126/0/0
+accel flat-lp    P K=50: 126/126 pts; root/rich/lean 126/0/0
+accel flat-lp    P K=200: 126/126 pts; root/rich/lean 126/0/0
+decel flow/press P K=2: 126/126 pts; root/rich/lean 126/0/0
+decel flow/press P K=5: 126/126 pts; root/rich/lean 126/0/0
+decel flow/press P K=20: 126/126 pts; root/rich/lean 112/0/14
+decel flow/press P K=50: 126/126 pts; root/rich/lean 102/0/24
+decel flow/press P K=200: 126/126 pts; root/rich/lean 96/0/30
+decel flat-lp    P K=2: 126/126 pts; root/rich/lean 126/0/0
+decel flat-lp    P K=5: 126/126 pts; root/rich/lean 126/0/0
+decel flat-lp    P K=20: 126/126 pts; root/rich/lean 112/0/14
+decel flat-lp    P K=50: 126/126 pts; root/rich/lean 103/0/23
+decel flat-lp    P K=200: 126/126 pts; root/rich/lean 97/0/29
