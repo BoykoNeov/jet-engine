@@ -367,6 +367,10 @@ footer p { max-width: 90ch; }
             <option value="10000">10 000 hours</option><option value="30000">30 000 hours</option>
             <option value="100000">100 000 hours</option></select>
           <div class="derived" id="ctl-metal-limits">The limits come from the year and the life (Gauntner's 1980 relation).</div></div>
+        <label class="swrow"><input type="checkbox" id="ctl-hold_cap"> Stop the burner at the metal limit <small>rung 94</small></label>
+        <p class="note" id="ctl-cap-note">With the throttle holding thrust or HP speed, the burner stops where either metal
+          reaches its limit, and the end falls short of what it holds; the table says by how much. It needs turbine cooling:
+          uncooled, the metal allows only about 990 K.</p>
         <p class="note">Reads the vane and blade metal temperatures at every point of the run, from the turbine inlet
           temperature, the compressor's exit temperature (the cooling air) and the cooling shares above, with the NASA
           correlation the project uses for the <b>Cool the turbine</b> view (Gauntner 1980). It changes nothing in the
@@ -391,6 +395,16 @@ footer p { max-width: 90ch; }
         <div id="ctl-gshare-box">
           <div class="knob"><label for="ctl-generator_share">Share of that turbine's work</label><input type="number" id="ctl-generator_share" step="0.01">
             <input type="range" id="ctl-generator_share-r" min="0" max="0.3" step="0.01" aria-label="Generator share slider"></div></div>
+        <div class="toggle" role="group" aria-label="What each throttle holds while the generator draws power">
+          <button type="button" id="ctl-hold-tt4" aria-pressed="true">Throttle holds burner temperature</button>
+          <button type="button" id="ctl-hold-thrust" aria-pressed="false">Holds thrust</button>
+          <button type="button" id="ctl-hold-speed" aria-pressed="false">Holds HP speed</button></div>
+        <p class="note" id="ctl-hold-note">Holding thrust or HP speed, each end of the move asks for what this engine gives at
+          that throttle with the generator off, and the burner runs as hot as carrying the generator needs (rung 94). On the
+          project's test rig, holding thrust, the hotter burner moves the LP compressor away from stall, and at mid to high
+          power, with the generator on the LP shaft, both compressors end up further from stall than with no generator at all. Holding HP speed is not holding thrust: with
+          the generator on the HP shaft it burns much hotter and gives MORE thrust; on the LP shaft it can run the burner
+          cooler. The fuel still ramps between the two ends; a load too big for a throttle is refused in words.</p>
       </div>
       <p class="note" id="ctl-gen-note">The generator takes power off a shaft and no air at all: no gas path changes, only the work the
         compressor on that shaft gets. On the HP shaft that pushes BOTH compressors toward their stall lines at every power
@@ -1134,7 +1148,7 @@ const CTL_NUM = { "ctl-rho": "rho", "ctl-from": "from", "ctl-to": "to", "ctl-ram
                   "ctl-cool_vane": "cool_vane", "ctl-cool_blade": "cool_blade",
                   "ctl-generator_power": "generator_power", "ctl-generator_share": "generator_share",
                   "ctl-metal_year": "metal_year" };
-const CTL_SW = ["redline_on", "gov_lag_on", "accel_on", "floor_on", "release_on", "metal_on"];
+const CTL_SW = ["redline_on", "gov_lag_on", "accel_on", "floor_on", "release_on", "metal_on", "hold_cap"];
 const CTL_VIEW = ["ctl-set", "ctl-sw-set", "ctl-lever-set", "ctl-out", "ctl-card"];
 // Cool the turbine (rung 93, turbojet::sandbox_cooling): CL holds the view's knobs. The knob form runs first, then
 // the sweep streams one burner temperature at a time, both on the view's OWN worker, killed when a knob moves.
@@ -1247,6 +1261,9 @@ function showSettings() {
     for (const t of TECH) press("ctl-mtech-" + t, C.metal_tech === t);
     $("ctl-metal-box").hidden = C.metal_on !== 1; $("ctlq-metal").hidden = C.metal_on !== 1;
     $("ctl-metal_life").value = String(C.metal_life);
+    for (const h of ["tt4", "thrust", "speed"]) press("ctl-hold-" + h, C.hold === h);
+    $("ctl-hold-note").hidden = C.generator === "off" || C.hold === "tt4";
+    $("ctl-cap-note").hidden = !C.hold_cap;
     $("ctl-metal-limits").textContent = crun && crun.metal_limit
       ? `With the last run's year and life: vane ${fmt(crun.metal_limit.vane, 5)} K, blade ${fmt(crun.metal_limit.blade, 5)} K.`
       : "The limits come from the year and the life (Gauntner's 1980 relation).";
@@ -1764,6 +1781,15 @@ const CTL_ROWS = [
   ["Generator load, start / end (% of its turbine's work)", r => r.controls.generator === "off" ? "none"
     : `${fmt((r.controls.generator === "hp" ? r.start.generator_share_hp : r.start.generator_share_lp) * 100, 3)} / ${
         fmt((r.controls.generator === "hp" ? r.end.generator_share_hp : r.end.generator_share_lp) * 100, 3)} (${r.controls.generator.toUpperCase()} shaft)`],
+  ["Burner at the ends, start / end (K; set → actual)", r => r.start.hold_set === null || r.start.hold_set === undefined
+    ? `${fmt(r.start.Tt4, 5)} / ${fmt(r.end.Tt4, 5)}`
+    : `${fmt(r.start.hold_set, 5)} → ${fmt(r.start.Tt4, 5)} / ${fmt(r.end.hold_set, 5)} → ${fmt(r.end.Tt4, 5)}`],
+  ["What the ends hold, start / end (achieved / asked)", r => r.start.hold_target === null || r.start.hold_target === undefined ? "the burner temperature"
+    : r.controls.hold === "thrust"
+    ? `thrust ${fmt(r.start.hold_achieved, 4)} / ${fmt(r.start.hold_target, 4)}, ${fmt(r.end.hold_achieved, 4)} / ${fmt(r.end.hold_target, 4)} N`
+      + (r.start.hold_capped || r.end.hold_capped ? " (metal cap)" : "")
+    : `HP speed ${fmt(r.start.hold_achieved * 100, 4)} / ${fmt(r.start.hold_target * 100, 4)}, ${fmt(r.end.hold_achieved * 100, 4)} / ${fmt(r.end.hold_target * 100, 4)} %`
+      + (r.start.hold_capped || r.end.hold_capped ? " (metal cap)" : "")],
   ["Peak metal, vane / blade (K)", r => r.metal_limit
     ? `${fmt(Math.max(...r.metal_vane.filter(v => v !== null)), 5)} / ${fmt(Math.max(...r.metal_blade.filter(v => v !== null)), 5)}` : "not read"],
   ["Their limits, vane / blade (K)", r => r.metal_limit ? `${fmt(r.metal_limit.vane, 5)} / ${fmt(r.metal_limit.blade, 5)}` : "not read"],
@@ -2738,6 +2764,7 @@ function wire() {
   $("mode-controls").addEventListener("click", enterControls);
   // Rung 93's metal readout on the slam.
   for (const t of TECH) cclick("ctl-mtech-" + t, () => { C.metal_tech = t; });
+  for (const h of ["tt4", "thrust", "speed"]) cclick("ctl-hold-" + h, () => { C.hold = h; if (h === "tt4") C.hold_cap = 0; });
   $("ctl-metal_life").addEventListener("change", () => { C.metal_life = +$("ctl-metal_life").value; scheduleCtl(); });
   // Cool the turbine (rung 93): its knobs write CL; the knob form and the sweep follow.
   $("mode-cooling").addEventListener("click", enterCooling);

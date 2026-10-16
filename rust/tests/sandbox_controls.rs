@@ -533,7 +533,8 @@ fn settings_round_trip_and_the_entry_point_answers() {
                                customer: CustomerMode::Amount, customer_share: 0.07, customer_amount: 0.04,
                                cool_vane: 0.06, cool_blade: 0.02, generator: GeneratorMode::Lp,
                                generator_by: GeneratorBy::Share, generator_share: 0.08, generator_power: 0.03,
-                               metal_on: true, metal_tech: 1, metal_year: 1997.0, metal_life: 30_000.0 };
+                               metal_on: true, metal_tech: 1, metal_year: 1997.0, metal_life: 30_000.0,
+                               hold: turbojet::burner_hold::Hold::HpSpeed, hold_cap: true };
     let back = ControlsSettings::from_json(&Json::parse(&s.to_json().dump_compact())).unwrap();
     assert_eq!(back, s);
     let d = Json::parse(&call(r#"{"op":"controls_defaults"}"#));

@@ -24,12 +24,12 @@ the web page running the Rust model live is `docs/sandbox/` (slices 1–5 built;
 ## The rungs
 
 The model is built in cumulative **rungs** — each adds one physical effect and is anchored to a
-published case. All rungs are live; the current scope is **rung 93**.
+published case. All rungs are live; the current scope is **rung 94**.
 
 **Families** (contiguous): 1–6 cycle · 7–24 NOx & mixing · 25–30 nozzle/turbine marches ·
 31–33 off-design steady · 34–37 1-spool transient · 38–45 two-spool · 46–52 fuel limiters ·
 53–56 + 61 airflow levers (steady) · 57–60, 62–63 schedules · 64–68 valve/lag/cascades ·
-69–84 reference splits & rank · 85 blade-speed walls · 86–89 three levers, valve reference, slow & asymmetric valve · 90–93 customer bleed, turbine cooling, shaft offtake, metal limit (knobs). **Read-only diagnostics: 7–30, 36, 41, 44, 45**; all else
+69–84 reference splits & rank · 85 blade-speed walls · 86–89 three levers, valve reference, slow & asymmetric valve · 90–94 customer bleed, turbine cooling, shaft offtake, metal limit, burner hold (knobs). **Read-only diagnostics: 7–30, 36, 41, 44, 45**; all else
 STRUCTURAL / DYNAMIC — an operating point, via § Layout's ladders.
 
 | Rung | Adds (one-line hook) | Spec |
@@ -128,6 +128,7 @@ STRUCTURAL / DYNAMIC — an operating point, via § Layout's ladders.
 | 91 | **TURBINE COOLING AIR** — HPC air rejoining before (vane) or after (blade) the HP rotor, as KNOBS. **HEADLINE: air that comes back is cheap in thrust, dear in surge margin** — it back-pressures A45, so the HP arrow REVERSES at high power and the LP loses its relief. **BOUNDS 90; BOUNDS 31's pin.** | `docs/rung91-spec.md` |
 | 92 | **SHAFT-POWER OFFTAKE** — a generator load on the HP or LP shaft, as KNOBS. **HEADLINE: a bleed is a power offtake plus air thrown away** (exact): on the HP shaft both spools go toward surge at every power; the LP shaft is nearly free. **CORRECTS 90's HP mechanism; EXPLAINS 42.** | `docs/rung92-spec.md` |
 | 93 | **METAL TEMPERATURE** — Gauntner's NASA correlation on 91's vane and blade air, as KNOBS. **HEADLINE: cooling never stops the engine, and on fixed hardware it cools its own coolant** — so fixed and fresh engines trade places, at a crossing that rises as cooling worsens. **DISCHARGES 91's concession.** | `docs/rung93-spec.md` |
+| 94 | **A BURNER THAT CARRIES THE LOAD** — each throttle holds thrust or HP speed, the burner floating, as KNOBS. **HEADLINE: carrying the generator relieves the compressors** — an LP-shaft one becomes a stall-margin GAIN; holding HP speed is not holding thrust. **CORRECTS 92's concession.** | `docs/rung94-spec.md` |
 
 ## Working contract (from SPEC.md — these override convenience)
 - **Derive before you code.** For each station, write the governing equation and
@@ -143,7 +144,7 @@ STRUCTURAL / DYNAMIC — an operating point, via § Layout's ladders.
 - **Every new rung reduces to its predecessor**, exactly and by test (`X=None` ⇒
   the prior code path). This is the project's spine — see any `docs/rungN-spec.md`.
 
-**Current scope (rung 93).** The **cycle solve** is a thermally-perfect, reacting,
+**Current scope (rung 94).** The **cycle solve** is a thermally-perfect, reacting,
 dissociation-equilibrium gas (`Gas.reacting_equilibrium()`) through ideal + real components
 (rungs 2/2b's knobs, mutually exclusive; specified exit pressure). The burner root-finds `f` over the scale-B
 absolute balance, then freezes the station-4 mixture through turbine + nozzle; Fork A/B and
@@ -207,8 +208,8 @@ tag **`python-final`** keeps it, and every `engine.py:N` / `test_rungN.py` citat
   `two_spool_transient.rs` (40, 44) → `bleed.rs` (42) → `fuel_transient.rs` (43, 45, and the
   fuel-side limiters 46–52) → `stator.rs` (53–54) → `stage.rs` (55–56) → `stator_transient.rs`
   (57–60) → `stator_bleed.rs` (61) → `bleed_transient.rs` (62–63) → `limited_bleed.rs` (64) →
-  `lagged_bleed.rs` (65) → **exactly ONE module per rung, 66→93** (`two_lag.rs` …
-  `three_levers.rs`, `valve_reference.rs`, `lagged_incidence.rs`, `asymmetric_valve.rs`, `customer_bleed.rs`, `turbine_cooling.rs`, `shaft_offtake.rs`, `metal_temperature.rs`). A rung is a core plus a `const` table of function pointers, and reduces to
+  `lagged_bleed.rs` (65) → **exactly ONE module per rung, 66→94** (`two_lag.rs` …
+  `three_levers.rs`, `valve_reference.rs`, `lagged_incidence.rs`, `asymmetric_valve.rs`, `customer_bleed.rs`, `turbine_cooling.rs`, `shaft_offtake.rs`, `metal_temperature.rs`, `burner_hold.rs`). A rung is a core plus a `const` table of function pointers, and reduces to
   its predecessor; **each module's header names its rung, and what it adds is in its spec** — so
   this entry never grows.
 - `rust/src/main.rs` + `panels/` + `pyfmt.rs` — the CLI: the design-point tables and **one panel per

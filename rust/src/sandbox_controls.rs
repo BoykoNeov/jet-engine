@@ -36,6 +36,7 @@ use crate::turbine_cooling::TurbineCooling;
 use crate::shaft_offtake::{self, Demand, ShaftOfftake, ShaftOfftakeMatcher};
 use crate::metal_temperature::{self as mt, MetalInputs, MetalLimit, MetalReading, Row, TECHNOLOGIES};
 use crate::sandbox_cooling::{LIFE_MAX, LIFE_MIN, TECH_KEYS, YEAR_MAX, YEAR_MIN};
+use crate::burner_hold::{self as bh, Hold};
 use crate::engine::FlightCondition;
 use crate::fuel_transient::{r43_cut_below_ceiling, release_weight, AccelSchedule, AsymmetricLag, FuelInstant, FuelLimiters,
                             FuelPoint, FuelTransientCore, PointExtra, SurgeLimiter};
@@ -232,6 +233,11 @@ pub struct ControlsSettings {
     pub metal_tech: usize,
     pub metal_year: f64,
     pub metal_life: f64,
+    /// Rung 94: what each throttle end holds while the generator is on — the burner temperature (rung 92's throttle,
+    /// the default), or the thrust or HP speed this engine gives at that temperature with the generator off, the burner
+    /// temperature floating to carry the load; and whether the metal limit (rung 93) BINDS the floating burner.
+    pub hold: Hold,
+    pub hold_cap: bool,
 }
 
 /// Rung 92's switch: which shaft the generator loads.
@@ -298,6 +304,7 @@ impl ControlsSettings {
             generator: GeneratorMode::Off, generator_by: GeneratorBy::Power, generator_share: 0.05,
             generator_power: 0.02,
             metal_on: false, metal_tech: 2, metal_year: 1985.0, metal_life: 1.0e4,
+            hold: Hold::BurnerTemp, hold_cap: false,
         }
     }
 
@@ -377,6 +384,7 @@ impl ControlsSettings {
             "generator_share" => self.generator_share, "generator_power" => self.generator_power,
             "metal_on" => b(self.metal_on), "metal_tech" => TECH_KEYS[self.metal_tech], "metal_year" => self.metal_year,
             "metal_life" => self.metal_life,
+            "hold" => self.hold.key(), "hold_cap" => b(self.hold_cap),
         }
     }
 
@@ -439,7 +447,7 @@ impl ControlsSettings {
         }
         for (k, into) in [("redline_on", &mut s.redline_on), ("gov_lag_on", &mut s.gov_lag_on),
                           ("accel_on", &mut s.accel_on), ("floor_on", &mut s.floor_on),
-                          ("release_on", &mut s.release_on), ("metal_on", &mut s.metal_on)] {
+                          ("release_on", &mut s.release_on), ("metal_on", &mut s.metal_on), ("hold_cap", &mut s.hold_cap)] {
             flag(k, into)?;
         }
         if let Some(t) = text("floor_spool")? { s.floor_spool = spool(&t)?; }
@@ -469,6 +477,10 @@ impl ControlsSettings {
                 "own" => true,
                 _ => return Err(format!("unknown valve closing {t:?} (\"same\" or \"own\")")),
             };
+        }
+        if let Some(t) = text("hold")? {
+            s.hold = Hold::ALL.into_iter().find(|h| h.key() == t)
+                .ok_or_else(|| format!("unknown hold {t:?} (\"tt4\", \"thrust\" or \"speed\")"))?;
         }
         if let Some(t) = text("metal_tech")? {
             s.metal_tech = TECH_KEYS.iter().position(|&k| k == t).ok_or_else(|| format!(
@@ -543,6 +555,21 @@ pub fn controls_precheck(s: &ControlsSettings) -> Result<(), DoesNotRun> {
                  ("generator_share", s.generator_share), ("generator_power", s.generator_power)];
     if let Some((k, _)) = named.iter().find(|(_, v)| !v.is_finite()) {
         return Err(DoesNotRun(format!("Setting {k} is not a number.")));
+    }
+    // Rung 94: the metal cap binds a FLOATING burner, so it needs a hold, the metal read, and cooling (uncooled, the
+    // 1985 metals allow about 990 K — below every opening throttle, so the cap would clamp both ends).
+    if s.hold_cap {
+        if s.hold == Hold::BurnerTemp {
+            return no("The metal cap stops a burner that floats to hold thrust or speed. With the burner temperature itself \
+                       held, lower the throttle instead.");
+        }
+        if !s.metal_on {
+            return no("The metal cap needs the metal read: switch on Read the turbine metal.");
+        }
+        if s.cool_vane == 0.0 && s.cool_blade == 0.0 {
+            return no("With no turbine cooling the metal allows only about 990 K (1985 metals), below these throttles, so \
+                       the cap would clamp both ends of the run. Cool the turbine first.");
+        }
     }
     // Rung 93: the metal readout's year and life, inside Gauntner's trend (the Cool the turbine view's own).
     if s.metal_on {
@@ -697,7 +724,24 @@ pub struct ControlsSolver {
     pub mf_hi: f64,
     /// Rung 48's table, derived on THIS machine's running line over the throttle band.
     pub accel: Option<AccelSchedule>,
+    /// Rung 94: what each end held, when it held thrust or HP speed with the generator on.
+    pub hold_start: Option<HoldInfo>,
+    pub hold_end: Option<HoldInfo>,
 }
+
+/// Rung 94: one end's hold — the throttle set, the target (thrust N per kg/s of design airflow, or HP speed), what
+/// the end achieves, and whether the metal cap stopped the burner short of it.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct HoldInfo {
+    pub set: f64,
+    pub target: f64,
+    pub achieved: f64,
+    pub capped: bool,
+}
+
+/// Rung 94: the burner temperatures a hold searches, K.
+pub const HOLD_LO: f64 = 600.0;
+pub const HOLD_HI: f64 = 2000.0;
 
 /// Build the machine and solve both endpoints — or say why an endpoint has no steady point.
 pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
@@ -758,8 +802,46 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
             DoesNotRun(words)
         })
     };
-    let start = steady("starting", s.from)?;
-    let end = steady("final", s.to)?;
+    // Rung 94: with the generator on, an end that holds thrust or HP speed lands where the loaded machine gives what
+    // the same machine WITHOUT the generator gives at the set throttle; the burner temperature floats, and the metal
+    // cap (on its switch) stops it. Holding the burner temperature, or with no load, is rung 92's end exactly.
+    let held = |i: &Instant2| match s.hold {
+        Hold::Thrust => ControlsSolver::thrust(i),
+        Hold::HpSpeed => i.nu_hp,
+        Hold::BurnerTemp => i.tt4,
+    };
+    let hold_end = |which: &str, t_set: f64| -> Result<(Instant2, Option<HoldInfo>), DoesNotRun> {
+        let Some(de) = unloaded.as_ref().filter(|_| s.hold != Hold::BurnerTemp) else {
+            return Ok((steady(which, t_set)?, None));
+        };
+        let bare = match builder(de.clone(), fl, MDOT_DESIGN, Some(ml), Some(mh), s.rho, &s.lever_arm()) {
+            ScheduledStatorTransient::Full(c) => c,
+            ScheduledStatorTransient::Degenerate(_) => unreachable!("the Controls engine has both shafts"),
+        };
+        let target = held(&bare.fuel.inner.try_equilibrium(&fl, t_set, None).map_err(|e| DoesNotRun(format!(
+            "At the {which} throttle ({t_set:.0} K): with the generator off this throttle has no steady point, so it \
+             sets no {} to hold ({})", if s.hold == Hold::Thrust { "thrust" } else { "speed" }, endpoint_words(&e.0))))?.0);
+        let q_at = |t: f64| core.fuel.inner.try_equilibrium(&fl, t, None).map(|(i, _, _)| held(&i));
+        let root = bh::try_hold_root(&q_at, target, HOLD_LO, HOLD_HI).map_err(|r| DoesNotRun(format!(
+            "At the {which} throttle ({t_set:.0} K), holding {}: {}", if s.hold == Hold::Thrust { "thrust" } else { "HP speed" },
+            bh::refusal_words(&r, s.hold, target))))?;
+        let (mut t, mut capped) = (root.t, false);
+        if s.hold_cap {
+            let excess = |t: f64| core.fuel.inner.try_equilibrium(&fl, t, None).map(|(i, _, _)| {
+                s.metal_at(&i).map_or(f64::NEG_INFINITY, |m| m.over())
+            });
+            match bh::try_metal_cap(&excess, root.t_floor, root.t).map_err(|m| DoesNotRun(format!(
+                "At the {which} throttle ({t_set:.0} K): {m}")))? {
+                Some(tc) => { t = tc; capped = true; }
+                None => {}
+            }
+        }
+        let i = steady(which, t)?;
+        let achieved = held(&i);
+        Ok((i, Some(HoldInfo { set: t_set, target, achieved, capped })))
+    };
+    let (start, hold_start) = hold_end("starting", s.from)?;
+    let (end, hold_end_info) = hold_end("final", s.to)?;
     let (mf_lo, mf_hi) = (start.close.f * start.close.mdot_air, end.close.f * end.close.mdot_air);
     let accel = match s.accel_on {
         false => None,
@@ -768,7 +850,7 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
             Some(accel_table(&core, &fl, lo, hi, s.accel_margin)?)
         }
     };
-    Ok(ControlsSolver { settings: *s, core, flight: fl, start, end, mf_lo, mf_hi, accel })
+    Ok(ControlsSolver { settings: *s, core, flight: fl, start, end, mf_lo, mf_hi, accel, hold_start, hold_end: hold_end_info })
 }
 
 /// Plain words for an endpoint's failed steady solve — the four messages the crash map found
@@ -1471,7 +1553,7 @@ impl ControlsSolver {
 fn num_or_null(x: f64) -> Json { if x.is_finite() { Json::Float(x) } else { Json::Null } }
 
 /// One steady endpoint, for the page.
-fn steady_json(sv: &ControlsSolver, i: &Instant2) -> Json {
+fn steady_json(sv: &ControlsSolver, i: &Instant2, hold: Option<HoldInfo>) -> Json {
     let (_, stall_lp) = sv.stall(Spool::Lp, i.nu_lp, i.nu_hp);
     let (_, stall_hp) = sv.stall(Spool::Hp, i.nu_lp, i.nu_hp);
     jobj! {
@@ -1491,6 +1573,11 @@ fn steady_json(sv: &ControlsSolver, i: &Instant2) -> Json {
         // Rung 93: both metals at the steady point (null with the readout off).
         "metal_vane" => sv.settings.metal_at(i).map(|m| Json::Float(m.vane)).unwrap_or(Json::Null),
         "metal_blade" => sv.settings.metal_at(i).map(|m| Json::Float(m.blade)).unwrap_or(Json::Null),
+        // Rung 94: what the end held (null when it held the burner temperature or carried no load).
+        "hold_set" => hold.map_or(Json::Null, |h| Json::Float(h.set)),
+        "hold_target" => hold.map_or(Json::Null, |h| Json::Float(h.target)),
+        "hold_achieved" => hold.map_or(Json::Null, |h| Json::Float(h.achieved)),
+        "hold_capped" => hold.map_or(Json::Null, |h| Json::Int(h.capped as i64)),
     }
 }
 
@@ -1508,7 +1595,7 @@ pub fn controls_json(sv: &ControlsSolver, o: &ControlsOutcome) -> Json {
     jobj! {
         "ok" => Json::Int(1),
         "controls" => o.settings.to_json(),
-        "start" => steady_json(sv, &sv.start), "end" => steady_json(sv, &sv.end),
+        "start" => steady_json(sv, &sv.start, sv.hold_start), "end" => steady_json(sv, &sv.end, sv.hold_end),
         "expected_points" => Json::Int(o.settings.expected_points() as i64),
         "route" => match sv.route() { Route::Plain => "plain", Route::GovLag => "gov_lag", Route::Release => "release",
                                       Route::ValveLag => "valve_lag" },
@@ -1625,6 +1712,13 @@ pub fn check_requests() -> Vec<String> {
         ControlsSettings { metal_on: true, metal_tech: 3, metal_year: 2010.0, cool_vane: 0.04, cool_blade: 0.02,
                            redline_on: true, ..d },
         ControlsSettings { metal_on: true, metal_year: 1900.0, ..d },                              // refused: year
+        // rung 94: the ends hold thrust or HP speed with the generator on; the metal cap; and refused
+        ControlsSettings { generator: GeneratorMode::Hp, hold: Hold::Thrust, ..d },
+        ControlsSettings { generator: GeneratorMode::Lp, hold: Hold::HpSpeed, lever: LeverChoice::Bleed,
+                           bleed_mode: BleedMode::Valve, ..d },
+        ControlsSettings { generator: GeneratorMode::Hp, hold: Hold::Thrust, metal_on: true, hold_cap: true,
+                           cool_vane: 0.04, cool_blade: 0.02, ..d },
+        ControlsSettings { generator: GeneratorMode::Hp, hold: Hold::Thrust, hold_cap: true, ..d },  // refused: no metal
         ControlsSettings { from: 1400.0, to: 1000.0, ..d },
         ControlsSettings { release_on: true, ..d },                                  // refused: nothing to lag
         ControlsSettings { floor_on: true, lever: LeverChoice::Stator, ..d },        // stop: the floor unreachable

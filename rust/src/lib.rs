@@ -139,6 +139,7 @@ pub mod asymmetric_valve;
 pub mod atmosphere;
 pub mod authority_clock;
 pub mod blade_speed;
+pub mod burner_hold;
 pub mod bleed;
 pub mod bleed_transient;
 pub mod combustor;

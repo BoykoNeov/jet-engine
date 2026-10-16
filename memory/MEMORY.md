@@ -154,6 +154,7 @@ new slices and step links go THERE, not here.
 - [Rung 91 turbine cooling](rung91-turbine-cooling.md) — extrapolate a linear model's reading to zero perturbation before scoring it
 - [Rung 92 shaft offtake](rung92-shaft-offtake.md) — an exact identity has a domain — score it only inside the assumptions that make it exact
 - [Rung 93 metal temperature](rung93-metal-temperature.md) — a screenshot is not a measurement of the configuration you name; derive every registered sign
+- [Rung 94 burner hold](rung94-burner-hold.md) — a pre-freeze check that prints a claim's own quantity pre-computes it; bisect a search floor near a fold
 - [Rungs 93/94 decisions](rung93-94-decisions.md) — user 2026-10-16: two rungs; 93 both framings + new view + year/life limits; 94 hold thrust or HP speed
 
 ## Margin sweeps — confirmations, not rungs

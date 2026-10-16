@@ -122,6 +122,8 @@ fn every_element_the_script_looks_up_is_declared() {
                 // Rung 93's cooling technologies (`TECH`) and the Cool the turbine chart's quantities.
                 "ctl-mtech-" | "cl-tech-" =>
                     looked_up.extend(["convection", "coated", "film", "transpiration"].map(|m| format!("{id}{m}"))),
+                // Rung 94's hold toggle.
+                "ctl-hold-" => looked_up.extend(["tt4", "thrust", "speed"].map(|m| format!("{id}{m}"))),
                 "clq-" => looked_up.extend(["air", "st", "tsfc", "tt3", "speed"].map(|m| format!("{id}{m}"))),
                 _ => {
                     assert!(!id.ends_with('-'), "{helper}: the prefix #{id} has no expansion in this census");

@@ -1471,3 +1471,28 @@ the Controls slam, and the limits set by a material year and a part life.
 - **Crash map** (§ 14.3's instrument, 1 000 requests over the view's knob box, seed 11; `scratch-archive/rung93/`): no
   panic — 703 sweep points answered, 3 refused at the stream cap; 294 knob requests, 206 answered and 88 holding all the
   way to 2400 K (much cooling), none refused after the floor fix.
+
+## 23. A burner that carries the load — rung 94 (2026-10-16) — not a slice
+
+Rung 94 (`docs/rung94-spec.md`) lets each end of the Controls move hold the thrust or the HP speed this engine gives at
+its throttle with the generator off, the burner temperature floating to carry rung 92's generator; the metal limit
+(rung 93) reported, and binding on a switch (the user's choices).
+
+- **The knobs:** *Throttle holds burner temperature / Holds thrust / Holds HP speed* (`hold`: `tt4`, `thrust`, `speed`;
+  default `tt4` — rung 92's throttle, so every saved setting stays valid), under the generator's knobs with a note; and
+  *Stop the burner at the metal limit* (`hold_cap`, default off) inside the metal readout's box. Table rows: the ends'
+  burner temperatures (set → actual) and what they hold (achieved / asked, "metal cap" when it stopped them).
+- **Built** in `sandbox_controls::build`: with the generator on and a hold chosen, each end's target is read off the same
+  machine built WITHOUT the generator at the set throttle, and `burner_hold::try_hold_root` lands the loaded machine's
+  equilibrium on it (600–2000 K, the floor bisected); the cap bisects the loaded equilibrium's metal excess between the
+  floor and the hold. The fuel then ramps between the two ends as before.
+- **Prechecks, in words:** the cap needs a hold (nothing floats otherwise), the metal read, and cooling (uncooled, the
+  1985 metals allow about 990 K). A hold the load cannot meet is refused naming its bound (the least thrust the load
+  allows, or the range's top).
+- **Gates:** `tests/sandbox_hold.rs` (holding the burner temperature, or any hold with no generator, is the earlier run bit
+  for bit; a thrust hold's ends meet the unloaded engine's thrust to 1e−9 at both ends, both shafts; the cap lands on the
+  limit and falls short; every refusal); `tests/sandbox_page.rs` (the switch and toggle are settings); `check_requests`
+  adds 4; `browser.mjs` presses *Holds thrust* with the HP generator on and checks the hotter ends, the met target, the
+  note and the table.
+- **On the default slam** (1000 → 1400 K, 2 % generator, thrust held) the ends run at 1034.9 / 1421.7 K (HP shaft) and
+  1031.2 / 1421.1 K (LP shaft).

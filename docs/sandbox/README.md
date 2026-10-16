@@ -135,7 +135,9 @@ in front of the HP rotor (vane air) or behind it (blade air) (rung 91, plan § 2
 either shaft — a share of that turbine's work, or a fixed power that is a larger share at low power
 (rung 92, plan § 21). The turbine's metal can be read along the run (rung 93, plan § 22): both
 metal temperatures at every point against their limits, from a cooling technology, a material year and a part life —
-off by default, since uncooled the metal is over its limit at every opening throttle.
+off by default, since uncooled the metal is over its limit at every opening throttle. With the generator on, each end of the move can hold
+the thrust or the HP speed the engine gives there with the generator off, the burner temperature floating to carry the
+load, and the metal limit can stop it (rung 94, plan § 23).
 
 **Readouts:** turbine temperature against the redline, both shaft speeds, burnt vs scheduled fuel, each
 compressor's flow coefficient against its (moving) stall line and the floor, thrust (the bleed's dumped air

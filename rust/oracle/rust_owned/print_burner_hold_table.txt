@@ -1,0 +1,25 @@
+
+A BURNER THAT CARRIES THE LOAD (rung 94): each throttle holds the thrust - or the HP speed - this engine
+gives there with the generator off, and the burner temperature rises to carry the generator. Two-spool
+engine, pi 3 x 6, flat maps; the generator a fixed power (x the design HP compressor power).
+
+  1. The burner's rise, and each compressor's flow coefficient against the same load at a fixed burner
+     temperature (+ is away from stall). Thrust and speed held against a fixed temperature.
+
+   shaft    Tt4   load   dT thr   dlnphiL     fixed   dT spd  dlnF spd
+      HP   1500   0.05   +48.89   -0.0399   -0.0763   +71.68   +0.0399
+      HP   1000   0.05   +84.15   -0.1025   -0.1803  +124.63   +0.1153
+      HP    700   0.02   +44.24   -0.0810   -0.1090   +71.61   +0.1420
+      LP   1500   0.05   +48.66   +0.0295   +0.0000    -0.57   -0.0885
+      LP   1000   0.05   +83.77   +0.0957   +0.0754    -0.72   -0.2694
+      LP    700   0.02   +44.31   +0.0736   +0.0694    -0.27   -0.2690
+
+  2. Holding the 700 K thrust: what a load needs, and what it cannot have.
+  HP 0.10: the burner at 983.84 K (the least it can run at: 973.99 K)
+  LP 0.05: The thrust asked for (88.8000 N per kg/s of design airflow) is below the least this load allows: the engine needs at least 913 K to carry it at all, and gives 142.6912 N per kg/s of design airflow there.
+
+  Carrying the generator, the hotter burner pushes more air: the LP compressor sits further from stall than at a
+  fixed burner temperature at every power, and an LP-shaft generator leaves BOTH compressors further from stall
+  than no generator at all, above idle. Holding HP speed is not holding thrust: on the HP shaft it burns hotter and
+  gives more thrust; on the LP shaft it can run the burner cooler. A load near a throttle's fold can still be held
+  if the burner may rise - but an LP-shaft load lifts the thrust the engine can run at, and below it no hold exists.

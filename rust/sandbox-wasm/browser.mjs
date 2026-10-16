@@ -456,6 +456,18 @@ try {
         && mr[4] > mr[5] && mr[6] === JSON.stringify(mOff) && mDrawn[0] >= 1 && mDrawn[1] === 2, JSON.stringify([mOn, mr.slice(0, 6), mDrawn]));
   if (process.env.SANDBOX_SHOTS) await shot('controls-metal');
   await ev(`window.sandbox.controls({metal_on: 0, cool_vane: 0, cool_blade: 0}).then(r => r.run)`);
+  // Rung 94: with the HP generator on, press "Holds thrust" -- both ends run hotter than their throttles and meet the
+  // unloaded engine's thrust; the note shows; the table names the set and actual burner temperatures.
+  await ev(`window.sandbox.controls({generator: 'hp', hold: 'tt4'}).then(r => r.run)`);
+  await ev(`document.getElementById('ctl-hold-thrust').click()`);
+  const hOn = await waitFor(`window.sandbox.ctlState === 'done' && window.sandbox.last.controls && window.sandbox.last.controls.hold === 'thrust'`, 30000);
+  const hr = await ev(`(() => { const r = window.sandbox.last; return [r.start.Tt4, r.start.hold_set, r.end.Tt4, r.end.hold_set,
+      Math.abs(r.start.thrust / r.start.hold_target - 1), document.getElementById('ctl-hold-note').hidden,
+      [...document.getElementById('ctl-table').tBodies[0].rows].some(t => /→/.test(t.cells[1].textContent))]; })()`);
+  check('holding_thrust_runs_the_ends_hotter_and_meets_the_unloaded_thrust', hOn && hr[0] > hr[1] && hr[2] > hr[3] && hr[4] < 1e-9
+        && hr[5] === false && hr[6], JSON.stringify([hOn, hr]));
+  if (process.env.SANDBOX_SHOTS) await shot('controls-hold');
+  await ev(`window.sandbox.controls({generator: 'off', hold: 'tt4'}).then(r => r.run)`);
   await ev(`document.getElementById('ctlq-Tt4').click()`);
   await ev(`window.sandbox.controls({lever: 'none', floor_on: 0, floor_phi: 0.75, floor_ref: 'phi', bleed_mode: 'schedule',
             valve_ref: 'phi', valve_speed: 'instant', valve_close: 'same', customer: 'off'}).then(r => r.run)`);

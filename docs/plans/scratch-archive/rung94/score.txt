@@ -1,0 +1,48 @@
+
+== flat, HP: T0 w | THRUST hold dT, dlnphiL dlnphiH (fixed-T: L H), target met | SPEED hold dT, dlnF
+1500 0.05 | +48.89, -0.0399 -0.0367 (-0.0763 -0.0488), 5.6e-13 | +71.68, +0.0399 (fixed -0.0879)
+1200 0.05 | +67.15, -0.0683 -0.0561 (-0.1242 -0.0736), 1.3e-13 | +98.99, +0.0713 (fixed -0.1595)
+1000 0.05 | +84.15, -0.1025 -0.0765 (-0.1803 -0.0977), 1.8e-13 | +124.63, +0.1153 (fixed -0.2683)
+800 0.02 | +39.96, -0.0633 -0.0419 (-0.0902 -0.0443), 4.9e-13 | +63.29, +0.0909 (fixed -0.1695)
+700 0.02 | +44.24, -0.0810 -0.0497 (-0.1090 -0.0481), 1.1e-12 | +71.61, +0.1420 (fixed -0.2666)
+-- flat, HP: zero-load dT/dw (device Richardson | identity) thrust, speed
+1500: Thrust 955.1 | 954.2; HpSpeed 1438.3 | 1437.0;
+1000: Thrust 1574.7 | 1566.4; HpSpeed 2486.9 | 2474.9;
+700: Thrust 2084.2 | 2024.1; HpSpeed 3543.6 | 3486.2;
+
+== flat, LP: T0 w | THRUST hold dT, dlnphiL dlnphiH (fixed-T: L H), target met | SPEED hold dT, dlnF
+1500 0.05 | +48.66, +0.0295 +0.0262 (+0.0000 +0.0175), 8.5e-14 | -0.57, -0.0885 (fixed -0.0874)
+1200 0.05 | +66.82, +0.0560 +0.0294 (+0.0220 +0.0184), 1.5e-13 | -0.66, -0.1602 (fixed -0.1586)
+1000 0.05 | +83.77, +0.0957 +0.0278 (+0.0754 +0.0161), 4.6e-13 | -0.72, -0.2694 (fixed -0.2669)
+800 0.02 | +39.97, +0.0530 +0.0027 (+0.0403 +0.0010), 2.8e-13 | -0.26, -0.1708 (fixed -0.1696)
+700 0.02 | +44.31, +0.0736 -0.0039 (+0.0694 -0.0026), 1.7e-12 | -0.27, -0.2690 (fixed -0.2673)
+-- flat, LP: zero-load dT/dw (device Richardson | identity) thrust, speed
+1500: Thrust 953.0 | 952.2; HpSpeed -10.6 | -10.6;
+1000: Thrust 1575.2 | 1567.1; HpSpeed -12.0 | -12.0;
+700: Thrust 2092.8 | 2032.8; HpSpeed -11.8 | -11.8;
+flat 700 K demand, HP 0.10: settles at 983.84 K (floor 973.99)
+flat 700 K demand, LP 0.05: refused — The thrust asked for (88.8085 N per kg/s of design airflow) is below the least this load allows: the engine needs at least 913 K to carry it at all, and gives 142.6999 N per kg/s of design airflow there.
+
+== flow/press, HP: T0 w | THRUST hold dT, dlnphiL dlnphiH (fixed-T: L H), target met | SPEED hold dT, dlnF
+1500 0.05 | +49.18, -0.0299 -0.0248 (-0.0584 -0.0334), 5.9e-13 | +94.49, +0.0790 (fixed -0.0894)
+1200 0.05 | +70.78, -0.0574 -0.0403 (-0.1103 -0.0550), 7.4e-13 | +127.05, +0.1294 (fixed -0.1765)
+1000 0.05 | +91.44, -0.0922 -0.0573 (-0.1741 -0.0776), 1.0e-12 | +157.81, +0.1956 (fixed -0.3135)
+800 0.02 | +44.10, -0.0591 -0.0320 (-0.0873 -0.0351), 1.5e-13 | +82.65, +0.1549 (fixed -0.1987)
+700 0.02 | +49.21, -0.0770 -0.0384 (-0.1070 -0.0385), 6.9e-15 | +93.54, +0.2368 (fixed -0.3221)
+-- flow/press, HP: zero-load dT/dw (device Richardson | identity) thrust, speed
+1500: Thrust 955.0 | 953.9; HpSpeed 1960.2 | 1959.2;
+1000: Thrust 1691.4 | 1679.4; HpSpeed 3338.1 | 3326.2;
+700: Thrust 2298.0 | 2205.4; HpSpeed 4815.0 | 4752.5;
+
+== flow/press, LP: T0 w | THRUST hold dT, dlnphiL dlnphiH (fixed-T: L H), target met | SPEED hold dT, dlnF
+1500 0.05 | +49.11, +0.0215 +0.0171 (-0.0003 +0.0115), 1.2e-13 | -14.83, -0.1153 (fixed -0.0880)
+1200 0.05 | +65.47, +0.0457 +0.0211 (+0.0185 +0.0135), 7.1e-13 | -13.59, -0.1930 (fixed -0.1584)
+1000 0.05 | +80.98, +0.0833 +0.0215 (+0.0672 +0.0130), 6.0e-13 | -11.04, -0.3036 (fixed -0.2641)
+800 0.02 | +38.37, +0.0493 +0.0033 (+0.0385 +0.0015), 8.5e-13 | -1.24, -0.1753 (fixed -0.1695)
+700 0.02 | +42.51, +0.0695 -0.0012 (+0.0663 -0.0011), 3.2e-13 | +0.38, -0.2678 (fixed -0.2705)
+-- flow/press, LP: zero-load dT/dw (device Richardson | identity) thrust, speed
+1500: Thrust 952.9 | 952.1; HpSpeed -257.6 | -257.7;
+1000: Thrust 1520.7 | 1513.7; HpSpeed -149.2 | -149.2;
+700: Thrust 2016.6 | 1961.7; HpSpeed 36.2 | 36.4;
+flow/press 700 K demand, HP 0.10: settles at 1026.55 K (floor 1021.77)
+flow/press 700 K demand, LP 0.05: refused — The thrust asked for (82.8494 N per kg/s of design airflow) is below the least this load allows: the engine needs at least 919 K to carry it at all, and gives 142.2963 N per kg/s of design airflow there.

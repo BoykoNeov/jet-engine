@@ -27,6 +27,9 @@ Rung 92's seam (metal limit + a burner that carries the generator load) — user
 needs, the metal's margin shown), plus a SWITCH that makes the metal limit BIND (the burner stops at it and the
 thrust/speed shortfall is the result, shown).
 
+**Rung 94 SHIPPED 2026-10-16** — [[rung94-burner-hold]] (H1, H4 HIT; H2, H3 known before the freeze). Both rungs of the
+seam done; its next seam: a governor holding thrust/speed DURING the slam (limiter family).
+
 **Rung 93 SHIPPED 2026-10-16** (all six predictions HIT; spec `docs/rung93-spec.md`, page view + readout,
 plan § 22) — [[rung93-metal-temperature]]. **Next: rung 94** (the load-carrying burner), as decided above.
 
