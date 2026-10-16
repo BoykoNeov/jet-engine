@@ -154,6 +154,7 @@ pub mod fuel_transient;
 pub mod full_split;
 pub mod gas;
 pub mod governor;
+pub mod inferred_thrust;
 pub mod lagged_bleed;
 pub mod lagged_incidence;
 pub mod limited_bleed;

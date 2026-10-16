@@ -38,6 +38,7 @@ use crate::metal_temperature::{self as mt, MetalInputs, MetalLimit, MetalReading
 use crate::sandbox_cooling::{LIFE_MAX, LIFE_MIN, TECH_KEYS, YEAR_MAX, YEAR_MIN};
 use crate::burner_hold::{self as bh, Hold};
 use crate::governor::{self as gv, GovCall, GovMark, Governor, Law, Leg};
+use crate::inferred_thrust as inf;
 use crate::engine::FlightCondition;
 use crate::fuel_transient::{r43_cut_below_ceiling, release_weight, AccelSchedule, AsymmetricLag, FuelInstant, FuelLimiters,
                             FuelPoint, FuelTransientCore, PointExtra, SurgeLimiter};
@@ -246,6 +247,29 @@ pub struct ControlsSettings {
     pub speed_law: SpeedLaw,
     pub gov_tau: f64,
     pub gov_gain: f64,
+    /// Rung 96: a governed thrust is READ from the thrust itself (rung 95), the engine pressure ratio, or the LP speed
+    /// (`speed_law` and its knobs then on the LP shaft), turned into thrust through the control's table — built on the
+    /// generator-off engine (`table_clean`, inert with the generator off) or on this one.
+    pub thrust_by: ThrustBy,
+    pub table_clean: bool,
+}
+
+/// Rung 96's switch: where a governed thrust is read from.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ThrustBy {
+    /// The thrust itself — rung 95.
+    True,
+    /// The engine pressure ratio, through the table.
+    Epr,
+    /// The LP shaft speed, through the table.
+    N1,
+}
+
+impl ThrustBy {
+    pub const ALL: [ThrustBy; 3] = [ThrustBy::True, ThrustBy::Epr, ThrustBy::N1];
+    pub fn key(self) -> &'static str {
+        match self { ThrustBy::True => "true", ThrustBy::Epr => "epr", ThrustBy::N1 => "n1" }
+    }
 }
 
 /// Rung 95's toggle: how a governor holding HP speed closes the gap (the user's "both").
@@ -271,6 +295,10 @@ pub const GAIN_MAX: f64 = 50.0;
 /// Rung 95: the shortest commanded-rate time constant — two steps (at one step the march at 0.02 is ~1e-3 off a finer
 /// one in flow coefficient on the default move; at two, under 1e-4 on every map's acceleration).
 pub const TAU_MIN: f64 = 2.0 * DS;
+
+/// Rung 96: the LP-speed laws' limits — their OWN step check (`docs/rung96-spec.md`), not the HP shaft's.
+pub const TAU_MIN_LP: f64 = 2.0 * DS;
+pub const GAIN_MAX_LP: f64 = 50.0;
 
 /// Rung 92's switch: which shaft the generator loads.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -338,6 +366,7 @@ impl ControlsSettings {
             metal_on: false, metal_tech: 2, metal_year: 1985.0, metal_life: 1.0e4,
             hold: Hold::BurnerTemp, hold_cap: false,
             govern: false, speed_law: SpeedLaw::Rate, gov_tau: 0.1, gov_gain: 20.0,
+            thrust_by: ThrustBy::True, table_clean: true,
         }
     }
 
@@ -391,7 +420,12 @@ impl ControlsSettings {
     pub fn law(&self) -> Law {
         match (self.hold, self.speed_law) {
             (Hold::BurnerTemp, _) => Law::BurnerTemp,
-            (Hold::Thrust, _) => Law::Thrust,
+            (Hold::Thrust, law) => match (self.thrust_by, law) {
+                (ThrustBy::True, _) => Law::Thrust,
+                (ThrustBy::Epr, _) => Law::Epr,
+                (ThrustBy::N1, SpeedLaw::Rate) => Law::LpRate { tau: self.gov_tau },
+                (ThrustBy::N1, SpeedLaw::Prop) => Law::LpProp { gain: self.gov_gain },
+            },
             (Hold::HpSpeed, SpeedLaw::Rate) => Law::SpeedRate { tau: self.gov_tau },
             (Hold::HpSpeed, SpeedLaw::Prop) => Law::SpeedProp { gain: self.gov_gain },
         }
@@ -399,6 +433,12 @@ impl ControlsSettings {
 
     /// Rung 95: the metal leg runs — the governor is on and the cap switched on (its prerequisites checked first).
     pub fn metal_leg(&self) -> bool { self.govern && self.hold_cap }
+
+    /// Rung 96: the governed thrust is inferred from a reading (the control's table is built).
+    pub fn inferred(&self) -> bool { self.govern && self.hold == Hold::Thrust && self.thrust_by != ThrustBy::True }
+
+    /// Rung 96: the ends are CALIBRATED — inferred, the table on the generator-off engine, and a generator to differ.
+    pub fn calibrated(&self) -> bool { self.inferred() && self.table_clean && self.generator != GeneratorMode::Off }
 
     pub fn flight(&self) -> FlightCondition { BladeSettings::defaults().flight() }
 
@@ -433,6 +473,7 @@ impl ControlsSettings {
             "hold" => self.hold.key(), "hold_cap" => b(self.hold_cap),
             "govern" => b(self.govern), "speed_law" => self.speed_law.key(), "gov_tau" => self.gov_tau,
             "gov_gain" => self.gov_gain,
+            "thrust_by" => self.thrust_by.key(), "table_clean" => b(self.table_clean),
         }
     }
 
@@ -496,7 +537,7 @@ impl ControlsSettings {
         for (k, into) in [("redline_on", &mut s.redline_on), ("gov_lag_on", &mut s.gov_lag_on),
                           ("accel_on", &mut s.accel_on), ("floor_on", &mut s.floor_on),
                           ("release_on", &mut s.release_on), ("metal_on", &mut s.metal_on), ("hold_cap", &mut s.hold_cap),
-                          ("govern", &mut s.govern)] {
+                          ("govern", &mut s.govern), ("table_clean", &mut s.table_clean)] {
             flag(k, into)?;
         }
         if let Some(t) = text("floor_spool")? { s.floor_spool = spool(&t)?; }
@@ -530,6 +571,10 @@ impl ControlsSettings {
         if let Some(t) = text("speed_law")? {
             s.speed_law = SpeedLaw::ALL.into_iter().find(|l| l.key() == t)
                 .ok_or_else(|| format!("unknown speed law {t:?} (\"rate\" or \"prop\")"))?;
+        }
+        if let Some(t) = text("thrust_by")? {
+            s.thrust_by = ThrustBy::ALL.into_iter().find(|r| r.key() == t)
+                .ok_or_else(|| format!("unknown thrust reading {t:?} (\"true\", \"epr\" or \"n1\")"))?;
         }
         if let Some(t) = text("hold")? {
             s.hold = Hold::ALL.into_iter().find(|h| h.key() == t)
@@ -738,6 +783,25 @@ pub fn controls_precheck(s: &ControlsSettings) -> Result<(), DoesNotRun> {
                 "The speed governor's gain must be above 0 and at most {GAIN_MAX:.0}: a larger gain is worked out too \
                  coarsely at this march's step.")));
         }
+        // Rung 96: an inferred thrust — the cap would saturate the control's table (a capped end lies below its span),
+        // and the LP laws' knobs have their own step check.
+        if s.inferred() {
+            if s.hold_cap {
+                return no("The metal cap is not built beside a control that infers thrust: a capped end's thrust falls \
+                           below the control's table, which then cannot turn it back into a reading. Read the thrust \
+                           itself, or switch the cap off.");
+            }
+            if s.thrust_by == ThrustBy::N1 && s.speed_law == SpeedLaw::Rate && !(s.gov_tau >= TAU_MIN_LP - 1e-12) {
+                return Err(DoesNotRun(format!(
+                    "The fan-speed governor's time constant must be at least {TAU_MIN_LP} spool time constants: a \
+                     faster one is worked out too coarsely at this march's step.")));
+            }
+            if s.thrust_by == ThrustBy::N1 && s.speed_law == SpeedLaw::Prop && !(s.gov_gain > 0.0 && s.gov_gain <= GAIN_MAX_LP) {
+                return Err(DoesNotRun(format!(
+                    "The fan-speed governor's gain must be above 0 and at most {GAIN_MAX_LP:.0}: a larger gain is worked \
+                     out too coarsely at this march's step.")));
+            }
+        }
     }
     if s.accel_on && s.accel_margin < 0.0 {
         return no("The acceleration schedule's margin is measured above the steady line, so it cannot be negative.");
@@ -897,6 +961,26 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
         Hold::HpSpeed => i.nu_hp,
         Hold::BurnerTemp => i.tt4,
     };
+    // Rung 96: calibrated on the generator-off engine, the control's table is that engine's, between the two set
+    // throttles (rung 94's target ends — its end rows give the targets exactly); each end is then where THIS engine's
+    // steady reading equals the table's.
+    let clean = match (s.calibrated(), unloaded.as_ref()) {
+        (true, Some(de)) => {
+            let bare = match builder(de.clone(), fl, MDOT_DESIGN, Some(ml), Some(mh), s.rho, &s.lever_arm()) {
+                ScheduledStatorTransient::Full(c) => c,
+                ScheduledStatorTransient::Degenerate(_) => unreachable!("the Controls engine has both shafts"),
+            };
+            let end_of = |which: &str, t: f64| bare.fuel.inner.try_equilibrium(&fl, t, None).map(|(i, _, _)| i)
+                .map_err(|e| DoesNotRun(format!(
+                    "At the {which} throttle ({t:.0} K): with the generator off this throttle has no steady point, so the \
+                     control has no table to be calibrated on ({}).", endpoint_words(&e.0))));
+            let (b0, b1) = (end_of("starting", s.from)?, end_of("final", s.to)?);
+            let table = inf::try_table(&bare.fuel, &fl, &b0, &b1).map_err(|e| DoesNotRun(format!(
+                "The control's table, calibrated on the engine with the generator off: {}", endpoint_words(&e.0))))?;
+            Some((table, b0, b1))
+        }
+        _ => None,
+    };
     let hold_end = |which: &str, t_set: f64| -> Result<(Instant2, Option<HoldInfo>), DoesNotRun> {
         // Rung 95: governed with the cap and no load, the end is `T_set` itself, capped by rung 94's bisection if its
         // metal is over — so the run starts on a point the metal leg agrees with.
@@ -917,6 +1001,18 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
             let i = steady(which, t)?;
             let achieved = held(&i);
             return Ok((i, Some(HoldInfo { set: t_set, target, achieved, capped: true })));
+        }
+        if let Some((table, b0, b1)) = clean.as_ref() {
+            let r = s.law().reading().expect("a calibrated end infers thrust");
+            let bi = if which == "starting" { b0 } else { b1 };
+            let (target, want) = (ControlsSolver::thrust(bi), table.read(r, bi));
+            let q_at = |t: f64| core.fuel.inner.try_equilibrium(&fl, t, None).map(|(i, _, _)| table.read(r, &i));
+            let root = bh::try_hold_root(&q_at, want, HOLD_LO, HOLD_HI).map_err(|e| DoesNotRun(format!(
+                "At the {which} throttle ({t_set:.0} K), the control holding the {} its table gives for the asked thrust: {}",
+                inf::reading_words(r), inf::refusal_words(&e, r, want))))?;
+            let i = steady(which, root.t)?;
+            let achieved = held(&i);
+            return Ok((i, Some(HoldInfo { set: t_set, target, achieved, capped: false })));
         }
         let Some(de) = unloaded.as_ref().filter(|_| s.hold != Hold::BurnerTemp) else {
             return Ok((steady(which, t_set)?, None));
@@ -973,8 +1069,16 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
                             endpoint_words(&e.0))))?,
                 _ => Vec::new(),
             };
+            // Rung 96: the control's table — calibrated (above), or on this machine between the run's own ends.
+            let infer = match (law.reading(), clean) {
+                (None, _) => None,
+                (Some(_), Some((t, _, _))) => Some(t),
+                (Some(_), None) => Some(inf::try_table(&core.fuel, &fl, &start, &end).map_err(|e| DoesNotRun(format!(
+                    "The control's table has a throttle with no steady point between the ends: {}",
+                    endpoint_words(&e.0))))?),
+            };
             Some(Governor { law, lo: target(&start, hold_start, s.from), hi: target(&end, hold_end_info, s.to),
-                            ramp: s.ramp, mf_lo, mf_hi, table })
+                            ramp: s.ramp, mf_lo, mf_hi, table, infer })
         }
     };
     Ok(ControlsSolver { settings: *s, core, flight: fl, start, end, mf_lo, mf_hi, accel, hold_start, hold_end: hold_end_info,
@@ -1677,6 +1781,9 @@ pub struct PointRead {
     pub res_redline: Option<f64>,
     pub res_accel: Option<f64>,
     pub res_floor: Option<f64>,
+    /// Rung 96: the control's reading here and the thrust its table makes of it (`None` unless thrust is inferred).
+    pub reading: Option<f64>,
+    pub inferred: Option<f64>,
 }
 
 impl ControlsSolver {
@@ -1705,6 +1812,13 @@ impl ControlsSolver {
             let (tt2, _, _) = self.core.fuel.inner.inlet(&self.flight);
             l.target(self.core.v_of(Spool::Lp, p.nu_lp, p.nu_hp, Some(tt2)))
         });
+        let (reading, inferred) = match self.governor.as_ref().and_then(|g| Some((g.infer.as_ref()?, g.law.reading()?))) {
+            Some((t, r)) => {
+                let v = t.read(r, i);
+                (Some(v), Some(t.inferred(r, v)))
+            }
+            None => (None, None),
+        };
         let res_redline = s.redline_on.then(|| (i.tt4 - s.redline).abs() / s.redline);
         let res_accel = self.accel.as_ref().map(|a| {
             let cap = a.cap(i.close.n_hp, i.close.pt4 / self.core.fuel.inner.inner.base.pi_b);
@@ -1742,6 +1856,7 @@ impl ControlsSolver {
             bleed: i.close.bleed.unwrap_or(0.0), floor, valve, holder, customer: i.close.customer.unwrap_or(0.0),
             metal: s.metal_at(i),
             res_redline, res_accel, res_floor,
+            reading, inferred,
         })
     }
 }
@@ -1835,6 +1950,25 @@ pub fn controls_json(sv: &ControlsSolver, o: &ControlsOutcome) -> Json {
         "demand" => match &sv.governor {
             None => Json::Null,
             Some(g) => col(&|x| g.demand(x.s)),
+        },
+        // Rung 96: an inferred thrust — what the control reads, the thrust it believes, the thrust the throttle asks,
+        // and the table it reads them through.
+        "reading" => match o.settings.inferred() {
+            false => Json::Null,
+            true => Json::from(o.settings.thrust_by.key()),
+        },
+        "calibrated" => Json::Int(o.settings.calibrated() as i64),
+        "reading_value" => rcol(&|r| r.reading.unwrap_or(f64::NAN)),
+        "thrust_inferred" => rcol(&|r| r.inferred.unwrap_or(f64::NAN)),
+        "thrust_demand" => match sv.governor.as_ref().filter(|g| g.infer.is_some()) {
+            None => Json::Null,
+            Some(g) => col(&|x| g.thrust_demand(x.s)),
+        },
+        "table" => match sv.governor.as_ref().and_then(|g| g.infer.as_ref()) {
+            None => Json::Null,
+            Some(t) => Json::List(t.rows.iter().map(|w| jobj! {
+                "thrust" => w.thrust, "epr" => w.epr, "nu_lp" => w.nu_lp, "fuel" => w.fuel,
+            }).collect()),
         },
         "choked" => Json::List(p.iter().map(|x| Json::Int((x.branch == Branch::Choked) as i64)).collect()),
         // Rung 93: both metals along the run and their limits (null columns with the readout off).

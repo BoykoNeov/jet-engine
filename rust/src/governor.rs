@@ -32,6 +32,7 @@
 use crate::engine::FlightCondition;
 use crate::fuel_transient::{point, FuelInstant, FuelLimiters, FuelPoint, FuelTransientCore, PointExtra};
 use crate::gas::Abort;
+use crate::inferred_thrust::{epr, Reading, Table};
 use crate::spool::{try_illinois, ILLINOIS_MAXIT};
 use crate::two_spool_transient::Instant2;
 
@@ -47,6 +48,24 @@ pub enum Law {
     /// The HP speed, by a proportional law on the steady table: `gain` is the fuel fraction added per unit HP speed
     /// short.
     SpeedProp { gain: f64 },
+    /// RUNG 96: thrust INFERRED from the engine pressure ratio, by instant inversion on the reading's demand.
+    Epr,
+    /// RUNG 96: thrust inferred from the LP speed, by a commanded rate on the LP shaft (`tau` in HP spool time
+    /// constants, as rung 95's).
+    LpRate { tau: f64 },
+    /// RUNG 96: thrust inferred from the LP speed, by the proportional law on the control's table.
+    LpProp { gain: f64 },
+}
+
+impl Law {
+    /// RUNG 96: what the law reads, when it infers thrust (`None` for rung 95's laws).
+    pub fn reading(self) -> Option<Reading> {
+        match self {
+            Law::Epr => Some(Reading::Epr),
+            Law::LpRate { .. } | Law::LpProp { .. } => Some(Reading::LpSpeed),
+            _ => None,
+        }
+    }
 }
 
 /// Where the governor's fuel sits.
@@ -89,6 +108,8 @@ pub struct Governor {
     pub mf_hi: f64,
     /// The proportional law's steady table, `(ν_H, fuel)` rising in `ν_H` (empty for the other laws).
     pub table: Vec<(f64, f64)>,
+    /// RUNG 96: the control's table, when the law infers thrust from a reading (`lo`/`hi` are then thrusts).
+    pub infer: Option<Table>,
 }
 
 /// The step factors the bracket search walks out by, up and down.
@@ -109,8 +130,17 @@ impl Governor {
         if s <= 0.0 { 0.0 } else if s >= self.ramp { 1.0 } else { s / self.ramp }
     }
 
-    /// The demanded held quantity at `s` (for the speed laws, the demanded HP speed).
-    pub fn demand(&self, s: f64) -> f64 { self.lo + (self.hi - self.lo) * self.weight(s) }
+    /// The demanded held quantity at `s` (for the speed laws, the demanded HP speed; for rung 96's, the READING the
+    /// table gives at the demanded thrust).
+    pub fn demand(&self, s: f64) -> f64 {
+        match (&self.infer, self.law.reading()) {
+            (Some(t), Some(r)) => t.reading_at(r, self.thrust_demand(s)),
+            _ => self.lo + (self.hi - self.lo) * self.weight(s),
+        }
+    }
+
+    /// RUNG 96: the thrust the throttle asks for at `s` — rung 95's straight line between the ends' targets.
+    pub fn thrust_demand(&self, s: f64) -> f64 { self.lo + (self.hi - self.lo) * self.weight(s) }
 
     /// The open-loop ramp's fuel at `s` — where the bracket search starts.
     pub fn guess(&self, s: f64) -> f64 { self.mf_lo + (self.mf_hi - self.mf_lo) * self.weight(s) }
@@ -146,6 +176,18 @@ pub fn held(law: Law, i: &Instant2) -> f64 {
         Law::BurnerTemp => i.tt4,
         Law::Thrust => thrust(i),
         Law::SpeedRate { .. } | Law::SpeedProp { .. } => i.phi_hp_dot,
+        Law::Epr | Law::LpRate { .. } | Law::LpProp { .. } =>
+            unreachable!("rung 96's readings need the run's inlet and spool ratio: use `held_by`"),
+    }
+}
+
+/// The quantity an instant inversion solves for, every law: rung 95's [`held`], and RUNG 96's pressure ratio (on the
+/// control's table's inlet) and LP acceleration `dν_L/ds` (the march's own `Φ_L/ρ`).
+pub fn held_by(gov: &Governor, ft: &FuelTransientCore, i: &Instant2) -> f64 {
+    match gov.law {
+        Law::Epr => epr(i, gov.infer.as_ref().expect("an inferred law carries its table").pt2),
+        Law::LpRate { .. } | Law::LpProp { .. } => i.phi_lp_dot / ft.rho(),
+        law => held(law, i),
     }
 }
 
@@ -251,9 +293,17 @@ pub fn try_governor_fuel(
     ft: &FuelTransientCore, flight: &FlightCondition, gov: &Governor, a: f64, b: f64, s: f64,
 ) -> Result<(f64, Clamp), Abort> {
     let x0 = runnable(ft, flight, gov, a, b, s)?;
-    if let Law::SpeedProp { gain } = gov.law {
+    // The proportional laws: rung 95's on the HP speed and its steady table, rung 96's on the LP speed and the
+    // control's table.
+    let prop = match gov.law {
+        Law::SpeedProp { gain } => Some((gain, b, None)),
+        Law::LpProp { gain } => Some((gain, a, gov.infer.as_ref())),
+        _ => None,
+    };
+    if let Some((gain, nu, table)) = prop {
         let nd = gov.demand(s);
-        let mf = gov.steady_fuel(nd) * (1.0 + gain * (nd - b));
+        let w = match table { None => gov.steady_fuel(nd), Some(t) => t.fuel_at_speed(nd) };
+        let mf = w * (1.0 + gain * (nd - nu));
         if mf > 0.0 && ft.try_instant_fuel(flight, a, b, mf).is_ok() {
             return Ok((mf, Clamp::Root));
         }
@@ -280,10 +330,10 @@ pub fn try_governor_fuel(
     }
     let target = match gov.law {
         Law::SpeedRate { tau } => (gov.demand(s) - b) / tau,
+        Law::LpRate { tau } => (gov.demand(s) - a) / tau,
         _ => gov.demand(s),
     };
-    let law = gov.law;
-    let r = |mf: f64| ft.try_instant_fuel(flight, a, b, mf).map(|i| held(law, &i.base) - target);
+    let r = |mf: f64| ft.try_instant_fuel(flight, a, b, mf).map(|i| held_by(gov, ft, &i.base) - target);
     root_or_clamp(ft, flight, a, b, x0, &r)
 }
 
