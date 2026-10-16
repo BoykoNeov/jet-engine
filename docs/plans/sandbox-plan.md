@@ -1586,7 +1586,8 @@ argument. `fly_solver`'s override is gone — the model does it.
 - **Nothing shipped moved — measured, not assumed.** The whole gate ran once with a logger at every changed site,
   recording each call where the flight's `p0` differed from the old stored value **bit for bit**. Hits: the
   sandbox (`sandbox_fly`, `sandbox_transient`, the CLI's `sandbox` page build) — all through `fly_solver`,
-  whose override already set exactly the flight's `p0`; and ONE shipped test, rung 41's gate 4b (two shafts at
+  whose override already set exactly the flight's `p0`, except `sandbox_fly`'s 12.5 kPa discriminator, which built
+  the solver directly to pin the OLD behaviour and was rewritten here on purpose; and ONE shipped test, rung 41's gate 4b (two shafts at
   101 325 Pa against a 50 kPa capture). There the nozzle is choked under both values, and on a choked nozzle the
   back-pressure decides only the branch, never the arithmetic — bit-identical. Every oracle, golden and panel held.
 - **The gate:** `tests/flight_back_pressure.rs` — a similarity law: same `T0` and Mach, `p0` at ¼, ½ and 2× the
