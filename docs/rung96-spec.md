@@ -65,7 +65,8 @@ made on this engine between its own ends (rung 94's hold ends, or the set thrott
 * rung 95's plain march, refused beside rungs 47/52/88's lagged marchers;
 * the metal cap is refused with an inferred reading (a capped end falls below the table's span);
 * the table is made at the run's own flight condition, so the corrections real controls make for flight condition
-  (`δ`/`θ`) cancel — a concession, since the off-design-altitude seam stays open.
+  (`δ`/`θ`) cancel — a concession, since the off-design-altitude seam was open when this rung shipped (its solver
+  side was repaired 2026-10-16: sandbox plan § 26).
 
 ## 2. Reduces
 
@@ -203,7 +204,7 @@ separated here.
 ## Concessions
 
 * **The table is made at the run's own flight condition**, so the corrections for flight condition cancel. The
-  off-design-altitude seam stays open.
+  off-design-altitude seam was open when this rung shipped; its solver side was repaired 2026-10-16 (sandbox plan § 26).
 * **Both nozzles are choked** (inherited). That is what makes the pressure ratio read gross thrust exactly; an unchoked
   nozzle would add a second error.
 * The table is 13 rows, read linearly between them. On the pressure ratio this costs nothing in gross thrust (G3). On
@@ -216,4 +217,4 @@ separated here.
 
 **The governor on the lagged marchers** (rungs 47/52/88, carried from rung 95), or **the control's own corrections**:
 the table made at one flight condition and flown at another, its readings corrected by `δ`/`θ` as a real schedule's
-are. That needs the off-design-altitude seam first.
+are. That needed the off-design-altitude seam first — repaired 2026-10-16 (sandbox plan § 26), so it is now buildable.

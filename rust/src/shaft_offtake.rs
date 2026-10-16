@@ -494,8 +494,8 @@ pub fn try_match_loaded(
     let dh_lpt_reb = ((rgas.h_c(s25.tt) - rgas.h_c(s2.tt)) * s2.mdot + power_lp)
         / (base.eta_m * s45.mdot);
     let s5 = Turbine::new(m.eta_lpt, None).apply(&s45, &rgas, dh_lpt_reb);
-    let exit = Nozzle::convergent(base.p_ambient, base.pi_n).try_apply(&s5, &rgas)?;
-    if exit.p9 <= base.p_ambient + 1e-6 {
+    let exit = Nozzle::convergent(flight.p0, base.pi_n).try_apply(&s5, &rgas)?;
+    if exit.p9 <= flight.p0 + 1e-6 {
         return Err(Abort(format!(
             "rung-92 loaded match at Tt4={tt4:.0}, M0={:.2}: nozzle UNCHOKED -- OUT OF SCOPE \
              (docs/rung38-spec.md 'Scope').", flight.m0)));

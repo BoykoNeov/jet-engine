@@ -1035,7 +1035,7 @@ pub fn r62_tail_body(
     let phi_lp_dot = (mdot_face * (pt_lp - pc_lp)) / (t.p_ref_lp * nu_lp);
 
     let s5 = FlowState { tt: tt5, pt: pi_lpt * pi_hpt * c.pt4, mdot: mdot_core, far: f };
-    let exit = Nozzle::convergent(core.base.p_ambient, core.base.pi_n).try_apply(&s5, wgas)?;
+    let exit = Nozzle::convergent(flight.p0, core.base.pi_n).try_apply(&s5, wgas)?;
     let press = (1.0 + f) * wgas.r_t_at(f) * exit.t9 * (1.0 - flight.p0 / exit.p9) / exit.v9;
     let sp_thrust = (1.0 + f) * exit.v9 - v0 + press;
 
@@ -1048,7 +1048,7 @@ pub fn r62_tail_body(
         // per-INLET-air figure beside it, and the key rung 40's dict does not have.
         sp_thrust_inlet: Some((1.0 - b) * sp_thrust - b * v0),
         m9: exit.m9,
-        branch: if exit.p9 > core.base.p_ambient + 1e-6 { Branch::Choked } else { Branch::Subsonic },
+        branch: if exit.p9 > flight.p0 + 1e-6 { Branch::Choked } else { Branch::Subsonic },
     })
 }
 

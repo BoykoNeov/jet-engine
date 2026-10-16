@@ -332,7 +332,7 @@ fn rust_values() -> Vec<(String, f64)> {
                 let (mut lo, mut rlo, mut n_lo) = (f64::NAN, f64::NAN, 0usize);
                 let mut pt = 0.15;
                 while pt < 0.95 {
-                    match m.try_subsonic_operating(tt4, tt2, pt2, pt) {
+                    match m.try_subsonic_operating(tt4, tt2, pt2, pt, flight.p0) {
                         Ok(op) => { rlo = op.resid; lo = pt; break }
                         Err(_) => { n_lo += 1; pt += 0.02 }
                     }
@@ -340,7 +340,7 @@ fn rust_values() -> Vec<(String, f64)> {
                 let (mut hi, mut rhi, mut n_hi) = (f64::NAN, f64::NAN, 0usize);
                 let mut pt = 0.9995;
                 while !lo.is_nan() && pt > lo {
-                    match m.try_subsonic_operating(tt4, tt2, pt2, pt) {
+                    match m.try_subsonic_operating(tt4, tt2, pt2, pt, flight.p0) {
                         Ok(op) => { rhi = op.resid; hi = pt; break }
                         Err(_) => { n_hi += 1; pt -= 0.02 }
                     }

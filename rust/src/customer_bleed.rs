@@ -415,8 +415,8 @@ pub fn try_match_customer(
     let dh_lpt_reb = (rgas.h_c(s25.tt) - rgas.h_c(s2.tt))
         / (base.eta_m * (1.0 - b) * (1.0 - c) * (1.0 + s4.far));
     let s5 = Turbine::new(x.eta_lpt, None).apply(&s45, &rgas, dh_lpt_reb);
-    let exit = Nozzle::convergent(base.p_ambient, base.pi_n).try_apply(&s5, &rgas)?;
-    if exit.p9 <= base.p_ambient + 1e-6 {
+    let exit = Nozzle::convergent(flight.p0, base.pi_n).try_apply(&s5, &rgas)?;
+    if exit.p9 <= flight.p0 + 1e-6 {
         return Err(Abort(format!(
             "rung-90 customer-bleed match at Tt4={tt4:.0}, c={c:.3}, M0={:.2}: nozzle UNCHOKED -- \
              OUT OF SCOPE (docs/rung38-spec.md 'Scope').", flight.m0)));
@@ -770,7 +770,7 @@ pub fn r90_try_instant_tail(
     let burner = c.mdot_air;
     let face = c.mdot_face.expect("a rung-90 closure always sets mdot_face");
     let s5 = FlowState { tt: tt5, pt: pi_lpt * pi_hpt * c.pt4, mdot: burner, far: f };
-    let exit = Nozzle::convergent(core.base.p_ambient, core.base.pi_n).try_apply(&s5, wgas)?;
+    let exit = Nozzle::convergent(flight.p0, core.base.pi_n).try_apply(&s5, wgas)?;
     let press = (1.0 + f) * wgas.r_t_at(f) * exit.t9 * (1.0 - flight.p0 / exit.p9) / exit.v9;
     let sp_thrust = (1.0 + f) * exit.v9 - v0 + press;
     // (6): per INLET air, both extractions carrying full ram drag.
@@ -781,6 +781,6 @@ pub fn r90_try_instant_tail(
         tt45, tt5, tau_hpt, tau_lpt, pi_hpt, pi_lpt, eta_hpt, eta_lpt, nu_hpt, nu_lpt, sp_thrust,
         sp_thrust_inlet: Some(share * sp_thrust - (1.0 - share) * v0),
         m9: exit.m9,
-        branch: if exit.p9 > core.base.p_ambient + 1e-6 { Branch::Choked } else { Branch::Subsonic },
+        branch: if exit.p9 > flight.p0 + 1e-6 { Branch::Choked } else { Branch::Subsonic },
     })
 }

@@ -641,7 +641,7 @@ pub struct TwoSpoolCore {
     pub pi_b: f64,
     pub eta_hpt: f64,
     pub eta_lpt: f64,
-    pub p_ambient: f64,
+    /// No back-pressure is captured — see [`crate::matcher::OffDesignMatcher::pi_n`].
     pub pi_n: f64,
     pub pi_d_max: f64,
     pub f_design: f64,
@@ -779,9 +779,9 @@ impl TwoSpoolCore {
         if let Component::Turbine(x) = by("45") { eta_hpt = x.eta_t; e_hpt = x.e_t; }
         let (mut eta_lpt, mut e_lpt) = (f64::NAN, None);
         if let Component::Turbine(x) = by("5") { eta_lpt = x.eta_t; e_lpt = x.e_t; }
-        let (mut p_ambient, mut pi_n, mut nozzle_convergent) = (f64::NAN, f64::NAN, false);
+        let (mut pi_n, mut nozzle_convergent) = (f64::NAN, false);
         if let Component::Nozzle(x) = by("9") {
-            p_ambient = x.p_ambient; pi_n = x.pi_n; nozzle_convergent = x.convergent;
+            pi_n = x.pi_n; nozzle_convergent = x.convergent;
         }
         let mut pi_d_design = f64::NAN;
         if let Component::Inlet(x) = by("2") { pi_d_design = x.pi_d; }
@@ -811,7 +811,7 @@ impl TwoSpoolCore {
         TwoSpoolCore {
             eta_m, flight_design, mdot_air_design: mdot_design, hf_fuel_molar,
             pi_lpc_design, eta_lpc, pi_hpc_design, eta_hpc, tt4_design, eta_b, pi_b,
-            eta_hpt, eta_lpt, p_ambient, pi_n, pi_d_max, f_design, a4, a45, a8, reference,
+            eta_hpt, eta_lpt, pi_n, pi_d_max, f_design, a4, a45, a8, reference,
             fs_engine: Engine::new(gas, Vec::new(), eta_m),
             tau_calls: std::cell::Cell::new(0),
             customer,
@@ -1081,7 +1081,7 @@ impl TwoSpoolCore {
         let r = self.try_rebuild(flight, pi_d, c.pi_lpc, c.pi_hpc, tt4, mdot_air,
                                  self.eta_lpc, self.eta_hpc, self.eta_hpt, self.eta_lpt)
             .unwrap_or_else(|e| panic!("{}", e.0));
-        let nozzle_choked = r.exit_p9 > self.p_ambient + 1e-6;
+        let nozzle_choked = r.exit_p9 > flight.p0 + 1e-6;
 
         // SCOPE GUARD (`docs/rung38-spec.md` § Scope). Unchoke relocates rung 33's inversion one
         // throat upstream onto the LP spool — a genuinely different solve, not built here. FLAG,
@@ -1124,7 +1124,7 @@ impl TwoSpoolCore {
         let s45 = Turbine::new(eta_hpt, None).apply(&s4, &rgas, dh_hpt_reb);
         let dh_lpt_reb = (rgas.h_c(s25.tt) - rgas.h_c(s2.tt)) / (self.eta_m * (1.0 + s4.far));
         let s5 = Turbine::new(eta_lpt, None).apply(&s45, &rgas, dh_lpt_reb);
-        let exit = Nozzle::convergent(self.p_ambient, self.pi_n).try_apply(&s5, &rgas)?;
+        let exit = Nozzle::convergent(flight.p0, self.pi_n).try_apply(&s5, &rgas)?;
         Ok(TwoSpoolRebuilt {
             state0, v0, s2, s25, s3, s4, s45, s5,
             exit_state: exit.state, exit_m9: exit.m9, exit_t9: exit.t9, exit_v9: exit.v9,
@@ -1711,7 +1711,7 @@ fn r39_try_match_point(
     // point, and this is much the commonest reason they do — 23 of the 147-cell dump grid at
     // `b = 0`, rising to 25 at `b = 0.10`, which IS rung 42 gate 6's shrinking envelope, as a
     // count.
-    if r.exit_p9 <= b.p_ambient + 1e-6 {
+    if r.exit_p9 <= flight.p0 + 1e-6 {
         return Err(Abort(format!(
             "rung-39 two-spool map match at Tt4={tt4:.0}, M0={:.2}: nozzle UNCHOKED -- OUT \
              OF SCOPE (docs/rung38-spec.md 'Scope'). The LP turbine's geometric tau_LPT pin \

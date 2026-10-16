@@ -40,3 +40,5 @@ caches in `gas.rs` (b3a5e3b, gate bit-identical, reacting/Fork B ~10x faster).
   Ask for the value afresh in the ordered queue instead of reading whatever arrived last. Found only
   because a review asked to show a number the plan had promised and the first build had dropped.
 - **Backslash collapse re-hit 3x** — see [[windows-tooling-file-hazards]].
+
+**Status 2026-10-16:** the design back-pressure is REPAIRED in the model — [[back-pressure-repair]]; `fly_solver` no longer overrides.

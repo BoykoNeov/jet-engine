@@ -54,8 +54,8 @@ fn flown_at_its_design_point_the_engine_lands_on_its_design() {
 
 #[test]
 fn at_the_design_pressure_fly_is_the_shipped_solver_bit_for_bit() {
-    // Move throttle and speed, keep the design's ambient pressure: the back-pressure override
-    // changes nothing, so the point must be rung 34's own, bit for bit.
+    // Move throttle and speed, keep the design's ambient pressure: `fly` adds no physics of its own,
+    // so the point must be rung 34's own, bit for bit.
     let s = FlySettings { tt4: 1200.0, m0: 0.6, ..FlySettings::defaults() };
     let d = s.capture();
     let direct = SpoolTransient::new(build_turbojet(d.gas.gas(), d.pi_c, d.tt4, d.p0, d.losses()), d.flight(), d.mdot,
@@ -84,19 +84,18 @@ fn the_nozzle_pushes_against_the_flights_pressure() {
         // ...while airflow and thrust scale with the air's density, exactly as p0.
         assert!(rel(o.point.mdot_air / p0, base.point.mdot_air / 50_000.0) < REDUCE, "p0={p0}: airflow ∝ p0");
     }
-    // The discriminator: WITHOUT the override (the design's 50 kPa as back-pressure) the thin-air
-    // point is solved against air twice as thick as it is, and the answer moves.
+    // The model's own solver, with no sandbox help: captured at 50 kPa and flown in air a quarter as
+    // thick, it lands on the same point. Until 2026-10-16 the matcher pushed the nozzle against the
+    // DESIGN 50 kPa, and this solve failed outright; the sandbox carried an override (plan § 10.8).
     let s = at(12_500.0);
     let d = s.capture();
     let shipped = SpoolTransient::new(build_turbojet(d.gas.gas(), d.pi_c, d.tt4, d.p0, d.losses()), d.flight(), d.mdot,
                                       s.map.map());
     let cm = s.map.map().with_phi_surge(s.phi_surge);
-    let wrong = quiet(|| shipped.equilibrium(&s.flight(), s.tt4, Some(&cm)));
-    let moved = match wrong {
-        Err(_) => true,
-        Ok(eq) => eq.branch != Branch::Choked || rel(eq.pi_c, base.point.pi_c) > 1e-6,
-    };
-    assert!(moved, "the design back-pressure gave the same answer — the override is not being tested");
+    let eq = quiet(|| shipped.equilibrium(&s.flight(), s.tt4, Some(&cm)))
+        .unwrap_or_else(|e| panic!("the model's own solver fails at 12.5 kPa: {e}"));
+    assert_eq!(eq.branch, Branch::Choked, "12.5 kPa: branch");
+    assert!(rel(eq.pi_c, base.point.pi_c) < REDUCE, "12.5 kPa: pi_c {} vs {}", eq.pi_c, base.point.pi_c);
 }
 
 #[test]

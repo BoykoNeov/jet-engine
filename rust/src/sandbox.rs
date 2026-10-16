@@ -861,18 +861,13 @@ pub struct SpoolPoint {
 /// reacting/equilibrium gases memoise per fuel-air ratio and never forget, so a long-lived solver
 /// carries a growing memo (plan § 10.5); a capture costs ~1.5 ms.
 ///
-/// **The nozzle's back-pressure is set to THIS flight's ambient pressure.** The matcher keeps the
-/// design run's ambient as `p_ambient` and uses it ONLY as the nozzle's back-pressure (every use
-/// in `matcher.rs` / `spool.rs`), while the thrust's pressure term reads the flight's `p0`. Every
-/// shipped caller flies off design at the design `p0`, where the two agree; the sandbox is the
-/// first to change altitude with the hardware frozen. At the design `p0` this is the shipped solver
-/// exactly (`tests/sandbox.rs` pins both facts).
+/// The nozzle pushes against THIS flight's ambient pressure — the matchers do that themselves since
+/// 2026-10-16. Until then they kept the design run's ambient and this function overrode it; the
+/// sandbox was the first caller to change altitude with the hardware frozen (plan §§ 10.8, 26).
 pub fn fly_solver(s: &FlySettings) -> SpoolTransient {
     let d = s.capture();
     let engine = build_turbojet(d.gas.gas(), d.pi_c, d.tt4, d.p0, d.losses());
-    let mut st = SpoolTransient::new(engine, d.flight(), d.mdot, s.map.map());
-    st.inner.inner.p_ambient = s.p0;
-    st
+    SpoolTransient::new(engine, d.flight(), d.mdot, s.map.map())
 }
 
 /// The top of rung 34's shaft-speed search (`SpoolTransient::find_equilibrium_nu` marches 0.30–1.60

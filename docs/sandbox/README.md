@@ -42,12 +42,9 @@ operating point's map efficiencies and flow coefficient, the station table, the 
 compressor map: speed lines, the stall line, the running line streamed one throttle at a time, and
 the current point.
 
-**Three things the sandbox does that the shipped solvers do not:**
-- **The nozzle pushes against the flight's own air pressure.** The matchers keep the design run's
-  ambient as the nozzle's back-pressure; every shipped caller flies at the design pressure, so it
-  never mattered. The sandbox changes altitude with the hardware frozen, so it sets the back-pressure
-  per flight (`sandbox::fly_solver`). At the design pressure this is the shipped solver bit for bit;
-  without it, a thin-air point fails outright (`tests/sandbox_fly.rs`, which proves both).
+**Two things the sandbox does that the shipped solvers do not** (a third — the nozzle pushing against
+the flight's own air pressure, which the sandbox used to set itself — moved into the model 2026-10-16:
+`docs/plans/sandbox-plan.md` § 26):
 - **The stall margin is read off the solved point** instead of re-solving it (rung 36's
   `surge_margin` solves twice), and its constant-flow half uses a non-crashing copy of the map read,
   held bit-equal to the original wherever that answers.
@@ -244,8 +241,8 @@ red until the page is rebuilt and committed — the numbers have not changed.
   on every gas (on the perfect gas, exactly the leftover its rounded rung-1 constants predict).
 - `tests/sandbox_fly.rs` — slice 3: flown at its own design point the engine lands on its design
   (every gas); at the design pressure the fly point IS rung 34's equilibrium, bit for bit; the
-  back-pressure follows the flight (a pressure-homogeneity check, and proof the shipped back-pressure
-  fails there); the stall reading IS rung 36's margin; each fly pre-check and plain-words branch is
+  back-pressure follows the flight (a pressure-homogeneity check, and the model's own solver flies
+  12.5 kPa); the stall reading IS rung 36's margin; each fly pre-check and plain-words branch is
   driven by its case.
 - `tests/sandbox_blades.rs` — slice 2: at its defaults the view IS rung 85's default cell, and each
   lever request IS `Machine::schedule`, bit for bit, against a rig built in the test (never the

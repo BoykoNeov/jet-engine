@@ -1053,7 +1053,7 @@ impl MapMatcher {
         // not, because rung 33 patched `OffDesignMatcher.match` and this method overrides it.
         let rebuilt =
             m.rebuild(flight, pi_d, op.pi_c, tt4, op.mdot_air, eta_c, eta_t);
-        let nozzle_choked = rebuilt.exit.p9 > m.p_ambient + 1e-6;
+        let nozzle_choked = rebuilt.exit.p9 > flight.p0 + 1e-6;
 
         let Rebuilt { state0, v0, s2, s3, s4, s5, exit, gas: rgas } = rebuilt;
         let stations: Vec<(&'static str, FlowState)> = vec![

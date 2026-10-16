@@ -175,7 +175,7 @@ Never re-open one, and never re-enumerate them here.
 - Rung 79 § 9's **gap** — `docs/rung79-gap-margin.md`. Its § 5 march **STANDS STILL**; residual = rung 77's `1/(1−c)`. **CORRECTS 79.**
 - "Earned at design" over `π_c` (`docs/rung29-pi-c-margin.md`, NOT protective) and `M0` (`docs/rung29-M0-margin.md`, monotone-protective).
 - `β<1` over `π_c` — `docs/rung28-beta-margin.md` (β pressure-invariant; higher `π_c` protective).
-- Solver repairs (sandbox plan § 14): rung 34's march wall + rung 31's turbine wall (an oracle RULE), 2026-10-10; rung 43's `below_ceiling` ON BY DEFAULT 2026-10-14 (no verdict moves; CORRECTS 65 § 3; oracles held OFF).
+- Solver repairs (sandbox plan § 14): rung 34's march wall + rung 31's turbine wall (an oracle RULE), 2026-10-10; rung 43's `below_ceiling` ON BY DEFAULT 2026-10-14 (no verdict moves; CORRECTS 65 § 3; oracles held OFF); the nozzle back-pressure follows the FLIGHT, not the design ambient, 2026-10-16 (§ 26; nothing shipped moved, bit for bit).
 
 **Still OPEN — the live to-build list:**
 - **The real spatial / transported-CFD PDF** — the standing mixing ceiling (22–24 are a Gaussian-plume cartoon; needs an anchored SCALE + spread law).
@@ -183,7 +183,6 @@ Never re-open one, and never re-enumerate them here.
 - **Detailed Fenimore** (`CH+N₂→HCN`) and **super-eq-O radical decay** — need new species / a relaxing pocket.
 - **Reacting-gas fuel control** (35/43 defer — the forward burner asserts against an equilibrium gas).
 - **The subsonic / unchoked LP branch** in the two-spool solves (38 flags, unsolved) and its **transient**.
-- **Off-design at a new ALTITUDE**: every matcher keeps the DESIGN ambient as nozzle back-pressure; the sandbox overrides per flight — `docs/plans/sandbox-plan.md` § 10.8.
 - **Rungs 69–96's seams — in each rung's spec, not here.** `n`=4 needs a 4th non-fuel lever or a non-`min` composition; every route TRIED (72–76, 80) is CLOSED.
 - **Rung 37's internal clocks on two shafts** + the combined 3-state.
 - **Afterburner**; a **real hardware/CFD map + surge line** (32's concession, doubled on two spools).

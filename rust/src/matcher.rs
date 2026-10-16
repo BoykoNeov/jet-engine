@@ -230,7 +230,8 @@ pub struct OffDesignMatcher {
     pub eta_b: f64,
     pub pi_b: f64,
     pub eta_t: f64,
-    pub p_ambient: f64,
+    /// No back-pressure is captured: every nozzle call reads the FLIGHT's `p0`. Until 2026-10-16 the
+    /// design run's ambient was kept here and pushed against at every altitude (sandbox plan § 26).
     pub pi_n: f64,
     /// `pi_d = pi_d_max * ram_recovery(M0)`; backed out at the design Mach.
     pub pi_d_max: f64,
@@ -296,7 +297,7 @@ impl OffDesignMatcher {
         // Pull the (fixed) component parameters off the design engine.
         let (mut pi_d_design, mut pi_c_design, mut eta_c) = (f64::NAN, f64::NAN, f64::NAN);
         let (mut tt4_design, mut eta_b, mut pi_b) = (f64::NAN, f64::NAN, f64::NAN);
-        let (mut eta_t, mut p_ambient, mut pi_n) = (f64::NAN, f64::NAN, f64::NAN);
+        let (mut eta_t, mut pi_n) = (f64::NAN, f64::NAN);
         let (mut e_c, mut e_t) = (None, None);
         let mut nozzle_convergent = false;
         for &(_, c) in &design_engine.components {
@@ -317,7 +318,6 @@ impl OffDesignMatcher {
                     e_t = x.e_t;
                 }
                 Component::Nozzle(x) => {
-                    p_ambient = x.p_ambient;
                     pi_n = x.pi_n;
                     nozzle_convergent = x.convergent;
                 }
@@ -350,7 +350,7 @@ impl OffDesignMatcher {
         OffDesignMatcher {
             eta_m, flight_design, mdot_air_design: mdot_design, hf_fuel_molar,
             pi_d_design, pi_c_design, eta_c, tt4_design, eta_b, pi_b, eta_t,
-            p_ambient, pi_n, pi_d_max, f_design, a4, a8, reference, hooks,
+            pi_n, pi_d_max, f_design, a4, a8, reference, hooks,
             fs_engine: Engine::new(gas, Vec::new(), eta_m),
             tau_calls: std::cell::Cell::new(0),
         }
@@ -532,7 +532,7 @@ impl OffDesignMatcher {
         // are live abort sites, so moving the dispatch earlier — or onto a cheaper predicate —
         // would change which cells return a number.
         let rebuilt = self.rebuild(flight, pi_d, pi_c, tt4, mdot_air, self.eta_c, self.eta_t);
-        let nozzle_choked = rebuilt.exit.p9 > self.p_ambient + 1e-6;
+        let nozzle_choked = rebuilt.exit.p9 > flight.p0 + 1e-6;
 
         // RUNG 33 — DISPATCH. If the choked-branch match leaves the nozzle SUBSONIC, the (★)
         // two-choke pin is void (only the NGV stays choked). Re-solve on the subsonic branch
@@ -589,7 +589,7 @@ impl OffDesignMatcher {
         let s4 = Burner::new(tt4, self.eta_b, self.pi_b).apply(&s3, &rgas);
         let dh_turb = (rgas.h_c(s3.tt) - rgas.h_c(s2.tt)) / (self.eta_m * (1.0 + s4.far));
         let s5 = Turbine::new(eta_t, None).apply(&s4, &rgas, dh_turb);
-        let exit = Nozzle::convergent(self.p_ambient, self.pi_n).apply(&s5, &rgas);
+        let exit = Nozzle::convergent(flight.p0, self.pi_n).apply(&s5, &rgas);
         Rebuilt { state0, v0, s2, s3, s4, s5, exit, gas: rgas }
     }
 
@@ -621,7 +621,7 @@ impl OffDesignMatcher {
     /// **deliberately not factored together** with [`match_point`](Self::match_point)'s loop:
     /// that one calls the turbine SOLVE, this one the turbine MAP.
     pub fn try_subsonic_operating(
-        &self, tt4: f64, tt2: f64, pt2: f64, pi_t: f64,
+        &self, tt4: f64, tt2: f64, pt2: f64, pi_t: f64, p0: f64,
     ) -> Result<SubsonicOp, Abort> {
         let (mut f, mut pt4) = (self.f_design, self.pi_b * self.pi_c_design * pt2);
         let (mut pi_c, mut tau_t, mut tt5, mut tt3) = (f64::NAN, f64::NAN, f64::NAN, f64::NAN);
@@ -652,7 +652,7 @@ impl OffDesignMatcher {
         let mdot4_ngv = self.a4 * pt4 * try_choked_mfp(wgas, tt4, f)? / powp(tt4, 0.5);
         let pt5 = pi_t * pt4;
         let s5 = FlowState { tt: tt5, pt: pt5, mdot: 1.0, far: f };
-        let exit = Nozzle::convergent(self.p_ambient, self.pi_n).try_apply(&s5, wgas)?;
+        let exit = Nozzle::convergent(p0, self.pi_n).try_apply(&s5, wgas)?;
         let rho9 = exit.p9 / (wgas.r_t_at(f) * exit.t9);
         let mdot4_noz = self.a8 * rho9 * exit.v9;               // subsonic-nozzle demand
         Ok(SubsonicOp {
@@ -668,8 +668,8 @@ impl OffDesignMatcher {
     /// The distinction is not cosmetic. Python wraps only the two bracket MARCHES in `try`; a
     /// failure once the bracket is established propagates and kills the cell. Using the
     /// fallible form there would silently invent a recovery Python does not have.
-    pub fn subsonic_operating(&self, tt4: f64, tt2: f64, pt2: f64, pi_t: f64) -> SubsonicOp {
-        self.try_subsonic_operating(tt4, tt2, pt2, pi_t)
+    pub fn subsonic_operating(&self, tt4: f64, tt2: f64, pt2: f64, pi_t: f64, p0: f64) -> SubsonicOp {
+        self.try_subsonic_operating(tt4, tt2, pt2, pi_t, p0)
             .unwrap_or_else(|e| panic!("{}", e.0))
     }
 
@@ -694,7 +694,7 @@ impl OffDesignMatcher {
         let (mut lo, mut rlo) = (f64::NAN, f64::NAN);
         let mut pt = 0.15;
         while pt < 0.95 {
-            match self.try_subsonic_operating(tt4, tt2, pt2, pt) {
+            match self.try_subsonic_operating(tt4, tt2, pt2, pt, flight.p0) {
                 Ok(op) => {
                     rlo = op.resid;
                     lo = pt;
@@ -709,7 +709,7 @@ impl OffDesignMatcher {
         let (mut hi, mut rhi) = (f64::NAN, f64::NAN);
         let mut pt = 0.9995;
         while !lo.is_nan() && pt > lo {
-            match self.try_subsonic_operating(tt4, tt2, pt2, pt) {
+            match self.try_subsonic_operating(tt4, tt2, pt2, pt, flight.p0) {
                 Ok(op) => {
                     rhi = op.resid;
                     hi = pt;
@@ -729,7 +729,7 @@ impl OffDesignMatcher {
         // tidied version would still converge and would still be a different program.
         for _ in 0..Self::MAX {
             let mid = 0.5 * (lo + hi);
-            let rm = self.subsonic_operating(tt4, tt2, pt2, mid).resid;
+            let rm = self.subsonic_operating(tt4, tt2, pt2, mid, flight.p0).resid;
             if rlo * rm <= 0.0 {
                 hi = mid;
             } else {
@@ -741,7 +741,7 @@ impl OffDesignMatcher {
             }
         }
         let pi_t = 0.5 * (lo + hi);
-        let op = self.subsonic_operating(tt4, tt2, pt2, pi_t);
+        let op = self.subsonic_operating(tt4, tt2, pt2, pi_t, flight.p0);
         let (f, pt4, pi_c) = (op.f, op.pt4, op.pi_c);
 
         // Direction / physicality (the same contract as the choked branch).
@@ -760,7 +760,7 @@ impl OffDesignMatcher {
         assert!(exit.m9 < 1.0 + 1e-6,
                 "rung-33 subsonic branch must exit M9 < 1 (got {:.4}) — dispatch misfired",
                 exit.m9);
-        assert!(!(exit.p9 > self.p_ambient + 1e-6),
+        assert!(!(exit.p9 > flight.p0 + 1e-6),
                 "rung-33 subsonic branch must be fully expanded (p9 = p0)");
 
         // LOWER ENVELOPE: the subsonic branch ends at THRUST-NEUTRAL idle. Below it

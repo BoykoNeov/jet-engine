@@ -379,11 +379,11 @@ pub fn try_match_bleed(
     let dh_lpt_reb =
         (rgas.h_c(s25.tt) - rgas.h_c(s2.tt)) / (base.eta_m * (1.0 - b) * (1.0 + s4.far));
     let s5 = Turbine::new(c.eta_lpt, None).apply(&s45, &rgas, dh_lpt_reb);
-    let exit = Nozzle::convergent(base.p_ambient, base.pi_n).try_apply(&s5, &rgas)?;
+    let exit = Nozzle::convergent(flight.p0, base.pi_n).try_apply(&s5, &rgas)?;
 
     // SCOPE GUARD (inherited). Bleed lowers pi_LPC hence pt4, so this bites SOONER — 23 cells of
     // the dump grid at b = 0, 25 at b = 0.10. An `Err` and not a panic: module note § 3.
-    if exit.p9 <= base.p_ambient + 1e-6 {
+    if exit.p9 <= flight.p0 + 1e-6 {
         return Err(Abort(format!(
             "rung-42 bleed match at Tt4={tt4:.0}, b={b:.3}, M0={:.2}: nozzle UNCHOKED -- OUT OF \
              SCOPE (docs/rung38-spec.md 'Scope'). Opening the valve shrinks the choked envelope; \

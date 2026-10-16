@@ -651,13 +651,13 @@ impl SpoolTransient {
     /// compared, never restated (slice N step 4).
     #[allow(clippy::too_many_arguments)]
     pub fn try_turbine_subsonic(
-        &self, wgas: &Gas, tt4: f64, f: f64, pt4: f64, mdot4: f64, eta_t: f64,
+        &self, wgas: &Gas, tt4: f64, f: f64, pt4: f64, mdot4: f64, eta_t: f64, p0: f64,
     ) -> Result<(f64, f64, f64, crate::components::NozzleExit), Abort> {
         let mm = self.m();
         let state_at = |pi_t: f64| -> Result<(f64, f64, crate::components::NozzleExit), Abort> {
             let (tau_t, tt5) = mm.tau_t_of_pi_t(wgas, tt4, f, pi_t, Some(eta_t));
             let s5 = FlowState { tt: tt5, pt: pi_t * pt4, mdot: mdot4, far: f };
-            let exit = Nozzle::convergent(mm.p_ambient, mm.pi_n).try_apply(&s5, wgas)?;
+            let exit = Nozzle::convergent(p0, mm.pi_n).try_apply(&s5, wgas)?;
             Ok((tau_t, tt5, exit))
         };
         let resid = |pi_t: f64| -> Result<f64, Abort> {
@@ -670,7 +670,7 @@ impl SpoolTransient {
         let mut pt = 0.9995;
         while pt > 0.05 {
             let (_, _, ex) = state_at(pt)?;
-            if !(ex.p9 > mm.p_ambient + 1e-6) {
+            if !(ex.p9 > p0 + 1e-6) {
                 // nozzle subsonic here — valid
                 hi = Some(pt);
                 rhi = Some(resid(pt)?);
@@ -781,10 +781,10 @@ impl SpoolTransient {
         // as rung 33 does (the convergent Nozzle decides choked vs subsonic).
         let (mut pi_t, mut tau_t, mut tt5) = mm.try_solve_turbine(wgas, tt4, f, Some(eta_t))?;
         let s5 = FlowState { tt: tt5, pt: pi_t * pt4, mdot: mdot_air, far: f };
-        let mut exit = Nozzle::convergent(mm.p_ambient, mm.pi_n).try_apply(&s5, wgas)?;
-        let branch = if exit.p9 > mm.p_ambient + 1e-6 { Branch::Choked } else { Branch::Subsonic };
+        let mut exit = Nozzle::convergent(flight.p0, mm.pi_n).try_apply(&s5, wgas)?;
+        let branch = if exit.p9 > flight.p0 + 1e-6 { Branch::Choked } else { Branch::Subsonic };
         if branch == Branch::Subsonic {
-            match self.try_turbine_subsonic(wgas, tt4, f, pt4, mdot4, eta_t) {
+            match self.try_turbine_subsonic(wgas, tt4, f, pt4, mdot4, eta_t, flight.p0) {
                 Ok((a, b, c, e)) => {
                     pi_t = a;
                     tau_t = b;

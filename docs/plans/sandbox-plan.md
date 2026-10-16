@@ -331,7 +331,7 @@ as its own commit, proven bit-identical by the full gate.
   the back-pressure to the flight's `p0`. At the design `p0` it is the shipped solver bit for bit;
   at 12.5 kPa without it, the solve fails outright (both pinned, `tests/sandbox_fly.rs`, and the
   override removed once to see that test go red). A model-side fix would be bit-identical for every
-  shipped caller — a candidate seam, not done here.
+  shipped caller — a candidate seam, not done here. **Done 2026-10-16 — § 26.**
 - **Rung 36's constant-flow margin crashes the gas tables with a low stall line** (it reads a speed
   line at `n·φ_op/φ_surge`, >4× design at `φ_surge` 0.3). The sandbox reads it through
   `try_pi_c_map`, a copy of `pi_c_map` with the fallible inverse, held bit-equal to the original at
@@ -550,9 +550,9 @@ model has rungs 34–36 only. So:
 their step count unconditionally and panic where rung 34's stops cleanly (`combustor.rs` header), so
 they need their own refusal map; rungs 64–84 (the bleed LIMITER, the lagged valve, the cascades and the
 reference/rank rungs) — each has its own constructor and its subject is loop structure, not a visible
-behaviour; a flight knob on the two-shaft view — every two-spool solver keeps the DESIGN ambient
-pressure as the nozzle's back-pressure (CLAUDE.md, OPEN), and `fly_solver`'s override (§ 10.8) is
-single-spool.
+behaviour; a flight knob on the two-shaft view — every two-spool solver kept the DESIGN ambient
+pressure as the nozzle's back-pressure, and `fly_solver`'s override (§ 10.8) was
+single-spool (repaired 2026-10-16, § 26 — the knob itself is still unbuilt).
 
 ### 12.2 Measured (2026-10-07, scratch crates `W:\temp\claude\jet-transient-timing` and
 `…\jet-transient-wasm`, not in the repo)
@@ -1573,3 +1573,28 @@ user, who answered "go": both readings as a toggle; the throttle's straight line
 - **Crash map** (1 000 requests, seed 13; `scratch-archive/rung96/crash.txt`): no panic; 594 ran to the end, 53 stopped
   with a reason (51 the stall floor, 2 a throttle above its redline), the rest refused in words. Median 0.23 s; the
   slowest (10 s under load, 1.6 s alone) is the lean wall beside the bleed valve — rung 95's route takes 4.4 s on it.
+
+## 26. The nozzle pushes against the flight's own air (2026-10-16) — a solver repair, not a slice
+
+§ 10.8's candidate seam, closed. Every off-design solver (`OffDesignMatcher`, `TwoSpoolCore`, and every
+rung that copies their nozzle call — 32, 33, 34, 39, 40, 42, 62, 90, 91, 92) kept the DESIGN run's ambient
+pressure and used it as the nozzle's back-pressure at every altitude, while the thrust's pressure term read the
+flight's `p0`. Now the stored field is deleted and every nozzle call and choked/subsonic test reads the
+flight's `p0`; `try_subsonic_operating` and `try_turbine_subsonic`, which never saw a flight, take it as an
+argument. `fly_solver`'s override is gone — the model does it.
+
+- **Nothing shipped moved — measured, not assumed.** The whole gate ran once with a logger at every changed site,
+  recording each call where the flight's `p0` differed from the old stored value **bit for bit**. Hits: the
+  sandbox (`sandbox_fly`, `sandbox_transient`, the CLI's `sandbox` page build) — all through `fly_solver`,
+  whose override already set exactly the flight's `p0`; and ONE shipped test, rung 41's gate 4b (two shafts at
+  101 325 Pa against a 50 kPa capture). There the nozzle is choked under both values, and on a choked nozzle the
+  back-pressure decides only the branch, never the arithmetic — bit-identical. Every oracle, golden and panel held.
+- **The gate:** `tests/flight_back_pressure.rs` — a similarity law: same `T0` and Mach, `p0` at ¼, ½ and 2× the
+  design, on the two temperature-only gases; every ratio unchanged and airflow and thrust ∝ `p0` to 1e−9, on
+  rung 31 (both nozzle branches, each gas), 32, 38, 39, 42, 90/91/92 (loads as SHARES — a fixed-POWER generator
+  is a bigger share of a smaller engine, real physics) and rung 40's unbalanced instant. With the old code put
+  back, all five tests failed — three refused or crashed, two (32's map matcher, 40's instant) gave a wrong number.
+- `tests/sandbox_fly.rs`'s discriminator now pins the other side: the model's own solver flies 12.5 kPa.
+- **Unlocked, not built:** a flight knob on the two-shaft *Controls* view (§ 12.1 refused it on this seam — a
+  sandbox slice), and rung 96's next seam (the control's own `δ`/`θ` corrections: a table made at one flight
+  condition, flown at another).

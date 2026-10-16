@@ -517,8 +517,8 @@ pub fn try_match_cooled(
     let s45 = mix(&s44, mdot_blade, s3.tt, s3.pt, &rgas);               // <- MIXER 2 (blade)
     let dh_lpt_reb = (rgas.h_c(s25.tt) - rgas.h_c(s2.tt)) * s2.mdot / (base.eta_m * s45.mdot);
     let s5 = Turbine::new(m.eta_lpt, None).apply(&s45, &rgas, dh_lpt_reb);
-    let exit = Nozzle::convergent(base.p_ambient, base.pi_n).try_apply(&s5, &rgas)?;
-    if exit.p9 <= base.p_ambient + 1e-6 {
+    let exit = Nozzle::convergent(flight.p0, base.pi_n).try_apply(&s5, &rgas)?;
+    if exit.p9 <= flight.p0 + 1e-6 {
         return Err(Abort(format!(
             "rung-91 cooled match at Tt4={tt4:.0}, vane={e1:.3}, blade={e2:.3}, M0={:.2}: nozzle \
              UNCHOKED -- OUT OF SCOPE (docs/rung38-spec.md 'Scope').", flight.m0)));
@@ -904,7 +904,7 @@ pub fn r91_try_instant_tail(
     let f45 = tb.hpt.f45;
     let s5 = FlowState { tt: tb.tt5, pt: tb.pi_lpt * tb.hpt.pi_hpt * c.pt4, mdot: nozzle_air,
                          far: f45 };
-    let exit = Nozzle::convergent(core.base.p_ambient, core.base.pi_n).try_apply(&s5, wgas)?;
+    let exit = Nozzle::convergent(flight.p0, core.base.pi_n).try_apply(&s5, wgas)?;
     let press = (1.0 + f45) * wgas.r_t_at(f45) * exit.t9 * (1.0 - flight.p0 / exit.p9) / exit.v9;
     let sp_thrust = (1.0 + f45) * exit.v9 - v0 + press;
     let share = nozzle_air / face;
@@ -916,6 +916,6 @@ pub fn r91_try_instant_tail(
         nu_hpt: tb.nu_hpt, nu_lpt: tb.nu_lpt, sp_thrust,
         sp_thrust_inlet: Some(share * sp_thrust - (1.0 - share) * v0),
         m9: exit.m9,
-        branch: if exit.p9 > core.base.p_ambient + 1e-6 { Branch::Choked } else { Branch::Subsonic },
+        branch: if exit.p9 > flight.p0 + 1e-6 { Branch::Choked } else { Branch::Subsonic },
     })
 }
