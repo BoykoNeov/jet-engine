@@ -405,7 +405,7 @@ footer p { max-width: 90ch; }
           project's test rig, holding thrust, the hotter burner moves the LP compressor away from stall, and at mid to high
           power, with the generator on the LP shaft, both compressors end up further from stall than with no generator at all. Holding HP speed is not holding thrust: with
           the generator on the HP shaft it burns much hotter and gives MORE thrust; on the LP shaft it can run the burner
-          cooler. The fuel still ramps between the two ends; a load too big for a throttle is refused in words.</p>
+          cooler. Ungoverned, the fuel ramps between the two ends; a load too big for a throttle is refused in words.</p>
       </div>
       <p class="note" id="ctl-gen-note">The generator takes power off a shaft and no air at all: no gas path changes, only the work the
         compressor on that shaft gets. On the HP shaft that pushes BOTH compressors toward their stall lines at every power
@@ -752,7 +752,7 @@ footer p { max-width: 90ch; }
         <div class="tile"><div class="k">Peak turbine temperature</div><div class="v"><span id="v-cpk">–</span> <span class="u">K</span></div><div class="d" id="d-cpk"></div></div>
         <div class="tile"><div class="k">LP closest to stall <small>(trend only)</small></div><div class="v"><span id="v-cslp">–</span> <span class="u">% above</span></div><div class="d" id="d-cslp"></div></div>
         <div class="tile"><div class="k">HP closest to stall <small>(trend only)</small></div><div class="v"><span id="v-cshp">–</span> <span class="u">% above</span></div><div class="d" id="d-cshp"></div></div>
-        <div class="tile"><div class="k">Deepest fuel cut</div><div class="v"><span id="v-ccut">–</span> <span class="u">% of schedule</span></div><div class="d" id="d-ccut"></div></div>
+        <div class="tile"><div class="k">Deepest fuel cut</div><div class="v"><span id="v-ccut">–</span> <span class="u">% of schedule or governor</span></div><div class="d" id="d-ccut"></div></div>
       </div>
     </div>
     <div class="card chart" id="ctl-card" hidden>
@@ -772,14 +772,14 @@ footer p { max-width: 90ch; }
       <div class="legend"><span>Top strip, who holds the fuel:</span><span><span class="chip hold-redline"></span>temperature limiter</span>
         <span><span class="chip hold-accel"></span>acceleration schedule</span><span><span class="chip hold-floor"></span>stall floor</span>
         <span><span class="chip hold-lag"></span>a lag's cut</span><span><span class="chip hold-metal"></span>metal cap</span>
-        <span>(blank: the schedule's own fuel)</span></div>
+        <span>(blank: the schedule's own fuel, or the governor's)</span></div>
       <div class="legend" id="ctl-clamp-legend" hidden><span>Second strip, the governor held at an edge:</span>
         <span><span class="chip clamp-rich"></span>asking more than the engine can burn</span>
         <span><span class="chip clamp-lean"></span>asking less than it can run on</span>
         <span><span class="sw demand"></span>what the throttle asks for</span></div>
       <div id="ctl-stops"></div>
       <div class="scroll"><table id="ctl-table"><thead><tr><th>Quantity</th><th>This run</th><th id="ctl-pin-head"></th></tr></thead><tbody></tbody></table></div>
-      <p class="note">The fuel follows the schedule unless a control cuts it; the cut fuel is what burns. Each control acts
+      <p class="note">The fuel follows the schedule (governed: what the governor asks for) unless a control cuts it; the cut fuel is what burns. Each control acts
         on its own measurement: the temperature limiter on the turbine inlet temperature, the acceleration schedule on fuel
         per unit of compressor pressure, the stall floor on a compressor's flow coefficient. When several are on, the one
         asking for the least fuel wins. Values are read at the model's points, every 0.02 τ; a sharp temperature spike can
@@ -1817,7 +1817,7 @@ const CTL_ROWS = [
   ["LP closest to its stall line (% above it; trend only)", r => closest(r, "lp"), 3],
   ["Lowest HP flow coefficient", r => Math.min(...r.phi_hp), 4],
   ["HP closest to its stall line (% above it; trend only)", r => closest(r, "hp"), 3],
-  ["Deepest fuel cut (% of the schedule)", r => Math.min(...r.fuel.map((v, i) => v / r.fuel_sched[i] * 100)), 4],
+  ["Deepest fuel cut (% of the schedule, or of the governor's demand)", r => Math.min(...r.fuel.map((v, i) => v / r.fuel_sched[i] * 100)), 4],
   ["Who held the fuel, and for how long", r => heldFor(r)],
   ["The governor (rung 95)", r => govFor(r)],
   ["Time to 95 % of the thrust change (τ)", r => to90(r, "thrust", 0.95), 3],

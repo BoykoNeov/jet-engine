@@ -166,7 +166,7 @@ Never re-open one, and never re-enumerate them here.
 - Anchored `δ(J)` law via a JICF trajectory — `docs/mixing-jicf-anchor-negative.md` (a SECOND unanchored exponent).
 - Lagged/filtered `pt3` sensor on 48's leg — `docs/pt3-sensor-lag-negative.md` (CONFIRMS 48, corrects its SIGN).
 - A limiter with BOTH edges inside the ramp — `docs/both-edges-limiter-negative.md`. Closes the WHOLE `pt3`-filter family; **UPGRADES 48's law**.
-- **PER-ROW BLADING** (56's seam) — `docs/per-row-blading-negative.md`. **OVER-DETERMINED** ⇒ capacity inert. **CORRECTS 55.**
+- **PER-ROW BLADING** (56's seam) — `docs/per-row-blading-negative.md`. **OVER-DETERMINED** ⇒ capacity inert. **CORRECTS 55.** Its § 5 anchor: BUILT BY 85.
 - The **φ-RATE limiter** (60's seam) — `docs/phi-rate-limiter-negative.md`. **Fuel's authority over `φ` INVERTS between LEVEL and DERIVATIVE**. BOUNDS 49; the one negative with a gate.
 
 **Checked, CONFIRMATION / CORRECTION — not a rung:**

@@ -28,8 +28,8 @@ there and the page says so; the metal cap cuts the fuel all along the move.
 >
 > **A SPEED GOVERNOR'S GAIN IS NOT ITS SPEED.** Held to a proportional law, a fixed gain closes the HP speed gap about
 > **1.9× more slowly at idle than near full power** (the turbine has less power to spare there, and the shaft's own
-> settling is slower too); the commanded-rate law closes it at its own time constant at every power — which is why
-> modern controls schedule an acceleration rather than a gain.
+> settling is slower too); the commanded-rate law closes it at its own time constant at every power (by construction) —
+> one reason a control may schedule an acceleration rather than a gain (not measured here).
 
 ## 1. What it adds
 
@@ -128,8 +128,9 @@ slower there.
 * **Rungs 46–52 — the limiters become the control.** Under a thrust governor the 1480 K temperature limiter holds the
   fuel for about half the default run (67 of 126 points in the anchor's reachability probe, on flow/press); whether rung 46's split — relief on the late HP spool, none on the early LP — survives a demand
   that is itself the hot thing is not measured here.
-* **Rung 43/35 — the TIT overshoot is a property of the open RAMP,** not of acceleration: governing the burner
-  temperature removes it entirely (the slowest thrust), governing thrust enlarges it.
+* **Rung 43/35 — the TIT overshoot belongs to the open RAMP, and a governor can enlarge it.** Governing the burner
+  temperature has none — by construction (a commanded `Tt4` cannot overshoot itself; no finding), at the price of the
+  slowest thrust; governing thrust enlarges it (H2, the finding).
 * **Rung 40 — its temperature-commanded march is now a SPECIAL CASE** of a fuel governor (the burner-temperature hold),
   to 6e−16.
 
