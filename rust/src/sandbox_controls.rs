@@ -37,6 +37,7 @@ use crate::shaft_offtake::{self, Demand, ShaftOfftake, ShaftOfftakeMatcher};
 use crate::metal_temperature::{self as mt, MetalInputs, MetalLimit, MetalReading, Row, TECHNOLOGIES};
 use crate::sandbox_cooling::{LIFE_MAX, LIFE_MIN, TECH_KEYS, YEAR_MAX, YEAR_MIN};
 use crate::burner_hold::{self as bh, Hold};
+use crate::governor::{self as gv, GovCall, GovMark, Governor, Law, Leg};
 use crate::engine::FlightCondition;
 use crate::fuel_transient::{r43_cut_below_ceiling, release_weight, AccelSchedule, AsymmetricLag, FuelInstant, FuelLimiters,
                             FuelPoint, FuelTransientCore, PointExtra, SurgeLimiter};
@@ -238,7 +239,38 @@ pub struct ControlsSettings {
     /// temperature floating to carry the load; and whether the metal limit (rung 93) BINDS the floating burner.
     pub hold: Hold,
     pub hold_cap: bool,
+    /// Rung 95: GOVERN the held quantity all along the move — the governor's fuel replaces the ramp as the demand the
+    /// limiters cut. Holding HP speed, `speed_law` picks the commanded rate (`gov_tau`, HP spool τ) or the proportional
+    /// law (`gov_gain`, fuel fraction per unit HP speed short).
+    pub govern: bool,
+    pub speed_law: SpeedLaw,
+    pub gov_tau: f64,
+    pub gov_gain: f64,
 }
+
+/// Rung 95's toggle: how a governor holding HP speed closes the gap (the user's "both").
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SpeedLaw {
+    /// The commanded rate: the shaft asked to close its gap in `gov_tau`.
+    Rate,
+    /// The proportional law: the steady fuel at the asked speed, plus `gov_gain` × the gap.
+    Prop,
+}
+
+impl SpeedLaw {
+    pub const ALL: [SpeedLaw; 2] = [SpeedLaw::Rate, SpeedLaw::Prop];
+    pub fn key(self) -> &'static str {
+        match self { SpeedLaw::Rate => "rate", SpeedLaw::Prop => "prop" }
+    }
+}
+
+/// Rung 95: the largest proportional gain the page runs — set where the march at its step stops agreeing with a
+/// finer one (`docs/rung95-spec.md`).
+pub const GAIN_MAX: f64 = 50.0;
+
+/// Rung 95: the shortest commanded-rate time constant — two steps (at one step the march at 0.02 is ~1e-3 off a finer
+/// one in flow coefficient on the default move; at two, under 1e-4 on every map's acceleration).
+pub const TAU_MIN: f64 = 2.0 * DS;
 
 /// Rung 92's switch: which shaft the generator loads.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -305,6 +337,7 @@ impl ControlsSettings {
             generator_power: 0.02,
             metal_on: false, metal_tech: 2, metal_year: 1985.0, metal_life: 1.0e4,
             hold: Hold::BurnerTemp, hold_cap: false,
+            govern: false, speed_law: SpeedLaw::Rate, gov_tau: 0.1, gov_gain: 20.0,
         }
     }
 
@@ -354,6 +387,19 @@ impl ControlsSettings {
         Some(mt::read(&inp, &lim))
     }
 
+    /// Rung 95: the governor's law, from what the throttle holds and the speed toggle.
+    pub fn law(&self) -> Law {
+        match (self.hold, self.speed_law) {
+            (Hold::BurnerTemp, _) => Law::BurnerTemp,
+            (Hold::Thrust, _) => Law::Thrust,
+            (Hold::HpSpeed, SpeedLaw::Rate) => Law::SpeedRate { tau: self.gov_tau },
+            (Hold::HpSpeed, SpeedLaw::Prop) => Law::SpeedProp { gain: self.gov_gain },
+        }
+    }
+
+    /// Rung 95: the metal leg runs — the governor is on and the cap switched on (its prerequisites checked first).
+    pub fn metal_leg(&self) -> bool { self.govern && self.hold_cap }
+
     pub fn flight(&self) -> FlightCondition { BladeSettings::defaults().flight() }
 
     pub fn s_end(&self) -> f64 { self.ramp + self.settle }
@@ -385,6 +431,8 @@ impl ControlsSettings {
             "metal_on" => b(self.metal_on), "metal_tech" => TECH_KEYS[self.metal_tech], "metal_year" => self.metal_year,
             "metal_life" => self.metal_life,
             "hold" => self.hold.key(), "hold_cap" => b(self.hold_cap),
+            "govern" => b(self.govern), "speed_law" => self.speed_law.key(), "gov_tau" => self.gov_tau,
+            "gov_gain" => self.gov_gain,
         }
     }
 
@@ -430,7 +478,7 @@ impl ControlsSettings {
                           ("customer_amount", &mut s.customer_amount), ("cool_vane", &mut s.cool_vane),
                           ("cool_blade", &mut s.cool_blade), ("generator_share", &mut s.generator_share),
                           ("generator_power", &mut s.generator_power), ("metal_year", &mut s.metal_year),
-                          ("metal_life", &mut s.metal_life)] {
+                          ("metal_life", &mut s.metal_life), ("gov_tau", &mut s.gov_tau), ("gov_gain", &mut s.gov_gain)] {
             num(k, into)?;
         }
         if let Some(t) = text("customer")? {
@@ -447,7 +495,8 @@ impl ControlsSettings {
         }
         for (k, into) in [("redline_on", &mut s.redline_on), ("gov_lag_on", &mut s.gov_lag_on),
                           ("accel_on", &mut s.accel_on), ("floor_on", &mut s.floor_on),
-                          ("release_on", &mut s.release_on), ("metal_on", &mut s.metal_on), ("hold_cap", &mut s.hold_cap)] {
+                          ("release_on", &mut s.release_on), ("metal_on", &mut s.metal_on), ("hold_cap", &mut s.hold_cap),
+                          ("govern", &mut s.govern)] {
             flag(k, into)?;
         }
         if let Some(t) = text("floor_spool")? { s.floor_spool = spool(&t)?; }
@@ -477,6 +526,10 @@ impl ControlsSettings {
                 "own" => true,
                 _ => return Err(format!("unknown valve closing {t:?} (\"same\" or \"own\")")),
             };
+        }
+        if let Some(t) = text("speed_law")? {
+            s.speed_law = SpeedLaw::ALL.into_iter().find(|l| l.key() == t)
+                .ok_or_else(|| format!("unknown speed law {t:?} (\"rate\" or \"prop\")"))?;
         }
         if let Some(t) = text("hold")? {
             s.hold = Hold::ALL.into_iter().find(|h| h.key() == t)
@@ -552,7 +605,8 @@ pub fn controls_precheck(s: &ControlsSettings) -> Result<(), DoesNotRun> {
                  ("valve_tau", s.valve_tau), ("valve_tau_close", s.valve_tau_close),
                  ("customer_share", s.customer_share), ("customer_amount", s.customer_amount),
                  ("cool_vane", s.cool_vane), ("cool_blade", s.cool_blade),
-                 ("generator_share", s.generator_share), ("generator_power", s.generator_power)];
+                 ("generator_share", s.generator_share), ("generator_power", s.generator_power),
+                 ("gov_tau", s.gov_tau), ("gov_gain", s.gov_gain)];
     if let Some((k, _)) = named.iter().find(|(_, v)| !v.is_finite()) {
         return Err(DoesNotRun(format!("Setting {k} is not a number.")));
     }
@@ -563,9 +617,11 @@ pub fn controls_precheck(s: &ControlsSettings) -> Result<(), DoesNotRun> {
             return no("The metal cap stops a burner that floats to hold thrust or speed. With the burner temperature itself \
                        held, lower the throttle instead.");
         }
-        if s.generator == GeneratorMode::Off {
+        // Rung 95: a governed thrust or speed floats the burner along the move with no load at all, so the governor
+        // lifts the generator's requirement (the anchor's § 1).
+        if s.generator == GeneratorMode::Off && !s.govern {
             return no("The metal cap stops a burner that floats to carry the generator; with the generator off nothing \
-                       floats. Switch the generator on.");
+                       floats. Switch the generator on, or govern the thrust or speed during the move.");
         }
         if !s.metal_on {
             return no("The metal cap needs the metal read: switch on Read the turbine metal.");
@@ -658,6 +714,31 @@ pub fn controls_precheck(s: &ControlsSettings) -> Result<(), DoesNotRun> {
              constants): measured, an attack of a quarter step moves the peak temperature by ~2.5 K with the step \
              size.")));
     }
+    // Rung 95: the governor rides rung 43's plain march; each lagged route is its own marcher (another model).
+    if s.govern {
+        if s.gov_lag_on {
+            return no("The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as \
+                       a state on its own march, and a governor on that march is a different model. Switch the lag off.");
+        }
+        if s.release_on {
+            return no("The governor runs with the instant limiters only: the realistic release carries its cut as a \
+                       state on its own march, and a governor on that march is a different model. Switch the release off.");
+        }
+        if s.valve_slow() {
+            return no("The governor runs with the instant valve only: a slow valve is a state on its own march, and a \
+                       governor on that march is a different model. Make the valve instant.");
+        }
+        if s.hold == Hold::HpSpeed && s.speed_law == SpeedLaw::Rate && !(s.gov_tau >= TAU_MIN - 1e-12) {
+            return Err(DoesNotRun(format!(
+                "The speed governor's time constant must be at least {TAU_MIN} spool time constants (two march steps): \
+                 measured, one step moves the flow coefficients by about 0.001 against a finer step.")));
+        }
+        if s.hold == Hold::HpSpeed && s.speed_law == SpeedLaw::Prop && !(s.gov_gain > 0.0 && s.gov_gain <= GAIN_MAX) {
+            return Err(DoesNotRun(format!(
+                "The speed governor's gain must be above 0 and at most {GAIN_MAX:.0}: a larger gain is worked out too \
+                 coarsely at this march's step.")));
+        }
+    }
     if s.accel_on && s.accel_margin < 0.0 {
         return no("The acceleration schedule's margin is measured above the steady line, so it cannot be negative.");
     }
@@ -731,6 +812,8 @@ pub struct ControlsSolver {
     /// Rung 94: what each end held, when it held thrust or HP speed with the generator on.
     pub hold_start: Option<HoldInfo>,
     pub hold_end: Option<HoldInfo>,
+    /// Rung 95: the governor, when the move is governed.
+    pub governor: Option<Governor>,
 }
 
 /// Rung 94: one end's hold — the throttle set, the target (thrust N per kg/s of design airflow, or HP speed), what
@@ -815,6 +898,26 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
         Hold::BurnerTemp => i.tt4,
     };
     let hold_end = |which: &str, t_set: f64| -> Result<(Instant2, Option<HoldInfo>), DoesNotRun> {
+        // Rung 95: governed with the cap and no load, the end is `T_set` itself, capped by rung 94's bisection if its
+        // metal is over — so the run starts on a point the metal leg agrees with.
+        if s.metal_leg() && unloaded.is_none() {
+            let i = steady(which, t_set)?;
+            let target = held(&i);
+            if s.metal_at(&i).is_none_or(|m| m.over() <= 0.0) {
+                return Ok((i, Some(HoldInfo { set: t_set, target, achieved: target, capped: false })));
+            }
+            let ok = |t: f64| core.fuel.inner.try_equilibrium(&fl, t, None).map(|_| 0.0);
+            let (floor, _) = bh::floor_of(&ok, HOLD_LO, t_set).ok_or_else(|| DoesNotRun(format!(
+                "At the {which} throttle ({t_set:.0} K): the engine has no steady point below it to cap the metal at.")))?;
+            let excess = |t: f64| core.fuel.inner.try_equilibrium(&fl, t, None).map(|(i, _, _)| {
+                s.metal_at(&i).map_or(f64::NEG_INFINITY, |m| m.over())
+            });
+            let t = bh::try_metal_cap(&excess, floor, t_set).map_err(|m| DoesNotRun(format!(
+                "At the {which} throttle ({t_set:.0} K): {m}")))?.unwrap_or(t_set);
+            let i = steady(which, t)?;
+            let achieved = held(&i);
+            return Ok((i, Some(HoldInfo { set: t_set, target, achieved, capped: true })));
+        }
         let Some(de) = unloaded.as_ref().filter(|_| s.hold != Hold::BurnerTemp) else {
             return Ok((steady(which, t_set)?, None));
         };
@@ -854,7 +957,28 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
             Some(accel_table(&core, &fl, lo, hi, s.accel_margin)?)
         }
     };
-    Ok(ControlsSolver { settings: *s, core, flight: fl, start, end, mf_lo, mf_hi, accel, hold_start, hold_end: hold_end_info })
+    // Rung 95: the governor's targets are rung 94's — `T_set` for the burner temperature; the held thrust or speed the
+    // end was asked for (with the generator or the cap), else the end's own.
+    let governor = match s.govern {
+        false => None,
+        true => {
+            let target = |i: &Instant2, h: Option<HoldInfo>, t_set: f64| match s.hold {
+                Hold::BurnerTemp => t_set,
+                _ => h.map_or_else(|| held(i), |h| h.target),
+            };
+            let law = s.law();
+            let table = match law {
+                Law::SpeedProp { .. } => gv::try_steady_table(&core.fuel, &fl, &start, &end).map_err(|e| DoesNotRun(
+                    format!("The speed governor's steady table has a throttle with no steady point between the ends: {}",
+                            endpoint_words(&e.0))))?,
+                _ => Vec::new(),
+            };
+            Some(Governor { law, lo: target(&start, hold_start, s.from), hi: target(&end, hold_end_info, s.to),
+                            ramp: s.ramp, mf_lo, mf_hi, table })
+        }
+    };
+    Ok(ControlsSolver { settings: *s, core, flight: fl, start, end, mf_lo, mf_hi, accel, hold_start, hold_end: hold_end_info,
+                        governor })
 }
 
 /// Plain words for an endpoint's failed steady solve — the four messages the crash map found
@@ -922,15 +1046,50 @@ impl ControlsSolver {
     }
 
     /// The march — `integrate_fuel` itself, from the starting equilibrium.
-    pub fn march(&self) -> Vec<FuelPoint> {
+    pub fn march(&self) -> Vec<FuelPoint> { self.march_marked().0 }
+
+    /// The march and, when governed (rung 95), what the governor did at each point (empty otherwise).
+    pub fn march_marked(&self) -> (Vec<FuelPoint>, Vec<GovMark>) {
+        let nu0 = (self.start.nu_lp, self.start.nu_hp);
+        if let Some(g) = &self.governor {
+            let over = |i: &Instant2| self.metal_over(i);
+            let metal: Option<&dyn Fn(&Instant2) -> f64> = if self.settings.metal_leg() { Some(&over) } else { None };
+            return gv::march(&self.core.fuel, &self.flight, g, &self.limiters(), metal, nu0, self.settings.s_end(), DS);
+        }
         let sched = self.settings.schedule(self.mf_lo, self.mf_hi);
-        self.core.fuel.integrate_fuel(&self.flight, sched, (self.start.nu_lp, self.start.nu_hp),
-                                      self.settings.s_end(), DS, &self.limiters())
+        (self.core.fuel.integrate_fuel(&self.flight, sched, nu0, self.settings.s_end(), DS, &self.limiters()), Vec::new())
+    }
+
+    /// Rung 95's metal leg reads this: the hotter metal's excess over its limit at an instant, K (−∞ unread).
+    pub fn metal_over(&self, i: &Instant2) -> f64 {
+        self.settings.metal_at(i).map_or(f64::NEG_INFINITY, |m| m.over())
+    }
+
+    /// Rung 95: one governed derivative evaluation — the model's own [`gv::try_der`], its failure in this view's terms.
+    pub fn gov_der(&self, a: f64, b: f64, s: f64) -> Result<gv::GovDer, Failure> {
+        let g = self.governor.as_ref().expect("the governed route has its governor");
+        let over = |i: &Instant2| self.metal_over(i);
+        let metal: Option<&dyn Fn(&Instant2) -> f64> = if self.settings.metal_leg() { Some(&over) } else { None };
+        gv::try_der(&self.core.fuel, &self.flight, g, &self.limiters(), metal, a, b, s)
+            .map_err(|f| gov_failure(f, a, b, s))
+    }
+
+    /// Rung 95: the rest of one governed RK4 step — the model's own [`gv::try_rk_step`].
+    pub fn gov_step(&self, a: f64, b: f64, s: f64, k1: (f64, f64)) -> Result<(f64, f64), Failure> {
+        let g = self.governor.as_ref().expect("the governed route has its governor");
+        let over = |i: &Instant2| self.metal_over(i);
+        let metal: Option<&dyn Fn(&Instant2) -> f64> = if self.settings.metal_leg() { Some(&over) } else { None };
+        gv::try_rk_step(&self.core.fuel, &self.flight, g, &self.limiters(), metal, a, b, s, DS, k1)
+            .map_err(|f| gov_failure(f, a, b, s))
     }
 
     /// Which march the model dispatches to (`r43_integrate_fuel`'s order).
     pub fn route(&self) -> Route {
         let s = &self.settings;
+        // Rung 95: the governed march first; the prechecks refuse it beside every lagged route.
+        if s.govern {
+            return Route::Governor;
+        }
         // A slow valve's machine dispatches to rung 65's march first (its fuel table); the prechecks
         // refuse it beside either fuel-side lag.
         if s.valve_slow() { Route::ValveLag }
@@ -962,6 +1121,22 @@ pub enum Route {
     Release,
     /// Rung 65's slow valve (rung 88 gave it the incidence reference) — its position IS recorded.
     ValveLag,
+    /// Rung 95's governed march — stateless, so every step can be re-run.
+    Governor,
+}
+
+/// A failed governed evaluation in this view's terms.
+fn gov_failure(f: gv::GovFailure, a: f64, b: f64, s: f64) -> Failure {
+    let call = match f.call {
+        GovCall::Governor => Call::Governor,
+        GovCall::AtDemand => Call::AtSchedule,
+        GovCall::Redline => Call::Redline,
+        GovCall::Accel => Call::Accel,
+        GovCall::Floor => Call::Floor,
+        GovCall::Metal => Call::Metal,
+        GovCall::AtApplied => Call::AtApplied,
+    };
+    Failure { message: f.message, call, mf: f.mf, nu_lp: a, nu_hp: b, s }
 }
 
 /// Which call inside one derivative evaluation failed.
@@ -978,6 +1153,9 @@ pub enum Call {
     Floor,
     /// The slow valve's command: the opening the valve would hold if it were instant (rung 65).
     Valve,
+    /// Rung 95: the governor's own solve, and the metal leg's.
+    Governor,
+    Metal,
 }
 
 /// Where a re-run evaluation failed: the model's message, the call, the state and the fuel it was
@@ -1183,6 +1361,7 @@ pub fn replay_step(sv: &ControlsSolver, p: &FuelPoint) -> Option<Result<(f64, f6
     let ds = DS;
     Some(match sv.route() {
         Route::GovLag => return None,
+        Route::Governor => sv.gov_der(a, b, s).and_then(|d| sv.gov_step(a, b, s, (d.da, d.db))).map(|(a, b)| (a, b, 0.0)),
         Route::Plain => (|| {
             let (k1a, k1b) = der_plain(sv, a, b, sched(s), s)?;
             let mfm = sched(s + ds / 2.0);
@@ -1242,6 +1421,7 @@ pub fn stop_reason(sv: &ControlsSolver, points: &[FuelPoint]) -> Option<Stop> {
         let (a, b) = (sv.start.nu_lp, sv.start.nu_hp);
         let failure = match sv.route() {
             Route::GovLag => None,
+            Route::Governor => sv.gov_der(a, b, 0.0).err(),
             Route::Plain => der_plain(sv, a, b, sched(0.0), 0.0).err(),
             Route::Release => der_release(sv, a, b, 0.0, 0.0).err(),
             // The march starts the valve at its command (rung 65's equilibrium start), solved before
@@ -1260,6 +1440,7 @@ pub fn stop_reason(sv: &ControlsSolver, points: &[FuelPoint]) -> Option<Stop> {
             match sv.route() {
                 Route::Release => der_release(sv, a, b, g, s).err(),
                 Route::ValveLag => der_valve_lag(sv, a, b, g, s).err(),
+                Route::Governor => sv.gov_der(a, b, s).err(),
                 _ => der_plain(sv, a, b, sched(s), s).err(),
             }.or_else(|| Some(Failure { message: "the march stopped, but re-running its last step does not fail".into(),
                                         call: Call::AtApplied, mf: f64::NAN, nu_lp: f64::NAN, nu_hp: f64::NAN,
@@ -1293,6 +1474,8 @@ pub enum StopKind {
     Customer,
     /// Rung 92: the aircraft's generator took half or more of its turbine's work as the engine slowed.
     Generator,
+    /// Rung 95: the governed metal leg met a point where the metal is over its limit even at the leanest fuel.
+    MetalCap,
     /// Anything else the model refused at this point of the run.
     Other,
 }
@@ -1306,6 +1489,7 @@ impl StopKind {
             StopKind::Unknown => "unknown",
             StopKind::Customer => "customer",
             StopKind::Generator => "generator",
+            StopKind::MetalCap => "metal_cap",
             StopKind::Other => "other",
         }
     }
@@ -1313,6 +1497,10 @@ impl StopKind {
     /// What the page says when a run stops this way, above the model's own message.
     pub fn words(self) -> &'static str {
         match self {
+            StopKind::MetalCap =>
+                "The turbine metal went over its limit even at the leanest fuel the engine runs on, so the metal cap had \
+                 nothing left to burn and the model stops. Cool the turbine more, pick a newer material, or switch the \
+                 metal cap off.",
             StopKind::Customer =>
                 "The aircraft asked for more air than the engine could give. Its customer bleed is a fixed amount of \
                  air, so as the engine slowed it became a bigger and bigger share of what the HP compressor delivers; \
@@ -1373,6 +1561,9 @@ pub fn classify(_sv: &ControlsSolver, stop: &Stop, last: Option<&FuelPoint>) -> 
     if m.contains("customer bleed takes") || (m.contains("turbine cooling") && m.contains("together take")) {
         return StopKind::Customer;
     }
+    if m.contains("rung-95: the turbine metal is over") {
+        return StopKind::MetalCap;
+    }
     if m.contains("rung-92:") {
         return StopKind::Generator;
     }
@@ -1391,6 +1582,8 @@ pub struct ControlsOutcome {
     pub settings: ControlsSettings,
     pub points: Vec<FuelPoint>,
     pub stop: Option<Stop>,
+    /// Rung 95: what the governor did at each point (empty when the move is not governed).
+    pub marks: Vec<GovMark>,
 }
 
 /// Rung 48's table, derived on this machine's running line — `FuelTransientCore::accel_schedule`'s
@@ -1418,9 +1611,9 @@ pub fn accel_table(core: &ScheduledStatorCore, fl: &FlightCondition, tt4_lo: f64
 /// Run one Controls request.
 pub fn controls(s: &ControlsSettings) -> Result<(ControlsSolver, ControlsOutcome), DoesNotRun> {
     let sv = build(s)?;
-    let points = sv.march();
+    let (points, marks) = sv.march_marked();
     let stop = stop_reason(&sv, &points);
-    Ok((sv, ControlsOutcome { settings: *s, points, stop }))
+    Ok((sv, ControlsOutcome { settings: *s, points, stop, marks }))
 }
 
 /// Which limiter holds the fuel at a point.
@@ -1431,6 +1624,8 @@ pub enum Holder {
     Redline,
     Accel,
     Floor,
+    /// Rung 95: the metal leg (the governed march's cap at the turbine metal's limit).
+    Metal,
     /// A lag's cut (rung 47's or rung 52's) — between its leg's set point and the schedule.
     Lag,
 }
@@ -1442,6 +1637,7 @@ impl Holder {
             Holder::Redline => "redline",
             Holder::Accel => "accel",
             Holder::Floor => "floor",
+            Holder::Metal => "metal",
             Holder::Lag => "lag",
         }
     }
@@ -1485,12 +1681,7 @@ pub struct PointRead {
 
 impl ControlsSolver {
     /// The thrust of an instant, by the rule [`PointRead::thrust`] states.
-    pub fn thrust(i: &Instant2) -> f64 {
-        match (i.close.bleed, i.sp_thrust_inlet, i.close.mdot_face) {
-            (Some(_), Some(spi), Some(face)) => spi * face,
-            _ => i.sp_thrust * i.close.mdot_air,
-        }
-    }
+    pub fn thrust(i: &Instant2) -> f64 { gv::thrust(i) }
 
     /// The stator setting on a spool at a state, and that compressor's stall line there.
     pub fn stall(&self, spool: Spool, nu_lp: f64, nu_hp: f64) -> (f64, f64) {
@@ -1530,6 +1721,7 @@ impl ControlsSolver {
             Route::GovLag => &[Holder::Accel, Holder::Floor],
             Route::Release => &[Holder::Redline],
             Route::ValveLag => &[Holder::Redline, Holder::Accel, Holder::Floor],
+            Route::Governor => &[Holder::Redline, Holder::Accel, Holder::Floor],
         };
         let holder = if p.mf == p.mf_sched {
             Holder::None
@@ -1602,7 +1794,7 @@ pub fn controls_json(sv: &ControlsSolver, o: &ControlsOutcome) -> Json {
         "start" => steady_json(sv, &sv.start, sv.hold_start), "end" => steady_json(sv, &sv.end, sv.hold_end),
         "expected_points" => Json::Int(o.settings.expected_points() as i64),
         "route" => match sv.route() { Route::Plain => "plain", Route::GovLag => "gov_lag", Route::Release => "release",
-                                      Route::ValveLag => "valve_lag" },
+                                      Route::ValveLag => "valve_lag", Route::Governor => "governor" },
         "settled_lp" => num_or_null(settled_lp), "settled_hp" => num_or_null(settled_hp),
         "stopped" => Json::Int(o.stop.is_some() as i64),
         "stop" => match &o.stop {
@@ -1627,7 +1819,23 @@ pub fn controls_json(sv: &ControlsSolver, o: &ControlsOutcome) -> Json {
         "thrust" => rcol(&|r| r.thrust), "stall_lp" => rcol(&|r| r.stall_lp), "stall_hp" => rcol(&|r| r.stall_hp),
         "v" => rcol(&|r| r.v), "bleed" => rcol(&|r| r.bleed), "floor" => rcol(&|r| r.floor.unwrap_or(f64::NAN)),
         "valve" => rcol(&|r| r.valve.unwrap_or(f64::NAN)), "customer" => rcol(&|r| r.customer),
-        "holder" => Json::List(reads.iter().map(|r| Json::from(r.as_ref().map(|r| r.holder.key()).unwrap_or("none"))).collect()),
+        // Rung 95: on the governed route the march recorded which leg set the fuel — read it, not a residual.
+        "holder" => match o.marks.is_empty() {
+            true => Json::List(reads.iter().map(|r| Json::from(r.as_ref().map(|r| r.holder.key()).unwrap_or("none"))).collect()),
+            false => Json::List(o.marks.iter().map(|m| Json::from(match m.leg {
+                Leg::None => Holder::None, Leg::Redline => Holder::Redline, Leg::Accel => Holder::Accel,
+                Leg::Floor => Holder::Floor, Leg::Metal => Holder::Metal,
+            }.key())).collect()),
+        },
+        // Rung 95: where the governor's own fuel sat (root / rich / lean), and the held quantity it asked for.
+        "governor" => match o.marks.is_empty() {
+            true => Json::Null,
+            false => Json::List(o.marks.iter().map(|m| Json::from(m.clamp.key())).collect()),
+        },
+        "demand" => match &sv.governor {
+            None => Json::Null,
+            Some(g) => col(&|x| g.demand(x.s)),
+        },
         "choked" => Json::List(p.iter().map(|x| Json::Int((x.branch == Branch::Choked) as i64)).collect()),
         // Rung 93: both metals along the run and their limits (null columns with the readout off).
         "metal_vane" => rcol(&|r| r.metal.map_or(f64::NAN, |m| m.vane)),

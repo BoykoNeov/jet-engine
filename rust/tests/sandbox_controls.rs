@@ -315,6 +315,7 @@ fn the_stop_rerun_reproduces_the_marchs_own_steps() {
             Route::Plain => routes.0 += 1,
             Route::Release => routes.1 += 1,
             Route::ValveLag => routes.2 += 1,
+            Route::Governor => unreachable!("no Controls case here is governed (tests/rung95.rs re-runs those)"),
         }
         for w in o.points.windows(2) {
             let (a, b, g) = replay_step(&sv, &w[0]).unwrap().unwrap_or_else(|f| panic!("{name}: {f:?}"));
@@ -534,7 +535,9 @@ fn settings_round_trip_and_the_entry_point_answers() {
                                cool_vane: 0.06, cool_blade: 0.02, generator: GeneratorMode::Lp,
                                generator_by: GeneratorBy::Share, generator_share: 0.08, generator_power: 0.03,
                                metal_on: true, metal_tech: 1, metal_year: 1997.0, metal_life: 30_000.0,
-                               hold: turbojet::burner_hold::Hold::HpSpeed, hold_cap: true };
+                               hold: turbojet::burner_hold::Hold::HpSpeed, hold_cap: true,
+                               govern: true, speed_law: turbojet::sandbox_controls::SpeedLaw::Prop, gov_tau: 0.27,
+                               gov_gain: 13.5 };
     let back = ControlsSettings::from_json(&Json::parse(&s.to_json().dump_compact())).unwrap();
     assert_eq!(back, s);
     let d = Json::parse(&call(r#"{"op":"controls_defaults"}"#));
