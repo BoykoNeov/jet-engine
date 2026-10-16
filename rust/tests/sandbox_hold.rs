@@ -80,6 +80,8 @@ fn the_cap_and_the_holds_refuse_in_words() {
     assert!(reason(ControlsSettings { hold_cap: true, metal_on: true, cool_vane: 0.04, ..d }).contains("floats"));
     assert!(reason(ControlsSettings { hold: Hold::Thrust, hold_cap: true, ..d }).contains("needs the metal read"));
     assert!(reason(ControlsSettings { hold: Hold::Thrust, hold_cap: true, metal_on: true, ..d }).contains("no turbine cooling"));
+    assert!(reason(ControlsSettings { generator: GeneratorMode::Off, hold: Hold::Thrust, hold_cap: true, metal_on: true,
+                                      cool_vane: 0.04, ..d }).contains("generator off nothing floats"));
     // An LP-shaft load whose least thrust (about 142 N, from ~919 K) is above the 800 K throttle's (about 132 N): the hold
     // names the least it allows.
     let m = reason(ControlsSettings { generator: GeneratorMode::Lp, generator_power: 0.05, hold: Hold::Thrust, from: 800.0, ..d });

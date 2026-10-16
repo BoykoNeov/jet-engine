@@ -563,6 +563,10 @@ pub fn controls_precheck(s: &ControlsSettings) -> Result<(), DoesNotRun> {
             return no("The metal cap stops a burner that floats to hold thrust or speed. With the burner temperature itself \
                        held, lower the throttle instead.");
         }
+        if s.generator == GeneratorMode::Off {
+            return no("The metal cap stops a burner that floats to carry the generator; with the generator off nothing \
+                       floats. Switch the generator on.");
+        }
         if !s.metal_on {
             return no("The metal cap needs the metal read: switch on Read the turbine metal.");
         }
@@ -1719,6 +1723,7 @@ pub fn check_requests() -> Vec<String> {
         ControlsSettings { generator: GeneratorMode::Hp, hold: Hold::Thrust, metal_on: true, hold_cap: true,
                            cool_vane: 0.04, cool_blade: 0.02, ..d },
         ControlsSettings { generator: GeneratorMode::Hp, hold: Hold::Thrust, hold_cap: true, ..d },  // refused: no metal
+        ControlsSettings { hold: Hold::Thrust, hold_cap: true, metal_on: true, cool_vane: 0.04, ..d }, // refused: no generator
         ControlsSettings { from: 1400.0, to: 1000.0, ..d },
         ControlsSettings { release_on: true, ..d },                                  // refused: nothing to lag
         ControlsSettings { floor_on: true, lever: LeverChoice::Stator, ..d },        // stop: the floor unreachable

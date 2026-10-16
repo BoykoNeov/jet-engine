@@ -1496,3 +1496,13 @@ its throttle with the generator off, the burner temperature floating to carry ru
   note and the table.
 - **On the default slam** (1000 → 1400 K, 2 % generator, thrust held) the ends run at 1034.9 / 1421.7 K (HP shaft) and
   1031.2 / 1421.1 K (LP shaft).
+- **Crash map** (§ 14.3's instrument, 1 000 requests, seed 11, every one with the generator on — either shaft, by power
+  or share — and a hold, thrust or HP speed, the cap on in 30 %, cooling in half, every map and lever, both ends over
+  the slider range; `scratch-archive/rung94/`): **no panic.** 501 ran to the end (14 with the metal cap stopping an end),
+  31 stopped early with a reason; refused in words: 161 the cap without cooling, 119 an end whose UNLOADED engine has no
+  steady point (so it sets no target), 109 a target below the least the load allows, 47 a search that met a throttle
+  where the compressors would leave the maps the model covers (mostly heavy cooling, the HP shaft slow), 24 no solve
+  anywhere in range, 8 a target above the range. Native time: median 0.06 s a request, slowest 0.8 s (an LP generator
+  with heavy cooling and both levers).
+- **The cap with the generator off** was first ALLOWED and did nothing (the final review's catch: with no load nothing
+  floats); it is now refused in words, with a test and a check request.

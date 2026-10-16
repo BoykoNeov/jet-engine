@@ -7,3 +7,4 @@ Run from a scratch crate depending on `turbojet` by path (`W:\temp\claude\jet-ru
 - `model.rs` → `model.txt` — § 1's model: the hold's linear `ΔT`, its quadratic correction (the bar), the flow-coefficient shifts, and reachability on the existing matcher, both holds, both shafts, both maps.
 - `check2.rs` → `check2.txt` — the advisor's pre-freeze checks: G4 (the 700 K HP-compressor shift at `T0 + ΔT_lin`) and G5 (the lowest `Tt4` that carries each load, and the thrust there).
 - `score.rs` → `score.txt` — every pre-registered quantity H1–H4 with the shipped device, the zero-load gates, and G5's brackets (the spec's table). H2 and H3 were also visible in `check2.txt` before the freeze — reported, not credited.
+- `crash.rs` → `crash.txt` — the Controls hold's crash map (1 000 requests through `sandbox::call`, seed 11), timed; the GAP lines show where a search met a throttle off the maps (`docs/plans/sandbox-plan.md` § 23).
