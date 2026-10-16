@@ -14,3 +14,5 @@ Run from a scratch crate depending on `turbojet` by path (`W:\temp\claude\jet-al
   ±100 K) — the crash map through `sandbox::call`; refusals tallied by cause and altitude band.
 - `lowest.rs` → `lowest.txt` — the lowest throttle with a steady point per map and flight, and with a fixed generator or
   customer amount (the measurement behind the reworded "off the maps" words).
+- `highend.rs` → `highend.txt` — the HIGHEST workable throttle in cold air high up (the off-map words' other side);
+  `crash.rs` re-run → `crash_detail.txt` lists each off-map and does-not-settle refusal with its throttles, air and loads.

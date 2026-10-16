@@ -668,10 +668,10 @@ fn tau_text(t: f64) -> String { format!("{}", ((t * 1000.0) - 1e-6).ceil() / 100
 /// A gain ceiling as the refusal states it: rounded DOWN to 0.1, for the same reason.
 fn gain_text(g: f64) -> String { format!("{}", ((g * 10.0) + 1e-6).floor() / 10.0) }
 
-/// The flight clause of a time-constant refusal: empty at or below the design flight's density.
-fn thin_words(s: &ControlsSettings) -> String {
+/// The flight clause of a time-constant refusal: the design-flight text (`at_design`) unless the air is thinner.
+fn thin_words(s: &ControlsSettings, at_design: &str) -> String {
     match s.density_ratio() < 1.0 {
-        false => " (two march steps)".to_string(),
+        false => at_design.to_string(),
         true => format!(" here: the air is {:.0} % as dense as at the design flight, so the shafts answer the fuel more \
                          slowly and a fast commanded rate rides the rich edge", 100.0 * s.density_ratio()),
     }
@@ -829,8 +829,9 @@ pub fn controls_precheck(s: &ControlsSettings) -> Result<(), DoesNotRun> {
         let (tau_min, gain_max) = (TAU_MIN / s.density_ratio().min(1.0), GAIN_MAX / s.density_ratio().max(1.0));
         if s.hold == Hold::HpSpeed && s.speed_law == SpeedLaw::Rate && !(s.gov_tau >= tau_min - 1e-12) {
             return Err(DoesNotRun(format!(
-                "The speed governor's time constant must be at least {} spool time constants{}: measured, a faster one \
-                 moves the flow coefficients by about 0.001 against a finer step.", tau_text(tau_min), thin_words(s))));
+                "The speed governor's time constant must be at least {} spool time constants{}: measured, one step \
+                 moves the flow coefficients by about 0.001 against a finer step.", tau_text(tau_min),
+                thin_words(s, " (two march steps)"))));
         }
         if s.hold == Hold::HpSpeed && s.speed_law == SpeedLaw::Prop && !(s.gov_gain > 0.0 && s.gov_gain <= gain_max) {
             return Err(DoesNotRun(format!(
@@ -849,7 +850,7 @@ pub fn controls_precheck(s: &ControlsSettings) -> Result<(), DoesNotRun> {
             if s.thrust_by == ThrustBy::N1 && s.speed_law == SpeedLaw::Rate && !(s.gov_tau >= tau_min - 1e-12) {
                 return Err(DoesNotRun(format!(
                     "The fan-speed governor's time constant must be at least {} spool time constants{}: a faster one is \
-                     worked out too coarsely at this march's step.", tau_text(tau_min), thin_words(s))));
+                     worked out too coarsely at this march's step.", tau_text(tau_min), thin_words(s, ""))));
             }
             if s.thrust_by == ThrustBy::N1 && s.speed_law == SpeedLaw::Prop && !(s.gov_gain > 0.0 && s.gov_gain <= gain_max) {
                 return Err(DoesNotRun(format!(
@@ -1158,18 +1159,24 @@ pub fn endpoint_words(message: &str) -> String {
          that turbine drives. A fixed power is a larger share at low power, and the less work the compressor gets \
          the less air the engine takes: raise the throttle, or ask for less power"
     } else if message.contains("did not converge") {
-        "the search for the steady shaft speeds does not settle. Measured only with a lever whose schedule does \
-         nearly all its travel just below the design speed; start the lever's schedule lower"
+        // Plan § 27: off the design flight, all 14 such refusals in the crash map had a lever AND a generator load.
+        "the search for the steady shaft speeds does not settle. Measured only with an airflow lever on: at the design \
+         flight, one whose schedule does nearly all its travel just below the design speed (start the lever's schedule \
+         lower); in other air, every case met also carried a generator load"
     } else if message.contains("nozzle back-pressure") {
         // Plan § 27: met only off the design flight (crash map: 3 of 1 400 requests, 600–800 K, every one in air above 250 K).
         "at this low a throttle the gas leaving the turbine has less pressure than the air outside, so the nozzle \
          cannot push it out (met only at very low throttles, 600–800 K, in air warmer than at the design flight, 250 K). Raise the \
          throttle"
     } else if message.contains("does not bracket") || message.contains("off-map compressor trial") {
-        "the compressors would have to run off the part of their maps the model covers. This happens at a low \
-         throttle (on the flat-LP map at the design flight, below about 700–900 K; warmer air raises that, colder \
-         air lowers it), with a large fixed load or amount of air in thin air, or with a lever whose schedule does \
-         nearly all its travel just below the design speed. Raise the throttle, or start the lever's schedule lower"
+        // Plan § 27: away from the design flight the TOP of the range can be off the maps too, so the words do not say
+        // which way to move.
+        "the compressors would have to run off the part of their maps the model covers. Mostly this is a throttle too \
+         low for the air (on the flat-LP map at the design flight, below about 700–900 K; warmer air raises that, \
+         colder air lowers it), or a large fixed load or amount of air in thin air; away from the design flight it can \
+         also be the top of the range (measured: 1700 K at 11 km on the map curved along flow at LP, along pressure at \
+         HP); or a lever whose schedule does nearly all its travel just below the design speed. Move this throttle \
+         toward the middle of its range, or start the lever's schedule lower"
     } else {
         "the model's steady solve fails"
     };

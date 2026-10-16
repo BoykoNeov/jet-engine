@@ -1630,7 +1630,7 @@ there). Scratch scripts and outputs: `scratch-archive/sandbox-altitude/`.
   exceed 1e−4 (worst 2.5e−4, a cold flat-LP day at 7.5 km). In thin air the governor rides its RICH edge, where the march
   is rougher (up to 7e−4 at the scaled limits) — rung 95 § 4's edge roughness (lean 1e−3), met in a new place. Both are
   said on the page's note, not refused. Every other step-checked knob (the lags at one step, the release, the slow valve)
-  stays within its design-flight figure over sea level ±40 K and 15 km (worst 1.2e−4, the slow valve on flat-LP; runs that
+  stays within about 1e−4 over sea level ±40 K and 15 km (worst 1.2e−4, the slow valve on flat-LP; runs that
   stop early are left out, since there the stopping point itself moves with the step).
 - **Crash map** (§ 14.3's instrument, 1 000 requests, seed 14, altitude −1 … 25 km and ±45 K, every knob at random; and
   400 more, seed 15, −5 … 47 km and ±100 K): **no panic.** Seed 14: 393 ran to the end, 45 stopped with a reason, the rest
@@ -1640,7 +1640,11 @@ there). Scratch scripts and outputs: `scratch-archive/sandbox-altitude/`.
   every one in air above 250 K — now in words (`endpoint_words`). The off-map words were made flight-neutral, measured:
   the flat-LP map's lowest throttle at sea level is 740 / 860 / 980 K on a −40 / 0 / +40 K day (530 / 650 / 770 K at
   11 km); a fixed 5 % HP generator lifts the lowest throttle from 660 K (design flight) to 1 010 K (11 km), none in range at
-  20 km. Native median 0.011 s a request, slowest 1.3 s.
+  20 km. The TOP of the range can leave the maps too away from the design flight (1 700 K at 11 km on the flow/press map;
+  1 690 K runs), so the off-map words no longer say "raise the throttle" but "toward the middle of its range". All 14
+  "does not settle" refusals had a lever on, as the words said, and every one also a generator load — now said too. The
+  governor's limit refusals at the design flight are the earlier words, character for character (a test holds them).
+  Native median 0.011 s a request, slowest 1.3 s.
 - **Gates:** `tests/sandbox_altitude.rs` — missing keys ≡ naming the design flight; the ends' speeds equal and airflow,
   fuel, thrust ∝ `p0` at ×0.37 and ×1.9 (1e−9); the 1500 K point is design speed only at the design flight (the
   discriminator for a hardware re-captured at the flight flown — red-checked: with that mutation 4 of 6 tests fail); the

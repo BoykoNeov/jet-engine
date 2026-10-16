@@ -156,4 +156,31 @@ fn every_new_refusal_is_words() {
     let r = call(r#"{"op":"controls","controls":{"T0":281.025575242416,"p0":110666.3721625535,"shape":"flow/press","redline_on":1,"generator":"hp","generator_power":0.05,"customer":"amount","customer_amount":0.13,"cool_vane":0.04,"cool_blade":0.12,"from":600,"to":870,"ramp":0.02,"settle":3.3,"rho":2.3}}"#);
     assert!(r.contains("the nozzle cannot push it out"), "{r}");
     assert!(endpoint_words("nozzle back-pressure p9=1 Pa exceeds total pressure pt9=0.9 Pa").contains("cannot push it out"));
+    // Away from the design flight the TOP of the throttle range can leave the maps too (1700 K at 11 km on the first
+    // map), so the off-map words must not send the user upward.
+    let (t, p) = standard(11_000.0);
+    let hi = controls_precheck(&d).and_then(|_| build(&ControlsSettings { t0: t, p0: p, to: 1700.0, ..d }).map(|_| ()))
+        .unwrap_err().0;
+    assert!(hi.contains("At the final throttle (1700 K)") && hi.contains("toward the middle") && !hi.contains("Raise the"),
+            "{hi}");
+}
+
+/// At the design flight the governor's limit refusals are rung 95/96's own words, character for character.
+#[test]
+fn at_the_design_flight_the_limit_refusals_are_the_earlier_words() {
+    let d = ControlsSettings { govern: true, ..ControlsSettings::defaults() };
+    let words = |s: ControlsSettings| controls_precheck(&s).unwrap_err().0;
+    assert_eq!(words(ControlsSettings { hold: Hold::HpSpeed, gov_tau: 0.03, ..d }),
+               "The speed governor's time constant must be at least 0.04 spool time constants (two march steps): measured, \
+                one step moves the flow coefficients by about 0.001 against a finer step.");
+    assert_eq!(words(ControlsSettings { hold: Hold::HpSpeed, speed_law: SpeedLaw::Prop, gov_gain: 51.0, ..d }),
+               "The speed governor's gain must be above 0 and at most 50: a larger gain is worked out too coarsely at this \
+                march's step.");
+    let n = ControlsSettings { hold: Hold::Thrust, thrust_by: ThrustBy::N1, ..d };
+    assert_eq!(words(ControlsSettings { gov_tau: 0.03, ..n }),
+               "The fan-speed governor's time constant must be at least 0.04 spool time constants: a faster one is worked \
+                out too coarsely at this march's step.");
+    assert_eq!(words(ControlsSettings { speed_law: SpeedLaw::Prop, gov_gain: 51.0, ..n }),
+               "The fan-speed governor's gain must be above 0 and at most 50: a larger gain is worked out too coarsely at \
+                this march's step.");
 }

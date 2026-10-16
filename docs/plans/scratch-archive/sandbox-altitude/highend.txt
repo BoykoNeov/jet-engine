@@ -1,0 +1,4 @@
+     0 m -40:  flow/press top Some(1700.0) press/flow top Some(1700.0) tilted top Some(1700.0) flat-lp top Some(1700.0)
+ 11000 m -40:  flow/press top Some(1700.0) press/flow top Some(1700.0) tilted top Some(1700.0) flat-lp top Some(1700.0)
+ 11000 m +0:  flow/press top Some(1690.0) (At the final throttle (1700 K): the engine has no steady operating point: the compressors ) press/flow top Some(1700.0) tilted top Some(1700.0) flat-lp top Some(1700.0)
+ 20000 m -40:  flow/press top Some(1700.0) press/flow top Some(1700.0) tilted top Some(1700.0) flat-lp top Some(1700.0)

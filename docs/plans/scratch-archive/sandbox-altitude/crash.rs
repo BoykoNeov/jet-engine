@@ -91,6 +91,11 @@ fn main() {
                     Some(w) => format!("[{lo:>2}-{:<2} km] {w}", lo + 5),
                     None => words.chars().take(45).collect::<String>(),
                 };
+                if full.contains("off the part of their maps") || full.contains("does not settle") {
+                    let at: String = full.chars().take(40).collect();
+                    println!("DETAIL {} z {z} dT {dt} T0 {:.0} from {from} to {to} lever {lever} gen {gen} {gp} cust {cust} {cs} cool {cv}/{cb} | {at}",
+                             if full.contains("does not settle") { "SETTLE" } else { "OFFMAP" }, t + dt);
+                }
                 if full.contains("cannot push it out") { println!("SOLVEFAILS #{i} z {z} dT {dt}: {}
    REQ {req}", full.chars().take(400).collect::<String>()); }
                 format!("refused: {g}")
