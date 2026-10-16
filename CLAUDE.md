@@ -24,12 +24,12 @@ the web page running the Rust model live is `docs/sandbox/` (slices 1–5 built;
 ## The rungs
 
 The model is built in cumulative **rungs** — each adds one physical effect and is anchored to a
-published case. All rungs are live; the current scope is **rung 95**.
+published case. All rungs are live; the current scope is **rung 96**.
 
 **Families** (contiguous): 1–6 cycle · 7–24 NOx & mixing · 25–30 nozzle/turbine marches ·
 31–33 off-design steady · 34–37 1-spool transient · 38–45 two-spool · 46–52 fuel limiters ·
 53–56 + 61 airflow levers (steady) · 57–60, 62–63 schedules · 64–68 valve/lag/cascades ·
-69–84 reference splits & rank · 85 blade-speed walls · 86–89 three levers, valve reference, slow & asymmetric valve · 90–94 customer bleed, turbine cooling, shaft offtake, metal limit, burner hold · 95 governor in the slam (knobs). **Read-only diagnostics: 7–30, 36, 41, 44, 45**; all else
+69–84 reference splits & rank · 85 blade-speed walls · 86–89 three levers, valve reference, slow & asymmetric valve · 90–94 customer bleed, turbine cooling, shaft offtake, metal limit, burner hold · 95–96 governor in the slam, inferred thrust (knobs). **Read-only diagnostics: 7–30, 36, 41, 44, 45**; all else
 STRUCTURAL / DYNAMIC — an operating point, via § Layout's ladders.
 
 | Rung | Adds (one-line hook) | Spec |
@@ -130,6 +130,7 @@ STRUCTURAL / DYNAMIC — an operating point, via § Layout's ladders.
 | 93 | **METAL TEMPERATURE** — Gauntner's NASA correlation on 91's vane and blade air, as KNOBS. **HEADLINE: cooling never stops the engine, and on fixed hardware it cools its own coolant** — so fixed and fresh engines trade places, at a crossing that rises as cooling worsens. **DISCHARGES 91's concession.** | `docs/rung93-spec.md` |
 | 94 | **A BURNER THAT CARRIES THE LOAD** — each throttle holds thrust or HP speed, the burner floating, as KNOBS. **HEADLINE: carrying the generator relieves the compressors** — an LP-shaft one becomes a stall-margin GAIN; holding HP speed is not holding thrust. **CORRECTS 92's concession.** | `docs/rung94-spec.md` |
 | 95 | **A GOVERNOR IN THE SLAM** — the throttle holds thrust, HP speed or `Tt4` all along the move, the limiters cutting, as KNOBS. **HEADLINE: holding thrust makes a fast slam HOTTER** — more fuel than the ramp at every point; a fixed speed gain is ~2× slower at idle. **CORRECTS 94's seam; 40 a special case.** | `docs/rung95-spec.md` |
+| 96 | **A GOVERNOR THAT INFERS THRUST** — read from the pressure ratio or the fan speed via a steady table, as KNOBS. **HEADLINE: an accelerating engine is a loaded engine** — at a given pressure ratio both pass less air, so thrust beats the belief; fan speed misses far more. **DISCHARGES 95's concession.** | `docs/rung96-spec.md` |
 
 ## Working contract (from SPEC.md — these override convenience)
 - **Derive before you code.** For each station, write the governing equation and
@@ -145,7 +146,7 @@ STRUCTURAL / DYNAMIC — an operating point, via § Layout's ladders.
 - **Every new rung reduces to its predecessor**, exactly and by test (`X=None` ⇒
   the prior code path). This is the project's spine — see any `docs/rungN-spec.md`.
 
-**Current scope (rung 95).** The **cycle solve** is a thermally-perfect, reacting,
+**Current scope (rung 96).** The **cycle solve** is a thermally-perfect, reacting,
 dissociation-equilibrium gas (`Gas.reacting_equilibrium()`) through ideal + real components
 (rungs 2/2b's knobs, mutually exclusive; specified exit pressure). The burner root-finds `f` over the scale-B
 absolute balance, then freezes the station-4 mixture through turbine + nozzle; Fork A/B and
@@ -174,8 +175,7 @@ Never re-open one, and never re-enumerate them here.
 - Rung 79 § 9's **gap** — `docs/rung79-gap-margin.md`. Its § 5 march **STANDS STILL**; residual = rung 77's `1/(1−c)`. **CORRECTS 79.**
 - "Earned at design" over `π_c` (`docs/rung29-pi-c-margin.md`, NOT protective) and `M0` (`docs/rung29-M0-margin.md`, monotone-protective).
 - `β<1` over `π_c` — `docs/rung28-beta-margin.md` (β pressure-invariant; higher `π_c` protective).
-- Two solver walls REPAIRED 2026-10-10: rung 34's march low wall, rung 31's turbine wall (an oracle RULE) — sandbox plan § 14.
-- Rung 43's schedule check `below_ceiling` ON BY DEFAULT (2026-10-14): solver-stopped marches run on, no verdict moves; CORRECTS rung 65 § 3. Oracles held with it OFF — sandbox plan § 14.5–14.6.
+- Solver repairs (sandbox plan § 14): rung 34's march wall + rung 31's turbine wall (an oracle RULE), 2026-10-10; rung 43's `below_ceiling` ON BY DEFAULT 2026-10-14 (no verdict moves; CORRECTS 65 § 3; oracles held OFF).
 
 **Still OPEN — the live to-build list:**
 - **The real spatial / transported-CFD PDF** — the standing mixing ceiling (22–24 are a Gaussian-plume cartoon; needs an anchored SCALE + spread law).
@@ -184,7 +184,7 @@ Never re-open one, and never re-enumerate them here.
 - **Reacting-gas fuel control** (35/43 defer — the forward burner asserts against an equilibrium gas).
 - **The subsonic / unchoked LP branch** in the two-spool solves (38 flags, unsolved) and its **transient**.
 - **Off-design at a new ALTITUDE**: every matcher keeps the DESIGN ambient as nozzle back-pressure; the sandbox overrides per flight — `docs/plans/sandbox-plan.md` § 10.8.
-- **Rungs 69–95's seams — in each rung's spec, not here.** `n`=4 needs a 4th non-fuel lever or a non-`min` composition; every route TRIED (72–76, 80) is CLOSED.
+- **Rungs 69–96's seams — in each rung's spec, not here.** `n`=4 needs a 4th non-fuel lever or a non-`min` composition; every route TRIED (72–76, 80) is CLOSED.
 - **Rung 37's internal clocks on two shafts** + the combined 3-state.
 - **Afterburner**; a **real hardware/CFD map + surge line** (32's concession, doubled on two spools).
 - **Feeding a shifted/marched state into the production cycle** — a re-foundation, not a rung.
@@ -195,11 +195,9 @@ Never re-open one, and never re-enumerate them here.
   static only at the nozzle exit (station 9) for exhaust velocity.
 
 ## Layout
-A compact map. The code is the Rust crate `rust/`. The Python was deleted at phase 8's last slice;
-tag **`python-final`** keeps it, and every `engine.py:N` / `test_rungN.py` citation means that tag.
-- `rust/src/gas.rs` — **the core.** `FlowState`; the dual-section `Gas` (cold/hot) with the CPG
-  closed-form / TPG NASA-integral property interface, the gas factories (thermally perfect /
-  reacting / Fork B / equilibrium) and the equilibrium Newton. `components.rs` — the five pure
+The code is the Rust crate `rust/`. The deleted Python lives at tag **`python-final`**; every `engine.py:N` / `test_rungN.py` citation means that tag.
+- `rust/src/gas.rs` — **the core.** `FlowState`; the dual-section `Gas` (cold/hot; CPG closed form / TPG NASA
+  integrals), its factories and the equilibrium Newton. `components.rs` — the five pure
   components (`Inlet … Nozzle`, rung 30's choke, rung 31's `choked_mfp`, the burner's `f = g(f)` /
   equilibrium solve). `engine.rs` — chains them, solves the shaft balance, scores performance.
 - **Beside the cycle:** `nox.rs` (rungs 7–24 — NOx, zoning, the mixing closures, the nozzle
@@ -209,17 +207,16 @@ tag **`python-final`** keeps it, and every `engine.py:N` / `test_rungN.py` citat
   `two_spool_transient.rs` (40, 44) → `bleed.rs` (42) → `fuel_transient.rs` (43, 45, and the
   fuel-side limiters 46–52) → `stator.rs` (53–54) → `stage.rs` (55–56) → `stator_transient.rs`
   (57–60) → `stator_bleed.rs` (61) → `bleed_transient.rs` (62–63) → `limited_bleed.rs` (64) →
-  `lagged_bleed.rs` (65) → **exactly ONE module per rung, 66→95** (`two_lag.rs` … `governor.rs`).
-  A rung is a core plus a `const` table of function pointers, and reduces to
-  its predecessor; **each module's header names its rung, and what it adds is in its spec** — so
-  this entry never grows.
+  `lagged_bleed.rs` (65) → **exactly ONE module per rung, 66→96** (`two_lag.rs` … `inferred_thrust.rs`).
+  A rung = a core + a `const` fn-pointer table, reducing to its predecessor; **each module's
+  header names its rung, its spec what it adds**, so this entry never grows.
 - `rust/src/main.rs` + `panels/` + `pyfmt.rs` — the CLI: the design-point tables and **one panel per
   rung**, held byte-equal to the last Python run's output by `tests/cli_golden.rs`. It writes
   `ts_diagram.json`; `plot_ts_diagram.py` (matplotlib, the one Python file — it draws, no physics)
   turns that into `ts_diagram.png`.
 - `rust/tests/` — per-rung `rungN.rs`; the `*_oracle.rs` gates, Rust ≡ PyPy bit for bit against the
-  Python's committed outputs in `rust/oracle/` — save one licensed divergence, the equilibrium
-  floor fix, as a rule in `tests/common/eq_floor.rs`; `fingerprint.rs`, the only **ABSOLUTE-value** gate
+  Python's committed outputs in `rust/oracle/` (one licensed divergence, the equilibrium
+  floor fix: `tests/common/eq_floor.rs`); `fingerprint.rs`, the only **ABSOLUTE-value** gate
   (its CPython anchor is kept as the audit record); `phi_rate_limiter_negative.rs`, the only
   NEGATIVE with a gate; `coverage_ledger.tsv` — where every Python test went.
 - `docs/visuals/` — two **BUILT** pages (charts, cutaway): `cargo run --release -- visuals` writes

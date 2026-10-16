@@ -490,7 +490,25 @@ try {
       return p.className; })()`;
     await ev(unclip(true)); await shot('controls-governor'); await ev(unclip(false));
   }
-  await ev(`window.sandbox.controls({govern: 0, hold: 'tt4'}).then(r => r.run)`);
+  // Rung 96: still governing thrust, read it from the pressure ratio through its own button -- the run reads 'epr', the
+  // engine gives more thrust than the control believes all through the move, the believed line is drawn on the thrust
+  // chart, and the table's governor row names the reading.
+  await ev(`document.getElementById('ctl-by-epr').click()`);
+  const iOn = await waitFor(`window.sandbox.ctlState === 'done' && window.sandbox.last.controls && window.sandbox.last.controls.thrust_by === 'epr'`, 30000);
+  const ir = await ev(`(() => { const r = window.sandbox.last; return [r.route, r.reading,
+      r.thrust.slice(1, 26).every((t, i) => t > r.thrust_inferred[i + 1]),
+      document.getElementById('ctl-by-row').hidden, document.querySelectorAll('#ctl-chart .believed').length,
+      [...document.getElementById('ctl-table').tBodies[0].rows].some(t => /read from the pressure ratio/.test(t.cells[1].textContent))]; })()`);
+  check('reading_thrust_from_the_pressure_ratio_draws_what_the_control_believes', iOn && ir[0] === 'governor' && ir[1] === 'epr'
+        && ir[2] && ir[3] === false && ir[4] === 1 && ir[5], JSON.stringify([iOn, ir]));
+  if (process.env.SANDBOX_SHOTS) {
+    const unclip = on => `(() => { const e = document.getElementById('ctl-govern'); let p = e.parentElement;
+      while (p && getComputedStyle(p).overflowY === 'visible') p = p.parentElement; if (!p) return null;
+      for (const [k, v] of [['maxHeight', 'none'], ['overflow', 'visible'], ['position', 'static']]) p.style[k] = ${on} ? v : '';
+      return p.className; })()`;
+    await ev(unclip(true)); await shot('controls-inferred'); await ev(unclip(false));
+  }
+  await ev(`window.sandbox.controls({govern: 0, hold: 'tt4', thrust_by: 'true'}).then(r => r.run)`);
   await ev(`document.getElementById('ctlq-Tt4').click()`);
   await ev(`window.sandbox.controls({lever: 'none', floor_on: 0, floor_phi: 0.75, floor_ref: 'phi', bleed_mode: 'schedule',
             valve_ref: 'phi', valve_speed: 'instant', valve_close: 'same', customer: 'off'}).then(r => r.run)`);

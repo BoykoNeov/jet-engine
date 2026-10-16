@@ -1,0 +1,96 @@
+== H1 (EPR) / H3 (N1 rate 0.1): sign of F_true - F_hat over 0 < s <= ramp
+H1 EPR accel flow/press 25 pts 126/126: gap/step +0.0209..+0.1200; largest |gap| 0.1200 of the step at s=0.30  => HIT
+H1 EPR accel press/flow 25 pts 126/126: gap/step +0.0224..+0.1230; largest |gap| 0.1230 of the step at s=0.28  => HIT
+H1 EPR accel tilted     25 pts 126/126: gap/step +0.0224..+0.1217; largest |gap| 0.1217 of the step at s=0.28  => HIT
+H1 EPR accel flat-lp    25 pts 126/126: gap/step +0.0236..+0.1207; largest |gap| 0.1207 of the step at s=0.26  => HIT
+H1 EPR decel flow/press 25 pts 126/126: gap/step -0.1546..-0.0139; largest |gap| 0.1546 of the step at s=0.44  => HIT
+H1 EPR decel press/flow 25 pts 126/126: gap/step -0.1587..-0.0145; largest |gap| 0.1587 of the step at s=0.44  => HIT
+H1 EPR decel tilted     25 pts 126/126: gap/step -0.1575..-0.0142; largest |gap| 0.1575 of the step at s=0.44  => HIT
+H1 EPR decel flat-lp    25 pts 126/126: gap/step -0.1537..-0.0167; largest |gap| 0.1537 of the step at s=0.46  => HIT
+H3 N1 accel flow/press 25 pts 126/126: gap/step +0.0930..+0.3970; largest |gap| 0.3970 of the step at s=0.50  => HIT
+H3 N1 accel press/flow 25 pts 126/126: gap/step +0.0963..+0.4554; largest |gap| 0.4554 of the step at s=0.50  => HIT
+H3 N1 accel tilted     25 pts 126/126: gap/step +0.0922..+0.4223; largest |gap| 0.4223 of the step at s=0.50  => HIT
+H3 N1 accel flat-lp    25 pts 126/126: gap/step +0.0747..+0.2590; largest |gap| 0.2590 of the step at s=0.20  => HIT
+H3 N1 decel flow/press 25 pts 126/126: gap/step -0.5414..-0.0816; largest |gap| 0.5414 of the step at s=0.32  => HIT
+H3 N1 decel press/flow 25 pts 126/126: gap/step -0.5925..-0.0922; largest |gap| 0.5925 of the step at s=0.28  => HIT
+H3 N1 decel tilted     25 pts 126/126: gap/step -0.5661..-0.0864; largest |gap| 0.5661 of the step at s=0.30  => HIT
+H3 N1 decel flat-lp    25 pts 126/126: gap/step -0.3227..-0.0467; largest |gap| 0.3227 of the step at s=0.44  => HIT
+== H2: EPR vs true-thrust governor, accel: peak Tt4, min phi_LP, min phi_HP (interior rule)
+flow/press peak Tt4 1936.5 vs 1927.4 HIT | min phi_LP 0.7027@7 vs 0.7144@9 HIT | min phi_HP 0.8199@10 vs 0.8323@13 HIT
+press/flow peak Tt4 1946.4 vs 1940.3 HIT | min phi_LP 0.7078@7 vs 0.7221@9 HIT | min phi_HP 0.7880@9 vs 0.8041@13 HIT
+tilted     peak Tt4 1937.3 vs 1932.5 HIT | min phi_LP 0.6984@7 vs 0.7126@9 HIT | min phi_HP 0.8003@9 vs 0.8155@13 HIT
+flat-lp    peak Tt4 1908.0 vs 1898.7 HIT | min phi_LP 0.6516@7 vs 0.6645@9 HIT | min phi_HP 0.8200@9 vs 0.8331@12 HIT
+== H4: EPR, clean table, generator power 0.02: end thrust vs target
+Hp flow/press start: target 254.716 achieved 257.895 (+1.248e-2 rel)  => HIT
+Hp flow/press end: target 615.085 achieved 617.287 (+3.580e-3 rel)  => HIT
+Hp press/flow start: target 255.202 achieved 258.280 (+1.206e-2 rel)  => HIT
+Hp press/flow end: target 615.083 achieved 617.266 (+3.549e-3 rel)  => HIT
+Hp tilted     start: target 254.154 achieved 257.318 (+1.245e-2 rel)  => HIT
+Hp tilted     end: target 615.009 achieved 617.208 (+3.575e-3 rel)  => HIT
+Hp flat-lp    start: target 258.460 achieved 261.541 (+1.192e-2 rel)  => HIT
+Hp flat-lp    end: target 615.500 achieved 617.685 (+3.550e-3 rel)  => HIT
+Lp flow/press start: target 254.716 achieved 257.574 (+1.122e-2 rel)  => HIT
+Lp flow/press end: target 615.085 achieved 617.230 (+3.488e-3 rel)  => HIT
+Lp press/flow start: target 255.202 achieved 258.240 (+1.191e-2 rel)  => HIT
+Lp press/flow end: target 615.083 achieved 617.264 (+3.547e-3 rel)  => HIT
+Lp tilted     start: target 254.154 achieved 257.072 (+1.148e-2 rel)  => HIT
+Lp tilted     end: target 615.009 achieved 617.167 (+3.509e-3 rel)  => HIT
+Lp flat-lp    start: target 258.460 achieved 261.394 (+1.135e-2 rel)  => HIT
+Lp flat-lp    end: target 615.500 achieved 617.650 (+3.494e-3 rel)  => HIT
+== reported: N1 calibration error (clean table, generator 0.02), and the prop law's droop
+Hp flow/press N1 ends: -4.524e-2 / -1.201e-2 rel
+    prop K20 settle 8: nu_L 0.949417 vs demand 0.949517 (droop -1.003e-4); points 426/426
+Hp flat-lp    N1 ends: -9.206e-2 / -3.951e-2 rel
+    prop K20 settle 8: nu_L 0.966029 vs demand 0.964957 (droop +1.072e-3); points 426/426
+Lp flow/press N1 ends: +1.991e-1 / +6.843e-2 rel
+    prop K20 settle 8: nu_L 0.945776 vs demand 0.949517 (droop -3.741e-3); points 426/426
+Lp flat-lp    N1 ends: +2.618e-1 / +1.107e-1 rel
+    prop K20 settle 8: nu_L 0.959634 vs demand 0.964957 (droop -5.323e-3); points 426/426
+== gate: decomposition F_true - F_hat = V0 (face_hat - face), EPR; worst residual / thrust
+worst 1.17e-13 (bar 1e-12)
+== gate: generator off => table_clean inert; loaded table ends = rung 94 ends
+flow/press clean-off inert bitwise true; loaded ends == rung 94's true true
+press/flow clean-off inert bitwise true; loaded ends == rung 94's true true
+tilted     clean-off inert bitwise true; loaded ends == rung 94's true true
+flat-lp    clean-off inert bitwise true; loaded ends == rung 94's true true
+== gate: hold identity + fixed point (settle 8)
+EPR                hold identity worst 4.0e-15; settled |dnu| 5.3e-10 6.2e-10; thrust vs end -1.3e-10 rel
+N1 rate            hold identity worst 5.8e-12; settled |dnu| 0.0e0 8.4e-10; thrust vs end 8.4e-10 rel
+EPR clean gen HP   hold identity worst 2.3e-14; settled |dnu| 9.9e-10 1.1e-9; thrust vs end 2.3e-10 rel
+N1 clean gen LP    hold identity worst 6.6e-12; settled |dnu| 3.2e-14 4.2e-9; thrust vs end 3.7e-9 rel
+== step check: 0.02 vs 0.005, max |dphi| over the run (LP laws), accel and decel
+accel EPR        flow/press pts 126/501 max dphi 4.8e-7 (lean pts 0)
+accel EPR        flat-lp    pts 126/501 max dphi 7.4e-7 (lean pts 0)
+accel rate 0.02 refused
+accel rate 0.02 refused
+accel rate 0.04  flow/press pts 126/501 max dphi 5.3e-5 (lean pts 0)
+accel rate 0.04  flat-lp    pts 126/501 max dphi 4.9e-5 (lean pts 0)
+accel rate 0.1   flow/press pts 126/501 max dphi 3.6e-6 (lean pts 0)
+accel rate 0.1   flat-lp    pts 126/501 max dphi 4.7e-6 (lean pts 0)
+accel prop 20    flow/press pts 126/501 max dphi 3.5e-6 (lean pts 0)
+accel prop 20    flat-lp    pts 126/501 max dphi 5.5e-6 (lean pts 0)
+accel prop 50    flow/press pts 126/501 max dphi 6.8e-5 (lean pts 0)
+accel prop 50    flat-lp    pts 126/501 max dphi 8.9e-5 (lean pts 0)
+accel prop 100 refused
+accel prop 100 refused
+decel EPR        flow/press pts 126/501 max dphi 1.4e-5 (lean pts 6)
+decel EPR        flat-lp    pts 126/501 max dphi 1.4e-5 (lean pts 5)
+decel rate 0.02 refused
+decel rate 0.02 refused
+decel rate 0.04  flow/press pts 126/501 max dphi 3.5e-5 (lean pts 19)
+decel rate 0.04  flat-lp    pts 126/501 max dphi 2.3e-4 (lean pts 7)
+decel rate 0.1   flow/press pts 126/501 max dphi 6.0e-6 (lean pts 16)
+decel rate 0.1   flat-lp    pts 126/501 max dphi 5.8e-5 (lean pts 4)
+decel prop 20    flow/press pts 126/501 max dphi 1.0e-5 (lean pts 12)
+decel prop 20    flat-lp    pts 126/501 max dphi 6.5e-6 (lean pts 2)
+decel prop 50    flow/press pts 126/501 max dphi 1.3e-4 (lean pts 17)
+decel prop 50    flat-lp    pts 126/501 max dphi 3.3e-4 (lean pts 6)
+decel prop 100 refused
+decel prop 100 refused
+== cost
+open                 0.010 s (126 pts)
+true                 0.120 s (126 pts)
+EPR                  0.123 s (126 pts)
+N1                   0.122 s (126 pts)
+EPR +redline+sched   0.379 s (126 pts)
+EPR clean gen HP     0.162 s (126 pts)

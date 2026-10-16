@@ -146,6 +146,8 @@ td.nomod { white-space: normal; color: var(--muted); text-align: left; }
 .chart .clamp-lean, .clamp-lean { fill: var(--s-blue); background: var(--s-blue); opacity: 0.55; }
 .chart .demand { fill: none; stroke: var(--s-blue); stroke-width: 1.4; stroke-dasharray: 2 3; }
 .sw.demand { border-top: 2px dotted var(--s-blue); }
+.chart .believed { fill: none; stroke: var(--s-aqua); stroke-width: 1.6; stroke-dasharray: 7 3; }
+.sw.believed { border-top: 2px dashed var(--s-aqua); }
 #ctl-table td { white-space: normal; }   /* "who held the fuel" is a sentence: let it wrap, not squeeze the names */
 h2.sec { font-size: 14px; margin: 0 0 8px; }
 table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 13px; }
@@ -422,14 +424,33 @@ footer p { max-width: 90ch; }
         the throttle's burner temperatures and the fuel ramps between them.</p>
       <label class="swrow"><input type="checkbox" id="ctl-govern"> Govern during the move <small>rung 95</small></label>
       <div class="swbox" id="ctl-gov-box">
+        <div id="ctl-by-row">
+          <div class="toggle" role="group" aria-label="Where the control reads thrust from">
+            <button type="button" id="ctl-by-true" aria-pressed="true">Thrust read directly</button>
+            <button type="button" id="ctl-by-epr" aria-pressed="false">From the pressure ratio</button>
+            <button type="button" id="ctl-by-n1" aria-pressed="false">From the fan speed</button></div>
+          <label class="swrow" id="ctl-tclean-row"><input type="checkbox" id="ctl-table_clean"> The control's table was made on
+            the engine with the generator off <small>rung 96</small></label>
+          <p class="note" id="ctl-by-note">An engine in flight cannot weigh its own thrust. Its control reads something it can
+            measure, either the pressure ratio across the engine (turbine exit over inlet) or the fan speed (the LP shaft), and
+            turns it into thrust with a table of steady points. The chart of thrust shows the thrust the control believes
+            beside the thrust the engine gives. Here the pressure ratio sees the jet's push exactly (both nozzles are choked),
+            but not the drag of the air the engine swallows. While the engine speeds up it swallows less air than the table
+            expects, so it gives more thrust than the control believes: on the default move, at most about an eighth of the
+            thrust change. That costs more fuel, a hotter turbine and less stall margin than reading thrust itself. The fan
+            speed misses by more, up to about half of the change and more on a slowdown, because the fan shaft lags and the
+            core runs ahead of it. While the engine slows down, both readings miss the other way. Holding the fan speed also
+            leaves the HP shaft to creep to its final speed on its own, slowly. With the generator on and the table made on the engine without it, the steady
+            ends miss too: the pressure ratio by about 1 %, the fan speed by up to a quarter of the thrust.</p></div>
         <div id="ctl-slaw-row">
           <div class="toggle" role="group" aria-label="How the speed governor closes the gap">
             <button type="button" id="ctl-slaw-rate" aria-pressed="true">Commanded rate</button>
             <button type="button" id="ctl-slaw-prop" aria-pressed="false">Proportional</button></div>
           <div class="knob" id="ctl-gtau-box"><label for="ctl-gov_tau">Time to close the gap <small>τ</small></label><input type="number" id="ctl-gov_tau" step="0.01">
             <input type="range" id="ctl-gov_tau-r" min="0.04" max="1" step="0.01" aria-label="Speed governor time constant slider">
-            <div class="derived">The governor picks the fuel that makes the HP shaft close its speed gap in this time, at every
-              power. At least 0.04 τ: faster is worked out too coarsely at this step.</div></div>
+            <div class="derived">The governor picks the fuel that makes the shaft it reads (the HP shaft, or the fan's LP
+              shaft) close its speed gap in this time, at every power. At least 0.04 τ: faster is worked out too coarsely at
+              this step.</div></div>
           <div class="knob" id="ctl-ggain-box"><label for="ctl-gov_gain">Gain <small>fuel fraction per unit of speed short</small></label><input type="number" id="ctl-gov_gain" step="1">
             <input type="range" id="ctl-gov_gain-r" min="1" max="50" step="1" aria-label="Speed governor gain slider">
             <div class="derived">Fuel = the steady fuel at the asked speed × (1 + gain × the speed gap). A fixed gain closes the
@@ -1183,7 +1204,7 @@ const CTL_NUM = { "ctl-rho": "rho", "ctl-from": "from", "ctl-to": "to", "ctl-ram
                   "ctl-cool_vane": "cool_vane", "ctl-cool_blade": "cool_blade",
                   "ctl-generator_power": "generator_power", "ctl-generator_share": "generator_share",
                   "ctl-metal_year": "metal_year", "ctl-gov_tau": "gov_tau", "ctl-gov_gain": "gov_gain" };
-const CTL_SW = ["redline_on", "gov_lag_on", "accel_on", "floor_on", "release_on", "metal_on", "hold_cap", "govern"];
+const CTL_SW = ["redline_on", "gov_lag_on", "accel_on", "floor_on", "release_on", "metal_on", "hold_cap", "govern", "table_clean"];
 const CTL_VIEW = ["ctl-set", "ctl-sw-set", "ctl-lever-set", "ctl-out", "ctl-card"];
 // Cool the turbine (rung 93, turbojet::sandbox_cooling): CL holds the view's knobs. The knob form runs first, then
 // the sweep streams one burner temperature at a time, both on the view's OWN worker, killed when a knob moves.
@@ -1299,7 +1320,12 @@ function showSettings() {
     for (const h of ["tt4", "thrust", "speed"]) press("ctl-hold-" + h, C.hold === h);
     $("ctl-hold-note").hidden = C.generator === "off" || C.hold === "tt4";
     $("ctl-hold-none").hidden = C.generator !== "off" || C.govern === 1;
-    $("ctl-gov-box").hidden = C.govern !== 1; $("ctl-slaw-row").hidden = C.hold !== "speed";
+    $("ctl-gov-box").hidden = C.govern !== 1;
+    $("ctl-slaw-row").hidden = !(C.hold === "speed" || (C.hold === "thrust" && C.thrust_by === "n1"));
+    // Rung 96: where a governed thrust is read from, and (with the generator on) which engine the table was made on.
+    $("ctl-by-row").hidden = C.hold !== "thrust";
+    for (const k of ["true", "epr", "n1"]) press("ctl-by-" + k, C.thrust_by === k);
+    $("ctl-tclean-row").hidden = C.generator === "off" || C.thrust_by === "true";
     press("ctl-slaw-rate", C.speed_law === "rate"); press("ctl-slaw-prop", C.speed_law === "prop");
     $("ctl-gtau-box").hidden = C.speed_law !== "rate"; $("ctl-ggain-box").hidden = C.speed_law !== "prop";
     $("ctl-cap-note").hidden = !C.hold_cap;
@@ -1724,11 +1750,16 @@ const pct = a => a.map(v => v * 100);
 const stators = c => c.lever === "stator" || c.lever === "both";
 const bleeds = c => c.lever === "bleed" || c.lever === "both";
 // Rung 95: what the governed throttle asks for, drawn on the chart of the quantity it holds.
-const asks = (r, hold, sc) => r.demand && r.controls.hold === hold ? [[r.demand.map(v => v * sc), "demand", "what the throttle asks for"]] : [];
+const asks = (r, hold, sc) => r.demand && r.controls.hold === hold && !r.reading ? [[r.demand.map(v => v * sc), "demand", "what the throttle asks for"]] : [];
+// Rung 96: a thrust read from a reading — on the thrust chart what the throttle asks and what the control believes; on
+// the speed chart the fan speed the control asks for.
+const believes = r => r.reading ? [[r.thrust_inferred, "believed", "thrust the control believes"],
+                                   [r.thrust_demand, "demand", "thrust the throttle asks for"]] : [];
+const fanAsks = r => r.reading === "n1" ? [[pct(r.demand), "demand", "fan speed the control asks for"]] : [];
 const CTL_Q = {
   Tt4: { label: "turbine inlet temperature, K", lines: r => [[r.Tt4, "rline", "turbine inlet temperature"]].concat(asks(r, "tt4", 1)),
          steady: r => [r.start.Tt4, r.end.Tt4] },
-  speed: { label: "shaft speed, % of design", lines: r => [[pct(r.nu_lp), "lp", "low-pressure shaft"], [pct(r.nu_hp), "hp", "high-pressure shaft"]].concat(asks(r, "speed", 100)),
+  speed: { label: "shaft speed, % of design", lines: r => [[pct(r.nu_lp), "lp", "low-pressure shaft"], [pct(r.nu_hp), "hp", "high-pressure shaft"]].concat(asks(r, "speed", 100), fanAsks(r)),
            steady: r => [r.start.nu_lp * 100, r.end.nu_lp * 100, r.start.nu_hp * 100, r.end.nu_hp * 100] },
   fuel: { label: "fuel flow, g/s per kg/s of design airflow", lines: r => [[r.fuel.map(v => v * 1e3), "rline", "fuel burnt"],
                                                                             [r.fuel_sched.map(v => v * 1e3), "fsched", r.demand ? "fuel the governor asks for" : "fuel the throttle schedules"]],
@@ -1739,7 +1770,7 @@ const CTL_Q = {
             steady: r => [] },
   phi_hp: { label: "HP flow coefficient", lines: r => [[r.phi_hp, "hp", "HP flow coefficient"], [r.stall_hp, "stall", "HP stall line"]]
               .concat(C.floor_on && C.floor_spool === "hp" ? [[r.floor, "floorl", "the floor"]] : []), steady: r => [] },
-  thrust: { label: "thrust, N per kg/s of design airflow", lines: r => [[r.thrust, "rline", "thrust"]].concat(asks(r, "thrust", 1)), steady: r => [r.start.thrust, r.end.thrust] },
+  thrust: { label: "thrust, N per kg/s of design airflow", lines: r => [[r.thrust, "rline", "thrust"]].concat(asks(r, "thrust", 1), believes(r)), steady: r => [r.start.thrust, r.end.thrust] },
   lever: { label: "lever setting", lines: r => (C.lever === "bleed" ? [[pct(r.bleed), "rline", "air bled, % of the LP's flow"]]
                                          : C.lever === "both" ? [[r.v, "rline", "stator closing (0 = design setting)"],
                                                                  [r.bleed, "fsched", "air bled, fraction of the LP's flow"]]
@@ -1798,7 +1829,8 @@ const HOLD_WORDS = { redline: "temperature limiter", accel: "acceleration schedu
 function govFor(r) {
   if (!r.governor) return "off: the fuel ramps between the ends";
   const n = k => fmt(r.governor.filter(c => c === k).length * CTL_DS, 2);
-  const what = { tt4: "the burner temperature", thrust: "thrust", speed: "HP speed" }[r.controls.hold];
+  const what = { tt4: "the burner temperature", speed: "HP speed",
+                 thrust: { epr: "thrust, read from the pressure ratio", n1: "thrust, read from the fan speed" }[r.reading] || "thrust" }[r.controls.hold];
   return `holds ${what}; at the rich edge ${n("rich")} τ, at the lean edge ${n("lean")} τ`;
 }
 function heldFor(r) {
@@ -1821,6 +1853,10 @@ const CTL_ROWS = [
   ["Who held the fuel, and for how long", r => heldFor(r)],
   ["The governor (rung 95)", r => govFor(r)],
   ["Time to 95 % of the thrust change (τ)", r => to90(r, "thrust", 0.95), 3],
+  ["Thrust given over what the control believes, most and least (% of the thrust change; rung 96)", r => {
+    if (!r.reading) return "the control reads thrust itself";
+    const d = (r.end.thrust - r.start.thrust) || 1, g = r.thrust.map((t, i) => (t - r.thrust_inferred[i]) / Math.abs(d) * 100);
+    return `${fmt(Math.max(...g), 3)} / ${fmt(Math.min(...g), 3)}`; }],
   ["Time to 90 % of the LP speed change (τ)", r => to90(r, "nu_lp"), 3],
   ["Time to 90 % of the HP speed change (τ)", r => to90(r, "nu_hp"), 3],
   ["Shaft speeds at the end, LP / HP (% of design)", r => `${fmt(r.nu_lp[r.nu_lp.length - 1] * 100, 4)} / ${fmt(r.nu_hp[r.nu_hp.length - 1] * 100, 4)}`],
@@ -2820,6 +2856,8 @@ function wire() {
   for (const h of ["tt4", "thrust", "speed"]) cclick("ctl-hold-" + h, () => { C.hold = h; if (h === "tt4") C.hold_cap = 0; });
   // Rung 95: the speed governor's law.
   cclick("ctl-slaw-rate", () => { C.speed_law = "rate"; }); cclick("ctl-slaw-prop", () => { C.speed_law = "prop"; });
+  // Rung 96: where a governed thrust is read from (the metal cap is not built beside an inferred thrust).
+  for (const k of ["true", "epr", "n1"]) cclick("ctl-by-" + k, () => { C.thrust_by = k; if (k !== "true") C.hold_cap = 0; });
   $("ctl-metal_life").addEventListener("change", () => { C.metal_life = +$("ctl-metal_life").value; scheduleCtl(); });
   // Cool the turbine (rung 93): its knobs write CL; the knob form and the sweep follow.
   $("mode-cooling").addEventListener("click", enterCooling);

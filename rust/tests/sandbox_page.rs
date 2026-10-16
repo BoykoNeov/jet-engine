@@ -124,6 +124,8 @@ fn every_element_the_script_looks_up_is_declared() {
                     looked_up.extend(["convection", "coated", "film", "transpiration"].map(|m| format!("{id}{m}"))),
                 // Rung 94's hold toggle.
                 "ctl-hold-" => looked_up.extend(["tt4", "thrust", "speed"].map(|m| format!("{id}{m}"))),
+                // Rung 96's thrust reading.
+                "ctl-by-" => looked_up.extend(["true", "epr", "n1"].map(|m| format!("{id}{m}"))),
                 "clq-" => looked_up.extend(["air", "st", "tsfc", "tt3", "speed"].map(|m| format!("{id}{m}"))),
                 _ => {
                     assert!(!id.ends_with('-'), "{helper}: the prefix #{id} has no expansion in this census");

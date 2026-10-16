@@ -1,0 +1,3 @@
+req by=Epr clean=true: build 0.29s, march 1.34s (135 pts of 135, lean 50)
+req by=Epr clean=false: build 0.26s, march 1.65s (135 pts of 135, lean 65)
+req by=True clean=true: build 1.61s, march 2.77s (135 pts of 135, lean 37)

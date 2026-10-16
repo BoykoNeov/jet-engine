@@ -1,0 +1,28 @@
+HP lead accel flow/press: nu_H - nu_H,steady(nu_L) over the ramp -0.0022..-0.0001
+HP lead accel press/flow: nu_H - nu_H,steady(nu_L) over the ramp +0.0000..+0.0138
+HP lead accel tilted    : nu_H - nu_H,steady(nu_L) over the ramp -0.0004..+0.0063
+HP lead accel flat-lp   : nu_H - nu_H,steady(nu_L) over the ramp -0.0255..-0.0002
+HP lead decel flow/press: nu_H - nu_H,steady(nu_L) over the ramp -0.0002..+0.0077
+HP lead decel press/flow: nu_H - nu_H,steady(nu_L) over the ramp -0.0111..-0.0001
+HP lead decel tilted    : nu_H - nu_H,steady(nu_L) over the ramp -0.0031..-0.0001
+HP lead decel flat-lp   : nu_H - nu_H,steady(nu_L) over the ramp +0.0002..+0.0377
+flow/press open       peak Tt4  1695.4  t95  1.390  thrust overshoot -0.000 of step  HP gap>1e-3 until s= 2.46  min phi LP 0.7355 HP 0.8612
+flow/press true       peak Tt4  1927.4  t95  0.475  thrust overshoot +0.000 of step  HP gap>1e-3 until s= 1.28  min phi LP 0.7144 HP 0.8323
+flow/press EPR        peak Tt4  1936.5  t95  0.417  thrust overshoot +0.111 of step  HP gap>1e-3 until s= 1.00  min phi LP 0.7027 HP 0.8199
+flow/press N1 rate .1 peak Tt4  1957.3  t95  0.380  thrust overshoot +0.192 of step  HP gap>1e-3 until s= 0.76  min phi LP 0.6961 HP 0.8138
+flow/press N1 prop 20 peak Tt4  2026.9  t95  0.351  thrust overshoot +0.267 of step  HP gap>1e-3 until s= 0.66  min phi LP 0.6938 HP 0.8069
+press/flow open       peak Tt4  1703.0  t95  1.379  thrust overshoot +0.000 of step  HP gap>1e-3 until s= 1.96  min phi LP 0.7474 HP 0.8406
+press/flow true       peak Tt4  1940.3  t95  0.475  thrust overshoot +0.000 of step  HP gap>1e-3 until s= 1.96  min phi LP 0.7221 HP 0.8041
+press/flow EPR        peak Tt4  1946.4  t95  0.416  thrust overshoot +0.112 of step  HP gap>1e-3 until s= 1.84  min phi LP 0.7078 HP 0.7880
+press/flow N1 rate .1 peak Tt4  2014.9  t95  0.358  thrust overshoot +0.251 of step  HP gap>1e-3 until s= 1.90  min phi LP 0.6987 HP 0.7765
+press/flow N1 prop 20 peak Tt4  2091.9  t95  0.335  thrust overshoot +0.324 of step  HP gap>1e-3 until s= 1.88  min phi LP 0.6963 HP 0.7687
+tilted     open       peak Tt4  1702.4  t95  1.381  thrust overshoot +0.000 of step  HP gap>1e-3 until s= 2.20  min phi LP 0.7374 HP 0.8492
+tilted     true       peak Tt4  1932.5  t95  0.475  thrust overshoot +0.000 of step  HP gap>1e-3 until s= 1.04  min phi LP 0.7126 HP 0.8155
+tilted     EPR        peak Tt4  1937.3  t95  0.417  thrust overshoot +0.111 of step  HP gap>1e-3 until s= 1.52  min phi LP 0.6984 HP 0.8003
+tilted     N1 rate .1 peak Tt4  1985.6  t95  0.372  thrust overshoot +0.218 of step  HP gap>1e-3 until s= 1.72  min phi LP 0.6918 HP 0.7931
+tilted     N1 prop 20 peak Tt4  2059.6  t95  0.346  thrust overshoot +0.291 of step  HP gap>1e-3 until s= 1.70  min phi LP 0.6891 HP 0.7853
+flat-lp    open       peak Tt4  1690.5  t95  1.286  thrust overshoot -0.000 of step  HP gap>1e-3 until s= 3.12  min phi LP 0.6874 HP 0.8623
+flat-lp    true       peak Tt4  1898.7  t95  0.475  thrust overshoot +0.000 of step  HP gap>1e-3 until s= 2.50  min phi LP 0.6645 HP 0.8331
+flat-lp    EPR        peak Tt4  1908.0  t95  0.419  thrust overshoot +0.104 of step  HP gap>1e-3 until s= 2.38  min phi LP 0.6516 HP 0.8200
+flat-lp    N1 rate .1 peak Tt4  1785.9  t95  0.496  thrust overshoot -0.001 of step  HP gap>1e-3 until s= 3.56  min phi LP 0.6562 HP 0.8308
+flat-lp    N1 prop 20 peak Tt4  1870.6  t95  0.443  thrust overshoot +0.046 of step  HP gap>1e-3 until s= 3.38  min phi LP 0.6520 HP 0.8214

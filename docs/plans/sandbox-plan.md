@@ -1542,3 +1542,34 @@ report at the rich and the lean edge; the metal cap cutting all along the move).
   66 stopped with a reason, the rest refused in words. Its first run found 3 stops of the governor's own (no runnable
   fuel to start its search from on a deep slowdown) — fixed by a fallback scan reached only where the first three tries
   fail. Native time: median 0.10 s a request, slowest 1.35 s.
+
+## 25. A governor that infers thrust — rung 96 (2026-10-16) — not a slice
+
+Rung 96 (`docs/rung96-spec.md`) lets rung 95's governed thrust be READ, as a real control reads it: from the engine
+pressure ratio or the fan (LP) speed, turned into thrust by a 13-row table of steady points (the setup proposed to the
+user, who answered "go": both readings as a toggle; the throttle's straight line in thrust read through the table; rung
+95's speed laws on the LP shaft; the table made on the generator-off engine or on this one).
+
+- **The knobs:** under *Govern during the move*, holding thrust, *Thrust read directly* / *From the pressure ratio* /
+  *From the fan speed* (`thrust_by`: `true`, `epr`, `n1`; default `true` — every saved setting stays valid); with the fan
+  speed, rung 95's *Commanded rate* / *Proportional* and their knobs now act on the LP shaft (same limits, 0.04 τ and 50,
+  from the LP laws' own step check); with the generator on, *The control's table was made on the engine with the
+  generator off* (`table_clean`, default on). Choosing a reading switches the metal cap off (refused beside it).
+- **Readouts:** on the thrust chart, the thrust the control believes (dashed) and the thrust the throttle asks for
+  (dotted) beside the true thrust; with the fan speed, the fan speed it asks for on the speed chart; table rows *The
+  governor* (names the reading) and *Thrust given over what the control believes, most and least* (% of the thrust
+  change); with a calibrated end, *What the ends hold* gives achieved against asked. JSON keys: `reading`, `calibrated`,
+  `reading_value`, `thrust_inferred`, `thrust_demand`, `table`.
+- **Built** in `sandbox_controls` on the model's `inferred_thrust::{try_table, Table}` and `governor`'s new laws; the
+  calibrated ends by rung 94's `try_hold_root` with the reading held; refusals in words for an end the reading cannot
+  reach (`inferred_thrust::refusal_words`).
+- **Prechecks, in words:** the cap beside an inferred reading; the fan-speed rate below 0.04 τ; its gain outside (0, 50].
+- **Gates:** `tests/rung96.rs` (thrust read directly is rung 95; the clean table inert with no generator; the loaded
+  table's ends are rung 94's; the pressure-ratio gap IS the ram drag, ≤ 1e−12; the fixed point and hold identity; the
+  LP step check; the re-run; H1–H4); `tests/sandbox_inferred.rs` (read directly the page is rung 95's; the reading, the
+  belief and the table reach the page; every refusal); `tests/sandbox_controls.rs` (the round-trip with the new keys);
+  `check_requests` adds 5; `browser.mjs` presses *From the pressure ratio* on the governed thrust run and checks the
+  route, the reading, true over believed thrust through the move, the drawn belief and the table row.
+- **Crash map** (1 000 requests, seed 13; `scratch-archive/rung96/crash.txt`): no panic; 594 ran to the end, 53 stopped
+  with a reason (51 the stall floor, 2 a throttle above its redline), the rest refused in words. Median 0.23 s; the
+  slowest (10 s under load, 1.6 s alone) is the lean wall beside the bleed valve — rung 95's route takes 4.4 s on it.

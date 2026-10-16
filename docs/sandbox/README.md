@@ -141,7 +141,10 @@ load, and the metal limit can stop it (rung 94, plan § 23). And the move itself
 the throttle's quantity — burner temperature, thrust or HP speed (by a commanded rate or a proportional gain) — follows a
 straight line from the start's value to the end's, a governor sets the fuel to give it, and the limiters (and the metal
 cap) cut what it asks for; where it asks for more than the engine can burn, or less than it can run on, it is held at
-that edge and marked.
+that edge and marked. A governed thrust can be **read** the way a real control reads it (rung 96, plan § 25): from the
+pressure ratio across the engine or from the fan speed, turned into thrust by a table of steady points (made on the
+engine with the generator off, or on this one). The thrust chart then shows the thrust the control believes beside the
+thrust the engine gives.
 
 **Readouts:** turbine temperature against the redline, both shaft speeds, burnt vs scheduled fuel, each
 compressor's flow coefficient against its (moving) stall line and the floor, thrust (the bleed's dumped air

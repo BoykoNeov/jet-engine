@@ -1,0 +1,22 @@
+
+A GOVERNOR THAT INFERS THRUST (rung 96): rung 95's governed thrust READ from the engine pressure ratio or the
+fan (LP) speed, turned into thrust by a 13-row steady table. The Controls engine (pi 3 x 6, LP curved along flow,
+HP along pressure), 1000 -> 1400 K over 0.5 tau; gaps are fractions of the thrust change.
+
+  thrust read from           peak Tt4   phi_LP   phi_HP most over     decel   95% thr
+  the thrust itself            1927.4   0.7144   0.8323   +0.0000   +0.0000     0.475
+  the pressure ratio           1936.5   0.7027   0.8199   +0.1200   -0.1546     0.417
+  the fan speed, rate 0.1      1957.3   0.6961   0.8138   +0.3970   -0.5414     0.380
+  the fan speed, prop. 20      2026.9   0.6938   0.8069   +0.4254   -0.5040     0.351
+
+  Calibrated on the engine with the generator off (power 0.02): each end's thrust over what was asked.
+  pressure ratio  generator on HP: +0.0125 at 1000 K, +0.0036 at 1400 K
+  pressure ratio  generator on LP: +0.0112 at 1000 K, +0.0035 at 1400 K
+  fan speed       generator on HP: -0.0452 at 1000 K, -0.0120 at 1400 K
+  fan speed       generator on LP: +0.1991 at 1000 K, +0.0684 at 1400 K
+
+  (most over: the most thrust the engine gives over what the control believes on the acceleration; decel: the
+  same on the slowdown, negative; 95% thr: time to 95% of the thrust step, tau.) The pressure ratio reads the jet's
+  gross push exactly - both nozzles choked - but not the drag of the air swallowed: an engine that must also find
+  power to spare, to speed up or to drive a generator, burns hotter and swallows less air at a given pressure
+  ratio, so it gives MORE thrust than its control believes. The fan speed misses by far more.

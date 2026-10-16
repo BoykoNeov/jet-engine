@@ -2075,6 +2075,16 @@ pub fn check_requests() -> Vec<String> {
         ControlsSettings { govern: true, hold: Hold::Thrust, metal_on: true, hold_cap: true, cool_vane: 0.04,
                            cool_blade: 0.02, ..d },
         ControlsSettings { govern: true, redline_on: true, gov_lag_on: true, ..d },                // refused: a lag
+        // rung 96: thrust read from the pressure ratio (beside the limiters; calibrated on the clean engine with the
+        // generator) and the fan speed by each law (on a slowdown), and refused beside the cap
+        ControlsSettings { govern: true, hold: Hold::Thrust, thrust_by: ThrustBy::Epr, redline_on: true, accel_on: true, ..d },
+        ControlsSettings { govern: true, hold: Hold::Thrust, thrust_by: ThrustBy::Epr, generator: GeneratorMode::Hp, ..d },
+        ControlsSettings { govern: true, hold: Hold::Thrust, thrust_by: ThrustBy::N1, generator: GeneratorMode::Lp,
+                           table_clean: false, ..d },
+        ControlsSettings { govern: true, hold: Hold::Thrust, thrust_by: ThrustBy::N1, speed_law: SpeedLaw::Prop,
+                           from: 1400.0, to: 1000.0, ..d },
+        ControlsSettings { govern: true, hold: Hold::Thrust, thrust_by: ThrustBy::Epr, metal_on: true, hold_cap: true,
+                           cool_vane: 0.04, ..d },                                                  // refused: the cap
         ControlsSettings { from: 1400.0, to: 1000.0, ..d },
         ControlsSettings { release_on: true, ..d },                                  // refused: nothing to lag
         ControlsSettings { floor_on: true, lever: LeverChoice::Stator, ..d },        // stop: the floor unreachable

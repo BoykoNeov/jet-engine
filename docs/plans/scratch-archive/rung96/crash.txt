@@ -1,0 +1,192 @@
+OTHER #155: "message":"rung-46 topping cannot reach Tt4_max=1480.0 at nu=(0.7685,0.8603) -- redline below the flow's floor Tt4.","s_last":null,"s":0.0,"mixture":null,"min_fuel_fraction":null},"s":[],"nu_lp":[],"nu_hp":[],"Tt4":[],"fuel":[],"fuel_sched":[],"far":[],"phi_lp":[],"phi_hp":[],"pi_lpc":[],"pi_hpc":[],"thrust":[],"stall_lp":[],"st
+   {"op":"controls","controls":{"govern":1,"hold":"thrust","thrust_by":"epr","table_clean":0,"speed_law":"prop","gov_tau":0.91,"gov_gain":45,"generator":"lp","generator_power":0.1,"hold_cap":0,"metal_on":0,"cool_vane":0.12,"cool_blade":0.12,"shape":"flow/press","lever":"none","bleed_mode":"schedule","redline_on":1,"accel_on":0,"floor_on":0,"from":1590,"to":1620,"ramp":1.92,"rho":1.5}}
+OTHER #858: "message":"rung-46 topping cannot reach Tt4_max=1480.0 at nu=(0.7177,0.8606) -- redline below the flow's floor Tt4.","s_last":null,"s":0.0,"mixture":null,"min_fuel_fraction":null},"s":[],"nu_lp":[],"nu_hp":[],"Tt4":[],"fuel":[],"fuel_sched":[],"far":[],"phi_lp":[],"phi_hp":[],"pi_lpc":[],"pi_hpc":[],"thrust":[],"stall_lp":[],"st
+   {"op":"controls","controls":{"govern":1,"hold":"thrust","thrust_by":"true","table_clean":0,"speed_law":"rate","gov_tau":0.7000000000000001,"gov_gain":47,"generator":"lp","generator_power":0.085,"hold_cap":1,"metal_on":1,"cool_vane":0.13,"cool_blade":0.05,"shape":"press/flow","lever":"none","bleed_mode":"valve","redline_on":1,"accel_on":0,"floor_on":0,"from":1370,"to":1230,"ramp":1.02,"rho":1.2000000000000002}}
+  389  ran to the end
+   89  ran to the end (lean edge)
+    2  ran to the end (rich + lean edge)
+  114  ran to the end (rich edge)
+   28  ran, stopped early
+   12  ran, stopped early (lean edge)
+    2  ran, stopped early (rich + lean edge)
+   11  ran, stopped early (rich edge)
+    1  refused: At the final throttle (1000 K), holding thrust: The thrust asked for (
+    1  refused: At the final throttle (1020 K): with the generator off this throttle h
+    1  refused: At the final throttle (1030 K), holding thrust: The thrust asked for (
+    1  refused: At the final throttle (1030 K), the control holding the fan (LP shaft)
+    2  refused: At the final throttle (1040 K), holding thrust: The thrust asked for (
+    1  refused: At the final throttle (1040 K), the control holding the pressure ratio
+    1  refused: At the final throttle (1120 K): with the generator off this throttle h
+    1  refused: At the final throttle (1600 K): the engine has no steady operating poi
+    1  refused: At the final throttle (600 K), the control holding the fan (LP shaft) 
+    1  refused: At the final throttle (600 K), the control holding the pressure ratio 
+    1  refused: At the final throttle (600 K): with the generator off this throttle ha
+    1  refused: At the final throttle (610 K), holding thrust: The thrust asked for (2
+    1  refused: At the final throttle (610 K), the control holding the fan (LP shaft) 
+    1  refused: At the final throttle (610 K): with the generator off this throttle ha
+    2  refused: At the final throttle (620 K), holding thrust: The thrust asked for (3
+    1  refused: At the final throttle (620 K), the control holding the fan (LP shaft) 
+    2  refused: At the final throttle (620 K): with the generator off this throttle ha
+    1  refused: At the final throttle (640 K), holding thrust: The thrust asked for (3
+    1  refused: At the final throttle (640 K), the control holding the fan (LP shaft) 
+    4  refused: At the final throttle (640 K): with the generator off this throttle ha
+    1  refused: At the final throttle (650 K), holding thrust: The thrust asked for (6
+    3  refused: At the final throttle (660 K), holding thrust: The thrust asked for (4
+    1  refused: At the final throttle (670 K): the engine has no steady operating poin
+    1  refused: At the final throttle (680 K), holding thrust: The thrust asked for (4
+    1  refused: At the final throttle (680 K): the engine has no steady operating poin
+    1  refused: At the final throttle (690 K), the control holding the pressure ratio 
+    1  refused: At the final throttle (690 K): with the generator off this throttle ha
+    1  refused: At the final throttle (700 K), holding thrust: The thrust asked for (6
+    1  refused: At the final throttle (700 K), the control holding the fan (LP shaft) 
+    1  refused: At the final throttle (700 K), the control holding the pressure ratio 
+    2  refused: At the final throttle (700 K): with the generator off this throttle ha
+    1  refused: At the final throttle (730 K), holding thrust: The thrust asked for (9
+    1  refused: At the final throttle (730 K): the engine has no steady operating poin
+    1  refused: At the final throttle (730 K): with the generator off this throttle ha
+    1  refused: At the final throttle (740 K), holding thrust: The thrust asked for (6
+    1  refused: At the final throttle (740 K), the control holding the fan (LP shaft) 
+    2  refused: At the final throttle (740 K): with the generator off this throttle ha
+    1  refused: At the final throttle (750 K), holding thrust: The thrust asked for (1
+    1  refused: At the final throttle (750 K): with the generator off this throttle ha
+    1  refused: At the final throttle (760 K), holding thrust: The thrust asked for (1
+    1  refused: At the final throttle (760 K), holding thrust: The thrust asked for (8
+    1  refused: At the final throttle (760 K): the engine has no steady operating poin
+    1  refused: At the final throttle (770 K), holding thrust: The thrust asked for (1
+    1  refused: At the final throttle (770 K), holding thrust: The thrust asked for (9
+    1  refused: At the final throttle (770 K): with the generator off this throttle ha
+    2  refused: At the final throttle (780 K): with the generator off this throttle ha
+    1  refused: At the final throttle (790 K), the control holding the fan (LP shaft) 
+    1  refused: At the final throttle (790 K), the control holding the pressure ratio 
+    1  refused: At the final throttle (800 K): the engine has no steady operating poin
+    1  refused: At the final throttle (800 K): with the generator off this throttle ha
+    1  refused: At the final throttle (810 K): with the generator off this throttle ha
+    1  refused: At the final throttle (830 K), holding thrust: The thrust asked for (9
+    1  refused: At the final throttle (830 K): with the generator off this throttle ha
+    1  refused: At the final throttle (840 K): with the generator off this throttle ha
+    1  refused: At the final throttle (850 K), the control holding the pressure ratio 
+    1  refused: At the final throttle (860 K), the control holding the fan (LP shaft) 
+    1  refused: At the final throttle (880 K), the control holding the pressure ratio 
+    1  refused: At the final throttle (890 K), holding thrust: The thrust asked for (1
+    1  refused: At the final throttle (890 K), the control holding the pressure ratio 
+    1  refused: At the final throttle (900 K), the control holding the fan (LP shaft) 
+    1  refused: At the final throttle (930 K), holding thrust: The thrust asked for (1
+    1  refused: At the final throttle (930 K), holding thrust: The thrust asked for (2
+    1  refused: At the final throttle (930 K): with the generator off this throttle ha
+    1  refused: At the final throttle (950 K), holding thrust: The thrust asked for (2
+    1  refused: At the final throttle (950 K): the engine has no steady operating poin
+    1  refused: At the final throttle (980 K), holding thrust: The thrust asked for (1
+    1  refused: At the starting throttle (1000 K), holding thrust: The thrust asked fo
+    1  refused: At the starting throttle (1010 K), the control holding the pressure ra
+    2  refused: At the starting throttle (1020 K), holding thrust: The thrust asked fo
+    1  refused: At the starting throttle (1020 K), the control holding the pressure ra
+    2  refused: At the starting throttle (1030 K), holding thrust: The thrust asked fo
+    2  refused: At the starting throttle (1030 K), the control holding the pressure ra
+    1  refused: At the starting throttle (1040 K), holding thrust: The thrust asked fo
+    1  refused: At the starting throttle (1050 K), holding thrust: The thrust asked fo
+    2  refused: At the starting throttle (1060 K), holding thrust: The thrust asked fo
+    1  refused: At the starting throttle (1060 K), the control holding the fan (LP sha
+    1  refused: At the starting throttle (1070 K): with the generator off this throttl
+    1  refused: At the starting throttle (1080 K), holding thrust: The thrust asked fo
+    1  refused: At the starting throttle (1090 K), the control holding the pressure ra
+    1  refused: At the starting throttle (1100 K), holding thrust: The thrust asked fo
+    1  refused: At the starting throttle (1180 K), holding thrust: With this load the 
+    1  refused: At the starting throttle (1190 K), the control holding the fan (LP sha
+    1  refused: At the starting throttle (1200 K), the control holding the pressure ra
+    1  refused: At the starting throttle (1240 K), holding thrust: The thrust asked fo
+    1  refused: At the starting throttle (1250 K), holding thrust: With this load the 
+    1  refused: At the starting throttle (1290 K), holding thrust: The search for the 
+    1  refused: At the starting throttle (1610 K), holding thrust: The search for the 
+    1  refused: At the starting throttle (1620 K), the control holding the fan (LP sha
+    1  refused: At the starting throttle (1630 K), the control holding the pressure ra
+    1  refused: At the starting throttle (1650 K), the control holding the fan (LP sha
+    1  refused: At the starting throttle (1680 K), holding thrust: With this load the 
+    1  refused: At the starting throttle (600 K), the control holding the fan (LP shaf
+    1  refused: At the starting throttle (610 K), holding thrust: The thrust asked for
+    1  refused: At the starting throttle (610 K): the engine has no steady operating p
+    3  refused: At the starting throttle (610 K): with the generator off this throttle
+    1  refused: At the starting throttle (620 K), holding thrust: The thrust asked for
+    2  refused: At the starting throttle (620 K): with the generator off this throttle
+    1  refused: At the starting throttle (630 K), holding thrust: The thrust asked for
+    1  refused: At the starting throttle (630 K), the control holding the fan (LP shaf
+    2  refused: At the starting throttle (630 K), the control holding the pressure rat
+    1  refused: At the starting throttle (630 K): with the generator off this throttle
+    1  refused: At the starting throttle (640 K), holding thrust: The thrust asked for
+    1  refused: At the starting throttle (640 K), the control holding the fan (LP shaf
+    1  refused: At the starting throttle (640 K), the control holding the pressure rat
+    2  refused: At the starting throttle (640 K): the engine has no steady operating p
+    1  refused: At the starting throttle (640 K): with the generator off this throttle
+    3  refused: At the starting throttle (650 K), holding thrust: The thrust asked for
+    1  refused: At the starting throttle (650 K), the control holding the pressure rat
+    1  refused: At the starting throttle (650 K): the engine has no steady operating p
+    2  refused: At the starting throttle (660 K), holding thrust: The thrust asked for
+    1  refused: At the starting throttle (660 K), the control holding the fan (LP shaf
+    1  refused: At the starting throttle (660 K), the control holding the pressure rat
+    1  refused: At the starting throttle (660 K): the engine has no steady operating p
+    3  refused: At the starting throttle (660 K): with the generator off this throttle
+    1  refused: At the starting throttle (670 K), holding thrust: The thrust asked for
+    1  refused: At the starting throttle (670 K): the engine has no steady operating p
+    1  refused: At the starting throttle (680 K), holding thrust: The thrust asked for
+    1  refused: At the starting throttle (680 K), the control holding the fan (LP shaf
+    1  refused: At the starting throttle (680 K), the control holding the pressure rat
+    2  refused: At the starting throttle (690 K), holding thrust: The thrust asked for
+    1  refused: At the starting throttle (690 K), the control holding the pressure rat
+    2  refused: At the starting throttle (690 K): with the generator off this throttle
+    1  refused: At the starting throttle (700 K), holding thrust: With this load the e
+    3  refused: At the starting throttle (700 K): with the generator off this throttle
+    1  refused: At the starting throttle (710 K), holding thrust: The thrust asked for
+    1  refused: At the starting throttle (710 K): the engine has no steady operating p
+    4  refused: At the starting throttle (710 K): with the generator off this throttle
+    2  refused: At the starting throttle (730 K), holding thrust: The thrust asked for
+    1  refused: At the starting throttle (730 K), the control holding the pressure rat
+    3  refused: At the starting throttle (730 K): with the generator off this throttle
+    2  refused: At the starting throttle (750 K), the control holding the pressure rat
+    2  refused: At the starting throttle (750 K): with the generator off this throttle
+    1  refused: At the starting throttle (760 K), holding thrust: The thrust asked for
+    1  refused: At the starting throttle (760 K), holding thrust: With this load the e
+    1  refused: At the starting throttle (760 K): the engine has no steady operating p
+    3  refused: At the starting throttle (770 K), holding thrust: The thrust asked for
+    2  refused: At the starting throttle (770 K): with the generator off this throttle
+    1  refused: At the starting throttle (780 K), holding thrust: The thrust asked for
+    1  refused: At the starting throttle (790 K), holding thrust: The thrust asked for
+    1  refused: At the starting throttle (790 K), the control holding the pressure rat
+    4  refused: At the starting throttle (800 K), holding thrust: The thrust asked for
+    1  refused: At the starting throttle (800 K): the engine has no steady operating p
+    2  refused: At the starting throttle (810 K), holding thrust: The thrust asked for
+    1  refused: At the starting throttle (810 K), the control holding the fan (LP shaf
+    1  refused: At the starting throttle (810 K): the engine has no steady operating p
+    2  refused: At the starting throttle (810 K): with the generator off this throttle
+    1  refused: At the starting throttle (820 K): with the generator off this throttle
+    1  refused: At the starting throttle (830 K), holding thrust: The thrust asked for
+    1  refused: At the starting throttle (830 K): with the generator off this throttle
+    1  refused: At the starting throttle (840 K), holding thrust: The thrust asked for
+    1  refused: At the starting throttle (840 K), the control holding the pressure rat
+    1  refused: At the starting throttle (840 K): with the generator off this throttle
+    2  refused: At the starting throttle (850 K), holding thrust: The thrust asked for
+    1  refused: At the starting throttle (850 K), the control holding the fan (LP shaf
+    1  refused: At the starting throttle (850 K), the control holding the pressure rat
+    1  refused: At the starting throttle (860 K): with the generator off this throttle
+    1  refused: At the starting throttle (870 K): the engine has no steady operating p
+    2  refused: At the starting throttle (870 K): with the generator off this throttle
+    1  refused: At the starting throttle (880 K): the engine has no steady operating p
+    1  refused: At the starting throttle (890 K), holding thrust: The thrust asked for
+    2  refused: At the starting throttle (890 K): with the generator off this throttle
+    1  refused: At the starting throttle (900 K): with the generator off this throttle
+    1  refused: At the starting throttle (910 K), holding thrust: The thrust asked for
+    1  refused: At the starting throttle (910 K): with the generator off this throttle
+    1  refused: At the starting throttle (940 K), holding thrust: The thrust asked for
+    1  refused: At the starting throttle (950 K), holding thrust: The thrust asked for
+    1  refused: At the starting throttle (960 K), holding thrust: The thrust asked for
+    1  refused: At the starting throttle (970 K), holding thrust: With this load the e
+    1  refused: At the starting throttle (970 K), the control holding the pressure rat
+    1  refused: At the starting throttle (980 K), holding thrust: The thrust asked for
+    1  refused: At the starting throttle (990 K), the control holding the pressure rat
+    1  refused: At the starting throttle (990 K): with the generator off this throttle
+   43  refused: The acceleration schedule is read off this engine's own steady running
+    4  refused: The control's table has a throttle with no steady point between the en
+    1  refused: The control's table, calibrated on the engine with the generator off: 
+   25  refused: The metal cap is not built beside a control that infers thrust: a capp
+   60  refused: With no turbine cooling the metal allows only about 990 K (1985 metals
+stop kinds: {"floor_unreachable": 51, "other": 2}
+0 panics; total 481.9 s, median 0.228 s, slowest 10.06 / 9.68 / 7.97 s
+slowest request: {"op":"controls","controls":{"govern":1,"hold":"thrust","thrust_by":"epr","table_clean":1,"speed_law":"prop","gov_tau":0.75,"gov_gain":26,"generator":"hp","generator_power":0.075,"hold_cap":0,"metal_on":0,"cool_vane":0,"cool_blade":0,"shape":"press/flow","lever":"bleed","bleed_mode":"valve","redline_on":0,"accel_on":0,"floor_on":0,"from":1300,"to":690,"ramp":0.68,"rho":1.8}}

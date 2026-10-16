@@ -147,3 +147,8 @@ implausible duration said so. Not diagnosed (likely a stale launcher path). **La
 waited on the Store launcher until the tool's 2-minute timeout moved it to the background, holding up the perl
 edit chained after it (stopped with TaskStop, file untouched). The project has no Python on PATH since the port;
 **do not call `python` at all** — use awk/perl for readings and the Edit tool for source edits.
+`python3` is the same stub (rung 96, 2026-10-16: a stray `python3 - <<EOF` hung a sed chain, stopped with TaskStop).
+
+**A PowerShell `-File` script with `ValueFromRemainingArguments` cannot pass `cargo run --release -- …`** (rung 96): the
+bare `--` breaks the binding ("A positional parameter cannot be found that accepts argument 'cargo'"). Build first,
+then run `rust\target\release\turbojet.exe …` as the command.
