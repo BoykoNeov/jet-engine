@@ -31,8 +31,7 @@ proposed to the user, who answered "go" (2026-10-16):
 > pressure-ratio control believes (16 % less on a slowdown). The run is hotter than rung 95's true-thrust one, and both
 > compressors come nearer stall.
 >
-> The fan speed misses by far more: **26–46 % of the change** accelerating, **32–59 %** slowing. It also leaves the core
-> to creep to its end on its own.
+> The fan speed misses by far more: **26–46 % of the change** accelerating, **32–59 %** slowing.
 >
 > Calibrated on the engine with the generator off, the pressure-ratio control gives **0.35–1.25 % more** thrust than
 > asked at the steady ends, with the generator on either shaft. The fan-speed control misses by **−9 % to +26 %**, its
@@ -44,7 +43,7 @@ proposed to the user, who answered "go" (2026-10-16):
 nozzle inlet's total pressure as every transient tail builds it, over the inlet's), or the LP shaft speed `ν_L`. It turns
 the reading into thrust through **its table**: 13 steady points (rung 48's count) between the two ends, the ends
 themselves as the end rows. Each row holds thrust, `EPR`, `ν_L`, fuel and the swallowed air. Values are read linearly
-between rows, and the end segments are carried on beyond them. The rows rise together in all five on every engine probed
+between rows, and the end segments are carried on beyond them. The rows rise together in thrust, `EPR`, `ν_L` and fuel on every engine probed
 (anchor G4); the build refuses in words if they do not. The throttle's demand is rung 95's straight line in thrust, read
 through the table into the reading's demand. The thrust the control BELIEVES is the table's thrust at the reading,
 recorded at every point beside the true one.
@@ -113,8 +112,13 @@ temperature (5–10 K) but clear in stall margin (0.011–0.016 in flow coeffici
   power 0.02, the fan-speed control's ends miss by −4.5 % / −1.2 % (HP shaft, flow/press; −9.2 % / −4.0 % flat-LP) and
   by **+19.9 % / +6.8 %** (LP shaft; +26.2 % / +11.1 % flat-LP), at 1000 / 1400 K. The sign follows WHICH shaft carries
   the load:
-  * an LP-shaft load must be dragged round at the held fan speed, which takes a hotter, faster core and more thrust;
-  * an HP-shaft load slows the core under a held fan speed, and the thrust falls.
+  * an LP-shaft load must be dragged round at the held fan speed, which takes a faster, hotter core: the HP shaft runs
+    0.026–0.054 faster and the burner 57–120 K hotter than on the clean engine at the same fan speed, and the thrust
+    rises;
+  * an HP-shaft load slows the core under a held fan speed: the HP shaft runs 0.012–0.031 slower (the burner within
+    19 K), and the thrust falls.
+
+  These were measured at the calibrated ends after scoring (`claims.txt`, flow/press and flat-LP), not derived.
 
   The pressure ratio misses by about 1 % either way.
 * **The inferred controls overshoot the thrust they were asked for, and get there sooner.** On the default
@@ -131,8 +135,8 @@ temperature (5–10 K) but clear in stall margin (0.011–0.016 in flow coeffici
   The flat-LP map's fan-speed run is the exception: cooler and slower than rung 95's.
 * **The proportional law on the clean table droops**, as a proportional law on a wrong table must: after 8 τ the fan
   sits 1e−4 to 5e−3 off its demand with the generator on.
-* **The fan-speed control leaves the core to creep.** It pins the LP shaft on its demand, and the HP shaft then relaxes
-  on its own clock, and that clock's last approach is slow. After 8 τ it is still 3e−6 short of its end on flat-LP,
+* **Under the fan-speed control the HP shaft settles on its own clock.** The control pins the LP shaft on its demand,
+  and the HP shaft then relaxes by itself; its last approach is slow. After 8 τ it is still 3e−6 short of its end on flat-LP,
   against 1e−9 for the pressure ratio. The early approach is not slower: the HP shaft gets within 1e−3 of its end at
   0.76–1.9 τ (3.6 τ flat-LP), against rung 95's 1.0–2.5 τ.
 * **The step check set the LP laws' knob limits** (`stepcheck.txt`: 0.02 against 0.005, max flow-coefficient
@@ -168,7 +172,8 @@ Anchor § 3's derivation (D) has three steps:
    air, pays less ram drag, and gives MORE net thrust than the steady table says.
 
 On a slowdown the shafts give power back, and the sign flips. So an acceleration and a generator are the same thing to a
-pressure-ratio control. That is why H1 and H4 share one derivation, and why both hit.
+pressure-ratio control. H1 and H4 share one derivation, and both hit, which is consistent with (D) but does not prove it. The
+decomposition gate proves the less-air step; nothing here measured the hotter-burner step at an equal pressure ratio.
 
 The fan speed's error has two parts at a given LP speed:
 * the accelerating engine burns more fuel (the LP shaft needs a surplus, and its acceleration rises with fuel), which
@@ -186,7 +191,8 @@ separated here.
 
 * **Rung 95 — its concession DISCHARGED, and its headline SHARPENED.** "The governor reads thrust directly" is now a
   switch. A real control's reading makes rung 95's hot slam hotter: a pressure-ratio control asks for more thrust than
-  the throttle's line through the move, so it burns more fuel than rung 95's.
+  the throttle's line through the move, so it burns 4–18 % more fuel than rung 95's at every point of the move (and less
+  after it, at most points, as rung 95's catches up — `claims.txt`).
 * **Rung 94 / 92 — a generator is an acceleration that never ends.** Calibrated without the load, the pressure-ratio
   control gives slightly more thrust than asked with a generator on either shaft, by the same mechanism (D) as the
   move. Its miss is nearly the same on either shaft (+1.1 % LP against +1.2 % HP at 1000 K). The fan speed's is not:

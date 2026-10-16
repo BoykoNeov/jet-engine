@@ -1,0 +1,12 @@
+flow/press Hp 1000: nu_L 0.75574 vs 0.75574  nu_H 0.76784 vs 0.78979 (-0.0220)  Tt4 1019.0 vs 1000.0
+flow/press Hp 1400: nu_L 0.94952 vs 0.94952  nu_H 0.94728 vs 0.95906 (-0.0118)  Tt4 1415.2 vs 1400.0
+flow/press Lp 1000: nu_L 0.75574 vs 0.75574  nu_H 0.83407 vs 0.78979 (+0.0443)  Tt4 1098.3 vs 1000.0
+flow/press Lp 1400: nu_L 0.94952 vs 0.94952  nu_H 0.98485 vs 0.95906 (+0.0258)  Tt4 1457.5 vs 1400.0
+flat-lp    Hp 1000: nu_L 0.81173 vs 0.81173  nu_H 0.75907 vs 0.78979 (-0.0307)  Tt4 999.7 vs 1000.0
+flat-lp    Hp 1400: nu_L 0.96496 vs 0.96496  nu_H 0.94062 vs 0.95906 (-0.0184)  Tt4 1399.8 vs 1400.0
+flat-lp    Lp 1000: nu_L 0.81173 vs 0.81173  nu_H 0.84357 vs 0.78979 (+0.0538)  Tt4 1120.4 vs 1000.0
+flat-lp    Lp 1400: nu_L 0.96496 vs 0.96496  nu_H 0.99390 vs 0.95906 (+0.0348)  Tt4 1479.6 vs 1400.0
+flow/press EPR/true fuel - 1 over the ramp +0.0523..+0.1697; points below over the whole run 96/126
+press/flow EPR/true fuel - 1 over the ramp +0.0515..+0.1836; points below over the whole run 78/126
+tilted     EPR/true fuel - 1 over the ramp +0.0504..+0.1834; points below over the whole run 91/126
+flat-lp    EPR/true fuel - 1 over the ramp +0.0412..+0.1810; points below over the whole run 98/126

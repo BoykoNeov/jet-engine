@@ -21,3 +21,5 @@ After the build (the SHIPPED device):
   hold on two maps, and H3 hit anyway.
 - `crash.rs` → `crash.txt` — the crash map (1 000 requests through `sandbox::call`, seed 13), timed; `slow.rs` →
   `slow.txt` re-times its slowest request alone, and against rung 95's route.
+- `claims.rs` → `claims.txt` — the final review's unmeasured spec sentences, measured: the fan-speed control's calibrated
+  ends (HP speed and `Tt4` against the generator-off engine) and the pressure-ratio run's fuel against rung 95's.
