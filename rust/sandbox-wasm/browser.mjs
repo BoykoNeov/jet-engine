@@ -468,6 +468,29 @@ try {
         && hr[5] === false && hr[6], JSON.stringify([hOn, hr]));
   if (process.env.SANDBOX_SHOTS) await shot('controls-hold');
   await ev(`window.sandbox.controls({generator: 'off', hold: 'tt4'}).then(r => r.run)`);
+  // Rung 95: hold thrust, then switch on "Govern during the move" through its own checkbox -- the governed route, the
+  // thrust ON the throttle's straight line wherever no limiter cuts, a hotter peak than the open-loop run, the demand
+  // drawn on the thrust chart with the clamp legend, and the table's governor row.
+  const openPeak = await ev(`window.sandbox.controls({hold: 'thrust', govern: 0}).then(r => Math.max(...r.run.Tt4))`);
+  await ev(`(() => { const e = document.getElementById('ctl-govern'); e.checked = true; e.dispatchEvent(new Event('change', {bubbles: true})); })()`);
+  const gOn = await waitFor(`window.sandbox.ctlState === 'done' && window.sandbox.last.controls && window.sandbox.last.controls.govern === 1`, 30000);
+  await ev(`document.getElementById('ctlq-thrust').click()`);
+  const gr = await ev(`(() => { const r = window.sandbox.last; return [r.route, Math.max(...r.Tt4),
+      Math.max(...r.thrust.map((t, i) => r.holder[i] === 'none' ? Math.abs(t / r.demand[i] - 1) : 0)),
+      document.getElementById('ctl-gov-box').hidden, document.getElementById('ctl-clamp-legend').hidden,
+      document.querySelectorAll('#ctl-chart .demand').length,
+      [...document.getElementById('ctl-table').tBodies[0].rows].some(t => /holds thrust/.test(t.cells[1].textContent))]; })()`);
+  check('governing_thrust_holds_the_throttles_line_and_runs_hotter', gOn && gr[0] === 'governor' && gr[1] > openPeak + 100
+        && gr[2] < 1e-9 && gr[3] === false && gr[4] === false && gr[5] === 1 && gr[6], JSON.stringify([gOn, openPeak, gr]));
+  if (process.env.SANDBOX_SHOTS) {
+    // The settings panel scrolls inside itself, so a full-page shot shows only its top: un-clip it for this shot.
+    const unclip = on => `(() => { const e = document.getElementById('ctl-govern'); let p = e.parentElement;
+      while (p && getComputedStyle(p).overflowY === 'visible') p = p.parentElement; if (!p) return null;
+      for (const [k, v] of [['maxHeight', 'none'], ['overflow', 'visible'], ['position', 'static']]) p.style[k] = ${on} ? v : '';
+      return p.className; })()`;
+    await ev(unclip(true)); await shot('controls-governor'); await ev(unclip(false));
+  }
+  await ev(`window.sandbox.controls({govern: 0, hold: 'tt4'}).then(r => r.run)`);
   await ev(`document.getElementById('ctlq-Tt4').click()`);
   await ev(`window.sandbox.controls({lever: 'none', floor_on: 0, floor_phi: 0.75, floor_ref: 'phi', bleed_mode: 'schedule',
             valve_ref: 'phi', valve_speed: 'instant', valve_close: 'same', customer: 'off'}).then(r => r.run)`);

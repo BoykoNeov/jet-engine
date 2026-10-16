@@ -219,3 +219,15 @@ fn h6_the_commanded_rate_trades_time_for_temperature() {
         assert!(peaks.windows(2).all(|w| w[1] < w[0]), "shape {shape}: {peaks:?}");
     }
 }
+
+#[test]
+fn a_deep_slowdown_finds_a_runnable_fuel_to_start_the_governors_search_from() {
+    // The crash map's case (`docs/rung95-spec.md`): 1670 -> 600 K in 0.42 τ, the bleed scheduled. Mid-run the ramp's fuel
+    // is too lean for the shafts still spinning fast and the start's too rich; the fallback scan finds one between, and
+    // the run reaches its end with the governor on the lean edge for a while.
+    let s = gov(ControlsSettings { hold: Hold::Thrust, from: 1670.0, to: 600.0, ramp: 0.42, rho: 0.7,
+                                   lever: turbojet::sandbox_controls::LeverChoice::Bleed, ..d() });
+    let (_, o) = controls(&s).unwrap();
+    assert_eq!(o.points.len(), s.expected_points(), "{:?}", o.stop);
+    assert!(o.marks.iter().any(|m| m.clamp == Clamp::Lean));
+}

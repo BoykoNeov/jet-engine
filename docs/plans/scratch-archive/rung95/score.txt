@@ -1,0 +1,68 @@
+== § 2 GATES ==
+flow/press G-Tt4: 126 vs 126 points, max |d nu| 5.551e-16 (bar 1e-8)
+flow/press G-fixed thrust      : 426/426 pts, end dthrust/F 0.00e0, d nu_L -5.13e-10, d nu_H 7.31e-10; identity max 7.58e-15
+flow/press G-fixed thrust HPgen: 426/426 pts, end dthrust/F -4.59e-13, d nu_L 1.13e-9, d nu_H -1.53e-9; identity max 4.44e-15
+flow/press G-fixed speed rate  : 426/426 pts, end dthrust/F -2.58e-9, d nu_L -1.78e-9, d nu_H -1.11e-16; identity max 2.78e-15
+flow/press G-fixed speed prop  : 426/426 pts, end dthrust/F -2.52e-9, d nu_L -1.81e-9, d nu_H 9.98e-11; identity max 0.00e0
+press/flow G-Tt4: 126 vs 126 points, max |d nu| 4.441e-16 (bar 1e-8)
+press/flow G-fixed thrust      : 426/426 pts, end dthrust/F 5.54e-16, d nu_L -9.20e-10, d nu_H 1.58e-9; identity max 3.51e-15
+press/flow G-fixed thrust HPgen: 426/426 pts, end dthrust/F 2.10e-13, d nu_L -8.37e-10, d nu_H 1.36e-9; identity max 3.88e-15
+press/flow G-fixed speed rate  : 426/426 pts, end dthrust/F -3.47e-8, d nu_L -2.42e-8, d nu_H -1.11e-16; identity max 2.89e-15
+press/flow G-fixed speed prop  : 426/426 pts, end dthrust/F -2.46e-8, d nu_L -1.79e-8, d nu_H 9.53e-10; identity max 0.00e0
+tilted     G-Tt4: 126 vs 126 points, max |d nu| 3.331e-16 (bar 1e-8)
+tilted     G-fixed thrust      : 426/426 pts, end dthrust/F 1.85e-15, d nu_L -1.70e-9, d nu_H 2.62e-9; identity max 5.18e-15
+tilted     G-fixed thrust HPgen: 426/426 pts, end dthrust/F 1.23e-13, d nu_L -1.17e-9, d nu_H 1.71e-9; identity max 3.33e-15
+tilted     G-fixed speed rate  : 426/426 pts, end dthrust/F -1.92e-8, d nu_L -1.33e-8, d nu_H -1.11e-16; identity max 2.99e-15
+tilted     G-fixed speed prop  : 426/426 pts, end dthrust/F -1.51e-8, d nu_L -1.09e-8, d nu_H 5.90e-10; identity max 0.00e0
+flat-lp    G-Tt4: 126 vs 126 points, max |d nu| 4.441e-16 (bar 1e-8)
+flat-lp    G-fixed thrust      : 426/426 pts, end dthrust/F -9.24e-16, d nu_L 2.32e-7, d nu_H -1.77e-7; identity max 2.59e-15
+flat-lp    G-fixed thrust HPgen: 426/426 pts, end dthrust/F -5.79e-13, d nu_L 2.69e-7, d nu_H -2.01e-7; identity max 3.14e-15
+flat-lp    G-fixed speed rate  : 426/426 pts, end dthrust/F 6.54e-8, d nu_L 4.45e-8, d nu_H -1.11e-16; identity max 2.40e-15
+flat-lp    G-fixed speed prop  : 426/426 pts, end dthrust/F 7.27e-8, d nu_L 5.29e-8, d nu_H -2.87e-9; identity max 0.00e0
+step check thrust   : 126 / 501 pts, max |d phi| 0.02 vs 0.005 = 8.47e-8
+step check rate 0.1 : 126 / 501 pts, max |d phi| 0.02 vs 0.005 = 9.75e-7
+step check prop 20  : 126 / 501 pts, max |d phi| 0.02 vs 0.005 = 3.48e-6
+step check prop 200 : 126 / 501 pts, max |d phi| 0.02 vs 0.005 = 1.95e-2
+step check prop 100 : 126 / 501 pts, max |d phi| 0.02 vs 0.005 = 9.67e-4
+step check prop 50  : 126 / 501 pts, max |d phi| 0.02 vs 0.005 = 5.05e-5
+timing open, redline+sched   : 0.138 s (126 pts)
+timing thrust, redline+sched : 0.493 s (126 pts)
+timing thrust, none          : 0.167 s (126 pts)
+
+== § 3 PREDICTIONS ==
+flow/press H1 accel: governed fuel more/less than ramp at 25/0 of 25 ramp points; ratio-1 range +0.0557..+0.3607
+flow/press H2: peak Tt4 gov 1927.37 (#25) vs open 1695.41 (#25); min phi_LP gov 0.71437 (#9) vs open 0.73547 (#12); min phi_HP gov 0.83235 (#13) vs open 0.86120 (#20)
+flow/press H3: governed peak Tt4 at index 25 (ramp end = 25), clamps 0
+flow/press H1 decel: governed fuel more/less than ramp at 0/25 of 25 ramp points; ratio-1 range -0.5408..-0.0273
+flow/press H4 990->1000: 1/e time after ramp, ds 0.005 Some(0.1549715178368949), ds 0.02 Some(0.15497554294726637)
+flow/press H4 1390->1400: 1/e time after ramp, ds 0.005 Some(0.08153613240413808), ds 0.02 Some(0.08153858258395799)
+flow/press H4 ratio tau(1000)/tau(1400) = 1.901 (estimate 1.47)
+flow/press H5: 95% thrust at s = governed Some(1.3225556405785812) vs open Some(1.6083854449905757) (redline 1480)
+flow/press H6: peak Tt4 at tau_N 0.05/0.1/0.2/0.5 = 2047.45 / 2022.76 / 1934.25 / 1651.69
+press/flow H1 accel: governed fuel more/less than ramp at 25/0 of 25 ramp points; ratio-1 range +0.0584..+0.3733
+press/flow H2: peak Tt4 gov 1940.29 (#25) vs open 1702.96 (#25); min phi_LP gov 0.72208 (#9) vs open 0.74745 (#12); min phi_HP gov 0.80411 (#13) vs open 0.84061 (#20)
+press/flow H3: governed peak Tt4 at index 25 (ramp end = 25), clamps 0
+press/flow H1 decel: governed fuel more/less than ramp at 0/25 of 25 ramp points; ratio-1 range -0.5547..-0.0282
+press/flow H4 990->1000: 1/e time after ramp, ds 0.005 Some(0.1466979284664334), ds 0.02 Some(0.14669884562013819)
+press/flow H4 1390->1400: 1/e time after ramp, ds 0.005 Some(0.07668586745828009), ds 0.02 Some(0.07667963297360227)
+press/flow H4 ratio tau(1000)/tau(1400) = 1.913 (estimate 1.47)
+press/flow H5: 95% thrust at s = governed Some(1.330477724759254) vs open Some(1.6061804702316147) (redline 1480)
+press/flow H6: peak Tt4 at tau_N 0.05/0.1/0.2/0.5 = 2026.55 / 2000.92 / 1911.20 / 1630.12
+tilted     H1 accel: governed fuel more/less than ramp at 25/0 of 25 ramp points; ratio-1 range +0.0585..+0.3713
+tilted     H2: peak Tt4 gov 1932.48 (#25) vs open 1702.42 (#25); min phi_LP gov 0.71256 (#9) vs open 0.73737 (#12); min phi_HP gov 0.81551 (#13) vs open 0.84924 (#19)
+tilted     H3: governed peak Tt4 at index 25 (ramp end = 25), clamps 0
+tilted     H1 decel: governed fuel more/less than ramp at 0/25 of 25 ramp points; ratio-1 range -0.5496..-0.0278
+tilted     H4 990->1000: 1/e time after ramp, ds 0.005 Some(0.15053599346597807), ds 0.02 Some(0.1505395880521679)
+tilted     H4 1390->1400: 1/e time after ramp, ds 0.005 Some(0.07918212589565106), ds 0.02 Some(0.07918407947320948)
+tilted     H4 ratio tau(1000)/tau(1400) = 1.901 (estimate 1.47)
+tilted     H5: 95% thrust at s = governed Some(1.327541446398777) vs open Some(1.6072669894300957) (redline 1480)
+tilted     H6: peak Tt4 at tau_N 0.05/0.1/0.2/0.5 = 2038.04 / 2013.22 / 1924.66 / 1642.84
+flat-lp    H1 accel: governed fuel more/less than ramp at 25/0 of 25 ramp points; ratio-1 range +0.0599..+0.3654
+flat-lp    H2: peak Tt4 gov 1898.74 (#25) vs open 1690.54 (#25); min phi_LP gov 0.66451 (#9) vs open 0.68739 (#12); min phi_HP gov 0.83311 (#12) vs open 0.86228 (#19)
+flat-lp    H3: governed peak Tt4 at index 25 (ramp end = 25), clamps 0
+flat-lp    H1 decel: governed fuel more/less than ramp at 0/25 of 25 ramp points; ratio-1 range -0.5276..-0.0307
+flat-lp    H4 990->1000: 1/e time after ramp, ds 0.005 Some(0.15214944648148124), ds 0.02 Some(0.15215813583977306)
+flat-lp    H4 1390->1400: 1/e time after ramp, ds 0.005 Some(0.07991801074461741), ds 0.02 Some(0.07992218240488519)
+flat-lp    H4 ratio tau(1000)/tau(1400) = 1.904 (estimate 1.47)
+flat-lp    H5: 95% thrust at s = governed Some(1.225681488398548) vs open Some(1.486350254858802) (redline 1480)
+flat-lp    H6: peak Tt4 at tau_N 0.05/0.1/0.2/0.5 = 2039.48 / 2016.43 / 1930.42 / 1649.51

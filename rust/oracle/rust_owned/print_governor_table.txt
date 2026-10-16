@@ -1,0 +1,23 @@
+
+A GOVERNOR IN THE SLAM (rung 95): the throttle holds its quantity ALL ALONG the move - a straight line from
+the start's value to the end's - and the governor's fuel is what the limiters cut. The Controls engine (pi 3 x 6,
+LP curved along flow, HP along pressure), 1000 -> 1400 K over 0.5 tau, the perfect gas.
+
+  fuel from                  peak Tt4   phi_LP   phi_HP   95% thr     edge
+  the open-loop ramp           1695.4   0.7355   0.8612     1.390        -
+  governed thrust              1927.4   0.7144   0.8323     0.475        0
+  governed HP speed, rate      2022.8   0.7033   0.8226     0.397        0
+  governed HP speed, prop.     2099.7   0.7037   0.8174     0.379        0
+  governed burner temp.        1400.0   0.7515   0.8857         -        0
+  with the temperature limiter at 1480 K:
+  the open-loop ramp           1480.0   0.7355   0.8665     1.608        -
+  governed thrust              1480.0   0.7192   0.8551     1.323        3
+  governed HP speed, rate      1480.0   0.7124   0.8511     1.291       24
+  governed HP speed, prop.     1480.0   0.7144   0.8523     1.302       34
+  governed burner temp.        1400.0   0.7515   0.8857         -        0
+
+  (95% thr: time to 95% of the thrust step, tau, - if not within the run; edge: points the governor sat at an
+  edge of what the engine can burn.) Holding thrust along a fast move burns more fuel than the ramp at every point,
+  so the turbine runs hotter and both compressors come nearer stall; its hottest moment is the end of the move. With
+  the limiter on, the governor still reaches the thrust sooner. Governing the burner temperature IS the
+  temperature-commanded slam: no overshoot, and the slowest thrust.

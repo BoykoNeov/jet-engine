@@ -1506,3 +1506,39 @@ its throttle with the generator off, the burner temperature floating to carry ru
   with heavy cooling and both levers).
 - **The cap with the generator off** was first ALLOWED and did nothing (the final review's catch: with no load nothing
   floats); it is now refused in words, with a test and a check request.
+
+## 24. A governor in the slam — rung 95 (2026-10-16) — not a slice
+
+Rung 95 (`docs/rung95-spec.md`) governs the Controls move itself: the quantity the throttle holds (rung 94's switch —
+burner temperature, thrust, HP speed) follows a straight line from the start end's target to the final end's over the
+ramp, and the governor's fuel is the demand the limiters cut (the user's choices: both speed laws as a toggle; clamp and
+report at the rich and the lean edge; the metal cap cutting all along the move).
+
+- **The knobs:** *Govern during the move* (`govern`, default off — every saved setting stays valid); holding HP speed,
+  *Commanded rate* / *Proportional* (`speed_law`: `rate`, `prop`) with *Time to close the gap* (`gov_tau`, default 0.1,
+  0.04–1 τ) or *Gain* (`gov_gain`, default 20, 1–50). The hold toggle moved OUT of the generator's box (it matters with
+  no generator once the move is governed), with a note that ungoverned and unloaded all three holds are one run.
+- **Readouts:** the demand drawn (dotted) on the chart of the held quantity; a second strip above the plot for the
+  governor's edges (rich / lean); the fuel chart's dashed line becomes "fuel the governor asks for"; the holder strip
+  names the metal cap; table rows *The governor* (what it holds, how long at each edge) and *Time to 95 % of the thrust
+  change*. Stop kind `metal_cap` (the metal over its limit even at the leanest fuel), in words.
+- **Built** in `sandbox_controls`: `Route::Governor` first in the dispatch; the march and the stop re-run call the
+  model's own `governor::try_der` / `try_rk_step` (no copy, so the re-run is bit for bit by construction); the cap's
+  ends with no generator are bisected by rung 94's `try_metal_cap`. Thrust is read by `governor::thrust`, which
+  `ControlsSolver::thrust` now calls.
+- **Prechecks, in words:** the governor beside rung 47's lag, 52's release or 88's slow valve (each its own marcher);
+  `gov_tau` below 0.04 τ; a gain outside (0, 50]; the cap on the burner-temperature hold; the cap without the metal
+  read or cooling. With the governor on, the cap no longer needs the generator.
+- **The two knob limits are the step check's** (spec § 4): at 0.02 against 0.005 the gain 50 is 5e−5 in flow
+  coefficient (100: 1e−3), the rate's two steps under 1e−4 (one step: 1.1e−3). On the lean edge the run is ~10× rougher
+  (the closure's search bound is not smooth) — the note says so.
+- **Gates:** `tests/rung95.rs` (the model's: the reduce to rung 40's temperature-commanded march, the fixed point, the
+  identity, the step check, the metal leg, the re-run, H1–H6, the deep slowdown); `tests/sandbox_governor.rs` (off is
+  the earlier page bit for bit; the demand, clamp and holder columns; every refusal); `tests/sandbox_controls.rs` (the
+  settings round-trip with the new keys); `check_requests` adds 6; `browser.mjs` ticks *Govern during the move* with
+  thrust held and checks the route, the demand met, the hotter peak, the drawn demand, the legend and the table row
+  (its screenshot un-clips the settings panel, which a full-page shot otherwise shows only from the top).
+- **Crash map** (1 000 governed requests, seed 12; `scratch-archive/rung95/crash.txt`): no panic; 536 ran to the end,
+  66 stopped with a reason, the rest refused in words. Its first run found 3 stops of the governor's own (no runnable
+  fuel to start its search from on a deep slowdown) — fixed by a fallback scan reached only where the first three tries
+  fail. Native time: median 0.10 s a request, slowest 1.35 s.

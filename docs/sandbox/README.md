@@ -137,7 +137,11 @@ either shaft — a share of that turbine's work, or a fixed power that is a larg
 metal temperatures at every point against their limits, from a cooling technology, a material year and a part life —
 off by default, since uncooled the metal is over its limit at every opening throttle. With the generator on, each end of the move can hold
 the thrust or the HP speed the engine gives there with the generator off, the burner temperature floating to carry the
-load, and the metal limit can stop it (rung 94, plan § 23).
+load, and the metal limit can stop it (rung 94, plan § 23). And the move itself can be **governed** (rung 95, plan § 24):
+the throttle's quantity — burner temperature, thrust or HP speed (by a commanded rate or a proportional gain) — follows a
+straight line from the start's value to the end's, a governor sets the fuel to give it, and the limiters (and the metal
+cap) cut what it asks for; where it asks for more than the engine can burn, or less than it can run on, it is held at
+that edge and marked.
 
 **Readouts:** turbine temperature against the redline, both shaft speeds, burnt vs scheduled fuel, each
 compressor's flow coefficient against its (moving) stall line and the floor, thrust (the bleed's dumped air

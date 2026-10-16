@@ -98,6 +98,8 @@ pub const STEP_DOWN: f64 = 0.8;
 pub const MAX_STEPS: usize = 200;
 /// A wall's bisection, relative.
 pub const WALL_TOL: f64 = 1e-13;
+/// How many log-spaced fuels the fallback scan for a runnable start tries (two decades and the ends' span).
+pub const SCAN_POINTS: usize = 80;
 /// The proportional law's table rows — rung 48's count.
 pub const TABLE_ROWS: usize = 13;
 
@@ -192,7 +194,18 @@ fn runnable(ft: &FuelTransientCore, flight: &FlightCondition, gov: &Governor, a:
             Err(e) => { first.get_or_insert(e); }
         }
     }
-    Err(Abort(format!("rung-95: no fuel near the ramp's runs at this state ({})",
+    // None of the three runs — on a deep slowdown the ramp's fuel is too lean for shafts still spinning fast and the
+    // start's too rich (the crash map's 3 stops, `docs/rung95-spec.md`). Scan out from the ramp's fuel, nearest first, on
+    // a log grid spanning a decade either side of the two ends. Reached only where the three fail, so every run that
+    // found one is unchanged.
+    let g = gov.guess(s);
+    let (lo, hi) = (0.1 * gov.mf_lo.min(gov.mf_hi), 10.0 * gov.mf_lo.max(gov.mf_hi));
+    let mut grid: Vec<f64> = (0..=SCAN_POINTS).map(|k| lo * (hi / lo).powf(k as f64 / SCAN_POINTS as f64)).collect();
+    grid.sort_by(|x, y| (x / g).ln().abs().total_cmp(&(y / g).ln().abs()));
+    if let Some(x) = grid.into_iter().find(|&x| ft.try_instant_fuel(flight, a, b, x).is_ok()) {
+        return Ok(x);
+    }
+    Err(Abort(format!("rung-95: no fuel runs at this state, scanning two decades around the ramp ({})",
                       first.expect("three tries").0)))
 }
 

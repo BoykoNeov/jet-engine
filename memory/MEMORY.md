@@ -5,7 +5,7 @@ file; never re-expand these lines. A rung hook carries the **process lesson** (w
 what to do differently), never the physical headline — that is already in CLAUDE.md's rung
 table, which loads beside this file. Rung entries follow that table's families and numbering.
 
-**Line budget: 200 lines.** Raised 2026-09-03 from the ~140 this file had been held to and had
+**Line budget: 140 lines** (lowered 2026-10-16 to match the memory hook; it was 200 from 2026-09-03). Rung entries are ONE LINE PER FAMILY. Earlier: raised 2026-09-03 from the ~140 this file had been held to and had
 already passed (156 lines, 201 memory files). Stated here, not enforced: the repo's size guard
 covers CLAUDE.md, not this file, which the repo only mirrors. **Legitimate growth is one line
 per new entry**. **Illegitimate growth is a line that restates the file it links.** If 200 trips,
@@ -66,96 +66,21 @@ new slices and step links go THERE, not here.
 - [Phase 5 pre-flight](rust-port-phase5-preflight.md) — a "closed set" claim is only as wide as the set you swept
 - [Rust port slice index](rust-port-slice-index.md) — every slice I…AI and its step files, one line each with its process lessons; append new slices THERE (moved out 2026-09-26 at 22.8 KB)
 
-## Shipped rungs
+## Shipped rungs — one line per family (CLAUDE.md's), one short lesson per linked file
+- 25–30 marches — [25](rung25-finite-rate-nozzle.md) inverted into a three-state picture · [26](rung26-freeze-out.md) density, not T; refutes 25's framing · [27](rung27-no-freeze-out.md) an assumption DERIVED · [28](rung28-coupled-no-march.md) a verdict confirmed, BOTH reasons corrected · [29](rung29-shifting-turbine.md) RATIO ≠ ENERGY; bound first · [30](rung30-choked-nozzle.md) full expansion not earned
+- 31–33 steady matching — [31](rung31-offdesign-matching.md) reduce-by-construction · [32](rung32-component-maps.md) corrects "hardware IS the map" · [33](rung33-subsonic-matching.md) coupling through pi_c, not p0
+- 34–37 one-spool transient — [34](rung34-spool-transient.md) the RATIO of clocks, not the tautology · [35](rung35-fuel-metering.md) the two limits COUPLED · [36](rung36-surge-line.md) never gate the crossing · [37](rung37-combustor-dynamics.md) the two clocks SPLIT
+- 38–45 two spools — [38](rung38-two-spool-matching.md) caught my own over-claim · [39](rung39-two-spool-maps.md) refutes the prediction, confirms the verdict · [40](rung40-two-shaft-transient.md) rho SPLITS · [41](rung41-two-spool-surge-line.md) mechanism corrected, verdict survives · [42](rung42-interstage-bleed.md) my hypothesis refuted · [43](rung43-two-shaft-fuel-metering.md) currency circularity · [44](rung44-transient-surge-line.md) SCHEDULE-slaved · [45](rung45-transient-fuel-surge.md) never reaches the reference-free object
+- 46–52 fuel limiters — [46](rung46-tit-topping-governor.md) limits SEQUENCED in time · [47](rung47-lagged-topping-governor.md) a lag is trailing-edge · [48](rung48-accel-schedule.md) engages upstream of ITS minimum · [49](rung49-phi-feedback-limiter.md) both predicted signs wrong · [50](rung50-release-edge-isolated.md) refuse your own first confirmation · [51](rung51-release-rate.md) two-sided bracket · [52](rung52-asymmetric-lag.md) surface a conflict, don't comply
+- 53–56 airflow levers — [53](rung53-variable-stator.md) a margin is a DISTANCE · [54](rung54-stator-throat.md) shape derived, level disclosed · [55](rung55-stage-stack.md) an INTERIOR optimum · [56](rung56-per-row-capacity.md) a lever's COST is coordinate-dependent
+- 57–63 schedules — [57](rung57-stator-schedule-transient.md) bounds the timing family · [58](rung58-composite-minselect.md) check the SUM, not the term · [59](rung59-matched-schedule.md) a concession VACUOUS · [60](rung60-matched-floor.md) the blocker became the headline · [61](rung61-stator-bleed.md) my binding constant is not "derived" · [62](rung62-bleed-schedule.md) Newton on a residual the plant ignores · [63](rung63-fuel-bleed.md) a number taken at THIS rung's settings?
+- 64–68 valve & cascades — [64](rung64-phi-bleed-limiter.md) discriminator before the anchor · [65](rung65-lagged-valve.md) a pre-check that was RK4 instability · [66](rung66-two-lag-cascade.md) locate an extremum before quoting it · [67](rung67-cascade-a.md) zero cross-gain is saturation · [68](rung68-three-loops.md) check what is INDEPENDENT
+- 69–76 splits & rank — [69](rung69-reference-split.md) a null space absorbs a moved start · [70](rung70-generic-split.md) a gate computing my formula twice · [71](rung71-full-split.md) rank ≠ constraint independence · [72](rung72-shared-actuator.md) instruments agreeing with themselves · [73](rung73-applied-reference.md) a perfect confirmation that measured nothing · [74](rung74-demand-coordinate.md) a closed-loop difference cannot isolate a forcing · [75](rung75-antiwindup-device.md) the inherited instrument was blind · [76](rung76-fuel-dependent-cap.md) the 0.7 % miss WAS the finding
+- 77–84 reader-only — [77](rung77-stiffness-ledger.md) UNITS before normalising · [78](rung78-residual-gauge.md) only COUNTING caught three vacuity traps · [79](rung79-state-coordinate.md) register the VACUITY CONDITION · [80](rung80-split-wall.md) the seam named the wrong noun · [81](rung81-authority-clock.md) the first 100 % was the weaker measurement · [82](rung82-threshold-law.md) a quantity vs a loop count is void · [83](rung83-corrector-law.md) an identity round-trip is not verification · [84](rung84-staircase-law.md) a small COUNT cannot carry a RATE
+- 85–89 knobs — [85](rung85-blade-speed.md) list EVERY parameter two cases differ in; a (1,1) identity fed by hand · [86](rung86-three-levers.md) the READING is not the RUN · [87](rung87-valve-reference.md) a prediction vs a pointwise optimum is construction · [88](rung88-slow-valve.md) no slack ⇒ a perturbation FLIPS it; predict the sign · [89](rung89-asymmetric-valve.md) a fixed-set-point forecast cannot bound a case-switching perturbation
+- 90–95 loads, metal & governor — [90](rung90-customer-bleed.md) the one miss was the guessed bar · [91](rung91-turbine-cooling.md) extrapolate a linear reading to zero · [92](rung92-shaft-offtake.md) an exact identity has a domain · [93](rung93-metal-temperature.md) a screenshot is not a measurement; derive every sign · [94](rung94-burner-hold.md) a pre-freeze check must not print the claim; bisect a floor near a fold · [95](rung95-governor.md) a fixed-guess search fails off its guesses — crash map; disclose a rough search-bound clamp
+- Decisions — [93/94](rung93-94-decisions.md) user 2026-10-16: two rungs, both framings, hold thrust or HP speed · [95](rung95-decisions.md) governor in the slam; speed law BOTH; clamp+report rich and lean; metal cap all along
 
-### 25–30 · nozzle & turbine marches
-- [Rung 25 finite-rate nozzle](rung25-finite-rate-nozzle.md) — inverted into a three-state picture
-- [Rung 26 freeze-out](rung26-freeze-out.md) — density-driven, not T-driven; refutes rung 25's own framing
-- [Rung 27 NO freeze-out](rung27-no-freeze-out.md) — an assumption DERIVED rather than asserted
-- [Rung 28 coupled NO march](rung28-coupled-no-march.md) — confirms a verdict while correcting BOTH its reasons
-- [Rung 29 shifting turbine](rung29-shifting-turbine.md) — the RATIO ≠ ENERGY correction; the bound-first method
-- [Rung 30 choked nozzle](rung30-choked-nozzle.md) — full expansion NOT earned; the pressure term rescues 87%
-
-### 31–33 · off-design steady matching
-- [Rung 31 off-design matching](rung31-offdesign-matching.md) — first STRUCTURAL rung; reduce-by-construction
-- [Rung 32 component maps](rung32-component-maps.md) — CORRECTS rung 31's "choked hardware IS the map"
-- [Rung 33 subsonic matching](rung33-subsonic-matching.md) — coupling through pi_c, not p0 (the advisor's fix)
-
-### 34–37 · the single-spool transient
-- [Rung 34 spool transient](rung34-spool-transient.md) — the finding is the RATIO of clocks, not the tautology
-- [Rung 35 fuel metering](rung35-fuel-metering.md) — fuel ENLARGES the excursion; the two limits are COUPLED
-- [Rung 36 surge line](rung36-surge-line.md) — the zero-constant anchor was DEAD; never gate the crossing
-- [Rung 37 combustor dynamics](rung37-combustor-dynamics.md) — the two clocks SPLIT
-
-### 38–45 · two spools
-- [Rung 38 two-spool matching](rung38-two-spool-matching.md) — I caught my own over-claim pre-ship
-- [Rung 39 two-spool + maps](rung39-two-spool-maps.md) — REFUTES the prediction while CONFIRMING the verdict
-- [Rung 40 two-shaft transient](rung40-two-shaft-transient.md) — rho SPLITS: powerless over stability, decisive over oscillation
-- [Rung 41 two-spool surge line](rung41-two-spool-surge-line.md) — corrects a mechanism while its verdict survives
-- [Rung 42 interstage bleed](rung42-interstage-bleed.md) — my hypothesis REFUTED; state self-targeting in phi-space
-- [Rung 43 two-shaft fuel metering](rung43-two-shaft-fuel-metering.md) — the CURRENCY-CIRCULARITY trap
-- [Rung 44 transient surge line](rung44-transient-surge-line.md) — the excursion is SCHEDULE-slaved
-- [Rung 45 transient fuel surge](rung45-transient-fuel-surge.md) — a monotone overshoot NEVER reaches the reference-free object
-
-### 46–52 · the fuel-side limiter family
-- [Rung 46 TIT topping governor](rung46-tit-topping-governor.md) — the limits are SEQUENCED in time
-- [Rung 47 lagged topping governor](rung47-lagged-topping-governor.md) — a lag is TRAILING-edge
-- [Rung 48 accel schedule](rung48-accel-schedule.md) — a limiter rebates a spool IFF it engages upstream of ITS minimum
-- [Rung 49 phi feedback limiter](rung49-phi-feedback-limiter.md) — both my predicted signs were wrong
-- [Rung 50 release edge isolated](rung50-release-edge-isolated.md) — refusing my own first CONFIRMING result was the key move
-- [Rung 51 release rate](rung51-release-rate.md) — two-sided bracket, after the pre-registered gate was confounded
-- [Rung 52 asymmetric lag](rung52-asymmetric-lag.md) — surfacing a conflict beat complying
-
-### 53–56 · airflow levers, on the steady matcher
-- [Rung 53 variable stator](rung53-variable-stator.md) — a margin is a DISTANCE, so it is coordinate-dependent
-- [Rung 54 stator throat](rung54-stator-throat.md) — the constant SPLIT: shape derived, level disclosed
-- [Rung 55 stage stack](rung55-stage-stack.md) — the row count has an INTERIOR optimum
-- [Rung 56 per-row capacity](rung56-per-row-capacity.md) — a LEVER'S COST is coordinate-dependent too
-
-### 57–63 · schedules on the transient — except 61, which is steady
-- [Rung 57 stator schedule](rung57-stator-schedule-transient.md) — bounds the timing family as 53 bounded the currency
-- [Rung 58 composite min-select](rung58-composite-minselect.md) — refuted by MY OWN table: check the SUM, not the term
-- [Rung 59 matched schedule](rung59-matched-schedule.md) — discharges rung 58's concession as VACUOUS
-- [Rung 60 matched floor](rung60-matched-floor.md) — the advisor's blocker BECAME the headline
-- [Rung 61 stator + bleed](rung61-stator-bleed.md) — a "derived" scaling whose binding constant is mine is NOT derived
-- [Rung 62 bleed schedule](rung62-bleed-schedule.md) — Newton converging on a residual the plant does not use
-- [Rung 63 fuel + bleed](rung63-fuel-bleed.md) — check a quoted number was taken at THIS rung's settings
-
-### 64–68 · the bleed valve, its lag, and cascades
-- [Rung 64 phi bleed limiter](rung64-phi-bleed-limiter.md) — the discriminator-before-the-anchor move
-- [Rung 65 lagged valve](rung65-lagged-valve.md) — a § 0 pre-check that was itself RK4 instability
-- [Rung 66 two-lag cascade](rung66-two-lag-cascade.md) — check where an extremum sits before quoting it
-- [Rung 67 cascade A](rung67-cascade-a.md) — a zero cross-gain is saturation, never decoupling
-- [Rung 68 three loops](rung68-three-loops.md) — check what is INDEPENDENT before quoting it
-
-### 69–84 · reference splits, rank, and the reader-only rungs
-- [Rung 69 reference split](rung69-reference-split.md) — a null space ABSORBS a moved start
-- [Rung 70 generic split](rung70-generic-split.md) — I caught a gate computing my own formula twice
-- [Rung 71 full split](rung71-full-split.md) — rank independence is NOT constraint independence
-- [Rung 72 shared actuator](rung72-shared-actuator.md) — two instruments silently agreed with themselves
-- [Rung 73 applied reference](rung73-applied-reference.md) — a bug returning a PERFECT confirmation having measured nothing
-- [Rung 74 demand coordinate](rung74-demand-coordinate.md) — a closed-loop difference cannot isolate a forcing
-- [Rung 75 anti-windup device](rung75-antiwindup-device.md) — the inherited instrument was BLIND
-- [Rung 76 fuel-dependent cap](rung76-fuel-dependent-cap.md) — the 0.7% miss on a pre-registered identity WAS the finding
-- [Rung 77 stiffness ledger](rung77-stiffness-ledger.md) — check UNITS before choosing a normalisation
-- [Rung 78 residual gauge](rung78-residual-gauge.md) — THREE vacuity traps, only COUNTING caught them
-- [Rung 79 state coordinate](rung79-state-coordinate.md) — registering the VACUITY CONDITION beat registering the result
-- [Rung 80 split wall](rung80-split-wall.md) — the seam named the wrong NOUN
-- [Rung 81 authority clock](rung81-authority-clock.md) — the first grid's 100% was the WEAKER measurement
-- [Rung 82 threshold law](rung82-threshold-law.md) — two bars VOID for comparing a physical quantity to a loop count
-- [Rung 83 corrector law](rung83-corrector-law.md) — an identity round-trip sold as verification
-- [Rung 84 staircase law](rung84-staircase-law.md) — a small integer COUNT cannot carry a RATE
-- [Rung 85 blade speed](rung85-blade-speed.md) — list EVERY parameter two cases differ in before extrapolating; an identity gate fed (1,1) by hand compared a function with itself
-- [Rung 86 three levers](rung86-three-levers.md) — I called a result "genuine" before checking its own condition and step size; the READING is not the RUN
-- [Rung 87 valve reference](rung87-valve-reference.md) — a prediction against a device built as the pointwise optimum is construction; equal set points are rung 66's degeneracy, not dormant
-- [Rung 88 slow valve](rung88-slow-valve.md) — the optimum's lack of slack is why a perturbation FLIPS it: predict the sign; the model's stability bound is not the product's accuracy bound
-- [Rung 89 asymmetric valve](rung89-asymmetric-valve.md) — a fixed-set-point forecast cannot bound a perturbation that can move a run into the other case
-- [Rung 90 customer bleed](rung90-customer-bleed.md) — the only miss was the one bar I guessed instead of derived; check a physical bound at the root, not at bracket trials
-- [Rung 91 turbine cooling](rung91-turbine-cooling.md) — extrapolate a linear model's reading to zero perturbation before scoring it
-- [Rung 92 shaft offtake](rung92-shaft-offtake.md) — an exact identity has a domain — score it only inside the assumptions that make it exact
-- [Rung 93 metal temperature](rung93-metal-temperature.md) — a screenshot is not a measurement of the configuration you name; derive every registered sign
-- [Rung 94 burner hold](rung94-burner-hold.md) — a pre-freeze check that prints a claim's own quantity pre-computes it; bisect a search floor near a fold
-- [Rungs 93/94 decisions](rung93-94-decisions.md) — user 2026-10-16: two rungs; 93 both framings + new view + year/life limits; 94 hold thrust or HP speed
 
 ## Margin sweeps — confirmations, not rungs
 - Margin sweeps — [72–77 march audit](rungs72-77-march-audit.md), [74 arrest interval](rung74-arrest-interval.md), [79 gap](rung79-gap-margin.md), [29 π_c](rung29-pi-c-margin.md), [29 M0](rung29-M0-margin.md), [28 β](rung28-beta-margin-hardened.md) — a liveness counter on a FROZEN plant reports FULL activity (one lesson per file)
