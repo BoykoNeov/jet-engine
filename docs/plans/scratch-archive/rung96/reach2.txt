@@ -1,0 +1,36 @@
+plain            flow/press pts 126: monotone 1066 (non-rising EPR 0 / LP accel 0); equal-EPR gross 22 pairs worst 3.1e-15; table rising EPR true nuL true fuel true; affine residual (march) 8.0e-16
+plain            press/flow pts 126: monotone 1066 (non-rising EPR 0 / LP accel 0); equal-EPR gross 21 pairs worst 4.2e-15; table rising EPR true nuL true fuel true; affine residual (march) 1.1e-15
+plain            tilted     pts 126: monotone 1066 (non-rising EPR 0 / LP accel 0); equal-EPR gross 22 pairs worst 3.1e-15; table rising EPR true nuL true fuel true; affine residual (march) 8.5e-16
+plain            flat-lp    pts 126: monotone 1066 (non-rising EPR 0 / LP accel 0); equal-EPR gross 19 pairs worst 1.6e-15; table rising EPR true nuL true fuel true; affine residual (march) 7.4e-16
+gen HP 0.02      flow/press pts 126: monotone 1066 (non-rising EPR 0 / LP accel 0); equal-EPR gross 21 pairs worst 5.5e-15; table rising EPR true nuL true fuel true; affine residual (march) 9.2e-16
+    clean-machine table rising EPR true nuL true fuel true
+gen HP 0.02      press/flow pts 126: monotone 1066 (non-rising EPR 0 / LP accel 0); equal-EPR gross 19 pairs worst 3.7e-15; table rising EPR true nuL true fuel true; affine residual (march) 1.0e-15
+    clean-machine table rising EPR true nuL true fuel true
+gen HP 0.02      tilted     pts 126: monotone 1066 (non-rising EPR 0 / LP accel 0); equal-EPR gross 20 pairs worst 3.2e-15; table rising EPR true nuL true fuel true; affine residual (march) 9.3e-16
+    clean-machine table rising EPR true nuL true fuel true
+gen HP 0.02      flat-lp    pts 126: monotone 1066 (non-rising EPR 0 / LP accel 0); equal-EPR gross 19 pairs worst 1.7e-15; table rising EPR true nuL true fuel true; affine residual (march) 1.2e-15
+    clean-machine table rising EPR true nuL true fuel true
+gen LP 0.02      flow/press pts 126: monotone 1066 (non-rising EPR 0 / LP accel 0); equal-EPR gross 21 pairs worst 2.6e-15; table rising EPR true nuL true fuel true; affine residual (march) 9.8e-16
+    clean-machine table rising EPR true nuL true fuel true
+gen LP 0.02      press/flow pts 126: monotone 1066 (non-rising EPR 0 / LP accel 0); equal-EPR gross 20 pairs worst 4.7e-15; table rising EPR true nuL true fuel true; affine residual (march) 1.2e-15
+    clean-machine table rising EPR true nuL true fuel true
+gen LP 0.02      tilted     pts 126: monotone 1066 (non-rising EPR 0 / LP accel 0); equal-EPR gross 21 pairs worst 3.0e-15; table rising EPR true nuL true fuel true; affine residual (march) 8.0e-16
+    clean-machine table rising EPR true nuL true fuel true
+gen LP 0.02      flat-lp    pts 126: monotone 1066 (non-rising EPR 0 / LP accel 0); equal-EPR gross 19 pairs worst 1.5e-15; table rising EPR true nuL true fuel true; affine residual (march) 1.1e-15
+    clean-machine table rising EPR true nuL true fuel true
+cooling .05/.03  flow/press pts 126: monotone 1066 (non-rising EPR 0 / LP accel 0); equal-EPR gross 21 pairs worst 9.4e-14; table rising EPR true nuL true fuel true; affine residual (march) 9.3e-14
+cooling .05/.03  press/flow pts 126: monotone 1066 (non-rising EPR 0 / LP accel 0); equal-EPR gross 20 pairs worst 9.5e-14; table rising EPR true nuL true fuel true; affine residual (march) 9.9e-14
+cooling .05/.03  tilted     pts 126: monotone 1066 (non-rising EPR 0 / LP accel 0); equal-EPR gross 20 pairs worst 9.5e-14; table rising EPR true nuL true fuel true; affine residual (march) 7.3e-14
+cooling .05/.03  flat-lp    pts 126: monotone 1066 (non-rising EPR 0 / LP accel 0); equal-EPR gross 19 pairs worst 8.4e-14; table rising EPR true nuL true fuel true; affine residual (march) 9.5e-14
+customer 0.05    flow/press pts 126: monotone 1066 (non-rising EPR 0 / LP accel 0); equal-EPR gross 22 pairs worst 5.2e-15; table rising EPR true nuL true fuel true; affine residual (march) 9.4e-16
+customer 0.05    press/flow pts 126: monotone 1066 (non-rising EPR 0 / LP accel 0); equal-EPR gross 22 pairs worst 2.6e-15; table rising EPR true nuL true fuel true; affine residual (march) 8.3e-16
+customer 0.05    tilted     pts 126: monotone 1066 (non-rising EPR 0 / LP accel 0); equal-EPR gross 22 pairs worst 4.2e-15; table rising EPR true nuL true fuel true; affine residual (march) 1.0e-15
+customer 0.05    flat-lp    pts 126: monotone 1066 (non-rising EPR 0 / LP accel 0); equal-EPR gross 19 pairs worst 1.0e-15; table rising EPR true nuL true fuel true; affine residual (march) 9.1e-16
+lever bleed      flow/press pts 126: monotone 1066 (non-rising EPR 0 / LP accel 0); equal-EPR gross 21 pairs worst 3.6e-15; table rising EPR true nuL true fuel true; affine residual (march) 1.1e-15
+lever bleed      press/flow pts 126: monotone 1066 (non-rising EPR 0 / LP accel 0); equal-EPR gross 20 pairs worst 3.5e-15; table rising EPR true nuL true fuel true; affine residual (march) 1.2e-15
+lever bleed      tilted     pts 126: monotone 1066 (non-rising EPR 0 / LP accel 0); equal-EPR gross 21 pairs worst 3.4e-15; table rising EPR true nuL true fuel true; affine residual (march) 1.2e-15
+lever bleed      flat-lp    pts 126: monotone 1066 (non-rising EPR 0 / LP accel 0); equal-EPR gross 19 pairs worst 1.4e-15; table rising EPR true nuL true fuel true; affine residual (march) 9.4e-16
+lever stator     flow/press pts 126: monotone 1066 (non-rising EPR 0 / LP accel 0); equal-EPR gross 23 pairs worst 4.6e-15; table rising EPR true nuL true fuel true; affine residual (march) 1.1e-15
+lever stator     press/flow pts 126: monotone 1066 (non-rising EPR 0 / LP accel 0); equal-EPR gross 22 pairs worst 2.7e-15; table rising EPR true nuL true fuel true; affine residual (march) 9.8e-16
+lever stator     tilted     pts 126: monotone 1066 (non-rising EPR 0 / LP accel 0); equal-EPR gross 23 pairs worst 2.7e-15; table rising EPR true nuL true fuel true; affine residual (march) 1.1e-15
+lever stator     flat-lp    pts 126: monotone 1066 (non-rising EPR 0 / LP accel 0); equal-EPR gross 20 pairs worst 1.9e-15; table rising EPR true nuL true fuel true; affine residual (march) 1.2e-15
