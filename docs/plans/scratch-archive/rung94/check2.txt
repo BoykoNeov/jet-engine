@@ -1,0 +1,26 @@
+flat HP 700/0.02: hold-minus-fixed d ln phi_H over dT_lin 41.5: -0.00154 (phi_L +0.02629)
+   1000/0.05: hold-minus-fixed d ln phi_H +0.01971, d ln phi_L +0.07251
+   1500/0.05: hold-minus-fixed d ln phi_H +0.01184, d ln phi_L +0.03554
+   w 0.05: lowest Tt4 carrying it 762.6 K, thrust there 57.91 N
+   w 0.08: lowest Tt4 carrying it 878.2 K, thrust there 64.40 N
+   w 0.1: lowest Tt4 carrying it 974.4 K, thrust there 79.65 N
+flat LP 700/0.02: hold-minus-fixed d ln phi_H over dT_lin 41.6: -0.00125 (phi_L +0.00374)
+   1000/0.05: hold-minus-fixed d ln phi_H +0.01087, d ln phi_L +0.01844
+   1500/0.05: hold-minus-fixed d ln phi_H +0.00853, d ln phi_L +0.02893
+   w 0.05: lowest Tt4 carrying it 913.3 K, thrust there 142.85 N
+   w 0.08: lowest Tt4 carrying it 1151.5 K, thrust there 271.19 N
+   w 0.1: lowest Tt4 carrying it 1275.0 K, thrust there 352.34 N
+   flat: unloaded thrust at 700 K 88.81 N, 800 K 138.59 N, 1000 K 260.65 N
+flow/press HP 700/0.02: hold-minus-fixed d ln phi_H over dT_lin 45.6: +0.00001 (phi_L +0.02774)
+   1000/0.05: hold-minus-fixed d ln phi_H +0.01744, d ln phi_L +0.07059
+   1500/0.05: hold-minus-fixed d ln phi_H +0.00831, d ln phi_L +0.02758
+   w 0.05: lowest Tt4 carrying it 794.2 K, thrust there 59.80 N
+   w 0.08: lowest Tt4 carrying it 922.6 K, thrust there 66.72 N
+   w 0.1: lowest Tt4 carrying it 1021.9 K, thrust there 76.84 N
+flow/press LP 700/0.02: hold-minus-fixed d ln phi_H over dT_lin 40.1: -0.00009 (phi_L +0.00291)
+   1000/0.05: hold-minus-fixed d ln phi_H +0.00823, d ln phi_L +0.01536
+   1500/0.05: hold-minus-fixed d ln phi_H +0.00546, d ln phi_L +0.02118
+   w 0.05: lowest Tt4 carrying it 918.6 K, thrust there 142.30 N
+   w 0.08: lowest Tt4 carrying it 1154.2 K, thrust there 270.86 N
+   w 0.1: lowest Tt4 carrying it 1277.2 K, thrust there 352.26 N
+   flow/press: unloaded thrust at 700 K 82.85 N, 800 K 132.15 N, 1000 K 254.72 N

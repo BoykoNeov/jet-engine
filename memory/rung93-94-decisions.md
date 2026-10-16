@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 76bf8353-8e43-4b1e-a44d-8d50c63caa37
-  modified: 2026-10-16T06:19:07.993Z
+  modified: 2026-10-16T06:22:02.225Z
 ---
 
 Rung 92's seam (metal limit + a burner that carries the generator load) — user answers 2026-10-16:
@@ -22,6 +22,10 @@ Rung 92's seam (metal limit + a burner that carries the generator load) — user
 - **Rung 94: each throttle endpoint holds THRUST or HP SPEED (a switch)**; `Tt4` floats. Steady outer
   solve, fuel ramp between endpoints unchanged (advisor: a closed-loop governor in the march is a new
   limiter-family rung — not chosen).
+
+**Rung 94 metal limit (user, 2026-10-16):** REPORT by default (the burner floats as hot as holding thrust/speed
+needs, the metal's margin shown), plus a SWITCH that makes the metal limit BIND (the burner stops at it and the
+thrust/speed shortfall is the result, shown).
 
 **Rung 93 SHIPPED 2026-10-16** (all six predictions HIT; spec `docs/rung93-spec.md`, page view + readout,
 plan § 22) — [[rung93-metal-temperature]]. **Next: rung 94** (the load-carrying burner), as decided above.
