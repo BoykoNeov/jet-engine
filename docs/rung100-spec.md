@@ -28,8 +28,9 @@ slow slices at Mach **0.05 and 0.15**, and the fan-speed approximation **B**.
 > from the pressure ratio and the outside air (zero rest at every point, choked or not) — but the pressure-ratio
 > formula still reads the air swallowed off the table's line, and the fan-speed formula (B) finds the hotter burner
 > but reads the choked engine's compressors, so it overshoots (−1…−6 % where rung 99 gave +4…+17 %). **The second
-> number is the flight speed:** two slow tables made where the nozzle unchokes take the grid's worst low-speed miss from
-> 16 % / 33 % to under 1 % on both readings. And one exact term can remove a COMPENSATING error: at Mach 1.4 from 700 K
+> number is the flight speed:** two slow tables made where the nozzle unchokes take the grid's worst miss BELOW MACH
+> 0.3 from 16 % / 33 % to under 1 % on both readings (between Mach 0.3 and 0.6, untouched, the grid still misses by
+> −0.95 % / −3.67 % from 700 K at Mach 0.5). And one exact term can remove a COMPENSATING error: at Mach 1.4 from 700 K
 > rung 99's push and airflow came from the same unchoked design row and cancelled; the exact push leaves the airflow
 > alone, −1.7 % against rung 99's +0.09 %.
 
@@ -157,5 +158,9 @@ nearer the flight), formula 0.29 → 0.30 s and 0.26 → 0.31 s (fan speed); Mac
 **The airflow off the line:** the pressure-ratio formula's whole miss is `V0·(ṁ̂ − ṁ)`, the table's airflow at the
 reading; below choke (and at a low throttle flown fast) the engine is off the table's line, so `ṁ̂` is wrong by
 0.5–3 %, magnified by `V0` against a small thrust. B's rebalance (the burner temperature found from the LP shaft)
-could also fix the airflow row — or the slow slices could supply the airflow beside the exact push. Or the steady
+could also fix the airflow row — or the slow slices could supply the airflow beside the exact push. **The grid between
+Mach 0.3 and 0.6 at a low throttle:** the same off-the-line engine (the 0.3 table's 700 K row unchoked, the 0.6 one's
+not) leaves −3.7 % on the fan speed at Mach 0.5 from 700 K — a table near Mach 0.45, or a finer slow grid. **The
+formula at a low throttle flown fast** (Mach 1.4–1.6 from 700 K: −1.7 % / −21 %, worse than rung 99's −0.1 % / −4.5 %):
+rung 99's column kept as a page choice, or the airflow fix above. Or the steady
 matchers' unchoked branch (rung 97's seam), or the governor on the lagged marchers (rung 95's).

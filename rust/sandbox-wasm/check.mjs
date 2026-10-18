@@ -41,9 +41,9 @@ import { readFileSync } from 'node:fs';
 // is: worst seen 8.4e-15, bar 1e-11.
 // RE-MEASURED 2026-10-18 with rung 100's requests (91 Controls requests): worst 1.36e-11 relative at #252.far.0 --
 // the STEADY START of a schedule run at Mach 0.1 from 700 K, the nozzle unchoked, which reads no table (the same start
-// under rung 99's grid). Below choke the steady solve's LP turbine sits on rung 97's bisection inside the closure, and
-// the two builds stop on different iterates there. The relative bar moves to 1e-10 (7x the worst); every other
-// Controls number stays at or under 2.2e-13 apart from the thrust-gap parts (absolute, below).
+// under rung 99's grid) -- so no rung-100 code is in it. Its cause was not isolated (an unchoked steady start: the
+// builds stopping their iterated solves on different iterates is the suspicion, not a measurement). The relative bar
+// moves to 1e-10 (7x the worst seen).
 // SLICE 5's burner requests (55 of 225, 2667 numbers, 2398 bit-identical; measured 2026-10-08) fall under the
 // TABLE bar: their inlet is an equilibrium-gas design run. Worst seen 1.5e-15 relative, save the nozzle
 // readout's jet-speed gain `dv9`/`dv9_frac` -- a difference of two nearly equal jet speeds, 3.2e-12 relative

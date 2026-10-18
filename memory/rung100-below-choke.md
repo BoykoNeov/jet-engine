@@ -32,3 +32,5 @@ near-zero gap exposed it.
 
 **Tooling:** a perl `-0pi` substitution that silently fails to match leaves the rest of the edit referencing a name
 never defined — grep the result after every scripted edit.
+
+**Gate note:** in the full gate two `browser.mjs` knob-kill checks failed under the 8-at-a-time load (the run done before the knob moved) and passed alone — no earlier record; recorded in sandbox-plan § 32 as a pair to watch.

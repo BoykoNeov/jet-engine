@@ -1798,3 +1798,7 @@ scratch `scratch-archive/rung100/`.
   no table — the two builds stop the closure on different iterates below choke); `browser.mjs` now compares
   `settled_lp`/`settled_hp` absolutely at 1e−11, as `check.mjs` always did (a 7.8e−10 gap 4e−16 apart read 6e−7
   "relative").
+- **A flaky pair to watch (2026-10-18, not this rung's code):** in rung 100's full gate, `browser.mjs`'s
+  `a_knob_move_stops_a_running_controls_run_and_the_new_one_finishes` and `…_the_cooling_sweep_…` failed (the run had
+  finished before the knob moved, "kills 8 -> 8"); both passed when `check.ps1` was rerun alone, as did all 403 page
+  checks. Neither run reads a table. No earlier record of this pair failing.
