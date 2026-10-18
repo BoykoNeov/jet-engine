@@ -144,6 +144,7 @@ pub mod bleed;
 pub mod bleed_transient;
 pub mod combustor;
 pub mod components;
+pub mod corrected_tables;
 pub mod corrector_law;
 pub mod cross_loop;
 pub mod cross_split;

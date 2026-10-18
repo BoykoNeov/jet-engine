@@ -152,6 +152,10 @@ air the engine takes in (the ram included: a smaller gain in denser air, a longe
 nozzle is unchoked (rung 97: low throttles in warm or dense air, or flown slowly) the chart draws those stretches thin
 and dashed and the table counts them; the model solves them on rung 97's branch, where the low-pressure turbine expands
 only as far as the nozzle can push the gas out.
+Since rung 98 (plan § 30) the control's tables — the thrust the governor reads, the acceleration schedule, the speed
+governor's fuel — are made once at the design flight by default and read here through two switchable corrections, for
+the air's pressure and its temperature (or made at this flight, as before). No correction sees a change of flight
+speed: away from Mach 0.85 the governor misses the asked thrust by several per cent, shown in the table.
 
 **Readouts:** turbine temperature against the redline, both shaft speeds, burnt vs scheduled fuel, each
 compressor's flow coefficient against its (moving) stall line and the floor, thrust (the bleed's dumped air

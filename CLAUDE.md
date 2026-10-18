@@ -24,12 +24,12 @@ the web page running the Rust model live is `docs/sandbox/` (slices 1–5 built;
 ## The rungs
 
 The model is built in cumulative **rungs** — each adds one physical effect and is anchored to a
-published case. All rungs are live; the current scope is **rung 97**.
+published case. All rungs are live; the current scope is **rung 98**.
 
 **Families** (contiguous): 1–6 cycle · 7–24 NOx & mixing · 25–30 nozzle/turbine marches ·
 31–33 off-design steady · 34–37 1-spool transient · 38–45 two-spool · 46–52 fuel limiters ·
 53–56 + 61 airflow levers (steady) · 57–60, 62–63 schedules · 64–68 valve/lag/cascades ·
-69–84 reference splits & rank · 85 blade-speed walls · 86–89 three levers, valve reference, slow & asymmetric valve · 90–94 customer bleed, turbine cooling, shaft offtake, metal limit, burner hold · 95–96 governor in the slam, inferred thrust (knobs) · 97 unchoked nozzle, two shafts. **Read-only diagnostics: 7–30, 36, 41, 44, 45**; all else
+69–84 reference splits & rank · 85 blade-speed walls · 86–89 three levers, valve reference, slow & asymmetric valve · 90–94 customer bleed, turbine cooling, shaft offtake, metal limit, burner hold · 95–96 governor in the slam, inferred thrust (knobs) · 97 unchoked nozzle, two shafts · 98 corrected tables. **Read-only diagnostics: 7–30, 36, 41, 44, 45**; all else
 STRUCTURAL / DYNAMIC — an operating point, via § Layout's ladders.
 
 | Rung | Adds (one-line hook) | Spec |
@@ -132,6 +132,7 @@ STRUCTURAL / DYNAMIC — an operating point, via § Layout's ladders.
 | 95 | **A GOVERNOR IN THE SLAM** — the throttle holds thrust, HP speed or `Tt4` all along the move, the limiters cutting, as KNOBS. **HEADLINE: holding thrust makes a fast slam HOTTER** — more fuel than the ramp at every point; a fixed speed gain is ~2× slower at idle. **CORRECTS 94's seam; 40 a special case.** | `docs/rung95-spec.md` |
 | 96 | **A GOVERNOR THAT INFERS THRUST** — read from the pressure ratio or the fan speed via a steady table, as KNOBS. **HEADLINE: an accelerating engine is a loaded engine** — at a given pressure ratio both pass less air, so thrust beats the belief; fan speed misses far more. **DISCHARGES 95's concession.** | `docs/rung96-spec.md` |
 | 97 | **THE UNCHOKED NOZZLE ON TWO SHAFTS** — the LP turbine expands only as far as the nozzle can push the gas out. **HEADLINE: the back-pressure takes work off the LP shaft ALONE** — it settles slower, a loop that runs one way, and the jet gives more thrust. **DISCHARGES 38/40's concession** (transient). | `docs/rung97-spec.md` |
+| 98 | **THE CORRECTED TABLES** — three control tables made once at the design flight, read elsewhere via `δ`/`θ`, as KNOBS. **HEADLINE: a correction undoes only what changes the engine's inside** — pressure exact, temperature nearly; a Mach change moves only the thrust. **DISCHARGES 96's concession.** | `docs/rung98-spec.md` |
 
 ## Working contract (from SPEC.md — these override convenience)
 - **Derive before you code.** For each station, write the governing equation and
@@ -147,7 +148,7 @@ STRUCTURAL / DYNAMIC — an operating point, via § Layout's ladders.
 - **Every new rung reduces to its predecessor**, exactly and by test (`X=None` ⇒
   the prior code path). This is the project's spine — see any `docs/rungN-spec.md`.
 
-**Current scope (rung 97).** The **cycle solve** is a thermally-perfect, reacting,
+**Current scope (rung 98).** The **cycle solve** is a thermally-perfect, reacting,
 dissociation-equilibrium gas (`Gas.reacting_equilibrium()`) through ideal + real components
 (rungs 2/2b's knobs, mutually exclusive; specified exit pressure). The burner root-finds `f` over the scale-B
 absolute balance, then freezes the station-4 mixture through turbine + nozzle; Fork A/B and
@@ -184,7 +185,7 @@ Never re-open one, and never re-enumerate them here.
 - **Detailed Fenimore** (`CH+N₂→HCN`) and **super-eq-O radical decay** — need new species / a relaxing pocket.
 - **Reacting-gas fuel control** (35/43 defer — the forward burner asserts against an equilibrium gas).
 - **The unchoked LP branch in the STEADY two-spool matchers** (38 flags; the transient BUILT BY 97).
-- **Rungs 69–97's seams — in each rung's spec, not here.** `n`=4 needs a 4th non-fuel lever or a non-`min` composition; every route TRIED (72–76, 80) is CLOSED.
+- **Rungs 69–98's seams — in each rung's spec, not here.** `n`=4 needs a 4th non-fuel lever or a non-`min` composition; every route TRIED (72–76, 80) is CLOSED.
 - **Rung 37's internal clocks on two shafts** + the combined 3-state.
 - **Afterburner**; a **real hardware/CFD map + surge line** (32's concession, doubled on two spools).
 - **Feeding a shifted/marched state into the production cycle** — a re-foundation, not a rung.
@@ -207,7 +208,7 @@ The code is the Rust crate `rust/`. The deleted Python lives at tag **`python-fi
   `two_spool_transient.rs` (40, 44) → `bleed.rs` (42) → `fuel_transient.rs` (43, 45, and the
   fuel-side limiters 46–52) → `stator.rs` (53–54) → `stage.rs` (55–56) → `stator_transient.rs`
   (57–60) → `stator_bleed.rs` (61) → `bleed_transient.rs` (62–63) → `limited_bleed.rs` (64) →
-  `lagged_bleed.rs` (65) → **exactly ONE module per rung, 66→97** (`two_lag.rs` … `unchoked_lp.rs`).
+  `lagged_bleed.rs` (65) → **exactly ONE module per rung, 66→98** (`two_lag.rs` … `corrected_tables.rs`).
   A rung = a core + a `const` fn-pointer table, reducing to its predecessor; **each module's
   header names its rung, its spec what it adds**, so this entry never grows.
 - `rust/src/main.rs` + `panels/` + `pyfmt.rs` — the CLI: the design-point tables and **one panel per

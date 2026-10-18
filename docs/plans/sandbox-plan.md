@@ -1724,3 +1724,25 @@ which it waited on: low Mach is where the nozzle unchokes. Scratch scripts and o
   `check_requests` adds 7 (Mach 0.3; 1.6 governed beside the redline; 0.05 from 700 K; 2.5 at 20 km governed; the gain
   refused at 1.6; Mach 0; Mach 3.5); `browser.mjs` types Mach 1.6 and checks the density above 1.5× (it is 1.93×), the air unchanged and
   the table's Mach row.
+
+## 30. The corrected tables — rung 98 (2026-10-18) — not a slice
+
+Rung 96's seam, scoped by the user (memory `rung97-decisions`, `rung98-decisions`): rung 96's thrust table, rung 48's
+schedule and rung 95's steady speed table made once at the DESIGN flight and carried to the flight flown, each
+correction a switch. Anchor `897001b`; spec `docs/rung98-spec.md`; scratch `scratch-archive/rung98/`.
+
+- **Built** in `sandbox_controls` on `corrected_tables.rs`: `ControlsSettings` gains `table_at` (`"design"` default,
+  the user's choice asked before the anchor froze; `"flight"` = rungs 96/97), `corr_p`, `corr_t` (both on). Inert where
+  no table is read or at the design flight itself (bit for bit, gated). The Flight fieldset shows a toggle and the two
+  switches whenever the run reads a table; the results table says where the tables were made, the air at the engine
+  against the design's, the corrections, and splits the pressure-ratio control's gap into the air-swallowed part and
+  the constant jet-pressure part. The ends' achieved / asked thrust row shows the steady miss.
+- **What the new default moved:** of the 77 check requests (before this section's additions) one — rung 97's +40 K
+  pressure-ratio run from 700 K — now pinned to `table_at: flight` so it keeps testing rung 97; no Rust test changed
+  value (the full gate). The crash map (seed 98, 1 500 requests) against a worktree of `897001b`: 129 outcomes differ,
+  every one reading a table off the design flight with the tables made there; 52 now refused because the design-flight
+  table cannot reach (46 at Mach 1.5 and above), in words that say to make the tables at this flight. No panic.
+- `check_requests` adds 6 (Mach 1.4 on the pressure ratio, design and this-flight tables; the fan speed uncorrected for
+  temperature at 290 K; the schedule uncorrected at 216.65 K; the proportional speed law uncorrected at 290 K; Mach 3
+  at sea level, out of reach); `browser.mjs` flies the pressure ratio at Mach 1.4 (both ends short of the asked thrust,
+  the switches shown, the table row) and flips to this-flight tables (nothing carried, the switches hidden).

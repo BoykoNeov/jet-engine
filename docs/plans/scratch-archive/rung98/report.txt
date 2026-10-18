@@ -1,0 +1,24 @@
+FIXED gen HP power .02  thin  flow/press: +1.12 % / +0.32 %
+FIXED gen HP power .02  thin  flat-lp   : +1.07 % / +0.31 %
+FIXED gen HP power .02  dense flow/press: -0.47 % / -0.13 %
+FIXED gen HP power .02  dense flat-lp   : -0.45 % / -0.13 %
+FIXED cust amount .05   thin  flow/press: -4.56 % / -1.37 %
+FIXED cust amount .05   thin  flat-lp   : -4.36 % / -1.36 %
+FIXED cust amount .05   dense flow/press: +1.21 % / +0.46 %
+FIXED cust amount .05   dense flat-lp   : +1.17 % / +0.46 %
+GAP Epr hot  flow/press:  Design: +16.2 / +2.5  Flight: +16.1 / +2.5
+GAP Epr hot  flat-lp   :  Design: +16.6 / +2.8  Flight: +16.5 / +2.7
+GAP Epr cold flow/press:  Design: +8.9 / +1.7  Flight: +9.0 / +1.8
+GAP Epr cold flat-lp   :  Design: +8.8 / +2.0  Flight: +8.8 / +2.0
+GAP Epr M0.5 flow/press:  Design: +20.1 / +7.1  Flight: +7.0 / +1.1
+GAP Epr M0.5 flat-lp   :  Design: +19.7 / +7.4  Flight: +7.0 / +1.2
+GAP Epr M1.4 flow/press:  Design: +10.0 / -1.4  Flight: +18.9 / +4.3
+GAP Epr M1.4 flat-lp   :  Design: +10.3 / -2.2  Flight: +19.2 / +4.7
+GAP N1 hot  flow/press:  Design: +45.5 / +11.6  Flight: +45.3 / +11.5
+GAP N1 hot  flat-lp   :  Design: +36.1 / +10.2  Flight: +36.1 / +10.1
+GAP N1 cold flow/press:  Design: +35.7 / +7.6  Flight: +36.1 / +7.8
+GAP N1 cold flat-lp   :  Design: +18.4 / +5.5  Flight: +18.5 / +5.5
+GAP N1 M0.5 flow/press:  Design: +55.9 / +15.0  Flight: +43.7 / +9.4
+GAP N1 M0.5 flat-lp   :  Design: +30.2 / +12.5  Flight: +23.8 / +7.0
+GAP N1 M1.4 flow/press:  Design: +26.4 / +4.7  Flight: +33.3 / +8.4
+GAP N1 M1.4 flat-lp   :  Design: +21.9 / +3.4  Flight: +27.8 / +7.7

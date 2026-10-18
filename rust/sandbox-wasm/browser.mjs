@@ -546,6 +546,34 @@ try {
   check('the_mach_knob_flies_the_two_shaft_engine_faster', machOn && machR[0] === 1.6 && machR[1] > 1.5 && machR[2] === 50000 && machR[3] === 250 && machR[4],
         JSON.stringify([machOn, machR]));
   await ev(`window.sandbox.controls({M0: 0.85}).then(r => r.run)`);
+  // Rung 98: governed on the pressure ratio at Mach 1.4, the control's tables made at the design flight (the default):
+  // the run matches native, the tables row and both corrections show, the ends give less thrust than asked, and the
+  // results table says where the tables were made. Then the tables made at this flight: nothing carried, the
+  // corrections hidden. check_requests holds both runs; find the native answers by their settings.
+  const r98Native = at => (() => { for (const l of readFileSync(nativeTxt, 'utf8').split(/\r?\n/)) {
+    const [rq, out] = l.split('\t'); if (!out || !rq.startsWith('{"op":"controls"')) continue;
+    const c = JSON.parse(rq).controls;
+    if (c.M0 === 1.4 && c.thrust_by === 'epr' && c.govern === 1 && c.table_at === at) return JSON.parse(out);
+  } })();
+  await ev(`window.sandbox.controls({govern: 1, hold: 'thrust', thrust_by: 'epr', M0: 1.4}).then(r => r.run)`);
+  const tOn = await waitFor(`window.sandbox.ctlState === 'done' && window.sandbox.last.controls && window.sandbox.last.controls.M0 === 1.4
+      && window.sandbox.last.controls.thrust_by === 'epr'`, 30000);
+  const tNat = r98Native('design');
+  const tc = tOn ? (tNat ? close(await ev('window.sandbox.last'), tNat) : 'no native answer') : 'no run';
+  const tr = await ev(`(() => { const r = window.sandbox.last; return [r.tables.carried, r.start.hold_achieved < r.start.hold_target,
+      r.end.hold_achieved < r.end.hold_target, document.getElementById('ctl-tables-row').hidden, document.getElementById('ctl-corr-box').hidden,
+      [...document.getElementById('ctl-table').tBodies[0].rows].some(t => /^The control's tables/.test(t.cells[0].textContent)
+        && /made at the design flight/.test(t.cells[1].textContent))]; })()`);
+  check('tables_made_at_the_design_flight_fly_mach_1_4_short_of_the_asked_thrust', tOn && !tc && tr[0] === 1 && tr[1] && tr[2]
+        && tr[3] === false && tr[4] === false && tr[5], (tc || '') + JSON.stringify(tr));
+  if (process.env.SANDBOX_SHOTS) await shot('controls-tables');
+  await ev(`document.getElementById('ctl-tat-flight').click()`);
+  const fOn = await waitFor(`window.sandbox.ctlState === 'done' && window.sandbox.last.controls && window.sandbox.last.controls.table_at === 'flight'`, 30000);
+  const fNat = r98Native('flight');
+  const fc = fOn ? (fNat ? close(await ev('window.sandbox.last'), fNat) : 'no native answer') : 'no run';
+  const tf = await ev(`[window.sandbox.last.tables.carried, document.getElementById('ctl-corr-box').hidden]`);
+  check('tables_made_at_this_flight_carry_nothing', fOn && !fc && tf[0] === 0 && tf[1] === true, (fc || '') + JSON.stringify(tf));
+  await ev(`window.sandbox.controls({govern: 0, hold: 'tt4', thrust_by: 'true', M0: 0.85, table_at: 'design'}).then(r => r.run)`);
   // Rung 97: at sea level on a +40 K day the 700 K start has the nozzle unchoked. The run matches native, its unchoked
   // stretch is drawn thin and dashed under the full-width choked one, the legend says so, and the table counts it.
   // check_requests holds this run (rung 97's first entry); find its native answer by its settings, not its spelling.

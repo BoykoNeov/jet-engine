@@ -1,0 +1,77 @@
+GATE δoff EPR flow/press thin : Ok([-0.46629031099363, -0.47000605692782277])
+GATE δoff EPR flow/press dense: Ok([0.5999756648943658, 0.6066815827193472])
+GATE δoff EPR press/flow thin : Ok([-0.4663321740300361, -0.47000639940395894])
+GATE δoff EPR press/flow dense: Ok([0.599977830838867, 0.6067127340998661])
+GATE δoff EPR tilted     thin : Ok([-0.4663361902817183, -0.4700053478771777])
+GATE δoff EPR tilted     dense: Ok([0.5999741853276273, 0.6068174521744484])
+GATE δoff EPR flat-lp    thin : Ok([-0.4661751111088593, -0.470009512422522])
+GATE δoff EPR flat-lp    dense: Ok([0.5999882287176236, 0.6059739120718503])
+GATE δoff N1  flow/press thin : Ok([-0.4116835862348335, -0.47009507092304836])
+GATE δoff N1  flow/press dense: Ok([0.5996535082483722, 0.6863253794640413])
+GATE δoff N1  press/flow thin : Ok([-0.41629440088583736, -0.47009188175953587])
+GATE δoff N1  press/flow dense: Ok([0.5997121131820983, 0.675583873528651])
+GATE δoff N1  tilted     thin : Ok([-0.41387211737971685, -0.47007924922501393])
+GATE δoff N1  tilted     dense: Ok([0.5996588234645779, 0.676665315435439])
+GATE δoff N1  flat-lp    thin : Ok([-0.3951417999749115, -0.4702169896906606])
+GATE δoff N1  flat-lp    dense: Ok([0.5997352156581557, 0.7788760103240024])
+== §2 sign gate: HIT 32 MISS 0 VACUOUS 0
+H1 N1 θoff flow/press cold : Ok([0.3096685740011997, 0.24047612200428725])
+H1 N1 θoff flow/press hot  : Ok([-0.3330949402025027, -0.25239335841626187])
+H1 N1 θoff press/flow cold : Ok([0.2847024909764956, 0.21708957775457033])
+H1 N1 θoff press/flow hot  : Ok([-0.31988256161857115, -0.23634478005180576])
+H1 N1 θoff tilted     cold : Ok([0.29873393596600195, 0.2263087168145484])
+H1 N1 θoff tilted     hot  : Ok([-0.3296536712130133, -0.24584300198009057])
+H1 N1 θoff flat-lp    cold : Ok([0.4252638320846454, 0.414214235620756])
+H1 N1 θoff flat-lp    hot  : Ok([-0.36698322937546857, -0.3122201178643487])
+== H1: HIT 16 MISS 0 VACUOUS 0
+H2 EPR flow/press M0.5 : Ok([0.08527984646563423, 0.08657728807445356])
+H2 EPR flow/press M1.4 : Ok([-0.049110773537373476, -0.09585007200108608])
+H2 EPR press/flow M0.5 : Ok([0.08533810162595715, 0.08657809702797849])
+H2 EPR press/flow M1.4 : Ok([-0.05000992490788963, -0.09593758597376975])
+H2 EPR tilted     M0.5 : Ok([0.0851834720283078, 0.08657962128279949])
+H2 EPR tilted     M1.4 : Ok([-0.04847305105376614, -0.09571293796793592])
+H2 EPR flat-lp    M0.5 : Ok([0.08587505195910368, 0.08656558768416962])
+H2 EPR flat-lp    M1.4 : Ok([-0.05388819858943195, -0.09670600947322172])
+H2 N1  flow/press M0.5 : Ok([0.08446200748138254, 0.08767621875423343])
+H2 N1  flow/press M1.4 : Ok([-0.04708180211775417, -0.09474737883876602])
+H2 N1  press/flow M0.5 : Ok([0.0843716180622744, 0.08721211663411478])
+H2 N1  press/flow M1.4 : Ok([-0.047736712577223436, -0.09444897279387358])
+H2 N1  tilted     M0.5 : Ok([0.08430498471163622, 0.08731053885281803])
+H2 N1  tilted     M1.4 : Ok([-0.046420051531488676, -0.09445810471762996])
+H2 N1  flat-lp    M0.5 : Ok([0.08568732345004407, 0.09098602814505427])
+H2 N1  flat-lp    M1.4 : Ok([-0.05220167696174746, -0.0970627444135585])
+== H2: HIT 32 MISS 0 VACUOUS 0
+H3 flow/press hot : θoff held true peak 1464.551 t95 None n 126 stop false | θon held true peak 1528.333 t95 Some(2.3400000000000016) n 126 stop false
+H3 flow/press cold: θoff held true peak 1623.350 t95 Some(1.2200000000000006) n 126 stop false | θon held true peak 1563.425 t95 Some(1.4000000000000008) n 126 stop false
+H3 press/flow hot : θoff held true peak 1484.909 t95 None n 126 stop false | θon held true peak 1534.856 t95 Some(2.3000000000000016) n 126 stop false
+H3 press/flow cold: θoff held true peak 1639.012 t95 Some(1.2000000000000006) n 126 stop false | θon held true peak 1575.521 t95 Some(1.3800000000000008) n 126 stop false
+H3 tilted     hot : θoff held true peak 1472.495 t95 None n 126 stop false | θon held true peak 1532.008 t95 Some(2.3200000000000016) n 126 stop false
+H3 tilted     cold: θoff held true peak 1629.475 t95 Some(1.2200000000000006) n 126 stop false | θon held true peak 1571.967 t95 Some(1.4000000000000008) n 126 stop false
+H3 flat-lp    hot : θoff held true peak 1470.676 t95 None n 126 stop false | θon held true peak 1525.929 t95 Some(2.2200000000000015) n 126 stop false
+H3 flat-lp    cold: θoff held true peak 1618.795 t95 Some(1.1000000000000005) n 126 stop false | θon held true peak 1553.135 t95 Some(1.2800000000000007) n 126 stop false
+== H3: HIT 16 MISS 0 VACUOUS 0
+H4 flow/press hot : θoff νH_end 0.944146 | θon 0.947217 | set-throttle end 0.947525 | n 126 126 stop false false  MISS
+H4 flow/press cold: θoff νH_end 0.961620 | θon 0.972659 | set-throttle end 0.972596 | n 126 126 stop false false  HIT
+H4 press/flow hot : θoff νH_end 0.948217 | θon 0.951271 | set-throttle end 0.951534 | n 126 126 stop false false  MISS
+H4 press/flow cold: θoff νH_end 0.959601 | θon 0.971093 | set-throttle end 0.971033 | n 126 126 stop false false  HIT
+H4 tilted     hot : θoff νH_end 0.946075 | θon 0.949136 | set-throttle end 0.949423 | n 126 126 stop false false  MISS
+H4 tilted     cold: θoff νH_end 0.960669 | θon 0.971918 | set-throttle end 0.971855 | n 126 126 stop false false  HIT
+H4 flat-lp    hot : θoff νH_end 0.944053 | θon 0.947132 | set-throttle end 0.947525 | n 126 126 stop false false  MISS
+H4 flat-lp    cold: θoff νH_end 0.961557 | θon 0.972615 | set-throttle end 0.972596 | n 126 126 stop false false  HIT
+== H4: HIT 4 MISS 4 VACUOUS 0
+REP EPR flow/press hot : both on Ok([0.0008440234880295056, 0.0008078461825057341])  θoff Ok([0.0008440234880295056, 0.0008078461825057341])
+REP EPR flow/press cold: both on Ok([-0.0006563030325061689, -0.0006932682134413294])  θoff Ok([-0.0006563030325061689, -0.0006932682134413294])
+REP EPR press/flow hot : both on Ok([0.0008355985085514888, 0.000804387157843652])  θoff Ok([0.0008355985085514888, 0.000804387157843652])
+REP EPR press/flow cold: both on Ok([-0.0006531217304099789, -0.0006942496403776026])  θoff Ok([-0.0006531217304099789, -0.0006942496403776026])
+REP EPR tilted     hot : both on Ok([0.0008478998940465568, 0.0008091832957301631])  θoff Ok([0.0008478998940465568, 0.0008091832957301631])
+REP EPR tilted     cold: both on Ok([-0.0006575559563004573, -0.000693103579410465])  θoff Ok([-0.0006575559563004573, -0.000693103579410465])
+REP EPR flat-lp    hot : both on Ok([0.0008217231985660544, 0.0007980854180572298])  θoff Ok([0.0008217231985660544, 0.0007980854180572298])
+REP EPR flat-lp    cold: both on Ok([-0.00064776650833536, -0.0006953239415014601])  θoff Ok([-0.00064776650833536, -0.0006953239415014601])
+REP N1  flow/press hot : both on Ok([0.0014802517383277539, 0.0022343365318456586])  θoff Ok([-0.3330949402025027, -0.25239335841626187])
+REP N1  flow/press cold: both on Ok([-0.0014814639989675373, -0.002564006543899018])  θoff Ok([0.3096685740011997, 0.24047612200428725])
+REP N1  press/flow hot : both on Ok([0.0017637696223691548, 0.002530674740012469])  θoff Ok([-0.31988256161857115, -0.23634478005180576])
+REP N1  press/flow cold: both on Ok([-0.0017523404035786065, -0.0028306411082836646])  θoff Ok([0.2847024909764956, 0.21708957775457033])
+REP N1  tilted     hot : both on Ok([0.001566323041098994, 0.002359696086897051])  θoff Ok([-0.3296536712130133, -0.24584300198009057])
+REP N1  tilted     cold: both on Ok([-0.001596464364873753, -0.002715053844870263])  θoff Ok([0.29873393596600195, 0.2263087168145484])
+REP N1  flat-lp    hot : both on Ok([0.0006017595563827877, 0.000985760613555906])  θoff Ok([-0.36698322937546857, -0.3122201178643487])
+REP N1  flat-lp    cold: both on Ok([-0.0003839492548817014, -0.0009194418302463408])  θoff Ok([0.4252638320846454, 0.414214235620756])

@@ -1,0 +1,3 @@
+EPR governed   : design-flight tables 0.194 s, this-flight tables 0.155 s
+accel schedule : design-flight tables 0.091 s, this-flight tables 0.091 s
+prop speed law : design-flight tables 0.041 s, this-flight tables 0.040 s

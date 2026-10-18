@@ -1,0 +1,29 @@
+flow/press plain        : tables 2.2e-15  run 1.1e-14  split spread 3.0e-15
+flow/press cust share   : tables 3.8e-15  run 1.3e-14  split spread 3.3e-15
+flow/press cool         : tables 1.2e-13  run 3.6e-14  split spread 2.0e-13
+flow/press bleed        : tables 4.1e-15  run 1.3e-14  split spread 3.5e-15
+flow/press stator       : tables 2.6e-15  run 9.4e-15  split spread 2.6e-15
+flow/press gen HP share : tables 2.0e-15  run 8.8e-15  split spread 3.2e-15
+flow/press gen LP share : tables 3.2e-12  run 7.8e-13  split spread 2.7e-15
+press/flow plain        : tables 3.1e-15  run 6.7e-15  split spread 2.8e-15
+press/flow cust share   : tables 9.2e-13  run 2.6e-13  split spread 3.4e-15
+press/flow cool         : tables 2.7e-12  run 6.8e-13  split spread 1.9e-13
+press/flow bleed        : tables 3.1e-15  run 8.1e-15  split spread 3.1e-15
+press/flow stator       : tables 3.6e-12  run 9.1e-13  split spread 2.7e-15
+press/flow gen HP share : tables 1.0e-12  run 3.0e-13  split spread 2.9e-15
+press/flow gen LP share : tables 2.0e-15  run 4.4e-15  split spread 3.4e-15
+tilted     plain        : tables 2.7e-15  run 9.4e-15  split spread 2.8e-15
+tilted     cust share   : tables 4.3e-15  run 7.1e-15  split spread 3.4e-15
+tilted     cool         : tables 9.7e-14  run 3.7e-13  split spread 2.1e-13
+tilted     bleed        : tables 2.6e-12  run 9.3e-13  split spread 3.1e-15
+tilted     stator       : tables 2.3e-12  run 5.9e-13  split spread 3.6e-15
+tilted     gen HP share : tables 4.6e-13  run 1.2e-14  split spread 2.4e-15
+tilted     gen LP share : tables 6.6e-13  run 8.3e-14  split spread 2.8e-15
+flat-lp    plain        : tables 2.2e-15  run 4.3e-15  split spread 2.9e-15
+flat-lp    cust share   : tables 2.2e-15  run 4.9e-15  split spread 3.1e-15
+flat-lp    cool         : tables 1.5e-13  run 4.5e-14  split spread 1.6e-13
+flat-lp    bleed        : tables 2.1e-15  run 6.9e-15  split spread 3.1e-15
+flat-lp    stator       : tables 2.3e-12  run 5.4e-13  split spread 0.0e0
+flat-lp    gen HP share : tables 1.3e-12  run 7.6e-15  split spread 2.8e-15
+flat-lp    gen LP share : tables 3.8e-13  run 8.0e-15  split spread 3.2e-15
+WORST tables 3.60e-12 (bar 1e-9), run 9.26e-13 (bar 1e-7), split spread 2.08e-13 (bar 1e-12)
