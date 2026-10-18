@@ -1,0 +1,480 @@
+plain 0 250 0.05 700 Epr grid | AT-SLICE (tables made here)
+plain 0 250 0.05 700 N1 grid | AT-SLICE (tables made here)
+plain 0 250 0.05 1000 Epr grid | AT-SLICE (tables made here)
+plain 0 250 0.05 1000 N1 grid | AT-SLICE (tables made here)
+plain 0 250 0.1 700 Epr grid | -0.8212 -0.1308
+plain 0 250 0.1 700 N1 grid | -0.1402 -0.1356
+plain 0 250 0.1 1000 Epr grid | -0.2848 -0.1308
+plain 0 250 0.1 1000 N1 grid | -0.2802 -0.1344
+plain 0 250 0.15 700 Epr grid | -1.2533 -0.2008
+plain 0 250 0.15 700 N1 grid | -0.2547 -0.2081
+plain 0 250 0.15 1000 Epr grid | -0.4377 -0.2007
+plain 0 250 0.15 1000 N1 grid | -0.4304 -0.2062
+plain 0 250 0.2 700 Epr grid | -1.2703 -0.2054
+plain 0 250 0.2 700 N1 grid | -0.3075 -0.2129
+plain 0 250 0.2 1000 Epr grid | -0.4481 -0.2054
+plain 0 250 0.2 1000 N1 grid | -0.4406 -0.2109
+plain 0 250 0.25 700 Epr grid | -0.8557 -0.1401
+plain 0 250 0.25 700 N1 grid | -0.2474 -0.1452
+plain 0 250 0.25 1000 Epr grid | -0.3057 -0.1401
+plain 0 250 0.25 1000 N1 grid | -0.3007 -0.1438
+plain 0 250 0.45 700 Epr grid | -1.1133 -0.2974
+plain 0 250 0.45 700 N1 grid | -3.6591 -0.3076
+plain 0 250 0.45 1000 Epr grid | -0.6010 -0.2973
+plain 0 250 0.45 1000 N1 grid | -0.5905 -0.3045
+plain 0 288.15 0.05 700 Epr grid | +0.0223 +0.0034
+plain 0 288.15 0.05 700 N1 grid | -0.0996 +0.1542
+plain 0 288.15 0.05 1000 Epr grid | +0.0032 +0.0034
+plain 0 288.15 0.05 1000 N1 grid | +0.0662 +0.1463
+plain 0 288.15 0.15 700 Epr grid | -2.2848 -0.2636
+plain 0 288.15 0.15 700 N1 grid | +0.7561 -0.1213
+plain 0 288.15 0.15 1000 Epr grid | -0.6119 -0.2637
+plain 0 288.15 0.15 1000 N1 grid | -0.5378 -0.1266
+plain 0 288.15 0.25 700 Epr grid | -1.5169 -0.1727
+plain 0 288.15 0.25 700 N1 grid | +0.4272 -0.0261
+plain 0 288.15 0.25 1000 Epr grid | -0.4188 -0.1729
+plain 0 288.15 0.25 1000 N1 grid | -0.3469 -0.0325
+plain 0 255.7 0.1 700 Epr grid | -0.9024 -0.1362
+plain 0 255.7 0.1 700 N1 grid | -0.0057 -0.1141
+plain 0 255.7 0.1 1000 Epr grid | -0.2997 -0.1362
+plain 0 255.7 0.1 1000 N1 grid | -0.2832 -0.1140
+plain 1 250 0.05 700 Epr grid | AT-SLICE (tables made here)
+plain 1 250 0.05 700 N1 grid | AT-SLICE (tables made here)
+plain 1 250 0.05 1000 Epr grid | AT-SLICE (tables made here)
+plain 1 250 0.05 1000 N1 grid | AT-SLICE (tables made here)
+plain 1 250 0.1 700 Epr grid | -0.8151 -0.1308
+plain 1 250 0.1 700 N1 grid | -0.1832 -0.1356
+plain 1 250 0.1 1000 Epr grid | -0.2846 -0.1308
+plain 1 250 0.1 1000 N1 grid | -0.2809 -0.1345
+plain 1 250 0.15 700 Epr grid | -1.2431 -0.2008
+plain 1 250 0.15 700 N1 grid | -0.3214 -0.2081
+plain 1 250 0.15 1000 Epr grid | -0.4374 -0.2007
+plain 1 250 0.15 1000 N1 grid | -0.4315 -0.2064
+plain 1 250 0.2 700 Epr grid | -1.2591 -0.2054
+plain 1 250 0.2 700 N1 grid | -0.3764 -0.2128
+plain 1 250 0.2 1000 Epr grid | -0.4478 -0.2054
+plain 1 250 0.2 1000 N1 grid | -0.4418 -0.2111
+plain 1 250 0.25 700 Epr grid | -0.8476 -0.1401
+plain 1 250 0.25 700 N1 grid | -0.2947 -0.1451
+plain 1 250 0.25 1000 Epr grid | -0.3055 -0.1401
+plain 1 250 0.25 1000 N1 grid | -0.3014 -0.1439
+plain 1 250 0.45 700 Epr grid | -1.1176 -0.2974
+plain 1 250 0.45 700 N1 grid | -3.5726 -0.3075
+plain 1 250 0.45 1000 Epr grid | -0.6005 -0.2973
+plain 1 250 0.45 1000 N1 grid | -0.5919 -0.3048
+plain 1 288.15 0.05 700 Epr grid | +0.0237 +0.0034
+plain 1 288.15 0.05 700 N1 grid | -0.0988 +0.1782
+plain 1 288.15 0.05 1000 Epr grid | +0.0032 +0.0034
+plain 1 288.15 0.05 1000 N1 grid | +0.0903 +0.1712
+plain 1 288.15 0.15 700 Epr grid | -2.2924 -0.2636
+plain 1 288.15 0.15 700 N1 grid | +0.7655 -0.0966
+plain 1 288.15 0.15 1000 Epr grid | -0.6107 -0.2637
+plain 1 288.15 0.15 1000 N1 grid | -0.5136 -0.1013
+plain 1 288.15 0.25 700 Epr grid | -1.5140 -0.1728
+plain 1 288.15 0.25 700 N1 grid | +0.4310 -0.0011
+plain 1 288.15 0.25 1000 Epr grid | -0.4180 -0.1729
+plain 1 288.15 0.25 1000 N1 grid | -0.3218 -0.0068
+plain 1 255.7 0.1 700 Epr grid | -0.8966 -0.1362
+plain 1 255.7 0.1 700 N1 grid | -0.0467 -0.1104
+plain 1 255.7 0.1 1000 Epr grid | -0.2994 -0.1362
+plain 1 255.7 0.1 1000 N1 grid | -0.2801 -0.1103
+plain 2 250 0.05 700 Epr grid | AT-SLICE (tables made here)
+plain 2 250 0.05 700 N1 grid | AT-SLICE (tables made here)
+plain 2 250 0.05 1000 Epr grid | AT-SLICE (tables made here)
+plain 2 250 0.05 1000 N1 grid | AT-SLICE (tables made here)
+plain 2 250 0.1 700 Epr grid | -0.8266 -0.1308
+plain 2 250 0.1 700 N1 grid | -0.1395 -0.1355
+plain 2 250 0.1 1000 Epr grid | -0.2852 -0.1308
+plain 2 250 0.1 1000 N1 grid | -0.2811 -0.1344
+plain 2 250 0.15 700 Epr grid | -1.2612 -0.2008
+plain 2 250 0.15 700 N1 grid | -0.2533 -0.2079
+plain 2 250 0.15 1000 Epr grid | -0.4382 -0.2007
+plain 2 250 0.15 1000 N1 grid | -0.4318 -0.2062
+plain 2 250 0.2 700 Epr grid | -1.2779 -0.2054
+plain 2 250 0.2 700 N1 grid | -0.3060 -0.2127
+plain 2 250 0.2 1000 Epr grid | -0.4487 -0.2054
+plain 2 250 0.2 1000 N1 grid | -0.4420 -0.2109
+plain 2 250 0.25 700 Epr grid | -0.8605 -0.1401
+plain 2 250 0.25 700 N1 grid | -0.2464 -0.1450
+plain 2 250 0.25 1000 Epr grid | -0.3061 -0.1401
+plain 2 250 0.25 1000 N1 grid | -0.3016 -0.1438
+plain 2 250 0.45 700 Epr grid | -1.1105 -0.2974
+plain 2 250 0.45 700 N1 grid | -3.6463 -0.3072
+plain 2 250 0.45 1000 Epr grid | -0.6018 -0.2973
+plain 2 250 0.45 1000 N1 grid | -0.5923 -0.3045
+plain 2 288.15 0.05 700 Epr grid | +0.0226 +0.0034
+plain 2 288.15 0.05 700 N1 grid | -0.0996 +0.1656
+plain 2 288.15 0.05 1000 Epr grid | +0.0032 +0.0034
+plain 2 288.15 0.05 1000 N1 grid | +0.0744 +0.1584
+plain 2 288.15 0.15 700 Epr grid | -2.3106 -0.2636
+plain 2 288.15 0.15 700 N1 grid | +0.7791 -0.1094
+plain 2 288.15 0.15 1000 Epr grid | -0.6134 -0.2637
+plain 2 288.15 0.15 1000 N1 grid | -0.5317 -0.1142
+plain 2 288.15 0.25 700 Epr grid | -1.5315 -0.1728
+plain 2 288.15 0.25 700 N1 grid | +0.4428 -0.0142
+plain 2 288.15 0.25 1000 Epr grid | -0.4198 -0.1729
+plain 2 288.15 0.25 1000 N1 grid | -0.3398 -0.0200
+plain 2 255.7 0.1 700 Epr grid | -0.9089 -0.1362
+plain 2 255.7 0.1 700 N1 grid | -0.0060 -0.1120
+plain 2 255.7 0.1 1000 Epr grid | -0.3001 -0.1362
+plain 2 255.7 0.1 1000 N1 grid | -0.2826 -0.1119
+plain 3 250 0.05 700 Epr grid | AT-SLICE (tables made here)
+plain 3 250 0.05 700 N1 grid | AT-SLICE (tables made here)
+plain 3 250 0.05 1000 Epr grid | AT-SLICE (tables made here)
+plain 3 250 0.05 1000 N1 grid | AT-SLICE (tables made here)
+plain 3 250 0.1 700 Epr grid | -0.7840 -0.1307
+plain 3 250 0.1 700 N1 grid | -0.1377 -0.1364
+plain 3 250 0.1 1000 Epr grid | -0.2826 -0.1307
+plain 3 250 0.1 1000 N1 grid | -0.2741 -0.1339
+plain 3 250 0.15 700 Epr grid | -1.1962 -0.2006
+plain 3 250 0.15 700 N1 grid | -0.2569 -0.2093
+plain 3 250 0.15 1000 Epr grid | -0.4342 -0.2006
+plain 3 250 0.15 1000 N1 grid | -0.4209 -0.2054
+plain 3 250 0.2 700 Epr grid | -1.2123 -0.2053
+plain 3 250 0.2 700 N1 grid | -0.3149 -0.2141
+plain 3 250 0.2 1000 Epr grid | -0.4445 -0.2053
+plain 3 250 0.2 1000 N1 grid | -0.4309 -0.2102
+plain 3 250 0.25 700 Epr grid | -0.8167 -0.1400
+plain 3 250 0.25 700 N1 grid | -0.2553 -0.1461
+plain 3 250 0.25 1000 Epr grid | -0.3032 -0.1400
+plain 3 250 0.25 1000 N1 grid | -0.2941 -0.1434
+plain 3 250 0.45 700 Epr grid | -1.1409 -0.2974
+plain 3 250 0.45 700 N1 grid | -3.7475 -0.3097
+plain 3 250 0.45 1000 Epr grid | -0.5960 -0.2972
+plain 3 250 0.45 1000 N1 grid | -0.5777 -0.3040
+plain 3 288.15 0.05 700 Epr grid | REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+plain 3 288.15 0.05 700 N1 grid | REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+plain 3 288.15 0.05 1000 Epr grid | +0.0032 +0.0034
+plain 3 288.15 0.05 1000 N1 grid | -0.0147 +0.0222
+plain 3 288.15 0.15 700 Epr grid | REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+plain 3 288.15 0.15 700 N1 grid | REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+plain 3 288.15 0.15 1000 Epr grid | -0.6024 -0.2635
+plain 3 288.15 0.15 1000 N1 grid | -0.6050 -0.2522
+plain 3 288.15 0.25 700 Epr grid | REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+plain 3 288.15 0.25 700 N1 grid | REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+plain 3 288.15 0.25 1000 Epr grid | -0.4122 -0.1728
+plain 3 288.15 0.25 1000 N1 grid | -0.4204 -0.1590
+plain 3 255.7 0.1 700 Epr grid | -0.8612 -0.1362
+plain 3 255.7 0.1 700 N1 grid | +0.0225 -0.1363
+plain 3 255.7 0.1 1000 Epr grid | -0.2970 -0.1362
+plain 3 255.7 0.1 1000 N1 grid | -0.2914 -0.1362
+cool 0 250 0.05 700 Epr grid | AT-SLICE (tables made here)
+cool 0 250 0.05 700 N1 grid | AT-SLICE (tables made here)
+cool 0 250 0.05 1000 Epr grid | AT-SLICE (tables made here)
+cool 0 250 0.05 1000 N1 grid | AT-SLICE (tables made here)
+cool 0 250 0.1 700 Epr grid | -1.1316 -0.1610
+cool 0 250 0.1 700 N1 grid | +0.2573 -0.1666
+cool 0 250 0.1 1000 Epr grid | -0.3519 -0.1610
+cool 0 250 0.1 1000 N1 grid | -0.3456 -0.1650
+cool 0 250 0.15 700 Epr grid | -1.7168 -0.2469
+cool 0 250 0.15 700 N1 grid | +0.3502 -0.2554
+cool 0 250 0.15 1000 Epr grid | -0.5410 -0.2469
+cool 0 250 0.15 1000 N1 grid | -0.5310 -0.2528
+cool 0 250 0.2 700 Epr grid | -1.7270 -0.2523
+cool 0 250 0.2 700 N1 grid | +0.3007 -0.2609
+cool 0 250 0.2 1000 Epr grid | -0.5540 -0.2523
+cool 0 250 0.2 1000 N1 grid | -0.5437 -0.2583
+cool 0 250 0.25 700 Epr grid | -1.1528 -0.1718
+cool 0 250 0.25 700 N1 grid | +0.1577 -0.1777
+cool 0 250 0.25 1000 Epr grid | -0.3779 -0.1718
+cool 0 250 0.25 1000 N1 grid | -0.3710 -0.1759
+cool 0 250 0.45 700 Epr grid | -1.1974 -0.3523
+cool 0 250 0.45 700 N1 grid | -1.4430 -0.3639
+cool 0 250 0.45 1000 Epr grid | -0.7276 -0.3521
+cool 0 250 0.45 1000 N1 grid | -0.7137 -0.3600
+cool 0 288.15 0.05 700 Epr grid | +0.0249 +0.0034
+cool 0 288.15 0.05 700 N1 grid | -0.1808 +0.1451
+cool 0 288.15 0.05 1000 Epr grid | +0.0033 +0.0034
+cool 0 288.15 0.05 1000 N1 grid | +0.0626 +0.1363
+cool 0 288.15 0.15 700 Epr grid | -3.1511 -0.3277
+cool 0 288.15 0.15 700 N1 grid | +1.7014 -0.1965
+cool 0 288.15 0.15 1000 Epr grid | -0.7586 -0.3278
+cool 0 288.15 0.15 1000 N1 grid | -0.6850 -0.2019
+cool 0 288.15 0.25 700 Epr grid | -2.0409 -0.2170
+cool 0 288.15 0.25 700 N1 grid | +1.0452 -0.0805
+cool 0 288.15 0.25 1000 Epr grid | -0.5222 -0.2171
+cool 0 288.15 0.25 1000 N1 grid | -0.4514 -0.0873
+cool 0 255.7 0.1 700 Epr grid | -1.2415 -0.1681
+cool 0 255.7 0.1 700 N1 grid | +0.3532 -0.1487
+cool 0 255.7 0.1 1000 Epr grid | -0.3704 -0.1681
+cool 0 255.7 0.1 1000 N1 grid | -0.3532 -0.1483
+cool 1 250 0.05 700 Epr grid | AT-SLICE (tables made here)
+cool 1 250 0.05 700 N1 grid | AT-SLICE (tables made here)
+cool 1 250 0.05 1000 Epr grid | AT-SLICE (tables made here)
+cool 1 250 0.05 1000 N1 grid | AT-SLICE (tables made here)
+cool 1 250 0.1 700 Epr grid | -1.1151 -0.1608
+cool 1 250 0.1 700 N1 grid | +0.2173 -0.1663
+cool 1 250 0.1 1000 Epr grid | -0.3494 -0.1608
+cool 1 250 0.1 1000 N1 grid | -0.3442 -0.1648
+cool 1 250 0.15 700 Epr grid | -1.6897 -0.2466
+cool 1 250 0.15 700 N1 grid | +0.2870 -0.2548
+cool 1 250 0.15 1000 Epr grid | -0.5371 -0.2466
+cool 1 250 0.15 1000 N1 grid | -0.5289 -0.2526
+cool 1 250 0.2 700 Epr grid | -1.6973 -0.2520
+cool 1 250 0.2 700 N1 grid | +0.2340 -0.2603
+cool 1 250 0.2 1000 Epr grid | -0.5500 -0.2519
+cool 1 250 0.2 1000 N1 grid | -0.5415 -0.2580
+cool 1 250 0.25 700 Epr grid | -1.1313 -0.1716
+cool 1 250 0.25 700 N1 grid | +0.1109 -0.1773
+cool 1 250 0.25 1000 Epr grid | -0.3751 -0.1716
+cool 1 250 0.25 1000 N1 grid | -0.3695 -0.1757
+cool 1 250 0.45 700 Epr grid | -1.1761 -0.3518
+cool 1 250 0.45 700 N1 grid | -1.8086 -0.3630
+cool 1 250 0.45 1000 Epr grid | -0.7226 -0.3516
+cool 1 250 0.45 1000 N1 grid | -0.7111 -0.3596
+cool 1 288.15 0.05 700 Epr grid | +0.0261 +0.0034
+cool 1 288.15 0.05 700 N1 grid | -0.1843 +0.1680
+cool 1 288.15 0.05 1000 Epr grid | +0.0033 +0.0034
+cool 1 288.15 0.05 1000 N1 grid | +0.0864 +0.1603
+cool 1 288.15 0.15 700 Epr grid | -3.1698 -0.3266
+cool 1 288.15 0.15 700 N1 grid | +1.8140 -0.1713
+cool 1 288.15 0.15 1000 Epr grid | -0.7509 -0.3266
+cool 1 288.15 0.15 1000 N1 grid | -0.6549 -0.1761
+cool 1 288.15 0.25 700 Epr grid | -2.0393 -0.2162
+cool 1 288.15 0.25 700 N1 grid | +1.1175 -0.0555
+cool 1 288.15 0.25 1000 Epr grid | -0.5169 -0.2164
+cool 1 288.15 0.25 1000 N1 grid | -0.4221 -0.0615
+cool 1 255.7 0.1 700 Epr grid | -1.2264 -0.1678
+cool 1 255.7 0.1 700 N1 grid | +0.3243 -0.1447
+cool 1 255.7 0.1 1000 Epr grid | -0.3676 -0.1678
+cool 1 255.7 0.1 1000 N1 grid | -0.3478 -0.1444
+cool 2 250 0.05 700 Epr grid | AT-SLICE (tables made here)
+cool 2 250 0.05 700 N1 grid | AT-SLICE (tables made here)
+cool 2 250 0.05 1000 Epr grid | AT-SLICE (tables made here)
+cool 2 250 0.05 1000 N1 grid | AT-SLICE (tables made here)
+cool 2 250 0.1 700 Epr grid | -1.1368 -0.1610
+cool 2 250 0.1 700 N1 grid | +0.2583 -0.1663
+cool 2 250 0.1 1000 Epr grid | -0.3519 -0.1609
+cool 2 250 0.1 1000 N1 grid | -0.3460 -0.1648
+cool 2 250 0.15 700 Epr grid | -1.7236 -0.2468
+cool 2 250 0.15 700 N1 grid | +0.3510 -0.2549
+cool 2 250 0.15 1000 Epr grid | -0.5409 -0.2468
+cool 2 250 0.15 1000 N1 grid | -0.5317 -0.2526
+cool 2 250 0.2 700 Epr grid | -1.7326 -0.2522
+cool 2 250 0.2 700 N1 grid | +0.3006 -0.2605
+cool 2 250 0.2 1000 Epr grid | -0.5539 -0.2521
+cool 2 250 0.2 1000 N1 grid | -0.5445 -0.2580
+cool 2 250 0.25 700 Epr grid | -1.1556 -0.1718
+cool 2 250 0.25 700 N1 grid | +0.1570 -0.1774
+cool 2 250 0.25 1000 Epr grid | -0.3779 -0.1717
+cool 2 250 0.25 1000 N1 grid | -0.3715 -0.1757
+cool 2 250 0.45 700 Epr grid | -1.1948 -0.3521
+cool 2 250 0.45 700 N1 grid | -1.4656 -0.3633
+cool 2 250 0.45 1000 Epr grid | -0.7277 -0.3520
+cool 2 250 0.45 1000 N1 grid | -0.7147 -0.3597
+cool 2 288.15 0.05 700 Epr grid | +0.0244 +0.0034
+cool 2 288.15 0.05 700 N1 grid | -0.1751 +0.1542
+cool 2 288.15 0.05 1000 Epr grid | +0.0034 +0.0034
+cool 2 288.15 0.05 1000 N1 grid | +0.0692 +0.1460
+cool 2 288.15 0.15 700 Epr grid | -3.1827 -0.3275
+cool 2 288.15 0.15 700 N1 grid | +1.7476 -0.1865
+cool 2 288.15 0.15 1000 Epr grid | -0.7589 -0.3276
+cool 2 288.15 0.15 1000 N1 grid | -0.6792 -0.1915
+cool 2 288.15 0.25 700 Epr grid | -2.0600 -0.2168
+cool 2 288.15 0.25 700 N1 grid | +1.0807 -0.0707
+cool 2 288.15 0.25 1000 Epr grid | -0.5224 -0.2170
+cool 2 288.15 0.25 1000 N1 grid | -0.4451 -0.0770
+cool 2 255.7 0.1 700 Epr grid | -1.2485 -0.1680
+cool 2 255.7 0.1 700 N1 grid | +0.3587 -0.1468
+cool 2 255.7 0.1 1000 Epr grid | -0.3704 -0.1680
+cool 2 255.7 0.1 1000 N1 grid | -0.3524 -0.1465
+cool 3 250 0.05 700 Epr grid | REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cool 3 250 0.05 700 N1 grid | REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cool 3 250 0.05 1000 Epr grid | AT-SLICE (tables made here)
+cool 3 250 0.05 1000 N1 grid | AT-SLICE (tables made here)
+cool 3 250 0.1 700 Epr grid | REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cool 3 250 0.1 700 N1 grid | REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cool 3 250 0.1 1000 Epr grid | -0.3463 -0.1609
+cool 3 250 0.1 1000 N1 grid | -0.3365 -0.1648
+cool 3 250 0.15 700 Epr grid | REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cool 3 250 0.15 700 N1 grid | REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cool 3 250 0.15 1000 Epr grid | -0.5324 -0.2466
+cool 3 250 0.15 1000 N1 grid | -0.5169 -0.2526
+cool 3 250 0.2 700 Epr grid | REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cool 3 250 0.2 700 N1 grid | REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cool 3 250 0.2 1000 Epr grid | -0.5451 -0.2520
+cool 3 250 0.2 1000 N1 grid | -0.5292 -0.2581
+cool 3 250 0.25 700 Epr grid | REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cool 3 250 0.25 700 N1 grid | REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cool 3 250 0.25 1000 Epr grid | -0.3717 -0.1716
+cool 3 250 0.25 1000 N1 grid | -0.3612 -0.1758
+cool 3 250 0.45 700 Epr grid | REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cool 3 250 0.45 700 N1 grid | REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cool 3 250 0.45 1000 Epr grid | -0.7162 -0.3516
+cool 3 250 0.45 1000 N1 grid | -0.6952 -0.3597
+cool 3 288.15 0.05 700 Epr grid | REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cool 3 288.15 0.05 700 N1 grid | REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cool 3 288.15 0.05 1000 Epr grid | +0.0033 +0.0034
+cool 3 288.15 0.05 1000 N1 grid | -0.0055 +0.0379
+cool 3 288.15 0.15 700 Epr grid | REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cool 3 288.15 0.15 700 N1 grid | REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cool 3 288.15 0.15 1000 Epr grid | -0.7400 -0.3260
+cool 3 288.15 0.15 1000 N1 grid | -0.7308 -0.3006
+cool 3 288.15 0.25 700 Epr grid | REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cool 3 288.15 0.25 700 N1 grid | REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cool 3 288.15 0.25 1000 Epr grid | -0.5091 -0.2160
+cool 3 288.15 0.25 1000 N1 grid | -0.5063 -0.1873
+cool 3 255.7 0.1 700 Epr grid | REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cool 3 255.7 0.1 700 N1 grid | REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cool 3 255.7 0.1 1000 Epr grid | -0.3641 -0.1679
+cool 3 255.7 0.1 1000 N1 grid | -0.3554 -0.1660
+cust 0 250 0.05 700 Epr grid | AT-SLICE (tables made here)
+cust 0 250 0.05 700 N1 grid | AT-SLICE (tables made here)
+cust 0 250 0.05 1000 Epr grid | AT-SLICE (tables made here)
+cust 0 250 0.05 1000 N1 grid | AT-SLICE (tables made here)
+cust 0 250 0.1 700 Epr grid | -1.0204 -0.1465
+cust 0 250 0.1 700 N1 grid | +0.1310 -0.1518
+cust 0 250 0.1 1000 Epr grid | -0.3222 -0.1465
+cust 0 250 0.1 1000 N1 grid | -0.3168 -0.1504
+cust 0 250 0.15 700 Epr grid | -1.5570 -0.2251
+cust 0 250 0.15 700 N1 grid | +0.1596 -0.2331
+cust 0 250 0.15 1000 Epr grid | -0.4959 -0.2251
+cust 0 250 0.15 1000 N1 grid | -0.4875 -0.2309
+cust 0 250 0.2 700 Epr grid | -1.5766 -0.2305
+cust 0 250 0.2 700 N1 grid | +0.1099 -0.2385
+cust 0 250 0.2 1000 Epr grid | -0.5086 -0.2304
+cust 0 250 0.2 1000 N1 grid | -0.4999 -0.2363
+cust 0 250 0.25 700 Epr grid | -1.0603 -0.1573
+cust 0 250 0.25 700 N1 grid | +0.0306 -0.1628
+cust 0 250 0.25 1000 Epr grid | -0.3476 -0.1572
+cust 0 250 0.25 1000 N1 grid | -0.3417 -0.1612
+cust 0 250 0.45 700 Epr grid | -1.1955 -0.3318
+cust 0 250 0.45 700 N1 grid | -2.5261 -0.3428
+cust 0 250 0.45 1000 Epr grid | -0.6845 -0.3316
+cust 0 250 0.45 1000 N1 grid | -0.6721 -0.3393
+cust 0 288.15 0.05 700 Epr grid | +0.0235 +0.0038
+cust 0 288.15 0.05 700 N1 grid | -0.1350 +0.1577
+cust 0 288.15 0.05 1000 Epr grid | +0.0036 +0.0037
+cust 0 288.15 0.05 1000 N1 grid | +0.0700 +0.1494
+cust 0 288.15 0.15 700 Epr grid | -2.8436 -0.2969
+cust 0 288.15 0.15 700 N1 grid | +1.2162 -0.1522
+cust 0 288.15 0.15 1000 Epr grid | -0.6990 -0.2969
+cust 0 288.15 0.15 1000 N1 grid | -0.6196 -0.1575
+cust 0 288.15 0.25 700 Epr grid | -1.8837 -0.1951
+cust 0 288.15 0.25 700 N1 grid | +0.7433 -0.0455
+cust 0 288.15 0.25 1000 Epr grid | -0.4810 -0.1953
+cust 0 288.15 0.25 1000 N1 grid | -0.4037 -0.0520
+cust 0 255.7 0.1 700 Epr grid | -1.1200 -0.1528
+cust 0 255.7 0.1 700 N1 grid | +0.2191 -0.1306
+cust 0 255.7 0.1 1000 Epr grid | -0.3393 -0.1527
+cust 0 255.7 0.1 1000 N1 grid | -0.3216 -0.1304
+cust 1 250 0.05 700 Epr grid | AT-SLICE (tables made here)
+cust 1 250 0.05 700 N1 grid | AT-SLICE (tables made here)
+cust 1 250 0.05 1000 Epr grid | AT-SLICE (tables made here)
+cust 1 250 0.05 1000 N1 grid | AT-SLICE (tables made here)
+cust 1 250 0.1 700 Epr grid | -1.0179 -0.1465
+cust 1 250 0.1 700 N1 grid | +0.0956 -0.1518
+cust 1 250 0.1 1000 Epr grid | -0.3220 -0.1465
+cust 1 250 0.1 1000 N1 grid | -0.3177 -0.1505
+cust 1 250 0.15 700 Epr grid | -1.5514 -0.2251
+cust 1 250 0.15 700 N1 grid | +0.1044 -0.2330
+cust 1 250 0.15 1000 Epr grid | -0.4957 -0.2251
+cust 1 250 0.15 1000 N1 grid | -0.4888 -0.2310
+cust 1 250 0.2 700 Epr grid | -1.5690 -0.2305
+cust 1 250 0.2 700 N1 grid | +0.0525 -0.2385
+cust 1 250 0.2 1000 Epr grid | -0.5084 -0.2304
+cust 1 250 0.2 1000 N1 grid | -0.5013 -0.2364
+cust 1 250 0.25 700 Epr grid | -1.0538 -0.1573
+cust 1 250 0.25 700 N1 grid | -0.0091 -0.1627
+cust 1 250 0.25 1000 Epr grid | -0.3474 -0.1572
+cust 1 250 0.25 1000 N1 grid | -0.3426 -0.1613
+cust 1 250 0.45 700 Epr grid | -1.1854 -0.3318
+cust 1 250 0.45 700 N1 grid | -2.6903 -0.3426
+cust 1 250 0.45 1000 Epr grid | -0.6841 -0.3316
+cust 1 250 0.45 1000 N1 grid | -0.6739 -0.3396
+cust 1 288.15 0.05 700 Epr grid | +0.0246 +0.0038
+cust 1 288.15 0.05 700 N1 grid | -0.1368 +0.1834
+cust 1 288.15 0.05 1000 Epr grid | +0.0036 +0.0037
+cust 1 288.15 0.05 1000 N1 grid | +0.0960 +0.1761
+cust 1 288.15 0.15 700 Epr grid | -2.8777 -0.2970
+cust 1 288.15 0.15 700 N1 grid | +1.2782 -0.1257
+cust 1 288.15 0.15 1000 Epr grid | -0.6979 -0.2970
+cust 1 288.15 0.15 1000 N1 grid | -0.5936 -0.1304
+cust 1 288.15 0.25 700 Epr grid | -1.8959 -0.1952
+cust 1 288.15 0.25 700 N1 grid | +0.7840 -0.0186
+cust 1 288.15 0.25 1000 Epr grid | -0.4803 -0.1954
+cust 1 288.15 0.25 1000 N1 grid | -0.3766 -0.0244
+cust 1 255.7 0.1 700 Epr grid | -1.1190 -0.1528
+cust 1 255.7 0.1 700 N1 grid | +0.1918 -0.1266
+cust 1 255.7 0.1 1000 Epr grid | -0.3391 -0.1528
+cust 1 255.7 0.1 1000 N1 grid | -0.3183 -0.1264
+cust 2 250 0.05 700 Epr grid | AT-SLICE (tables made here)
+cust 2 250 0.05 700 N1 grid | AT-SLICE (tables made here)
+cust 2 250 0.05 1000 Epr grid | AT-SLICE (tables made here)
+cust 2 250 0.05 1000 N1 grid | AT-SLICE (tables made here)
+cust 2 250 0.1 700 Epr grid | -1.0278 -0.1466
+cust 2 250 0.1 700 N1 grid | +0.1294 -0.1516
+cust 2 250 0.1 1000 Epr grid | -0.3226 -0.1465
+cust 2 250 0.1 1000 N1 grid | -0.3178 -0.1504
+cust 2 250 0.15 700 Epr grid | -1.5674 -0.2251
+cust 2 250 0.15 700 N1 grid | +0.1569 -0.2328
+cust 2 250 0.15 1000 Epr grid | -0.4966 -0.2251
+cust 2 250 0.15 1000 N1 grid | -0.4890 -0.2308
+cust 2 250 0.2 700 Epr grid | -1.5863 -0.2305
+cust 2 250 0.2 700 N1 grid | +0.1068 -0.2383
+cust 2 250 0.2 1000 Epr grid | -0.5094 -0.2304
+cust 2 250 0.2 1000 N1 grid | -0.5015 -0.2362
+cust 2 250 0.25 700 Epr grid | -1.0662 -0.1573
+cust 2 250 0.25 700 N1 grid | +0.0284 -0.1626
+cust 2 250 0.25 1000 Epr grid | -0.3481 -0.1572
+cust 2 250 0.25 1000 N1 grid | -0.3428 -0.1612
+cust 2 250 0.45 700 Epr grid | -1.1970 -0.3318
+cust 2 250 0.45 700 N1 grid | -2.4913 -0.3424
+cust 2 250 0.45 1000 Epr grid | -0.6855 -0.3316
+cust 2 250 0.45 1000 N1 grid | -0.6742 -0.3393
+cust 2 288.15 0.05 700 Epr grid | +0.0233 +0.0038
+cust 2 288.15 0.05 700 N1 grid | -0.1324 +0.1697
+cust 2 288.15 0.05 1000 Epr grid | +0.0037 +0.0037
+cust 2 288.15 0.05 1000 N1 grid | +0.0788 +0.1622
+cust 2 288.15 0.15 700 Epr grid | -2.8765 -0.2969
+cust 2 288.15 0.15 700 N1 grid | +1.2440 -0.1397
+cust 2 288.15 0.15 1000 Epr grid | -0.7007 -0.2970
+cust 2 288.15 0.15 1000 N1 grid | -0.6131 -0.1445
+cust 2 288.15 0.25 700 Epr grid | -1.9038 -0.1952
+cust 2 288.15 0.25 700 N1 grid | +0.7647 -0.0329
+cust 2 288.15 0.25 1000 Epr grid | -0.4822 -0.1953
+cust 2 288.15 0.25 1000 N1 grid | -0.3962 -0.0389
+cust 2 255.7 0.1 700 Epr grid | -1.1289 -0.1528
+cust 2 255.7 0.1 700 N1 grid | +0.2204 -0.1284
+cust 2 255.7 0.1 1000 Epr grid | -0.3398 -0.1528
+cust 2 255.7 0.1 1000 N1 grid | -0.3211 -0.1282
+cust 3 250 0.05 700 Epr grid | REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cust 3 250 0.05 700 N1 grid | REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cust 3 250 0.05 1000 Epr grid | AT-SLICE (tables made here)
+cust 3 250 0.05 1000 N1 grid | AT-SLICE (tables made here)
+cust 3 250 0.1 700 Epr grid | REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cust 3 250 0.1 700 N1 grid | REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cust 3 250 0.1 1000 Epr grid | -0.3193 -0.1465
+cust 3 250 0.1 1000 N1 grid | -0.3098 -0.1500
+cust 3 250 0.15 700 Epr grid | REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cust 3 250 0.15 700 N1 grid | REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cust 3 250 0.15 1000 Epr grid | -0.4915 -0.2250
+cust 3 250 0.15 1000 N1 grid | -0.4766 -0.2303
+cust 3 250 0.2 700 Epr grid | REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cust 3 250 0.2 700 N1 grid | REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cust 3 250 0.2 1000 Epr grid | -0.5040 -0.2304
+cust 3 250 0.2 1000 N1 grid | -0.4888 -0.2357
+cust 3 250 0.25 700 Epr grid | REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cust 3 250 0.25 700 N1 grid | REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cust 3 250 0.25 1000 Epr grid | -0.3444 -0.1572
+cust 3 250 0.25 1000 N1 grid | -0.3342 -0.1609
+cust 3 250 0.45 700 Epr grid | REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cust 3 250 0.45 700 N1 grid | REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cust 3 250 0.45 1000 Epr grid | -0.6781 -0.3316
+cust 3 250 0.45 1000 N1 grid | -0.6575 -0.3389
+cust 3 288.15 0.05 700 Epr grid | REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cust 3 288.15 0.05 700 N1 grid | REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cust 3 288.15 0.05 1000 Epr grid | +0.0036 +0.0037
+cust 3 288.15 0.05 1000 N1 grid | -0.0147 +0.0225
+cust 3 288.15 0.15 700 Epr grid | REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cust 3 288.15 0.15 700 N1 grid | REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cust 3 288.15 0.15 1000 Epr grid | -0.6875 -0.2966
+cust 3 288.15 0.15 1000 N1 grid | -0.6886 -0.2860
+cust 3 288.15 0.25 700 Epr grid | REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cust 3 288.15 0.25 700 N1 grid | REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cust 3 288.15 0.25 1000 Epr grid | -0.4729 -0.1951
+cust 3 288.15 0.25 1000 N1 grid | -0.4804 -0.1817
+cust 3 255.7 0.1 700 Epr grid | REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cust 3 255.7 0.1 700 N1 grid | REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cust 3 255.7 0.1 1000 Epr grid | -0.3359 -0.1527
+cust 3 255.7 0.1 1000 N1 grid | -0.3294 -0.1531

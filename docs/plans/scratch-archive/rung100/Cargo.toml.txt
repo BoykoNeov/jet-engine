@@ -1,0 +1,38 @@
+[package]
+name = "rung100-probe"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+turbojet = { path = "W:/Claude_projects/jet engine/rust" }
+
+[profile.release]
+opt-level = 3
+
+[[bin]]
+name = "givens"
+path = "src/givens.rs"
+
+[[bin]]
+name = "fan2"
+path = "src/fan2.rs"
+
+[[bin]]
+name = "why"
+path = "src/why.rs"
+
+[[bin]]
+name = "gridlow"
+path = "src/gridlow.rs"
+
+[[bin]]
+name = "reach"
+path = "src/reach.rs"
+
+[[bin]]
+name = "eprguess"
+path = "src/eprguess.rs"
+
+[[bin]]
+name = "bars"
+path = "src/bars.rs"

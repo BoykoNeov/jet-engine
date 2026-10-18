@@ -1,0 +1,8 @@
+(a) push identity: absolute worst 6.480e-11 N per kg/s; smallest |thrust| seen 3.267
+(b) plain         choked: |F̂_B(x_ν) − F̂_99| / F worst 1.698e-15
+(b) cool          choked: |F̂_B(x_ν) − F̂_99| / F worst 8.315e-14
+(b) cust          choked: |F̂_B(x_ν) − F̂_99| / F worst 1.517e-15
+(b) gen LP share  choked: |F̂_B(x_ν) − F̂_99| / F worst 1.598e-15
+(b) lever bleed   choked: |F̂_B(x_ν) − F̂_99| / F worst 1.868e-15
+(b) gen HP power  choked: |F̂_B(x_ν) − F̂_99| / F worst 1.422e-15
+(b) all: 8.315e-14

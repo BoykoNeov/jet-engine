@@ -1,0 +1,120 @@
+plain flow/press 250K M0.1  700   UN | new formula miss +0.1202% | airflow guess +0.1202% | rung 99 formula -1.3104%
+plain flow/press 250K M0.1  1000  ch | new formula miss -0.0061% | airflow guess -0.0061% | rung 99 formula -0.0061%
+plain flow/press 250K M0.3  700   UN | new formula miss +0.1972% | airflow guess +0.1972% | rung 99 formula -0.6417%
+plain flow/press 250K M0.3  1000  ch | new formula miss -0.0176% | airflow guess -0.0176% | rung 99 formula -0.0176%
+plain flow/press 250K M0.4  700   UN | new formula miss +0.1100% | airflow guess +0.1100% | rung 99 formula -0.2894%
+plain flow/press 250K M0.4  1000  ch | new formula miss -0.0215% | airflow guess -0.0215% | rung 99 formula -0.0215%
+plain flow/press 288K M0.1  700   UN | new formula miss +2.1126% | airflow guess +2.1126% | rung 99 formula -17.0656%
+plain flow/press 288K M0.1  1000  ch | new formula miss +0.0005% | airflow guess +0.0005% | rung 99 formula +0.0005%
+plain flow/press 288K M0.3  700   UN | new formula miss +5.0703% | airflow guess +5.0703% | rung 99 formula -11.1103%
+plain flow/press 288K M0.3  1000  ch | new formula miss +0.0041% | airflow guess +0.0041% | rung 99 formula +0.0041%
+plain press/flow 250K M0.1  700   UN | new formula miss +0.1181% | airflow guess +0.1181% | rung 99 formula -1.2574%
+plain press/flow 250K M0.1  1000  ch | new formula miss -0.0061% | airflow guess -0.0061% | rung 99 formula -0.0061%
+plain press/flow 250K M0.3  700   UN | new formula miss +0.1884% | airflow guess +0.1884% | rung 99 formula -0.5978%
+plain press/flow 250K M0.3  1000  ch | new formula miss -0.0175% | airflow guess -0.0175% | rung 99 formula -0.0175%
+plain press/flow 250K M0.4  700   UN | new formula miss +0.0997% | airflow guess +0.0997% | rung 99 formula -0.2601%
+plain press/flow 250K M0.4  1000  ch | new formula miss -0.0214% | airflow guess -0.0214% | rung 99 formula -0.0214%
+plain press/flow 288K M0.1  700   UN | new formula miss +2.2220% | airflow guess +2.2220% | rung 99 formula -17.4680%
+plain press/flow 288K M0.1  1000  ch | new formula miss +0.0004% | airflow guess +0.0004% | rung 99 formula +0.0004%
+plain press/flow 288K M0.3  700   UN | new formula miss +5.2249% | airflow guess +5.2249% | rung 99 formula -11.0666%
+plain press/flow 288K M0.3  1000  ch | new formula miss +0.0041% | airflow guess +0.0041% | rung 99 formula +0.0041%
+plain tilted     250K M0.1  700   UN | new formula miss +0.1271% | airflow guess +0.1271% | rung 99 formula -1.3665%
+plain tilted     250K M0.1  1000  ch | new formula miss -0.0061% | airflow guess -0.0061% | rung 99 formula -0.0061%
+plain tilted     250K M0.3  700   UN | new formula miss +0.2110% | airflow guess +0.2110% | rung 99 formula -0.6729%
+plain tilted     250K M0.3  1000  ch | new formula miss -0.0176% | airflow guess -0.0176% | rung 99 formula -0.0176%
+plain tilted     250K M0.4  700   UN | new formula miss +0.1211% | airflow guess +0.1211% | rung 99 formula -0.3075%
+plain tilted     250K M0.4  1000  ch | new formula miss -0.0216% | airflow guess -0.0216% | rung 99 formula -0.0216%
+plain tilted     288K M0.1  700   UN | new formula miss +2.2180% | airflow guess +2.2180% | rung 99 formula -17.7294%
+plain tilted     288K M0.1  1000  ch | new formula miss +0.0005% | airflow guess +0.0005% | rung 99 formula +0.0005%
+plain tilted     288K M0.3  700   UN | new formula miss +5.2997% | airflow guess +5.2997% | rung 99 formula -11.4576%
+plain tilted     288K M0.3  1000  ch | new formula miss +0.0041% | airflow guess +0.0041% | rung 99 formula +0.0041%
+plain flat-lp    250K M0.1  700   UN | new formula miss +0.0877% | airflow guess +0.0877% | rung 99 formula -0.9722%
+plain flat-lp    250K M0.1  1000  ch | new formula miss -0.0060% | airflow guess -0.0060% | rung 99 formula -0.0060%
+plain flat-lp    250K M0.3  700   UN | new formula miss +0.1245% | airflow guess +0.1245% | rung 99 formula -0.4296%
+plain flat-lp    250K M0.3  1000  ch | new formula miss -0.0173% | airflow guess -0.0173% | rung 99 formula -0.0173%
+plain flat-lp    250K M0.4  700   UN | new formula miss +0.0479% | airflow guess +0.0479% | rung 99 formula -0.1643%
+plain flat-lp    250K M0.4  1000  ch | new formula miss -0.0212% | airflow guess -0.0212% | rung 99 formula -0.0212%
+plain flat-lp 288.15 M0.1 700: refused
+plain flat-lp    288K M0.1  1000  ch | new formula miss +0.0004% | airflow guess +0.0004% | rung 99 formula +0.0004%
+plain flat-lp 288.15 M0.3 700: refused
+plain flat-lp    288K M0.3  1000  ch | new formula miss +0.0040% | airflow guess +0.0040% | rung 99 formula +0.0040%
+cool  flow/press 250K M0.1  700   UN | new formula miss +0.6614% | airflow guess +0.6614% | rung 99 formula -6.1417%
+cool  flow/press 250K M0.1  1000  ch | new formula miss -0.0063% | airflow guess -0.0063% | rung 99 formula -0.0063%
+cool  flow/press 250K M0.3  700   UN | new formula miss +1.4303% | airflow guess +1.4303% | rung 99 formula -3.6971%
+cool  flow/press 250K M0.3  1000  ch | new formula miss -0.0181% | airflow guess -0.0181% | rung 99 formula -0.0181%
+cool  flow/press 250K M0.4  700   UN | new formula miss +1.3007% | airflow guess +1.3007% | rung 99 formula -2.3214%
+cool  flow/press 250K M0.4  1000  ch | new formula miss -0.0222% | airflow guess -0.0222% | rung 99 formula -0.0222%
+cool  flow/press 288K M0.1  700   UN | new formula miss +7.2375% | airflow guess +7.2375% | rung 99 formula -48.4890%
+cool  flow/press 288K M0.1  1000  ch | new formula miss +0.0005% | airflow guess +0.0005% | rung 99 formula +0.0005%
+cool  flow/press 288K M0.3  700   UN | new formula miss +14.9991% | airflow guess +14.9991% | rung 99 formula -27.6494%
+cool  flow/press 288K M0.3  1000  ch | new formula miss +0.0043% | airflow guess +0.0043% | rung 99 formula +0.0043%
+cool  press/flow 250K M0.1  700   UN | new formula miss +0.6435% | airflow guess +0.6435% | rung 99 formula -5.8274%
+cool  press/flow 250K M0.1  1000  ch | new formula miss -0.0062% | airflow guess -0.0062% | rung 99 formula -0.0062%
+cool  press/flow 250K M0.3  700   UN | new formula miss +1.3589% | airflow guess +1.3589% | rung 99 formula -3.4080%
+cool  press/flow 250K M0.3  1000  ch | new formula miss -0.0179% | airflow guess -0.0179% | rung 99 formula -0.0179%
+cool  press/flow 250K M0.4  700   UN | new formula miss +1.2081% | airflow guess +1.2081% | rung 99 formula -2.0865%
+cool  press/flow 250K M0.4  1000  ch | new formula miss -0.0219% | airflow guess -0.0219% | rung 99 formula -0.0219%
+cool  press/flow 288K M0.1  700   UN | new formula miss +7.5291% | airflow guess +7.5291% | rung 99 formula -50.0429%
+cool  press/flow 288K M0.1  1000  ch | new formula miss +0.0005% | airflow guess +0.0005% | rung 99 formula +0.0005%
+cool  press/flow 288K M0.3  700   UN | new formula miss +15.3484% | airflow guess +15.3484% | rung 99 formula -27.4384%
+cool  press/flow 288K M0.3  1000  ch | new formula miss +0.0043% | airflow guess +0.0043% | rung 99 formula +0.0043%
+cool  tilted     250K M0.1  700   UN | new formula miss +0.6820% | airflow guess +0.6820% | rung 99 formula -6.2559%
+cool  tilted     250K M0.1  1000  ch | new formula miss -0.0063% | airflow guess -0.0063% | rung 99 formula -0.0063%
+cool  tilted     250K M0.3  700   UN | new formula miss +1.4679% | airflow guess +1.4679% | rung 99 formula -3.7383%
+cool  tilted     250K M0.3  1000  ch | new formula miss -0.0182% | airflow guess -0.0182% | rung 99 formula -0.0182%
+cool  tilted     250K M0.4  700   UN | new formula miss +1.3312% | airflow guess +1.3312% | rung 99 formula -2.3369%
+cool  tilted     250K M0.4  1000  ch | new formula miss -0.0222% | airflow guess -0.0222% | rung 99 formula -0.0222%
+cool  tilted     288K M0.1  700   UN | new formula miss +7.4548% | airflow guess +7.4548% | rung 99 formula -49.9396%
+cool  tilted     288K M0.1  1000  ch | new formula miss +0.0005% | airflow guess +0.0005% | rung 99 formula +0.0005%
+cool  tilted     288K M0.3  700   UN | new formula miss +15.4650% | airflow guess +15.4650% | rung 99 formula -28.2514%
+cool  tilted     288K M0.3  1000  ch | new formula miss +0.0043% | airflow guess +0.0043% | rung 99 formula +0.0043%
+cool flat-lp 250 M0.1 700: refused
+cool  flat-lp    250K M0.1  1000  ch | new formula miss -0.0061% | airflow guess -0.0061% | rung 99 formula -0.0061%
+cool flat-lp 250 M0.3 700: refused
+cool  flat-lp    250K M0.3  1000  ch | new formula miss -0.0177% | airflow guess -0.0177% | rung 99 formula -0.0177%
+cool flat-lp 250 M0.4 700: refused
+cool  flat-lp    250K M0.4  1000  ch | new formula miss -0.0217% | airflow guess -0.0217% | rung 99 formula -0.0217%
+cool flat-lp 288.15 M0.1 700: refused
+cool  flat-lp    288K M0.1  1000  ch | new formula miss +0.0005% | airflow guess +0.0005% | rung 99 formula +0.0005%
+cool flat-lp 288.15 M0.3 700: refused
+cool  flat-lp    288K M0.3  1000  ch | new formula miss +0.0042% | airflow guess +0.0042% | rung 99 formula +0.0042%
+cust  flow/press 250K M0.1  700   UN | new formula miss +0.4192% | airflow guess +0.4192% | rung 99 formula -3.9693%
+cust  flow/press 250K M0.1  1000  ch | new formula miss -0.0069% | airflow guess -0.0069% | rung 99 formula -0.0069%
+cust  flow/press 250K M0.3  700   UN | new formula miss +0.9049% | airflow guess +0.9049% | rung 99 formula -2.3851%
+cust  flow/press 250K M0.3  1000  ch | new formula miss -0.0198% | airflow guess -0.0198% | rung 99 formula -0.0198%
+cust  flow/press 250K M0.4  700   UN | new formula miss +0.8005% | airflow guess +0.8005% | rung 99 formula -1.4628%
+cust  flow/press 250K M0.4  1000  ch | new formula miss -0.0243% | airflow guess -0.0243% | rung 99 formula -0.0243%
+cust  flow/press 288K M0.1  700   UN | new formula miss +4.8631% | airflow guess +4.8631% | rung 99 formula -34.0032%
+cust  flow/press 288K M0.1  1000  ch | new formula miss +0.0005% | airflow guess +0.0005% | rung 99 formula +0.0005%
+cust  flow/press 288K M0.3  700   UN | new formula miss +11.5108% | airflow guess +11.5108% | rung 99 formula -21.5477%
+cust  flow/press 288K M0.3  1000  ch | new formula miss +0.0047% | airflow guess +0.0047% | rung 99 formula +0.0047%
+cust  press/flow 250K M0.1  700   UN | new formula miss +0.4271% | airflow guess +0.4271% | rung 99 formula -3.9407%
+cust  press/flow 250K M0.1  1000  ch | new formula miss -0.0068% | airflow guess -0.0068% | rung 99 formula -0.0068%
+cust  press/flow 250K M0.3  700   UN | new formula miss +0.9080% | airflow guess +0.9080% | rung 99 formula -2.3191%
+cust  press/flow 250K M0.3  1000  ch | new formula miss -0.0197% | airflow guess -0.0197% | rung 99 formula -0.0197%
+cust  press/flow 250K M0.4  700   UN | new formula miss +0.7918% | airflow guess +0.7918% | rung 99 formula -1.3980%
+cust  press/flow 250K M0.4  1000  ch | new formula miss -0.0242% | airflow guess -0.0242% | rung 99 formula -0.0242%
+cust  press/flow 288K M0.1  700   UN | new formula miss +5.2130% | airflow guess +5.2130% | rung 99 formula -35.7076%
+cust  press/flow 288K M0.1  1000  ch | new formula miss +0.0005% | airflow guess +0.0005% | rung 99 formula +0.0005%
+cust  press/flow 288K M0.3  700   UN | new formula miss +12.1071% | airflow guess +12.1071% | rung 99 formula -21.9406%
+cust  press/flow 288K M0.3  1000  ch | new formula miss +0.0047% | airflow guess +0.0047% | rung 99 formula +0.0047%
+cust  tilted     250K M0.1  700   UN | new formula miss +0.4380% | airflow guess +0.4380% | rung 99 formula -4.0988%
+cust  tilted     250K M0.1  1000  ch | new formula miss -0.0069% | airflow guess -0.0069% | rung 99 formula -0.0069%
+cust  tilted     250K M0.3  700   UN | new formula miss +0.9457% | airflow guess +0.9457% | rung 99 formula -2.4565%
+cust  tilted     250K M0.3  1000  ch | new formula miss -0.0199% | airflow guess -0.0199% | rung 99 formula -0.0199%
+cust  tilted     250K M0.4  700   UN | new formula miss +0.8388% | airflow guess +0.8388% | rung 99 formula -1.5072%
+cust  tilted     250K M0.4  1000  ch | new formula miss -0.0244% | airflow guess -0.0244% | rung 99 formula -0.0244%
+cust  tilted     288K M0.1  700   UN | new formula miss +5.0646% | airflow guess +5.0646% | rung 99 formula -35.2336%
+cust  tilted     288K M0.1  1000  ch | new formula miss +0.0005% | airflow guess +0.0005% | rung 99 formula +0.0005%
+cust  tilted     288K M0.3  700   UN | new formula miss +11.9652% | airflow guess +11.9652% | rung 99 formula -22.1767%
+cust  tilted     288K M0.3  1000  ch | new formula miss +0.0047% | airflow guess +0.0047% | rung 99 formula +0.0047%
+cust flat-lp 250 M0.1 700: refused
+cust  flat-lp    250K M0.1  1000  ch | new formula miss -0.0067% | airflow guess -0.0067% | rung 99 formula -0.0067%
+cust flat-lp 250 M0.3 700: refused
+cust  flat-lp    250K M0.3  1000  ch | new formula miss -0.0195% | airflow guess -0.0195% | rung 99 formula -0.0195%
+cust flat-lp 250 M0.4 700: refused
+cust  flat-lp    250K M0.4  1000  ch | new formula miss -0.0239% | airflow guess -0.0239% | rung 99 formula -0.0239%
+cust flat-lp 288.15 M0.1 700: refused
+cust  flat-lp    288K M0.1  1000  ch | new formula miss +0.0005% | airflow guess +0.0005% | rung 99 formula +0.0005%
+cust flat-lp 288.15 M0.3 700: refused
+cust  flat-lp    288K M0.3  1000  ch | new formula miss +0.0046% | airflow guess +0.0046% | rung 99 formula +0.0046%

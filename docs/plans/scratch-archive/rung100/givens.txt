@@ -1,0 +1,527 @@
+== A: hot gas γ and R
+plain              γ(500,0) 1.300000000000000 γ(1500,.03) 1.300000000000000 R(0) 285.9230769231 R(.03) 285.9230769231
+gen HP share .05   γ(500,0) 1.300000000000000 γ(1500,.03) 1.300000000000000 R(0) 285.9230769231 R(.03) 285.9230769231
+gen LP share .05   γ(500,0) 1.300000000000000 γ(1500,.03) 1.300000000000000 R(0) 285.9230769231 R(.03) 285.9230769231
+gen HP power .02   γ(500,0) 1.300000000000000 γ(1500,.03) 1.300000000000000 R(0) 285.9230769231 R(.03) 285.9230769231
+cust share .05     γ(500,0) 1.300000000000000 γ(1500,.03) 1.300000000000000 R(0) 285.9230769231 R(.03) 285.9230769231
+cust amount .05    γ(500,0) 1.300000000000000 γ(1500,.03) 1.300000000000000 R(0) 285.9230769231 R(.03) 285.9230769231
+cool .05/.05       γ(500,0) 1.300000000000000 γ(1500,.03) 1.300000000000000 R(0) 285.9230769231 R(.03) 285.9230769231
+lever stator       γ(500,0) 1.300000000000000 γ(1500,.03) 1.300000000000000 R(0) 285.9230769231 R(.03) 285.9230769231
+lever bleed        γ(500,0) 1.300000000000000 γ(1500,.03) 1.300000000000000 R(0) 285.9230769231 R(.03) 285.9230769231
+lever both         γ(500,0) 1.300000000000000 γ(1500,.03) 1.300000000000000 R(0) 285.9230769231 R(.03) 285.9230769231
+
+== B: F_true − (push − V0·face), over |F|, steady points 600..1500 K
+plain              choked  496 worst 6.05e-15 | unchoked   86 worst 1.91e-13
+gen HP share .05   choked  483 worst 4.57e-15 | unchoked   92 worst 2.67e-13
+gen LP share .05   choked  489 worst 5.94e-15 | unchoked   92 worst 2.42e-13
+gen HP power .02   choked  463 worst 6.39e-15 | unchoked   78 worst 1.32e-13
+cust share .05     choked  482 worst 9.63e-15 | unchoked   90 worst 3.21e-13
+cust amount .05    choked  440 worst 1.39e-14 | unchoked  104 worst 1.46e-12
+cool .05/.05       choked  460 worst 4.49e-13 | unchoked  106 worst 2.42e-13
+lever stator       choked  484 worst 3.29e-15 | unchoked   78 worst 1.85e-13
+lever bleed        choked  490 worst 2.35e-14 | unchoked  101 worst 2.75e-13
+lever both         choked  480 worst 3.29e-14 | unchoked   84 worst 1.72e-13
+
+== C: rung 99's shipped formula F̂ vs push − V0·ṁ̂ at a pressure-ratio reading (over the table's thrust span)
+  flow/press M0.5  from 1000 corr_p true : design rows unchoked  0 | readings choked worst 1.75e-15 | unchoked   0 worst 0.00e0
+  flow/press M1.4  from 1000 corr_p true : design rows unchoked  0 | readings choked worst 2.95e-15 | unchoked   0 worst 0.00e0
+  flow/press M0.05 from 700 corr_p true : design rows unchoked  0 | readings choked worst 1.02e-15 | unchoked  19 worst 1.03e-2
+  flow/press M1.4  from 700 corr_p true : design rows unchoked  1 | readings choked worst 4.26e-3 | unchoked   0 worst 0.00e0
+  flow/press M0.5  from 1000 corr_p false: design rows unchoked  0 | readings choked worst 6.38e-1 | unchoked   0 worst 0.00e0
+  press/flow M0.5  from 1000 corr_p true : design rows unchoked  0 | readings choked worst 1.91e-15 | unchoked   0 worst 0.00e0
+  press/flow M1.4  from 1000 corr_p true : design rows unchoked  0 | readings choked worst 3.26e-15 | unchoked   0 worst 0.00e0
+  press/flow M0.05 from 700 corr_p true : design rows unchoked  0 | readings choked worst 9.20e-16 | unchoked  19 worst 1.01e-2
+  press/flow M1.4  from 700 corr_p true : design rows unchoked  1 | readings choked worst 3.87e-3 | unchoked   0 worst 0.00e0
+  press/flow M0.5  from 1000 corr_p false: design rows unchoked  0 | readings choked worst 6.39e-1 | unchoked   0 worst 0.00e0
+  tilted     M0.5  from 1000 corr_p true : design rows unchoked  0 | readings choked worst 1.91e-15 | unchoked   0 worst 0.00e0
+  tilted     M1.4  from 1000 corr_p true : design rows unchoked  0 | readings choked worst 3.55e-15 | unchoked   0 worst 0.00e0
+  tilted     M0.05 from 700 corr_p true : design rows unchoked  0 | readings choked worst 6.12e-16 | unchoked  19 worst 1.05e-2
+  tilted     M1.4  from 700 corr_p true : design rows unchoked  1 | readings choked worst 4.40e-3 | unchoked   0 worst 0.00e0
+  tilted     M0.5  from 1000 corr_p false: design rows unchoked  0 | readings choked worst 6.37e-1 | unchoked   0 worst 0.00e0
+  flat-lp    M0.5  from 1000 corr_p true : design rows unchoked  0 | readings choked worst 1.93e-15 | unchoked   0 worst 0.00e0
+  flat-lp    M1.4  from 1000 corr_p true : design rows unchoked  0 | readings choked worst 3.85e-15 | unchoked   0 worst 0.00e0
+  flat-lp    M0.05 from 700 corr_p true : design rows unchoked  0 | readings choked worst 1.03e-15 | unchoked  18 worst 9.03e-3
+  flat-lp M1.4 700 refused: At the starting throttle (700 K): the engine has no steady operating point: the compressors would have to run off the part of their maps the model covers. Mostly this is a throttle too low for the air (on the flat-LP map at the design flight, below about 700–900 K; warmer air raises that, and so does flying faster, which warms the air before it reaches the engine — on the flat-LP map about 1000 K at Mach 1.6, 1200 K at Mach 2, 1600 K at Mach 2.6; colder air lowers it), or a large fixed load or amount of air in thin air; away from the design flight it can also be the top of the range (measured: 1700 K at 11 km on the map curved along flow at LP, along pressure at HP); or a lever whose schedule does nearly all its travel just below the design speed. Move this throttle toward the middle of its range, or start the lever's schedule lower. (The model says: rung-40 two-shaft closure does not bracket at nu=(0.7100,0.6768), Tt4=700 — off the modeled speed-line region.)
+  flat-lp    M0.5  from 1000 corr_p false: design rows unchoked  0 | readings choked worst 6.43e-1 | unchoked   0 worst 0.00e0
+
+== D: fan-speed approximation at unscored flights. Columns: flight T4 | F_true−F̂ over F: rung 99 / approx | π_LPT true / approx / table | pt45 true/approx | Tt4 at that fan speed on the table
+  plain         flow/press 250K M0.1  T4 650   UN | +31.921% / +19.420% | π 0.7238 / 0.7571 / 0.6884 | pt45 1.1183 | Tt4tab 577
+  plain         flow/press 250K M0.1  T4 700   UN |  +7.110% /  +5.071% | π 0.6972 / 0.7011 / 0.6884 | pt45 1.0279 | Tt4tab 680
+  plain         flow/press 250K M0.1  T4 750   UN |  +0.060% /  +0.035% | π 0.6886 / 0.6886 / 0.6884 | pt45 1.0002 | Tt4tab 749
+  plain         flow/press 250K M0.1  T4 800   ch |  -0.071% /  -0.071% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9996 | Tt4tab 799
+  plain         flow/press 250K M0.1  T4 900   ch |  -0.082% /  -0.082% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9995 | Tt4tab 898
+  plain         flow/press 250K M0.1  T4 1000  ch |  -0.093% /  -0.093% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9994 | Tt4tab 998
+  plain         flow/press 250K M0.3  T4 650   UN | +25.376% / +16.018% | π 0.7126 / 0.7308 / 0.6884 | pt45 1.0782 | Tt4tab 600
+  plain         flow/press 250K M0.3  T4 700   UN |  +4.046% /  +2.954% | π 0.6929 / 0.6943 / 0.6884 | pt45 1.0139 | Tt4tab 690
+  plain         flow/press 250K M0.3  T4 750   ch |  -0.076% /  -0.076% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9997 | Tt4tab 749
+  plain         flow/press 250K M0.3  T4 800   ch |  -0.078% /  -0.078% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9997 | Tt4tab 799
+  plain         flow/press 250K M0.3  T4 900   ch |  -0.084% /  -0.084% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9996 | Tt4tab 899
+  plain         flow/press 250K M0.3  T4 1000  ch |  -0.097% /  -0.097% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9995 | Tt4tab 998
+  plain         flow/press 250K M0.4  T4 650   UN | +18.704% / +12.244% | π 0.7051 / 0.7152 / 0.6884 | pt45 1.0525 | Tt4tab 615
+  plain         flow/press 250K M0.4  T4 700   UN |  +1.861% /  +1.387% | π 0.6904 / 0.6908 / 0.6884 | pt45 1.0060 | Tt4tab 695
+  plain         flow/press 250K M0.4  T4 750   ch |  -0.073% /  -0.073% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9998 | Tt4tab 749
+  plain         flow/press 250K M0.4  T4 800   ch |  -0.078% /  -0.078% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9997 | Tt4tab 799
+  plain         flow/press 250K M0.4  T4 900   ch |  -0.084% /  -0.084% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9996 | Tt4tab 899
+  plain         flow/press 250K M0.4  T4 1000  ch |  -0.092% /  -0.092% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9995 | Tt4tab 998
+  plain flow/press M0.1 650: approx REFUSED rung-97: the nozzle cannot pass the LP turbine's flow against 101325 Pa even with the turbine nearly unexpanded (pi_LPT 0.9995) — the engine has no operating point at this instant
+  plain         flow/press 288K M0.1  T4 700   UN | +68.718% / +35.110% | π 0.7674 / 0.8678 / 0.7014 | pt45 1.2434 | Tt4tab 548
+  plain         flow/press 288K M0.1  T4 750   UN | +30.774% / +18.843% | π 0.7226 / 0.7542 / 0.6884 | pt45 1.1142 | Tt4tab 669
+  plain         flow/press 288K M0.1  T4 800   UN |  +8.622% /  +6.082% | π 0.6989 / 0.7040 / 0.6884 | pt45 1.0336 | Tt4tab 774
+  plain         flow/press 288K M0.1  T4 900   ch |  +0.001% /  +0.001% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0000 | Tt4tab 900
+  plain         flow/press 288K M0.1  T4 1000  ch |  +0.004% /  +0.004% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0000 | Tt4tab 1000
+  plain         flow/press 288K M0.3  T4 650   UN | +134.935% / +59.949% | π 0.8077 / 0.9854 / 0.7286 | pt45 1.3546 | Tt4tab 466
+  plain         flow/press 288K M0.3  T4 700   UN | +64.233% / +34.367% | π 0.7468 / 0.8113 / 0.6944 | pt45 1.1805 | Tt4tab 581
+  plain         flow/press 288K M0.3  T4 750   UN | +24.375% / +15.488% | π 0.7117 / 0.7289 / 0.6884 | pt45 1.0753 | Tt4tab 695
+  plain         flow/press 288K M0.3  T4 800   UN |  +5.254% /  +3.810% | π 0.6941 / 0.6961 / 0.6884 | pt45 1.0178 | Tt4tab 786
+  plain         flow/press 288K M0.3  T4 900   ch |  +0.013% /  +0.013% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0000 | Tt4tab 900
+  plain         flow/press 288K M0.3  T4 1000  ch |  +0.014% /  +0.014% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0001 | Tt4tab 1000
+  plain         press/flow 250K M0.1  T4 650   UN | +29.926% / +17.955% | π 0.7237 / 0.7538 / 0.6884 | pt45 1.1078 | Tt4tab 580
+  plain         press/flow 250K M0.1  T4 700   UN |  +6.323% /  +4.433% | π 0.6969 / 0.7002 / 0.6884 | pt45 1.0242 | Tt4tab 682
+  plain         press/flow 250K M0.1  T4 750   UN |  +0.000% /  -0.018% | π 0.6886 / 0.6886 / 0.6884 | pt45 0.9999 | Tt4tab 749
+  plain         press/flow 250K M0.1  T4 800   ch |  -0.092% /  -0.092% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9995 | Tt4tab 799
+  plain         press/flow 250K M0.1  T4 900   ch |  -0.104% /  -0.104% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9994 | Tt4tab 898
+  plain         press/flow 250K M0.1  T4 1000  ch |  -0.116% /  -0.116% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9992 | Tt4tab 998
+  plain         press/flow 250K M0.3  T4 650   UN | +23.459% / +14.620% | π 0.7123 / 0.7284 / 0.6884 | pt45 1.0703 | Tt4tab 602
+  plain         press/flow 250K M0.3  T4 700   UN |  +3.502% /  +2.510% | π 0.6927 / 0.6938 / 0.6884 | pt45 1.0117 | Tt4tab 691
+  plain         press/flow 250K M0.3  T4 750   ch |  -0.095% /  -0.095% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9996 | Tt4tab 749
+  plain         press/flow 250K M0.3  T4 800   ch |  -0.097% /  -0.097% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9996 | Tt4tab 799
+  plain         press/flow 250K M0.3  T4 900   ch |  -0.104% /  -0.104% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9995 | Tt4tab 899
+  plain         press/flow 250K M0.3  T4 1000  ch |  -0.118% /  -0.118% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9993 | Tt4tab 998
+  plain         press/flow 250K M0.4  T4 650   UN | +17.053% / +11.022% | π 0.7046 / 0.7135 / 0.6884 | pt45 1.0466 | Tt4tab 617
+  plain         press/flow 250K M0.4  T4 700   UN |  +1.533% /  +1.117% | π 0.6902 / 0.6905 / 0.6884 | pt45 1.0048 | Tt4tab 696
+  plain         press/flow 250K M0.4  T4 750   ch |  -0.090% /  -0.090% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9997 | Tt4tab 749
+  plain         press/flow 250K M0.4  T4 800   ch |  -0.095% /  -0.095% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9996 | Tt4tab 799
+  plain         press/flow 250K M0.4  T4 900   ch |  -0.101% /  -0.101% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9995 | Tt4tab 899
+  plain         press/flow 250K M0.4  T4 1000  ch |  -0.111% /  -0.111% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9994 | Tt4tab 999
+  plain press/flow M0.1 650: approx REFUSED rung-97: the nozzle cannot pass the LP turbine's flow against 101325 Pa even with the turbine nearly unexpanded (pi_LPT 0.9995) — the engine has no operating point at this instant
+  plain         press/flow 288K M0.1  T4 700   UN | +67.738% / +34.088% | π 0.7689 / 0.8656 / 0.7008 | pt45 1.2332 | Tt4tab 547
+  plain         press/flow 288K M0.1  T4 750   UN | +28.826% / +17.411% | π 0.7225 / 0.7510 / 0.6884 | pt45 1.1041 | Tt4tab 672
+  plain         press/flow 288K M0.1  T4 800   UN |  +7.742% /  +5.376% | π 0.6986 / 0.7030 / 0.6884 | pt45 1.0295 | Tt4tab 776
+  plain         press/flow 288K M0.1  T4 900   ch |  +0.003% /  +0.003% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0000 | Tt4tab 900
+  plain         press/flow 288K M0.1  T4 1000  ch |  +0.006% /  +0.006% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0000 | Tt4tab 1000
+  plain         press/flow 288K M0.3  T4 650   UN | +136.282% / +59.756% | π 0.8105 / 0.9868 / 0.7278 | pt45 1.3490 | Tt4tab 465
+  plain         press/flow 288K M0.3  T4 700   UN | +62.501% / +33.053% | π 0.7472 / 0.8081 / 0.6937 | pt45 1.1706 | Tt4tab 582
+  plain         press/flow 288K M0.3  T4 750   UN | +22.525% / +14.137% | π 0.7113 / 0.7266 / 0.6884 | pt45 1.0678 | Tt4tab 698
+  plain         press/flow 288K M0.3  T4 800   UN |  +4.627% /  +3.306% | π 0.6938 / 0.6954 / 0.6884 | pt45 1.0153 | Tt4tab 787
+  plain         press/flow 288K M0.3  T4 900   ch |  +0.018% /  +0.018% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0001 | Tt4tab 900
+  plain         press/flow 288K M0.3  T4 1000  ch |  +0.019% /  +0.019% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0001 | Tt4tab 1000
+  plain         tilted     250K M0.1  T4 650   UN | +32.403% / +19.528% | π 0.7249 / 0.7588 / 0.6884 | pt45 1.1189 | Tt4tab 576
+  plain         tilted     250K M0.1  T4 700   UN |  +7.241% /  +5.120% | π 0.6976 / 0.7016 / 0.6884 | pt45 1.0282 | Tt4tab 680
+  plain         tilted     250K M0.1  T4 750   UN |  +0.079% /  +0.049% | π 0.6887 / 0.6887 / 0.6884 | pt45 1.0003 | Tt4tab 749
+  plain         tilted     250K M0.1  T4 800   ch |  -0.077% /  -0.077% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9996 | Tt4tab 799
+  plain         tilted     250K M0.1  T4 900   ch |  -0.090% /  -0.090% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9995 | Tt4tab 898
+  plain         tilted     250K M0.1  T4 1000  ch |  -0.102% /  -0.102% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9993 | Tt4tab 998
+  plain         tilted     250K M0.3  T4 650   UN | +25.778% / +16.132% | π 0.7134 / 0.7319 / 0.6884 | pt45 1.0786 | Tt4tab 599
+  plain         tilted     250K M0.3  T4 700   UN |  +4.165% /  +3.015% | π 0.6931 / 0.6946 / 0.6884 | pt45 1.0141 | Tt4tab 689
+  plain         tilted     250K M0.3  T4 750   ch |  -0.081% /  -0.081% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9997 | Tt4tab 749
+  plain         tilted     250K M0.3  T4 800   ch |  -0.084% /  -0.084% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9997 | Tt4tab 799
+  plain         tilted     250K M0.3  T4 900   ch |  -0.091% /  -0.091% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9996 | Tt4tab 899
+  plain         tilted     250K M0.3  T4 1000  ch |  -0.106% /  -0.106% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9994 | Tt4tab 998
+  plain         tilted     250K M0.4  T4 650   UN | +19.027% / +12.354% | π 0.7056 / 0.7160 / 0.6884 | pt45 1.0528 | Tt4tab 614
+  plain         tilted     250K M0.4  T4 700   UN |  +1.955% /  +1.444% | π 0.6906 / 0.6910 / 0.6884 | pt45 1.0063 | Tt4tab 695
+  plain         tilted     250K M0.4  T4 750   ch |  -0.078% /  -0.078% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9997 | Tt4tab 749
+  plain         tilted     250K M0.4  T4 800   ch |  -0.083% /  -0.083% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9997 | Tt4tab 799
+  plain         tilted     250K M0.4  T4 900   ch |  -0.090% /  -0.090% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9996 | Tt4tab 899
+  plain         tilted     250K M0.4  T4 1000  ch |  -0.099% /  -0.099% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9995 | Tt4tab 998
+  plain tilted M0.1 650: approx REFUSED rung-97: the nozzle cannot pass the LP turbine's flow against 101325 Pa even with the turbine nearly unexpanded (pi_LPT 0.9995) — the engine has no operating point at this instant
+  plain         tilted     288K M0.1  T4 700   UN | +69.647% / +35.222% | π 0.7697 / 0.8715 / 0.7023 | pt45 1.2441 | Tt4tab 545
+  plain         tilted     288K M0.1  T4 750   UN | +31.249% / +18.957% | π 0.7236 / 0.7559 / 0.6884 | pt45 1.1149 | Tt4tab 668
+  plain         tilted     288K M0.1  T4 800   UN |  +8.775% /  +6.137% | π 0.6993 / 0.7046 / 0.6884 | pt45 1.0339 | Tt4tab 773
+  plain         tilted     288K M0.1  T4 900   ch |  +0.002% /  +0.002% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0000 | Tt4tab 900
+  plain         tilted     288K M0.1  T4 1000  ch |  +0.004% /  +0.004% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0000 | Tt4tab 1000
+  plain         tilted     288K M0.3  T4 650   UN | +137.279% / +60.478% | π 0.8104 / 0.9912 / 0.7298 | pt45 1.3574 | Tt4tab 464
+  plain         tilted     288K M0.3  T4 700   UN | +65.016% / +34.470% | π 0.7484 / 0.8135 / 0.6950 | pt45 1.1804 | Tt4tab 579
+  plain         tilted     288K M0.3  T4 750   UN | +24.765% / +15.602% | π 0.7124 / 0.7300 / 0.6884 | pt45 1.0757 | Tt4tab 694
+  plain         tilted     288K M0.3  T4 800   UN |  +5.394% /  +3.879% | π 0.6943 / 0.6964 / 0.6884 | pt45 1.0181 | Tt4tab 786
+  plain         tilted     288K M0.3  T4 900   ch |  +0.014% /  +0.014% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0001 | Tt4tab 900
+  plain         tilted     288K M0.3  T4 1000  ch |  +0.016% /  +0.016% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0001 | Tt4tab 1000
+  plain flat-lp M0.1 650: no point
+  plain         flat-lp    250K M0.1  T4 700   UN |  +6.280% /  +4.731% | π 0.6951 / 0.6983 / 0.6884 | pt45 1.0260 | Tt4tab 682
+  plain         flat-lp    250K M0.1  T4 750   UN |  -0.002% /  -0.003% | π 0.6885 / 0.6885 / 0.6884 | pt45 1.0000 | Tt4tab 749
+  plain         flat-lp    250K M0.1  T4 800   ch |  -0.007% /  -0.007% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0000 | Tt4tab 799
+  plain         flat-lp    250K M0.1  T4 900   ch |  -0.007% /  -0.007% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0000 | Tt4tab 898
+  plain         flat-lp    250K M0.1  T4 1000  ch |  -0.004% /  -0.004% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0000 | Tt4tab 998
+  plain flat-lp M0.3 650: no point
+  plain         flat-lp    250K M0.3  T4 700   UN |  +3.175% /  +2.452% | π 0.6915 / 0.6924 / 0.6884 | pt45 1.0116 | Tt4tab 691
+  plain         flat-lp    250K M0.3  T4 750   ch |  -0.020% /  -0.020% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0000 | Tt4tab 749
+  plain         flat-lp    250K M0.3  T4 800   ch |  -0.019% /  -0.019% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0000 | Tt4tab 799
+  plain         flat-lp    250K M0.3  T4 900   ch |  -0.014% /  -0.014% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0000 | Tt4tab 898
+  plain         flat-lp    250K M0.3  T4 1000  ch |  -0.017% /  -0.017% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0000 | Tt4tab 998
+  plain flat-lp M0.4 650: no point
+  plain         flat-lp    250K M0.4  T4 700   UN |  +1.171% /  +0.924% | π 0.6895 / 0.6897 / 0.6884 | pt45 1.0041 | Tt4tab 697
+  plain         flat-lp    250K M0.4  T4 750   ch |  -0.022% /  -0.022% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0000 | Tt4tab 749
+  plain         flat-lp    250K M0.4  T4 800   ch |  -0.026% /  -0.026% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0000 | Tt4tab 799
+  plain         flat-lp    250K M0.4  T4 900   ch |  -0.024% /  -0.024% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0000 | Tt4tab 899
+  plain         flat-lp    250K M0.4  T4 1000  ch |  -0.022% /  -0.022% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0000 | Tt4tab 998
+  plain flat-lp M0.1 650: no point
+  plain flat-lp M0.1 700: no point
+  plain flat-lp M0.1 750: no point
+  plain         flat-lp    288K M0.1  T4 800   UN |  +7.681% /  +5.711% | π 0.6965 / 0.7008 / 0.6884 | pt45 1.0316 | Tt4tab 777
+  plain         flat-lp    288K M0.1  T4 900   ch |  -0.004% /  -0.004% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0000 | Tt4tab 900
+  plain         flat-lp    288K M0.1  T4 1000  ch |  -0.002% /  -0.002% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0000 | Tt4tab 1000
+  plain flat-lp M0.3 650: no point
+  plain flat-lp M0.3 700: no point
+  plain flat-lp M0.3 750: no point
+  plain         flat-lp    288K M0.3  T4 800   UN |  +4.222% /  +3.228% | π 0.6924 / 0.6938 / 0.6884 | pt45 1.0151 | Tt4tab 789
+  plain         flat-lp    288K M0.3  T4 900   ch |  -0.001% /  -0.001% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0000 | Tt4tab 900
+  plain         flat-lp    288K M0.3  T4 1000  ch |  -0.003% /  -0.003% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0000 | Tt4tab 1000
+  cool .05/.05  flow/press 250K M0.1  T4 650   UN | +70.451% / +35.222% | π 0.7727 / 0.8759 / 0.7042 | pt45 1.2437 | Tt4tab 491
+  cool .05/.05  flow/press 250K M0.1  T4 700   UN | +30.829% / +18.688% | π 0.7235 / 0.7552 / 0.6884 | pt45 1.1131 | Tt4tab 617
+  cool .05/.05  flow/press 250K M0.1  T4 750   UN |  +8.245% /  +5.783% | π 0.6988 / 0.7036 / 0.6884 | pt45 1.0320 | Tt4tab 723
+  cool .05/.05  flow/press 250K M0.1  T4 800   UN |  +0.530% /  +0.402% | π 0.6892 / 0.6893 / 0.6884 | pt45 1.0022 | Tt4tab 797
+  cool .05/.05  flow/press 250K M0.1  T4 900   ch |  -0.079% /  -0.079% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9996 | Tt4tab 898
+  cool .05/.05  flow/press 250K M0.1  T4 1000  ch |  -0.088% /  -0.088% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9995 | Tt4tab 998
+  cool .05/.05  flow/press 250K M0.3  T4 650   UN | +64.425% / +34.090% | π 0.7489 / 0.8133 / 0.6949 | pt45 1.1781 | Tt4tab 527
+  cool .05/.05  flow/press 250K M0.3  T4 700   UN | +23.530% / +14.879% | π 0.7117 / 0.7281 / 0.6884 | pt45 1.0722 | Tt4tab 644
+  cool .05/.05  flow/press 250K M0.3  T4 750   UN |  +4.723% /  +3.405% | π 0.6937 / 0.6955 / 0.6884 | pt45 1.0160 | Tt4tab 736
+  cool .05/.05  flow/press 250K M0.3  T4 800   UN |  -0.067% /  -0.069% | π 0.6885 / 0.6885 / 0.6884 | pt45 0.9998 | Tt4tab 799
+  cool .05/.05  flow/press 250K M0.3  T4 900   ch |  -0.082% /  -0.082% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9996 | Tt4tab 899
+  cool .05/.05  flow/press 250K M0.3  T4 1000  ch |  -0.093% /  -0.093% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9995 | Tt4tab 998
+  cool .05/.05  flow/press 250K M0.4  T4 650   UN | +53.756% / +30.022% | π 0.7331 / 0.7745 / 0.6909 | pt45 1.1325 | Tt4tab 555
+  cool .05/.05  flow/press 250K M0.4  T4 700   UN | +16.639% / +10.940% | π 0.7039 / 0.7126 / 0.6884 | pt45 1.0468 | Tt4tab 663
+  cool .05/.05  flow/press 250K M0.4  T4 750   UN |  +2.217% /  +1.635% | π 0.6909 / 0.6914 / 0.6884 | pt45 1.0071 | Tt4tab 743
+  cool .05/.05  flow/press 250K M0.4  T4 800   ch |  -0.079% /  -0.079% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9997 | Tt4tab 799
+  cool .05/.05  flow/press 250K M0.4  T4 900   ch |  -0.083% /  -0.083% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9997 | Tt4tab 899
+  cool .05/.05  flow/press 250K M0.4  T4 1000  ch |  -0.089% /  -0.089% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9996 | Tt4tab 998
+  cool .05/.05 flow/press M0.1 650: approx REFUSED rung-97: the nozzle cannot pass the LP turbine's flow against 101325 Pa even with the turbine nearly unexpanded (pi_LPT 0.9995) — the engine has no operating point at this instant
+  cool .05/.05 flow/press M0.1 700: approx REFUSED rung-97: the nozzle cannot pass the LP turbine's flow against 101325 Pa even with the turbine nearly unexpanded (pi_LPT 0.9995) — the engine has no operating point at this instant
+  cool .05/.05  flow/press 288K M0.1  T4 750   UN | +69.128% / +34.801% | π 0.7705 / 0.8709 / 0.7028 | pt45 1.2399 | Tt4tab 570
+  cool .05/.05  flow/press 288K M0.1  T4 800   UN | +34.259% / +20.431% | π 0.7270 / 0.7637 / 0.6884 | pt45 1.1253 | Tt4tab 696
+  cool .05/.05  flow/press 288K M0.1  T4 900   UN |  +2.148% /  +1.624% | π 0.6913 / 0.6919 / 0.6884 | pt45 1.0087 | Tt4tab 892
+  cool .05/.05  flow/press 288K M0.1  T4 1000  ch |  +0.004% /  +0.004% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0000 | Tt4tab 1000
+  cool .05/.05 flow/press M0.3 650: approx REFUSED rung-97: the nozzle cannot pass the LP turbine's flow against 101325 Pa even with the turbine nearly unexpanded (pi_LPT 0.9995) — the engine has no operating point at this instant
+  cool .05/.05  flow/press 288K M0.3  T4 700   UN | +114.011% / +51.328% | π 0.8030 / 0.9398 / 0.7314 | pt45 1.2819 | Tt4tab 506
+  cool .05/.05  flow/press 288K M0.3  T4 750   UN | +63.016% / +33.573% | π 0.7473 / 0.8098 / 0.6941 | pt45 1.1750 | Tt4tab 611
+  cool .05/.05  flow/press 288K M0.3  T4 800   UN | +26.590% / +16.579% | π 0.7143 / 0.7337 / 0.6884 | pt45 1.0809 | Tt4tab 730
+  cool .05/.05  flow/press 288K M0.3  T4 900   UN |  +0.635% /  +0.495% | π 0.6892 / 0.6893 / 0.6884 | pt45 1.0023 | Tt4tab 898
+  cool .05/.05  flow/press 288K M0.3  T4 1000  ch |  +0.014% /  +0.014% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0001 | Tt4tab 1000
+  cool .05/.05  press/flow 250K M0.1  T4 650   UN | +68.628% / +34.010% | π 0.7725 / 0.8703 / 0.7026 | pt45 1.2319 | Tt4tab 492
+  cool .05/.05  press/flow 250K M0.1  T4 700   UN | +27.795% / +16.736% | π 0.7221 / 0.7491 / 0.6884 | pt45 1.0995 | Tt4tab 622
+  cool .05/.05  press/flow 250K M0.1  T4 750   UN |  +6.873% /  +4.768% | π 0.6977 / 0.7015 / 0.6884 | pt45 1.0261 | Tt4tab 727
+  cool .05/.05  press/flow 250K M0.1  T4 800   UN |  +0.285% /  +0.202% | π 0.6890 / 0.6890 / 0.6884 | pt45 1.0011 | Tt4tab 797
+  cool .05/.05  press/flow 250K M0.1  T4 900   ch |  -0.101% /  -0.101% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9994 | Tt4tab 898
+  cool .05/.05  press/flow 250K M0.1  T4 1000  ch |  -0.110% /  -0.110% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9993 | Tt4tab 998
+  cool .05/.05  press/flow 250K M0.3  T4 650   UN | +61.527% / +32.400% | π 0.7477 / 0.8071 / 0.6935 | pt45 1.1663 | Tt4tab 530
+  cool .05/.05  press/flow 250K M0.3  T4 700   UN | +20.740% / +13.035% | π 0.7103 / 0.7239 / 0.6884 | pt45 1.0623 | Tt4tab 649
+  cool .05/.05  press/flow 250K M0.3  T4 750   UN |  +3.745% /  +2.666% | π 0.6930 / 0.6942 / 0.6884 | pt45 1.0125 | Tt4tab 738
+  cool .05/.05  press/flow 250K M0.3  T4 800   ch |  -0.098% /  -0.098% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9996 | Tt4tab 799
+  cool .05/.05  press/flow 250K M0.3  T4 900   ch |  -0.102% /  -0.102% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9995 | Tt4tab 899
+  cool .05/.05  press/flow 250K M0.3  T4 1000  ch |  -0.114% /  -0.114% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9994 | Tt4tab 998
+  cool .05/.05  press/flow 250K M0.4  T4 650   UN | +50.357% / +28.037% | π 0.7316 / 0.7688 / 0.6900 | pt45 1.1216 | Tt4tab 558
+  cool .05/.05  press/flow 250K M0.4  T4 700   UN | +14.334% /  +9.364% | π 0.7027 / 0.7096 / 0.6884 | pt45 1.0396 | Tt4tab 667
+  cool .05/.05  press/flow 250K M0.4  T4 750   UN |  +1.604% /  +1.162% | π 0.6904 / 0.6907 / 0.6884 | pt45 1.0050 | Tt4tab 745
+  cool .05/.05  press/flow 250K M0.4  T4 800   ch |  -0.096% /  -0.096% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9997 | Tt4tab 799
+  cool .05/.05  press/flow 250K M0.4  T4 900   ch |  -0.100% /  -0.100% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9996 | Tt4tab 899
+  cool .05/.05  press/flow 250K M0.4  T4 1000  ch |  -0.107% /  -0.107% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9995 | Tt4tab 998
+  cool .05/.05 press/flow M0.1 650: approx REFUSED rung-97: the nozzle cannot pass the LP turbine's flow against 101325 Pa even with the turbine nearly unexpanded (pi_LPT 0.9995) — the engine has no operating point at this instant
+  cool .05/.05 press/flow M0.1 700: approx REFUSED rung-97: the nozzle cannot pass the LP turbine's flow against 101325 Pa even with the turbine nearly unexpanded (pi_LPT 0.9995) — the engine has no operating point at this instant
+  cool .05/.05  press/flow 288K M0.1  T4 750   UN | +67.246% / +33.568% | π 0.7703 / 0.8652 / 0.7012 | pt45 1.2281 | Tt4tab 572
+  cool .05/.05  press/flow 288K M0.1  T4 800   UN | +31.089% / +18.425% | π 0.7256 / 0.7572 / 0.6884 | pt45 1.1109 | Tt4tab 703
+  cool .05/.05  press/flow 288K M0.1  T4 900   UN |  +1.618% /  +1.209% | π 0.6907 / 0.6912 / 0.6884 | pt45 1.0065 | Tt4tab 894
+  cool .05/.05  press/flow 288K M0.1  T4 1000  ch |  +0.005% /  +0.005% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0000 | Tt4tab 1000
+  cool .05/.05 press/flow M0.3 650: approx REFUSED rung-97: the nozzle cannot pass the LP turbine's flow against 101325 Pa even with the turbine nearly unexpanded (pi_LPT 0.9995) — the engine has no operating point at this instant
+  cool .05/.05  press/flow 288K M0.3  T4 700   UN | +113.316% / +50.627% | π 0.8037 / 0.9370 / 0.7298 | pt45 1.2745 | Tt4tab 506
+  cool .05/.05  press/flow 288K M0.3  T4 750   UN | +60.105% / +31.878% | π 0.7461 / 0.8036 / 0.6927 | pt45 1.1633 | Tt4tab 615
+  cool .05/.05  press/flow 288K M0.3  T4 800   UN | +23.613% / +14.646% | π 0.7128 / 0.7291 / 0.6884 | pt45 1.0703 | Tt4tab 736
+  cool .05/.05  press/flow 288K M0.3  T4 900   UN |  +0.398% /  +0.308% | π 0.6889 / 0.6890 / 0.6884 | pt45 1.0014 | Tt4tab 899
+  cool .05/.05  press/flow 288K M0.3  T4 1000  ch |  +0.019% /  +0.019% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0001 | Tt4tab 1000
+  cool .05/.05  tilted     250K M0.1  T4 650   UN | +70.958% / +35.189% | π 0.7744 / 0.8782 / 0.7049 | pt45 1.2431 | Tt4tab 489
+  cool .05/.05  tilted     250K M0.1  T4 700   UN | +30.852% / +18.575% | π 0.7241 / 0.7557 / 0.6884 | pt45 1.1122 | Tt4tab 616
+  cool .05/.05  tilted     250K M0.1  T4 750   UN |  +8.172% /  +5.695% | π 0.6989 / 0.7037 / 0.6884 | pt45 1.0314 | Tt4tab 723
+  cool .05/.05  tilted     250K M0.1  T4 800   UN |  +0.521% /  +0.391% | π 0.6893 / 0.6894 / 0.6884 | pt45 1.0021 | Tt4tab 797
+  cool .05/.05  tilted     250K M0.1  T4 900   ch |  -0.085% /  -0.085% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9995 | Tt4tab 898
+  cool .05/.05  tilted     250K M0.1  T4 1000  ch |  -0.095% /  -0.095% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9994 | Tt4tab 998
+  cool .05/.05  tilted     250K M0.3  T4 650   UN | +64.747% / +34.037% | π 0.7499 / 0.8144 / 0.6951 | pt45 1.1771 | Tt4tab 526
+  cool .05/.05  tilted     250K M0.3  T4 700   UN | +23.476% / +14.756% | π 0.7120 / 0.7283 / 0.6884 | pt45 1.0714 | Tt4tab 644
+  cool .05/.05  tilted     250K M0.3  T4 750   UN |  +4.679% /  +3.352% | π 0.6938 / 0.6955 / 0.6884 | pt45 1.0157 | Tt4tab 736
+  cool .05/.05  tilted     250K M0.3  T4 800   UN |  -0.071% /  -0.073% | π 0.6885 / 0.6885 / 0.6884 | pt45 0.9997 | Tt4tab 799
+  cool .05/.05  tilted     250K M0.3  T4 900   ch |  -0.088% /  -0.088% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9996 | Tt4tab 899
+  cool .05/.05  tilted     250K M0.3  T4 1000  ch |  -0.100% /  -0.100% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9995 | Tt4tab 998
+  cool .05/.05  tilted     250K M0.4  T4 650   UN | +53.875% / +29.920% | π 0.7337 / 0.7750 / 0.6910 | pt45 1.1314 | Tt4tab 554
+  cool .05/.05  tilted     250K M0.4  T4 700   UN | +16.563% / +10.830% | π 0.7041 / 0.7127 / 0.6884 | pt45 1.0462 | Tt4tab 663
+  cool .05/.05  tilted     250K M0.4  T4 750   UN |  +2.198% /  +1.610% | π 0.6909 / 0.6914 / 0.6884 | pt45 1.0070 | Tt4tab 743
+  cool .05/.05  tilted     250K M0.4  T4 800   ch |  -0.084% /  -0.084% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9997 | Tt4tab 799
+  cool .05/.05  tilted     250K M0.4  T4 900   ch |  -0.088% /  -0.088% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9996 | Tt4tab 899
+  cool .05/.05  tilted     250K M0.4  T4 1000  ch |  -0.095% /  -0.095% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9996 | Tt4tab 998
+  cool .05/.05 tilted M0.1 650: approx REFUSED rung-97: the nozzle cannot pass the LP turbine's flow against 101325 Pa even with the turbine nearly unexpanded (pi_LPT 0.9995) — the engine has no operating point at this instant
+  cool .05/.05 tilted M0.1 700: approx REFUSED rung-97: the nozzle cannot pass the LP turbine's flow against 101325 Pa even with the turbine nearly unexpanded (pi_LPT 0.9995) — the engine has no operating point at this instant
+  cool .05/.05  tilted     288K M0.1  T4 750   UN | +69.624% / +34.769% | π 0.7722 / 0.8732 / 0.7034 | pt45 1.2393 | Tt4tab 568
+  cool .05/.05  tilted     288K M0.1  T4 800   UN | +34.325% / +20.328% | π 0.7276 / 0.7644 / 0.6884 | pt45 1.1244 | Tt4tab 695
+  cool .05/.05  tilted     288K M0.1  T4 900   UN |  +2.126% /  +1.598% | π 0.6913 / 0.6920 / 0.6884 | pt45 1.0086 | Tt4tab 892
+  cool .05/.05  tilted     288K M0.1  T4 1000  ch |  +0.004% /  +0.004% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0000 | Tt4tab 1000
+  cool .05/.05 tilted M0.3 650: approx REFUSED rung-97: the nozzle cannot pass the LP turbine's flow against 101325 Pa even with the turbine nearly unexpanded (pi_LPT 0.9995) — the engine has no operating point at this instant
+  cool .05/.05  tilted     288K M0.3  T4 700   UN | +115.377% / +51.616% | π 0.8049 / 0.9431 / 0.7322 | pt45 1.2828 | Tt4tab 504
+  cool .05/.05  tilted     288K M0.3  T4 750   UN | +63.309% / +33.510% | π 0.7483 / 0.8108 / 0.6943 | pt45 1.1740 | Tt4tab 610
+  cool .05/.05  tilted     288K M0.3  T4 800   UN | +26.561% / +16.462% | π 0.7146 / 0.7340 / 0.6884 | pt45 1.0801 | Tt4tab 730
+  cool .05/.05  tilted     288K M0.3  T4 900   UN |  +0.635% /  +0.492% | π 0.6892 / 0.6893 / 0.6884 | pt45 1.0023 | Tt4tab 898
+  cool .05/.05  tilted     288K M0.3  T4 1000  ch |  +0.015% /  +0.015% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0001 | Tt4tab 1000
+  cool .05/.05 flat-lp M0.1 650: no point
+  cool .05/.05 flat-lp M0.1 700: no point
+  cool .05/.05  flat-lp    250K M0.1  T4 750   UN |  +6.836% /  +5.062% | π 0.6960 / 0.6996 / 0.6884 | pt45 1.0279 | Tt4tab 727
+  cool .05/.05  flat-lp    250K M0.1  T4 800   UN |  +0.203% /  +0.165% | π 0.6887 / 0.6887 / 0.6884 | pt45 1.0009 | Tt4tab 798
+  cool .05/.05  flat-lp    250K M0.1  T4 900   ch |  -0.016% /  -0.016% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9999 | Tt4tab 898
+  cool .05/.05  flat-lp    250K M0.1  T4 1000  ch |  -0.015% /  -0.015% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9999 | Tt4tab 998
+  cool .05/.05 flat-lp M0.3 650: no point
+  cool .05/.05 flat-lp M0.3 700: no point
+  cool .05/.05  flat-lp    250K M0.3  T4 750   UN |  +3.456% /  +2.632% | π 0.6919 / 0.6930 / 0.6884 | pt45 1.0124 | Tt4tab 739
+  cool .05/.05  flat-lp    250K M0.3  T4 800   ch |  -0.026% /  -0.026% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0000 | Tt4tab 799
+  cool .05/.05  flat-lp    250K M0.3  T4 900   ch |  -0.023% /  -0.023% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0000 | Tt4tab 898
+  cool .05/.05  flat-lp    250K M0.3  T4 1000  ch |  -0.027% /  -0.027% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9999 | Tt4tab 998
+  cool .05/.05 flat-lp M0.4 650: no point
+  cool .05/.05 flat-lp M0.4 700: no point
+  cool .05/.05  flat-lp    250K M0.4  T4 750   UN |  +1.310% /  +1.024% | π 0.6897 / 0.6899 / 0.6884 | pt45 1.0045 | Tt4tab 746
+  cool .05/.05  flat-lp    250K M0.4  T4 800   ch |  -0.033% /  -0.033% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0000 | Tt4tab 799
+  cool .05/.05  flat-lp    250K M0.4  T4 900   ch |  -0.031% /  -0.031% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0000 | Tt4tab 899
+  cool .05/.05  flat-lp    250K M0.4  T4 1000  ch |  -0.031% /  -0.031% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9999 | Tt4tab 998
+  cool .05/.05 flat-lp M0.1 650: no point
+  cool .05/.05 flat-lp M0.1 700: no point
+  cool .05/.05 flat-lp M0.1 750: no point
+  cool .05/.05 flat-lp M0.1 800: no point
+  cool .05/.05  flat-lp    288K M0.1  T4 900   UN |  +1.378% /  +1.096% | π 0.6900 / 0.6904 / 0.6884 | pt45 1.0059 | Tt4tab 895
+  cool .05/.05  flat-lp    288K M0.1  T4 1000  ch |  -0.001% /  -0.001% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0000 | Tt4tab 1000
+  cool .05/.05 flat-lp M0.3 650: no point
+  cool .05/.05 flat-lp M0.3 700: no point
+  cool .05/.05 flat-lp M0.3 750: no point
+  cool .05/.05 flat-lp M0.3 800: no point
+  cool .05/.05  flat-lp    288K M0.3  T4 900   UN |  +0.194% /  +0.158% | π 0.6886 / 0.6887 / 0.6884 | pt45 1.0007 | Tt4tab 900
+  cool .05/.05  flat-lp    288K M0.3  T4 1000  ch |  -0.000% /  -0.000% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0000 | Tt4tab 1000
+  gen HP power flow/press M0.1 650: no point
+  gen HP power flow/press M0.1 700: no point
+  gen HP power  flow/press 250K M0.1  T4 750   UN | +15.639% /  +8.624% | π 0.7161 / 0.7271 / 0.6884 | pt45 1.0467 | Tt4tab 672
+  gen HP power  flow/press 250K M0.1  T4 800   UN |  -5.734% /  -5.884% | π 0.6913 / 0.6894 / 0.6884 | pt45 0.9688 | Tt4tab 779
+  gen HP power  flow/press 250K M0.1  T4 900   ch |  -4.885% /  -4.885% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9707 | Tt4tab 886
+  gen HP power  flow/press 250K M0.1  T4 1000  ch |  -3.145% /  -3.145% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9787 | Tt4tab 986
+  gen HP power flow/press M0.3 650: no point
+  gen HP power  flow/press 250K M0.3  T4 700   UN | +72.101% / +36.157% | π 0.7628 / 0.8375 / 0.7016 | pt45 1.1890 | Tt4tab 549
+  gen HP power  flow/press 250K M0.3  T4 750   UN |  +6.388% /  +2.886% | π 0.7037 / 0.7052 / 0.6884 | pt45 1.0090 | Tt4tab 703
+  gen HP power  flow/press 250K M0.3  T4 800   UN |  -6.786% /  -6.786% | π 0.6890 / 0.6884 / 0.6884 | pt45 0.9663 | Tt4tab 786
+  gen HP power  flow/press 250K M0.3  T4 900   ch |  -4.334% /  -4.334% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9742 | Tt4tab 888
+  gen HP power  flow/press 250K M0.3  T4 1000  ch |  -2.783% /  -2.783% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9812 | Tt4tab 988
+  gen HP power flow/press M0.4 650: no point
+  gen HP power  flow/press 250K M0.4  T4 700   UN | +50.089% / +27.368% | π 0.7349 / 0.7716 / 0.6905 | pt45 1.1167 | Tt4tab 592
+  gen HP power  flow/press 250K M0.4  T4 750   UN |  +0.542% /  -1.038% | π 0.6968 / 0.6956 / 0.6884 | pt45 0.9908 | Tt4tab 720
+  gen HP power  flow/press 250K M0.4  T4 800   ch |  -6.416% /  -6.416% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9688 | Tt4tab 789
+  gen HP power  flow/press 250K M0.4  T4 900   ch |  -3.811% /  -3.811% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9772 | Tt4tab 889
+  gen HP power  flow/press 250K M0.4  T4 1000  ch |  -2.456% /  -2.456% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9833 | Tt4tab 990
+  gen HP power flow/press M0.1 650: no point
+  gen HP power flow/press M0.1 700: approx REFUSED rung-97: the nozzle cannot pass the LP turbine's flow against 101325 Pa even with the turbine nearly unexpanded (pi_LPT 0.9995) — the engine has no operating point at this instant
+  gen HP power  flow/press 288K M0.1  T4 750   UN | +78.361% / +40.106% | π 0.7748 / 0.9045 / 0.7137 | pt45 1.2985 | Tt4tab 602
+  gen HP power  flow/press 288K M0.1  T4 800   UN | +33.986% / +21.755% | π 0.7202 / 0.7578 / 0.6884 | pt45 1.1373 | Tt4tab 727
+  gen HP power  flow/press 288K M0.1  T4 900   UN |  +2.274% /  +2.204% | π 0.6886 / 0.6889 / 0.6884 | pt45 1.0124 | Tt4tab 904
+  gen HP power  flow/press 288K M0.1  T4 1000  ch |  +1.417% /  +1.417% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0089 | Tt4tab 1004
+  gen HP power flow/press M0.3 650: no point
+  gen HP power flow/press M0.3 700: approx REFUSED rung-97: the nozzle cannot pass the LP turbine's flow against 101325 Pa even with the turbine nearly unexpanded (pi_LPT 0.9995) — the engine has no operating point at this instant
+  gen HP power  flow/press 288K M0.3  T4 750   UN | +70.644% / +38.559% | π 0.7474 / 0.8291 / 0.6991 | pt45 1.2233 | Tt4tab 639
+  gen HP power  flow/press 288K M0.3  T4 800   UN | +26.445% / +17.908% | π 0.7085 / 0.7292 / 0.6884 | pt45 1.0938 | Tt4tab 756
+  gen HP power  flow/press 288K M0.3  T4 900   ch |  +2.758% /  +2.758% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0148 | Tt4tab 906
+  gen HP power  flow/press 288K M0.3  T4 1000  ch |  +1.824% /  +1.824% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0113 | Tt4tab 1006
+  gen HP power press/flow M0.1 650: no point
+  gen HP power press/flow M0.1 700: no point
+  gen HP power  press/flow 250K M0.1  T4 750   UN | +12.932% /  +7.063% | π 0.7129 / 0.7212 / 0.6884 | pt45 1.0375 | Tt4tab 679
+  gen HP power  press/flow 250K M0.1  T4 800   UN |  -4.524% /  -4.642% | π 0.6906 / 0.6892 / 0.6884 | pt45 0.9750 | Tt4tab 778
+  gen HP power  press/flow 250K M0.1  T4 900   ch |  -3.605% /  -3.605% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9780 | Tt4tab 884
+  gen HP power  press/flow 250K M0.1  T4 1000  ch |  -2.289% /  -2.289% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9843 | Tt4tab 984
+  gen HP power press/flow M0.3 650: no point
+  gen HP power  press/flow 250K M0.3  T4 700   UN | +66.526% / +33.610% | π 0.7579 / 0.8234 / 0.6975 | pt45 1.1715 | Tt4tab 554
+  gen HP power  press/flow 250K M0.3  T4 750   UN |  +5.114% /  +2.248% | π 0.7014 / 0.7024 / 0.6884 | pt45 1.0063 | Tt4tab 706
+  gen HP power  press/flow 250K M0.3  T4 800   UN |  -5.188% /  -5.188% | π 0.6887 / 0.6884 / 0.6884 | pt45 0.9736 | Tt4tab 784
+  gen HP power  press/flow 250K M0.3  T4 900   ch |  -3.172% /  -3.172% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9806 | Tt4tab 886
+  gen HP power  press/flow 250K M0.3  T4 1000  ch |  -2.005% /  -2.005% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9861 | Tt4tab 986
+  gen HP power press/flow M0.4 650: no point
+  gen HP power  press/flow 250K M0.4  T4 700   UN | +43.843% / +24.141% | π 0.7307 / 0.7605 / 0.6890 | pt45 1.1001 | Tt4tab 599
+  gen HP power  press/flow 250K M0.4  T4 750   UN |  +0.313% /  -0.940% | π 0.6952 / 0.6943 / 0.6884 | pt45 0.9915 | Tt4tab 722
+  gen HP power  press/flow 250K M0.4  T4 800   ch |  -4.733% /  -4.733% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9760 | Tt4tab 787
+  gen HP power  press/flow 250K M0.4  T4 900   ch |  -2.776% /  -2.776% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9828 | Tt4tab 888
+  gen HP power  press/flow 250K M0.4  T4 1000  ch |  -1.763% /  -1.763% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9876 | Tt4tab 988
+  gen HP power press/flow M0.1 650: no point
+  gen HP power press/flow M0.1 700: approx REFUSED rung-97: the nozzle cannot pass the LP turbine's flow against 101325 Pa even with the turbine nearly unexpanded (pi_LPT 0.9995) — the engine has no operating point at this instant
+  gen HP power  press/flow 288K M0.1  T4 750   UN | +75.929% / +38.359% | π 0.7752 / 0.8961 / 0.7108 | pt45 1.2792 | Tt4tab 602
+  gen HP power  press/flow 288K M0.1  T4 800   UN | +29.661% / +18.831% | π 0.7189 / 0.7495 / 0.6884 | pt45 1.1156 | Tt4tab 734
+  gen HP power  press/flow 288K M0.1  T4 900   UN |  +1.666% /  +1.629% | π 0.6885 / 0.6887 / 0.6884 | pt45 1.0091 | Tt4tab 905
+  gen HP power  press/flow 288K M0.1  T4 1000  ch |  +1.043% /  +1.043% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0066 | Tt4tab 1005
+  gen HP power press/flow M0.3 650: no point
+  gen HP power press/flow M0.3 700: approx REFUSED rung-97: the nozzle cannot pass the LP turbine's flow against 101325 Pa even with the turbine nearly unexpanded (pi_LPT 0.9995) — the engine has no operating point at this instant
+  gen HP power  press/flow 288K M0.3  T4 750   UN | +66.506% / +36.022% | π 0.7463 / 0.8193 / 0.6964 | pt45 1.2028 | Tt4tab 642
+  gen HP power  press/flow 288K M0.3  T4 800   UN | +22.386% / +15.042% | π 0.7073 / 0.7235 / 0.6884 | pt45 1.0771 | Tt4tab 763
+  gen HP power  press/flow 288K M0.3  T4 900   ch |  +2.051% /  +2.051% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0112 | Tt4tab 907
+  gen HP power  press/flow 288K M0.3  T4 1000  ch |  +1.331% /  +1.331% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0084 | Tt4tab 1007
+  gen HP power tilted M0.1 650: no point
+  gen HP power tilted M0.1 700: no point
+  gen HP power  tilted     250K M0.1  T4 750   UN | +16.698% /  +9.242% | π 0.7172 / 0.7294 / 0.6884 | pt45 1.0503 | Tt4tab 670
+  gen HP power  tilted     250K M0.1  T4 800   UN |  -5.197% /  -5.380% | π 0.6915 / 0.6896 / 0.6884 | pt45 0.9713 | Tt4tab 777
+  gen HP power  tilted     250K M0.1  T4 900   ch |  -4.502% /  -4.502% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9729 | Tt4tab 885
+  gen HP power  tilted     250K M0.1  T4 1000  ch |  -2.841% /  -2.841% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9807 | Tt4tab 985
+  gen HP power tilted M0.3 650: no point
+  gen HP power  tilted     250K M0.3  T4 700   UN | +75.601% / +37.296% | π 0.7677 / 0.8470 / 0.7047 | pt45 1.1954 | Tt4tab 544
+  gen HP power  tilted     250K M0.3  T4 750   UN |  +7.139% /  +3.412% | π 0.7042 / 0.7062 / 0.6884 | pt45 1.0114 | Tt4tab 701
+  gen HP power  tilted     250K M0.3  T4 800   UN |  -6.295% /  -6.295% | π 0.6891 / 0.6885 / 0.6884 | pt45 0.9685 | Tt4tab 785
+  gen HP power  tilted     250K M0.3  T4 900   ch |  -3.991% /  -3.991% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9761 | Tt4tab 887
+  gen HP power  tilted     250K M0.3  T4 1000  ch |  -2.509% /  -2.509% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9829 | Tt4tab 987
+  gen HP power tilted M0.4 650: no point
+  gen HP power  tilted     250K M0.4  T4 700   UN | +52.021% / +28.160% | π 0.7370 / 0.7755 / 0.6911 | pt45 1.1200 | Tt4tab 588
+  gen HP power  tilted     250K M0.4  T4 750   UN |  +1.154% /  -0.550% | π 0.6971 / 0.6962 / 0.6884 | pt45 0.9928 | Tt4tab 719
+  gen HP power  tilted     250K M0.4  T4 800   UN |  -6.013% /  -6.013% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9706 | Tt4tab 788
+  gen HP power  tilted     250K M0.4  T4 900   ch |  -3.509% /  -3.509% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9789 | Tt4tab 889
+  gen HP power  tilted     250K M0.4  T4 1000  ch |  -2.216% /  -2.216% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9848 | Tt4tab 989
+  gen HP power tilted M0.1 650: no point
+  gen HP power tilted M0.1 700: approx REFUSED rung-97: the nozzle cannot pass the LP turbine's flow against 101325 Pa even with the turbine nearly unexpanded (pi_LPT 0.9995) — the engine has no operating point at this instant
+  gen HP power  tilted     288K M0.1  T4 750   UN | +79.812% / +40.284% | π 0.7785 / 0.9111 / 0.7160 | pt45 1.2999 | Tt4tab 599
+  gen HP power  tilted     288K M0.1  T4 800   UN | +34.388% / +21.789% | π 0.7213 / 0.7595 / 0.6884 | pt45 1.1374 | Tt4tab 725
+  gen HP power  tilted     288K M0.1  T4 900   UN |  +2.158% /  +2.084% | π 0.6887 / 0.6890 / 0.6884 | pt45 1.0117 | Tt4tab 904
+  gen HP power  tilted     288K M0.1  T4 1000  ch |  +1.302% /  +1.302% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0082 | Tt4tab 1005
+  gen HP power tilted M0.3 650: no point
+  gen HP power tilted M0.3 700: approx REFUSED rung-97: the nozzle cannot pass the LP turbine's flow against 101325 Pa even with the turbine nearly unexpanded (pi_LPT 0.9995) — the engine has no operating point at this instant
+  gen HP power  tilted     288K M0.3  T4 750   UN | +71.631% / +38.658% | π 0.7496 / 0.8323 / 0.7000 | pt45 1.2231 | Tt4tab 637
+  gen HP power  tilted     288K M0.3  T4 800   UN | +26.597% / +17.841% | π 0.7092 / 0.7300 / 0.6884 | pt45 1.0932 | Tt4tab 756
+  gen HP power  tilted     288K M0.3  T4 900   ch |  +2.574% /  +2.574% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0138 | Tt4tab 906
+  gen HP power  tilted     288K M0.3  T4 1000  ch |  +1.674% /  +1.674% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0104 | Tt4tab 1006
+  gen HP power flat-lp M0.1 650: no point
+  gen HP power flat-lp M0.1 700: no point
+  gen HP power  flat-lp    250K M0.1  T4 750   UN |  +5.136% /  +1.572% | π 0.7074 / 0.7087 / 0.6884 | pt45 1.0068 | Tt4tab 698
+  gen HP power  flat-lp    250K M0.1  T4 800   UN | -11.392% / -11.392% | π 0.6896 / 0.6884 / 0.6884 | pt45 0.9426 | Tt4tab 795
+  gen HP power  flat-lp    250K M0.1  T4 900   ch |  -8.405% /  -8.405% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9505 | Tt4tab 898
+  gen HP power  flat-lp    250K M0.1  T4 1000  ch |  -6.017% /  -6.017% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9602 | Tt4tab 998
+  gen HP power flat-lp M0.3 650: no point
+  gen HP power flat-lp M0.3 700: no point
+  gen HP power  flat-lp    250K M0.3  T4 750   UN |  -2.647% /  -4.040% | π 0.6982 / 0.6954 / 0.6884 | pt45 0.9778 | Tt4tab 723
+  gen HP power  flat-lp    250K M0.3  T4 800   UN | -11.373% / -11.373% | π 0.6885 / 0.6884 / 0.6884 | pt45 0.9460 | Tt4tab 799
+  gen HP power  flat-lp    250K M0.3  T4 900   ch |  -7.515% /  -7.515% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9568 | Tt4tab 898
+  gen HP power  flat-lp    250K M0.3  T4 1000  ch |  -5.364% /  -5.364% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9651 | Tt4tab 998
+  gen HP power flat-lp M0.4 650: no point
+  gen HP power flat-lp M0.4 700: no point
+  gen HP power  flat-lp    250K M0.4  T4 750   UN |  -6.935% /  -7.342% | π 0.6932 / 0.6904 / 0.6884 | pt45 0.9654 | Tt4tab 736
+  gen HP power  flat-lp    250K M0.4  T4 800   ch | -10.056% / -10.056% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9526 | Tt4tab 799
+  gen HP power  flat-lp    250K M0.4  T4 900   ch |  -6.622% /  -6.622% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9621 | Tt4tab 899
+  gen HP power  flat-lp    250K M0.4  T4 1000  ch |  -4.729% /  -4.729% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9694 | Tt4tab 998
+  gen HP power flat-lp M0.1 650: no point
+  gen HP power flat-lp M0.1 700: no point
+  gen HP power flat-lp M0.1 750: no point
+  gen HP power flat-lp M0.1 800: no point
+  gen HP power  flat-lp    288K M0.1  T4 900   UN |  +3.405% /  +3.377% | π 0.6884 / 0.6887 / 0.6884 | pt45 1.0190 | Tt4tab 900
+  gen HP power  flat-lp    288K M0.1  T4 1000  ch |  +2.481% /  +2.481% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0157 | Tt4tab 1000
+  gen HP power flat-lp M0.3 650: no point
+  gen HP power flat-lp M0.3 700: no point
+  gen HP power flat-lp M0.3 750: no point
+  gen HP power flat-lp M0.3 800: no point
+  gen HP power  flat-lp    288K M0.3  T4 900   ch |  +4.442% /  +4.442% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0237 | Tt4tab 900
+  gen HP power  flat-lp    288K M0.3  T4 1000  ch |  +3.196% /  +3.196% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0196 | Tt4tab 1000
+  cust share    flow/press 250K M0.1  T4 650   UN | +59.297% / +31.680% | π 0.7538 / 0.8343 / 0.6936 | pt45 1.2127 | Tt4tab 524
+  cust share    flow/press 250K M0.1  T4 700   UN | +20.872% / +13.454% | π 0.7125 / 0.7306 / 0.6884 | pt45 1.0782 | Tt4tab 647
+  cust share    flow/press 250K M0.1  T4 750   UN |  +3.758% /  +2.768% | π 0.6933 / 0.6948 / 0.6884 | pt45 1.0150 | Tt4tab 738
+  cust share    flow/press 250K M0.1  T4 800   ch |  -0.076% /  -0.076% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9996 | Tt4tab 799
+  cust share    flow/press 250K M0.1  T4 900   ch |  -0.087% /  -0.087% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9995 | Tt4tab 898
+  cust share    flow/press 250K M0.1  T4 1000  ch |  -0.097% /  -0.097% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9994 | Tt4tab 998
+  cust share    flow/press 250K M0.3  T4 650   UN | +54.057% / +30.180% | π 0.7360 / 0.7863 / 0.6898 | pt45 1.1546 | Tt4tab 554
+  cust share    flow/press 250K M0.3  T4 700   UN | +15.572% / +10.362% | π 0.7040 / 0.7131 / 0.6884 | pt45 1.0491 | Tt4tab 665
+  cust share    flow/press 250K M0.3  T4 750   UN |  +1.638% /  +1.224% | π 0.6904 / 0.6908 / 0.6884 | pt45 1.0058 | Tt4tab 745
+  cust share    flow/press 250K M0.3  T4 800   ch |  -0.086% /  -0.086% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9997 | Tt4tab 799
+  cust share    flow/press 250K M0.3  T4 900   ch |  -0.090% /  -0.090% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9996 | Tt4tab 899
+  cust share    flow/press 250K M0.3  T4 1000  ch |  -0.103% /  -0.103% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9995 | Tt4tab 998
+  cust share    flow/press 250K M0.4  T4 650   UN | +44.772% / +26.156% | π 0.7238 / 0.7557 / 0.6886 | pt45 1.1135 | Tt4tab 576
+  cust share    flow/press 250K M0.4  T4 700   UN | +10.628% /  +7.299% | π 0.6984 / 0.7030 / 0.6884 | pt45 1.0308 | Tt4tab 678
+  cust share    flow/press 250K M0.4  T4 750   UN |  +0.399% /  +0.293% | π 0.6890 / 0.6890 / 0.6884 | pt45 1.0014 | Tt4tab 748
+  cust share    flow/press 250K M0.4  T4 800   ch |  -0.087% /  -0.087% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9997 | Tt4tab 799
+  cust share    flow/press 250K M0.4  T4 900   ch |  -0.091% /  -0.091% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9996 | Tt4tab 899
+  cust share    flow/press 250K M0.4  T4 1000  ch |  -0.098% /  -0.098% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9995 | Tt4tab 998
+  cust share flow/press M0.1 650: approx REFUSED rung-97: the nozzle cannot pass the LP turbine's flow against 101325 Pa even with the turbine nearly unexpanded (pi_LPT 0.9995) — the engine has no operating point at this instant
+  cust share    flow/press 288K M0.1  T4 700   UN | +101.543% / +45.644% | π 0.8150 / 0.9930 / 0.7359 | pt45 1.3472 | Tt4tab 498
+  cust share    flow/press 288K M0.1  T4 750   UN | +58.012% / +31.208% | π 0.7520 / 0.8300 / 0.6928 | pt45 1.2087 | Tt4tab 608
+  cust share    flow/press 288K M0.1  T4 800   UN | +23.675% / +15.031% | π 0.7153 / 0.7371 / 0.6884 | pt45 1.0883 | Tt4tab 733
+  cust share    flow/press 288K M0.1  T4 900   UN |  +0.326% /  +0.258% | π 0.6889 / 0.6889 / 0.6884 | pt45 1.0014 | Tt4tab 899
+  cust share    flow/press 288K M0.1  T4 1000  ch |  +0.004% /  +0.004% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0000 | Tt4tab 1000
+  cust share flow/press M0.3 650: approx REFUSED rung-97: the nozzle cannot pass the LP turbine's flow against 101325 Pa even with the turbine nearly unexpanded (pi_LPT 0.9995) — the engine has no operating point at this instant
+  cust share    flow/press 288K M0.3  T4 700   UN | +97.350% / +45.925% | π 0.7842 / 0.8932 / 0.7199 | pt45 1.2445 | Tt4tab 542
+  cust share    flow/press 288K M0.3  T4 750   UN | +52.587% / +29.566% | π 0.7346 / 0.7831 / 0.6895 | pt45 1.1510 | Tt4tab 642
+  cust share    flow/press 288K M0.3  T4 800   UN | +18.101% / +11.890% | π 0.7062 / 0.7174 / 0.6884 | pt45 1.0565 | Tt4tab 756
+  cust share    flow/press 288K M0.3  T4 900   ch |  +0.015% /  +0.015% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0000 | Tt4tab 900
+  cust share    flow/press 288K M0.3  T4 1000  ch |  +0.015% /  +0.015% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0001 | Tt4tab 1000
+  cust share    press/flow 250K M0.1  T4 650   UN | +58.041% / +30.531% | π 0.7550 / 0.8318 / 0.6931 | pt45 1.2021 | Tt4tab 524
+  cust share    press/flow 250K M0.1  T4 700   UN | +19.416% / +12.318% | π 0.7124 / 0.7287 / 0.6884 | pt45 1.0708 | Tt4tab 649
+  cust share    press/flow 250K M0.1  T4 750   UN |  +3.316% /  +2.392% | π 0.6931 / 0.6944 / 0.6884 | pt45 1.0129 | Tt4tab 739
+  cust share    press/flow 250K M0.1  T4 800   ch |  -0.099% /  -0.099% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9995 | Tt4tab 799
+  cust share    press/flow 250K M0.1  T4 900   ch |  -0.110% /  -0.110% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9994 | Tt4tab 898
+  cust share    press/flow 250K M0.1  T4 1000  ch |  -0.122% /  -0.122% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9992 | Tt4tab 998
+  cust share    press/flow 250K M0.3  T4 650   UN | +52.124% / +28.734% | π 0.7364 / 0.7833 / 0.6895 | pt45 1.1446 | Tt4tab 555
+  cust share    press/flow 250K M0.3  T4 700   UN | +14.307% /  +9.377% | π 0.7037 / 0.7118 / 0.6884 | pt45 1.0439 | Tt4tab 667
+  cust share    press/flow 250K M0.3  T4 750   UN |  +1.384% /  +1.008% | π 0.6903 / 0.6905 / 0.6884 | pt45 1.0047 | Tt4tab 745
+  cust share    press/flow 250K M0.3  T4 800   ch |  -0.107% /  -0.107% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9996 | Tt4tab 799
+  cust share    press/flow 250K M0.3  T4 900   ch |  -0.113% /  -0.113% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9995 | Tt4tab 899
+  cust share    press/flow 250K M0.3  T4 1000  ch |  -0.125% /  -0.125% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9993 | Tt4tab 998
+  cust share    press/flow 250K M0.4  T4 650   UN | +42.500% / +24.546% | π 0.7238 / 0.7529 / 0.6885 | pt45 1.1046 | Tt4tab 579
+  cust share    press/flow 250K M0.4  T4 700   UN |  +9.625% /  +6.509% | π 0.6981 / 0.7020 / 0.6884 | pt45 1.0272 | Tt4tab 679
+  cust share    press/flow 250K M0.4  T4 750   UN |  +0.285% /  +0.195% | π 0.6889 / 0.6889 / 0.6884 | pt45 1.0009 | Tt4tab 748
+  cust share    press/flow 250K M0.4  T4 800   ch |  -0.106% /  -0.106% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9996 | Tt4tab 799
+  cust share    press/flow 250K M0.4  T4 900   ch |  -0.110% /  -0.110% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9995 | Tt4tab 899
+  cust share    press/flow 250K M0.4  T4 1000  ch |  -0.118% /  -0.118% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9994 | Tt4tab 999
+  cust share press/flow M0.1 650: approx REFUSED rung-97: the nozzle cannot pass the LP turbine's flow against 101325 Pa even with the turbine nearly unexpanded (pi_LPT 0.9995) — the engine has no operating point at this instant
+  cust share    press/flow 288K M0.1  T4 700   UN | +102.819% / +45.424% | π 0.8192 / 0.9975 / 0.7364 | pt45 1.3434 | Tt4tab 496
+  cust share    press/flow 288K M0.1  T4 750   UN | +56.688% / +30.033% | π 0.7532 / 0.8274 / 0.6923 | pt45 1.1980 | Tt4tab 609
+  cust share    press/flow 288K M0.1  T4 800   UN | +22.140% / +13.845% | π 0.7153 / 0.7349 / 0.6884 | pt45 1.0804 | Tt4tab 735
+  cust share    press/flow 288K M0.1  T4 900   UN |  +0.265% /  +0.207% | π 0.6888 / 0.6889 / 0.6884 | pt45 1.0011 | Tt4tab 899
+  cust share    press/flow 288K M0.1  T4 1000  ch |  +0.006% /  +0.006% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0000 | Tt4tab 1000
+  cust share press/flow M0.3 650: approx REFUSED rung-97: the nozzle cannot pass the LP turbine's flow against 101325 Pa even with the turbine nearly unexpanded (pi_LPT 0.9995) — the engine has no operating point at this instant
+  cust share    press/flow 288K M0.3  T4 700   UN | +97.354% / +45.287% | π 0.7863 / 0.8931 / 0.7196 | pt45 1.2375 | Tt4tab 542
+  cust share    press/flow 288K M0.3  T4 750   UN | +50.649% / +28.125% | π 0.7350 / 0.7801 / 0.6891 | pt45 1.1412 | Tt4tab 644
+  cust share    press/flow 288K M0.3  T4 800   UN | +16.730% / +10.835% | π 0.7059 / 0.7159 / 0.6884 | pt45 1.0509 | Tt4tab 758
+  cust share    press/flow 288K M0.3  T4 900   ch |  +0.020% /  +0.020% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0001 | Tt4tab 900
+  cust share    press/flow 288K M0.3  T4 1000  ch |  +0.021% /  +0.021% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0001 | Tt4tab 1000
+  cust share    tilted     250K M0.1  T4 650   UN | +59.864% / +31.676% | π 0.7555 / 0.8368 / 0.6942 | pt45 1.2124 | Tt4tab 522
+  cust share    tilted     250K M0.1  T4 700   UN | +21.087% / +13.472% | π 0.7132 / 0.7316 / 0.6884 | pt45 1.0782 | Tt4tab 646
+  cust share    tilted     250K M0.1  T4 750   UN |  +3.829% /  +2.795% | π 0.6935 / 0.6951 / 0.6884 | pt45 1.0152 | Tt4tab 738
+  cust share    tilted     250K M0.1  T4 800   ch |  -0.083% /  -0.083% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9996 | Tt4tab 799
+  cust share    tilted     250K M0.1  T4 900   ch |  -0.095% /  -0.095% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9995 | Tt4tab 898
+  cust share    tilted     250K M0.1  T4 1000  ch |  -0.107% /  -0.107% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9993 | Tt4tab 998
+  cust share    tilted     250K M0.3  T4 650   UN | +54.634% / +30.240% | π 0.7373 / 0.7880 / 0.6900 | pt45 1.1544 | Tt4tab 552
+  cust share    tilted     250K M0.3  T4 700   UN | +15.761% / +10.401% | π 0.7044 / 0.7137 / 0.6884 | pt45 1.0492 | Tt4tab 665
+  cust share    tilted     250K M0.3  T4 750   UN |  +1.701% /  +1.260% | π 0.6905 / 0.6909 / 0.6884 | pt45 1.0059 | Tt4tab 744
+  cust share    tilted     250K M0.3  T4 800   ch |  -0.092% /  -0.092% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9997 | Tt4tab 799
+  cust share    tilted     250K M0.3  T4 900   ch |  -0.098% /  -0.098% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9996 | Tt4tab 899
+  cust share    tilted     250K M0.3  T4 1000  ch |  -0.112% /  -0.112% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9994 | Tt4tab 998
+  cust share    tilted     250K M0.4  T4 650   UN | +45.244% / +26.221% | π 0.7247 / 0.7569 / 0.6887 | pt45 1.1133 | Tt4tab 575
+  cust share    tilted     250K M0.4  T4 700   UN | +10.792% /  +7.352% | π 0.6987 / 0.7034 / 0.6884 | pt45 1.0309 | Tt4tab 677
+  cust share    tilted     250K M0.4  T4 750   UN |  +0.438% /  +0.319% | π 0.6890 / 0.6891 / 0.6884 | pt45 1.0015 | Tt4tab 748
+  cust share    tilted     250K M0.4  T4 800   ch |  -0.093% /  -0.093% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9997 | Tt4tab 799
+  cust share    tilted     250K M0.4  T4 900   ch |  -0.097% /  -0.097% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9996 | Tt4tab 899
+  cust share    tilted     250K M0.4  T4 1000  ch |  -0.106% /  -0.106% | π 0.6884 / 0.6884 / 0.6884 | pt45 0.9995 | Tt4tab 998
+  cust share tilted M0.1 650: approx REFUSED rung-97: the nozzle cannot pass the LP turbine's flow against 101325 Pa even with the turbine nearly unexpanded (pi_LPT 0.9995) — the engine has no operating point at this instant
+  cust share    tilted     288K M0.1  T4 700   UN | +102.940% / +45.854% | π 0.8178 / 0.9985 / 0.7373 | pt45 1.3491 | Tt4tab 496
+  cust share    tilted     288K M0.1  T4 750   UN | +58.610% / +31.228% | π 0.7537 / 0.8325 / 0.6933 | pt45 1.2086 | Tt4tab 606
+  cust share    tilted     288K M0.1  T4 800   UN | +23.932% / +15.061% | π 0.7161 / 0.7381 / 0.6884 | pt45 1.0884 | Tt4tab 732
+  cust share    tilted     288K M0.1  T4 900   UN |  +0.358% /  +0.282% | π 0.6889 / 0.6890 / 0.6884 | pt45 1.0015 | Tt4tab 899
+  cust share    tilted     288K M0.1  T4 1000  ch |  +0.005% /  +0.005% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0000 | Tt4tab 1000
+  cust share tilted M0.3 650: approx REFUSED rung-97: the nozzle cannot pass the LP turbine's flow against 101325 Pa even with the turbine nearly unexpanded (pi_LPT 0.9995) — the engine has no operating point at this instant
+  cust share    tilted     288K M0.3  T4 700   UN | +98.572% / +46.111% | π 0.7863 / 0.8964 / 0.7209 | pt45 1.2446 | Tt4tab 541
+  cust share    tilted     288K M0.3  T4 750   UN | +53.144% / +29.623% | π 0.7358 / 0.7847 / 0.6896 | pt45 1.1508 | Tt4tab 641
+  cust share    tilted     288K M0.3  T4 800   UN | +18.323% / +11.937% | π 0.7067 / 0.7181 / 0.6884 | pt45 1.0566 | Tt4tab 755
+  cust share    tilted     288K M0.3  T4 900   ch |  +0.016% /  +0.016% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0001 | Tt4tab 900
+  cust share    tilted     288K M0.3  T4 1000  ch |  +0.017% /  +0.017% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0001 | Tt4tab 1000
+  cust share flat-lp M0.1 650: no point
+  cust share flat-lp M0.1 700: no point
+  cust share    flat-lp    250K M0.1  T4 750   UN |  +3.223% /  +2.512% | π 0.6919 / 0.6931 / 0.6884 | pt45 1.0136 | Tt4tab 739
+  cust share    flat-lp    250K M0.1  T4 800   ch |  -0.007% /  -0.007% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0000 | Tt4tab 799
+  cust share    flat-lp    250K M0.1  T4 900   ch |  -0.008% /  -0.008% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0000 | Tt4tab 898
+  cust share    flat-lp    250K M0.1  T4 1000  ch |  -0.004% /  -0.004% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0000 | Tt4tab 998
+  cust share flat-lp M0.3 650: no point
+  cust share flat-lp M0.3 700: no point
+  cust share    flat-lp    250K M0.3  T4 750   UN |  +1.146% /  +0.911% | π 0.6896 / 0.6898 / 0.6884 | pt45 1.0043 | Tt4tab 746
+  cust share    flat-lp    250K M0.3  T4 800   ch |  -0.022% /  -0.022% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0000 | Tt4tab 799
+  cust share    flat-lp    250K M0.3  T4 900   ch |  -0.017% /  -0.017% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0000 | Tt4tab 898
+  cust share    flat-lp    250K M0.3  T4 1000  ch |  -0.019% /  -0.019% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0000 | Tt4tab 998
+  cust share flat-lp M0.4 650: no point
+  cust share flat-lp M0.4 700: no point
+  cust share    flat-lp    250K M0.4  T4 750   UN |  +0.140% /  +0.109% | π 0.6886 / 0.6886 / 0.6884 | pt45 1.0006 | Tt4tab 749
+  cust share    flat-lp    250K M0.4  T4 800   ch |  -0.030% /  -0.030% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0000 | Tt4tab 799
+  cust share    flat-lp    250K M0.4  T4 900   ch |  -0.027% /  -0.027% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0000 | Tt4tab 899
+  cust share    flat-lp    250K M0.4  T4 1000  ch |  -0.025% /  -0.025% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0000 | Tt4tab 998
+  cust share flat-lp M0.1 650: no point
+  cust share flat-lp M0.1 700: no point
+  cust share flat-lp M0.1 750: no point
+  cust share flat-lp M0.1 800: no point
+  cust share    flat-lp    288K M0.1  T4 900   UN |  +0.111% /  +0.092% | π 0.6886 / 0.6886 / 0.6884 | pt45 1.0005 | Tt4tab 900
+  cust share    flat-lp    288K M0.1  T4 1000  ch |  -0.002% /  -0.002% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0000 | Tt4tab 1000
+  cust share flat-lp M0.3 650: no point
+  cust share flat-lp M0.3 700: no point
+  cust share flat-lp M0.3 750: no point
+  cust share flat-lp M0.3 800: no point
+  cust share    flat-lp    288K M0.3  T4 900   ch |  -0.001% /  -0.001% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0000 | Tt4tab 900
+  cust share    flat-lp    288K M0.3  T4 1000  ch |  -0.002% /  -0.002% | π 0.6884 / 0.6884 / 0.6884 | pt45 1.0000 | Tt4tab 1000

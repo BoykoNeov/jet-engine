@@ -1,0 +1,480 @@
+cool 0 250 0.05 1000 Epr           | grid +4.1269 +1.9966        | low AT-SLICE (tables made here) | formula -0.0031 -0.0033
+cool 0 250 0.05 1000 N1            | grid +4.0988 +2.0564        | low AT-SLICE (tables made here) | formula -0.0709 -0.1563
+cool 0 250 0.05 700 Epr            | grid +9.6020 +1.9968        | low AT-SLICE (tables made here) | formula -6.0759 -0.0033
+cool 0 250 0.05 700 N1             | grid +4.1330 +2.0776        | low AT-SLICE (tables made here) | formula +16.8918 -0.1655
+cool 0 250 0.1 1000 Epr            | grid +3.0408 +1.4682        | low -0.3519 -0.1610        | formula -0.0063 -0.0066
+cool 0 250 0.1 1000 N1             | grid +3.0115 +1.5098        | low -0.3456 -0.1650        | formula -0.0740 -0.1587
+cool 0 250 0.1 700 Epr             | grid +6.9126 +1.4684        | low -1.1316 -0.1610        | formula -5.7863 -0.0067
+cool 0 250 0.1 700 N1              | grid +3.3961 +1.5254        | low +0.2573 -0.1666        | formula +16.9546 -0.1679
+cool 0 250 0.15 1000 Epr           | grid +2.0773 +1.0015        | low -0.5410 -0.2469        | formula -0.0094 -0.0098
+cool 0 250 0.15 1000 N1            | grid +2.0522 +1.0285        | low -0.5310 -0.2528        | formula -0.0763 -0.1596
+cool 0 250 0.15 700 Epr            | grid +4.5804 +1.0017        | low -1.7168 -0.2469        | formula -5.3602 -0.0100
+cool 0 250 0.15 700 N1             | grid +2.5682 +1.0392        | low +0.3502 -0.2554        | formula +16.6617 -0.1688
+cool 0 250 0.2 1000 Epr            | grid +1.2445 +0.5995        | low -0.5540 -0.2523        | formula -0.0125 -0.0130
+cool 0 250 0.2 1000 N1             | grid +1.2269 +0.6149        | low -0.5437 -0.2583        | formula -0.0780 -0.1590
+cool 0 250 0.2 700 Epr             | grid +2.6443 +0.5996        | low -1.7270 -0.2523        | formula -4.8260 -0.0131
+cool 0 250 0.2 700 N1              | grid +1.6848 +0.6213        | low +0.3007 -0.2609        | formula +16.0137 -0.1681
+cool 0 250 0.25 1000 Epr           | grid +0.5499 +0.2648        | low -0.3779 -0.1718        | formula -0.0155 -0.0159
+cool 0 250 0.25 1000 N1            | grid +0.5411 +0.2713        | low -0.3710 -0.1759        | formula -0.0788 -0.1569
+cool 0 250 0.25 700 Epr            | grid +1.1196 +0.2649        | low -1.1528 -0.1718        | formula -4.2163 -0.0161
+cool 0 250 0.25 700 N1             | grid +0.8043 +0.2742        | low +0.1577 -0.1777        | formula +15.0256 -0.1658
+cool 0 250 0.45 1000 Epr           | grid -0.7276 -0.3521        | low -0.7276 -0.3521        | formula -0.0234 -0.0235
+cool 0 250 0.45 1000 N1            | grid -0.7137 -0.3600        | low -0.7137 -0.3600        | formula -0.0720 -0.1317
+cool 0 250 0.45 700 Epr            | grid -1.1974 -0.3523        | low -1.1974 -0.3523        | formula -1.6794 -0.0238
+cool 0 250 0.45 700 N1             | grid -1.4430 -0.3639        | low -1.4430 -0.3639        | formula +8.4257 -0.1389
+cool 0 255.7 0.1 1000 Epr          | grid +3.2020 +1.5367        | low -0.3704 -0.1681        | formula -0.0053 -0.0055
+cool 0 255.7 0.1 1000 N1           | grid +3.1841 +1.6050        | low -0.3532 -0.1483        | formula -0.0602 -0.1290
+cool 0 255.7 0.1 700 Epr           | grid +7.4204 +1.5369        | low -1.2415 -0.1681        | formula -8.0468 -0.0056
+cool 0 255.7 0.1 700 N1            | grid -2.1056 +1.6229        | low +0.3532 -0.1487        | formula +22.2180 -0.1367
+cool 0 288.15 0.05 1000 Epr        | grid +5.7410 +2.6704        | low +0.0033 +0.0034        | formula +0.0002 +0.0002
+cool 0 288.15 0.05 1000 N1         | grid +5.7936 +2.8947        | low +0.0626 +0.1363        | formula +0.0035 +0.0076
+cool 0 288.15 0.05 700 Epr         | grid +15.9130 +2.6706       | low +0.0249 +0.0034        | formula -34.3599 +0.0002
+cool 0 288.15 0.05 700 N1          | grid REFUSED The control's thrust table, blended between Mach 0.3 and 0.6: it does not rise in thrust,  | low -0.1808 +0.1451        | formula +69.0583 +0.0081
+cool 0 288.15 0.15 1000 Epr        | grid +2.9200 +1.3481        | low -0.7586 -0.3278        | formula +0.0009 +0.0009
+cool 0 288.15 0.15 1000 N1         | grid +2.9575 +1.5237        | low -0.6850 -0.2019        | formula +0.0061 +0.0124
+cool 0 288.15 0.15 700 Epr         | grid +7.3737 +1.3484        | low -3.1511 -0.3277        | formula -30.3699 +0.0009
+cool 0 288.15 0.15 700 N1          | grid -18.6791 +1.5479       | low +1.7014 -0.1965        | formula +71.1225 +0.0132
+cool 0 288.15 0.25 1000 Epr        | grid +0.7935 +0.3717        | low -0.5222 -0.2171        | formula +0.0027 +0.0027
+cool 0 288.15 0.25 1000 N1         | grid +0.8456 +0.5174        | low -0.4514 -0.0873        | formula +0.0117 +0.0222
+cool 0 288.15 0.25 700 Epr         | grid +1.7555 +0.3719        | low -2.0409 -0.2170        | formula -24.7183 +0.0027
+cool 0 288.15 0.25 700 N1          | grid -4.3074 +0.5309        | low +1.0452 -0.0805        | formula +68.7488 +0.0236
+cool 1 250 0.05 1000 Epr           | grid +4.0997 +1.9944        | low AT-SLICE (tables made here) | formula -0.0031 -0.0033
+cool 1 250 0.05 1000 N1            | grid +4.0800 +2.0535        | low AT-SLICE (tables made here) | formula -0.0949 -0.1796
+cool 1 250 0.05 700 Epr            | grid +9.4970 +1.9947        | low AT-SLICE (tables made here) | formula -5.8028 -0.0033
+cool 1 250 0.05 700 N1             | grid +5.7421 +2.0719        | low AT-SLICE (tables made here) | formula +15.6678 -0.1876
+cool 1 250 0.1 1000 Epr            | grid +3.0207 +1.4666        | low -0.3494 -0.1608        | formula -0.0062 -0.0066
+cool 1 250 0.1 1000 N1             | grid +2.9985 +1.5079        | low -0.3442 -0.1648        | formula -0.0980 -0.1819
+cool 1 250 0.1 700 Epr             | grid +6.8285 +1.4668        | low -1.1151 -0.1608        | formula -5.5065 -0.0066
+cool 1 250 0.1 700 N1              | grid +4.6102 +1.5215        | low +0.2173 -0.1663        | formula +15.7004 -0.1899
+cool 1 250 0.15 1000 Epr           | grid +2.0635 +1.0004        | low -0.5371 -0.2466        | formula -0.0093 -0.0098
+cool 1 250 0.15 1000 N1            | grid +2.0438 +1.0273        | low -0.5289 -0.2526        | formula -0.1002 -0.1825
+cool 1 250 0.15 700 Epr            | grid +4.5182 +1.0006        | low -1.6897 -0.2466        | formula -5.0755 -0.0099
+cool 1 250 0.15 700 N1             | grid +3.4319 +1.0366        | low +0.2870 -0.2548        | formula +15.3843 -0.1905
+cool 1 250 0.2 1000 Epr            | grid +1.2362 +0.5988        | low -0.5500 -0.2519        | formula -0.0124 -0.0129
+cool 1 250 0.2 1000 N1             | grid +1.2221 +0.6142        | low -0.5415 -0.2580        | formula -0.1014 -0.1815
+cool 1 250 0.2 700 Epr             | grid +2.6044 +0.5989        | low -1.6973 -0.2520        | formula -4.5403 -0.0131
+cool 1 250 0.2 700 N1              | grid +2.2307 +0.6198        | low +0.2340 -0.2603        | formula +14.7235 -0.1894
+cool 1 250 0.25 1000 Epr           | grid +0.5462 +0.2645        | low -0.3751 -0.1716        | formula -0.0153 -0.0158
+cool 1 250 0.25 1000 N1            | grid +0.5391 +0.2710        | low -0.3695 -0.1757        | formula -0.1015 -0.1787
+cool 1 250 0.25 700 Epr            | grid +1.1009 +0.2646        | low -1.1313 -0.1716        | formula -3.9352 -0.0160
+cool 1 250 0.25 700 N1             | grid +1.0617 +0.2735        | low +0.1109 -0.1773        | formula +13.7369 -0.1864
+cool 1 250 0.45 1000 Epr           | grid -0.7226 -0.3516        | low -0.7226 -0.3516        | formula -0.0231 -0.0234
+cool 1 250 0.45 1000 N1            | grid -0.7111 -0.3596        | low -0.7111 -0.3596        | formula -0.0900 -0.1490
+cool 1 250 0.45 700 Epr            | grid -1.1761 -0.3518        | low -1.1761 -0.3518        | formula -1.4864 -0.0237
+cool 1 250 0.45 700 N1             | grid -1.8086 -0.3630        | low -1.8086 -0.3630        | formula +7.3671 -0.1553
+cool 1 255.7 0.1 1000 Epr          | grid +3.1794 +1.5345        | low -0.3676 -0.1678        | formula -0.0052 -0.0055
+cool 1 255.7 0.1 1000 N1           | grid +3.1725 +1.6059        | low -0.3478 -0.1444        | formula -0.0802 -0.1484
+cool 1 255.7 0.1 700 Epr           | grid +7.3326 +1.5347        | low -1.2264 -0.1678        | formula -7.7675 -0.0055
+cool 1 255.7 0.1 700 N1            | grid +0.0153 +1.6215        | low +0.3243 -0.1447        | formula +20.8929 -0.1551
+cool 1 288.15 0.05 1000 Epr        | grid +5.6868 +2.6617        | low +0.0033 +0.0034        | formula +0.0002 +0.0002
+cool 1 288.15 0.05 1000 N1         | grid +5.7709 +2.9063        | low +0.0864 +0.1603        | formula +0.0049 +0.0090
+cool 1 288.15 0.05 700 Epr         | grid +15.9017 +2.6620       | low +0.0261 +0.0034        | formula REFUSED At the starting throttle (700 K), the control holding the pressure ratio its design-flight
+cool 1 288.15 0.05 700 N1          | grid REFUSED The control's thrust table, blended between Mach 0.3 and 0.6: it does not rise in thrust,  | low -0.1843 +0.1680        | formula +68.7729 +0.0095
+cool 1 288.15 0.15 1000 Epr        | grid +2.8919 +1.3437        | low -0.7509 -0.3266        | formula +0.0009 +0.0009
+cool 1 288.15 0.15 1000 N1         | grid +2.9601 +1.5424        | low -0.6549 -0.1761        | formula +0.0083 +0.0146
+cool 1 288.15 0.15 700 Epr         | grid +7.3218 +1.3440        | low -3.1698 -0.3266        | formula -30.8912 +0.0009
+cool 1 288.15 0.15 700 N1          | grid -18.8638 +1.5637       | low +1.8140 -0.1713        | formula +70.6723 +0.0153
+cool 1 288.15 0.25 1000 Epr        | grid +0.7857 +0.3704        | low -0.5169 -0.2164        | formula +0.0027 +0.0027
+cool 1 288.15 0.25 1000 N1         | grid +0.8653 +0.5408        | low -0.4221 -0.0615        | formula +0.0153 +0.0258
+cool 1 288.15 0.25 700 Epr         | grid +1.7281 +0.3707        | low -2.0393 -0.2162        | formula -24.8004 +0.0027
+cool 1 288.15 0.25 700 N1          | grid -4.3456 +0.5527        | low +1.1175 -0.0555        | formula +67.8633 +0.0271
+cool 2 250 0.05 1000 Epr           | grid +4.1265 +1.9958        | low AT-SLICE (tables made here) | formula -0.0031 -0.0033
+cool 2 250 0.05 1000 N1            | grid +4.1018 +2.0537        | low AT-SLICE (tables made here) | formula -0.0790 -0.1676
+cool 2 250 0.05 700 Epr            | grid +9.6283 +1.9961        | low AT-SLICE (tables made here) | formula -6.1888 -0.0033
+cool 2 250 0.05 700 N1             | grid +4.1974 +2.0727        | low AT-SLICE (tables made here) | formula +16.9582 -0.1758
+cool 2 250 0.1 1000 Epr            | grid +3.0406 +1.4676        | low -0.3519 -0.1609        | formula -0.0063 -0.0066
+cool 2 250 0.1 1000 N1             | grid +3.0142 +1.5081        | low -0.3460 -0.1648        | formula -0.0821 -0.1699
+cool 2 250 0.1 700 Epr             | grid +6.9273 +1.4679        | low -1.1368 -0.1610        | formula -5.8876 -0.0067
+cool 2 250 0.1 700 N1              | grid +3.4505 +1.5221        | low +0.2583 -0.1663        | formula +17.0180 -0.1782
+cool 2 250 0.15 1000 Epr           | grid +2.0772 +1.0011        | low -0.5409 -0.2468        | formula -0.0095 -0.0098
+cool 2 250 0.15 1000 N1            | grid +2.0543 +1.0274        | low -0.5317 -0.2526        | formula -0.0844 -0.1706
+cool 2 250 0.15 700 Epr            | grid +4.5869 +1.0013        | low -1.7236 -0.2468        | formula -5.4468 -0.0100
+cool 2 250 0.15 700 N1             | grid +2.6105 +1.0370        | low +0.3510 -0.2549        | formula +16.7171 -0.1789
+cool 2 250 0.2 1000 Epr            | grid +1.2444 +0.5992        | low -0.5539 -0.2521        | formula -0.0126 -0.0130
+cool 2 250 0.2 1000 N1             | grid +1.2283 +0.6143        | low -0.5445 -0.2580        | formula -0.0858 -0.1698
+cool 2 250 0.2 700 Epr             | grid +2.6461 +0.5994        | low -1.7326 -0.2522        | formula -4.8962 -0.0131
+cool 2 250 0.2 700 N1              | grid +1.7132 +0.6201        | low +0.3006 -0.2605        | formula +16.0571 -0.1780
+cool 2 250 0.25 1000 Epr           | grid +0.5498 +0.2647        | low -0.3779 -0.1717        | formula -0.0155 -0.0159
+cool 2 250 0.25 1000 N1            | grid +0.5418 +0.2711        | low -0.3715 -0.1757        | formula -0.0864 -0.1673
+cool 2 250 0.25 700 Epr            | grid +1.1196 +0.2648        | low -1.1556 -0.1718        | formula -4.2699 -0.0161
+cool 2 250 0.25 700 N1             | grid +0.8180 +0.2737        | low +0.1570 -0.1774        | formula +15.0545 -0.1753
+cool 2 250 0.45 1000 Epr           | grid -0.7277 -0.3520        | low -0.7277 -0.3520        | formula -0.0234 -0.0235
+cool 2 250 0.45 1000 N1            | grid -0.7147 -0.3597        | low -0.7147 -0.3597        | formula -0.0779 -0.1397
+cool 2 250 0.45 700 Epr            | grid -1.1948 -0.3521        | low -1.1948 -0.3521        | formula -1.6868 -0.0238
+cool 2 250 0.45 700 N1             | grid -1.4656 -0.3633        | low -1.4656 -0.3633        | formula +8.4073 -0.1463
+cool 2 255.7 0.1 1000 Epr          | grid +3.2019 +1.5360        | low -0.3704 -0.1680        | formula -0.0053 -0.0055
+cool 2 255.7 0.1 1000 N1           | grid +3.1881 +1.6046        | low -0.3524 -0.1465        | formula -0.0667 -0.1381
+cool 2 255.7 0.1 700 Epr           | grid +7.4430 +1.5362        | low -1.2485 -0.1680        | formula -8.2035 -0.0056
+cool 2 255.7 0.1 700 N1            | grid -2.0172 +1.6208        | low +0.3587 -0.1468        | formula +22.3564 -0.1451
+cool 2 288.15 0.05 1000 Epr        | grid +5.7429 +2.6690        | low +0.0034 +0.0034        | formula +0.0002 +0.0002
+cool 2 288.15 0.05 1000 N1         | grid +5.8046 +2.8996        | low +0.0692 +0.1460        | formula +0.0039 +0.0082
+cool 2 288.15 0.05 700 Epr         | grid +15.9845 +2.6692       | low +0.0244 +0.0034        | formula REFUSED At the starting throttle (700 K), the control holding the pressure ratio its design-flight
+cool 2 288.15 0.05 700 N1          | grid REFUSED The control's thrust table, blended between Mach 0.3 and 0.6: it does not rise in thrust,  | low -0.1751 +0.1542        | formula +69.6463 +0.0087
+cool 2 288.15 0.15 1000 Epr        | grid +2.9210 +1.3474        | low -0.7589 -0.3276        | formula +0.0009 +0.0009
+cool 2 288.15 0.15 1000 N1         | grid +2.9673 +1.5315        | low -0.6792 -0.1915        | formula +0.0067 +0.0133
+cool 2 288.15 0.15 700 Epr         | grid +7.3950 +1.3477        | low -3.1827 -0.3275        | formula -30.9771 +0.0009
+cool 2 288.15 0.15 700 N1          | grid -19.1252 +1.5539       | low +1.7476 -0.1865        | formula +71.8065 +0.0140
+cool 2 288.15 0.25 1000 Epr        | grid +0.7939 +0.3715        | low -0.5224 -0.2170        | formula +0.0028 +0.0027
+cool 2 288.15 0.25 1000 N1         | grid +0.8536 +0.5270        | low -0.4451 -0.0770        | formula +0.0127 +0.0237
+cool 2 288.15 0.25 700 Epr         | grid +1.7556 +0.3718        | low -2.0600 -0.2168        | formula -25.1775 +0.0027
+cool 2 288.15 0.25 700 N1          | grid -4.4170 +0.5394        | low +1.0807 -0.0707        | formula +69.4462 +0.0250
+cool 3 250 0.05 1000 Epr           | grid +4.0666 +1.9951        | low AT-SLICE (tables made here) | formula -0.0030 -0.0032
+cool 3 250 0.05 1000 N1            | grid +4.0119 +2.0640        | low AT-SLICE (tables made here) | formula +0.0077 -0.0399
+cool 3 250 0.05 700 Epr            | grid REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | low REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | formula REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cool 3 250 0.05 700 N1             | grid REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | low REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | formula REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cool 3 250 0.1 1000 Epr            | grid +2.9962 +1.4670        | low -0.3463 -0.1609        | formula -0.0061 -0.0065
+cool 3 250 0.1 1000 N1             | grid +2.9444 +1.5139        | low -0.3365 -0.1648        | formula +0.0047 -0.0431
+cool 3 250 0.1 700 Epr             | grid REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | low REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | formula REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cool 3 250 0.1 700 N1              | grid REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | low REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | formula REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cool 3 250 0.15 1000 Epr           | grid +2.0466 +1.0007        | low -0.5324 -0.2466        | formula -0.0092 -0.0098
+cool 3 250 0.15 1000 N1            | grid +2.0046 +1.0304        | low -0.5169 -0.2526        | formula +0.0016 -0.0458
+cool 3 250 0.15 700 Epr            | grid REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | low REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | formula REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cool 3 250 0.15 700 N1             | grid REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | low REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | formula REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cool 3 250 0.2 1000 Epr            | grid +1.2260 +0.5990        | low -0.5451 -0.2520        | formula -0.0123 -0.0129
+cool 3 250 0.2 1000 N1             | grid +1.1974 +0.6155        | low -0.5292 -0.2581        | formula -0.0016 -0.0481
+cool 3 250 0.2 700 Epr             | grid REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | low REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | formula REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cool 3 250 0.2 700 N1              | grid REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | low REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | formula REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cool 3 250 0.25 1000 Epr           | grid +0.5416 +0.2645        | low -0.3717 -0.1716        | formula -0.0151 -0.0158
+cool 3 250 0.25 1000 N1            | grid +0.5278 +0.2714        | low -0.3612 -0.1758        | formula -0.0046 -0.0499
+cool 3 250 0.25 700 Epr            | grid REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | low REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | formula REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cool 3 250 0.25 700 N1             | grid REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | low REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | formula REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cool 3 250 0.45 1000 Epr           | grid -0.7162 -0.3516        | low -0.7162 -0.3516        | formula -0.0228 -0.0233
+cool 3 250 0.45 1000 N1            | grid -0.6952 -0.3597        | low -0.6952 -0.3597        | formula -0.0143 -0.0498
+cool 3 250 0.45 700 Epr            | grid REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | low REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | formula REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cool 3 250 0.45 700 N1             | grid REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | low REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | formula REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cool 3 255.7 0.1 1000 Epr          | grid +3.1509 +1.5348        | low -0.3641 -0.1679        | formula -0.0052 -0.0055
+cool 3 255.7 0.1 1000 N1           | grid +3.0990 +1.5917        | low -0.3554 -0.1660        | formula +0.0037 -0.0353
+cool 3 255.7 0.1 700 Epr           | grid REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | low REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | formula REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cool 3 255.7 0.1 700 N1            | grid REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | low REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | formula REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cool 3 288.15 0.05 1000 Epr        | grid +5.6097 +2.6571        | low +0.0033 +0.0034        | formula +0.0002 +0.0002
+cool 3 288.15 0.05 1000 N1         | grid +5.5729 +2.8020        | low -0.0055 +0.0379        | formula -0.0004 +0.0020
+cool 3 288.15 0.05 700 Epr         | grid REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | low REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | formula REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cool 3 288.15 0.05 700 N1          | grid REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | low REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | formula REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cool 3 288.15 0.15 1000 Epr        | grid +2.8520 +1.3412        | low -0.7400 -0.3260        | formula +0.0009 +0.0009
+cool 3 288.15 0.15 1000 N1         | grid +2.8033 +1.4238        | low -0.7308 -0.3006        | formula +0.0000 +0.0037
+cool 3 288.15 0.15 700 Epr         | grid REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | low REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | formula REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cool 3 288.15 0.15 700 N1          | grid REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | low REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | formula REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cool 3 288.15 0.25 1000 Epr        | grid +0.7746 +0.3696        | low -0.5091 -0.2160        | formula +0.0027 +0.0026
+cool 3 288.15 0.25 1000 N1         | grid +0.7497 +0.4161        | low -0.5063 -0.1873        | formula +0.0011 +0.0075
+cool 3 288.15 0.25 700 Epr         | grid REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | low REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | formula REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cool 3 288.15 0.25 700 N1          | grid REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | low REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | formula REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cust 0 250 0.05 1000 Epr           | grid +3.8132 +1.8453        | low AT-SLICE (tables made here) | formula -0.0034 -0.0036
+cust 0 250 0.05 1000 N1            | grid +3.7870 +1.9018        | low AT-SLICE (tables made here) | formula -0.0804 -0.1728
+cust 0 250 0.05 700 Epr            | grid +9.0550 +1.8456        | low AT-SLICE (tables made here) | formula -4.0043 -0.0037
+cust 0 250 0.05 700 N1             | grid +8.1380 +1.9200        | low AT-SLICE (tables made here) | formula +12.1125 -0.1812
+cust 0 250 0.1 1000 Epr            | grid +2.8134 +1.3595        | low -0.3222 -0.1465        | formula -0.0068 -0.0073
+cust 0 250 0.1 1000 N1             | grid +2.7871 +1.3992        | low -0.3168 -0.1504        | formula -0.0837 -0.1754
+cust 0 250 0.1 700 Epr             | grid +6.5533 +1.3598        | low -1.0204 -0.1465        | formula -3.8178 -0.0073
+cust 0 250 0.1 700 N1              | grid +6.4642 +1.4126        | low +0.1310 -0.1518        | formula +12.1425 -0.1838
+cust 0 250 0.15 1000 Epr           | grid +1.9250 +0.9293        | low -0.4959 -0.2251        | formula -0.0103 -0.0109
+cust 0 250 0.15 1000 N1            | grid +1.9028 +0.9552        | low -0.4875 -0.2309        | formula -0.0863 -0.1765
+cust 0 250 0.15 700 Epr            | grid +4.3686 +0.9295        | low -1.5570 -0.2251        | formula -3.5378 -0.0110
+cust 0 250 0.15 700 N1             | grid +4.7784 +0.9644        | low +0.1596 -0.2331        | formula +11.9079 -0.1848
+cust 0 250 0.2 1000 Epr            | grid +1.1554 +0.5575        | low -0.5086 -0.2304        | formula -0.0137 -0.0143
+cust 0 250 0.2 1000 N1             | grid +1.1399 +0.5723        | low -0.4999 -0.2363        | formula -0.0880 -0.1758
+cust 0 250 0.2 700 Epr             | grid +2.5386 +0.5576        | low -1.5766 -0.2305        | formula -3.1820 -0.0145
+cust 0 250 0.2 700 N1              | grid +3.0986 +0.5779        | low +0.1099 -0.2385        | formula +11.4065 -0.1841
+cust 0 250 0.25 1000 Epr           | grid +0.5115 +0.2468        | low -0.3476 -0.1572        | formula -0.0169 -0.0176
+cust 0 250 0.25 1000 N1            | grid +0.5039 +0.2531        | low -0.3417 -0.1612        | formula -0.0888 -0.1735
+cust 0 250 0.25 700 Epr            | grid +1.0820 +0.2469        | low -1.0603 -0.1573        | formula -2.7716 -0.0178
+cust 0 250 0.25 700 N1             | grid +1.4790 +0.2556        | low +0.0306 -0.1628        | formula +10.6460 -0.1816
+cust 0 250 0.45 1000 Epr           | grid -0.6845 -0.3316        | low -0.6845 -0.3316        | formula -0.0257 -0.0261
+cust 0 250 0.45 1000 N1            | grid -0.6721 -0.3393        | low -0.6721 -0.3393        | formula -0.0809 -0.1457
+cust 0 250 0.45 700 Epr            | grid -1.1955 -0.3318        | low -1.1955 -0.3318        | formula -1.0380 -0.0264
+cust 0 250 0.45 700 N1             | grid -2.5261 -0.3428        | low -2.5261 -0.3428        | formula +5.5439 -0.1524
+cust 0 255.7 0.1 1000 Epr          | grid +2.9646 +1.4223        | low -0.3393 -0.1527        | formula -0.0058 -0.0061
+cust 0 255.7 0.1 1000 N1           | grid +2.9507 +1.4905        | low -0.3216 -0.1304        | formula -0.0680 -0.1425
+cust 0 255.7 0.1 700 Epr           | grid +6.9685 +1.4226        | low -1.1200 -0.1528        | formula -5.5916 -0.0061
+cust 0 255.7 0.1 700 N1            | grid +3.6437 +1.5061        | low +0.2191 -0.1306        | formula +16.6459 -0.1495
+cust 0 288.15 0.05 1000 Epr        | grid +5.3354 +2.4632        | low +0.0036 +0.0037        | formula +0.0002 +0.0002
+cust 0 288.15 0.05 1000 N1         | grid +5.3907 +2.6919        | low +0.0700 +0.1494        | formula +0.0039 +0.0084
+cust 0 288.15 0.05 700 Epr         | grid +14.4610 +2.4635       | low +0.0235 +0.0038        | formula -26.4738 +0.0002
+cust 0 288.15 0.05 700 N1          | grid REFUSED The control's thrust table, blended between Mach 0.3 and 0.6: it does not rise in thrust,  | low -0.1350 +0.1577        | formula +56.1588 +0.0089
+cust 0 288.15 0.15 1000 Epr        | grid +2.7221 +1.2495        | low -0.6990 -0.2969        | formula +0.0010 +0.0010
+cust 0 288.15 0.15 1000 N1         | grid +2.7680 +1.4348        | low -0.6196 -0.1575        | formula +0.0068 +0.0137
+cust 0 288.15 0.15 700 Epr         | grid +6.8420 +1.2499        | low -2.8436 -0.2969        | formula -23.8552 +0.0010
+cust 0 288.15 0.15 700 N1          | grid -14.4347 +1.4566       | low +1.2162 -0.1522        | formula +58.4586 +0.0144
+cust 0 288.15 0.25 1000 Epr        | grid +0.7451 +0.3486        | low -0.4810 -0.1953        | formula +0.0030 +0.0029
+cust 0 288.15 0.25 1000 N1         | grid +0.8055 +0.5068        | low -0.4037 -0.0520        | formula +0.0130 +0.0244
+cust 0 288.15 0.25 700 Epr         | grid +1.6784 +0.3489        | low -1.8837 -0.1951        | formula -19.9356 +0.0030
+cust 0 288.15 0.25 700 N1          | grid -3.2731 +0.5192        | low +0.7433 -0.0455        | formula +57.7013 +0.0257
+cust 1 250 0.05 1000 Epr           | grid +3.8119 +1.8453        | low AT-SLICE (tables made here) | formula -0.0034 -0.0036
+cust 1 250 0.05 1000 N1            | grid +3.7940 +1.9022        | low AT-SLICE (tables made here) | formula -0.1065 -0.1987
+cust 1 250 0.05 700 Epr            | grid +9.0359 +1.8456        | low AT-SLICE (tables made here) | formula -3.9874 -0.0037
+cust 1 250 0.05 700 N1             | grid +8.5062 +1.9182        | low AT-SLICE (tables made here) | formula +11.5440 -0.2060
+cust 1 250 0.1 1000 Epr            | grid +2.8124 +1.3595        | low -0.3220 -0.1465        | formula -0.0068 -0.0073
+cust 1 250 0.1 1000 N1             | grid +2.7929 +1.3996        | low -0.3177 -0.1505        | formula -0.1098 -0.2011
+cust 1 250 0.1 700 Epr             | grid +6.5338 +1.3598        | low -1.0179 -0.1465        | formula -3.7913 -0.0074
+cust 1 250 0.1 700 N1              | grid +6.7587 +1.4115        | low +0.0956 -0.1518        | formula +11.5631 -0.2085
+cust 1 250 0.15 1000 Epr           | grid +1.9243 +0.9293        | low -0.4957 -0.2251        | formula -0.0103 -0.0109
+cust 1 250 0.15 1000 N1            | grid +1.9071 +0.9556        | low -0.4888 -0.2310        | formula -0.1121 -0.2018
+cust 1 250 0.15 700 Epr            | grid +4.3515 +0.9295        | low -1.5514 -0.2251        | formula -3.5004 -0.0110
+cust 1 250 0.15 700 N1             | grid +4.9994 +0.9637        | low +0.1044 -0.2330        | formula +11.3205 -0.2092
+cust 1 250 0.2 1000 Epr            | grid +1.1549 +0.5575        | low -0.5084 -0.2304        | formula -0.0136 -0.0143
+cust 1 250 0.2 1000 N1             | grid +1.1426 +0.5726        | low -0.5013 -0.2364        | formula -0.1134 -0.2007
+cust 1 250 0.2 700 Epr             | grid +2.5262 +0.5576        | low -1.5690 -0.2305        | formula -3.1339 -0.0145
+cust 1 250 0.2 700 N1              | grid +3.2458 +0.5775        | low +0.0525 -0.2385        | formula +10.8156 -0.2080
+cust 1 250 0.25 1000 Epr           | grid +0.5113 +0.2468        | low -0.3474 -0.1572        | formula -0.0168 -0.0176
+cust 1 250 0.25 1000 N1            | grid +0.5052 +0.2533        | low -0.3426 -0.1613        | formula -0.1135 -0.1976
+cust 1 250 0.25 700 Epr            | grid +1.0758 +0.2469        | low -1.0538 -0.1573        | formula -2.7146 -0.0178
+cust 1 250 0.25 700 N1             | grid +1.5520 +0.2555        | low -0.0091 -0.1627        | formula +10.0585 -0.2048
+cust 1 250 0.45 1000 Epr           | grid -0.6841 -0.3316        | low -0.6841 -0.3316        | formula -0.0255 -0.0261
+cust 1 250 0.45 1000 N1            | grid -0.6739 -0.3396        | low -0.6739 -0.3396        | formula -0.1006 -0.1649
+cust 1 250 0.45 700 Epr            | grid -1.1854 -0.3318        | low -1.1854 -0.3318        | formula -0.9813 -0.0264
+cust 1 250 0.45 700 N1             | grid -2.6903 -0.3426        | low -2.6903 -0.3426        | formula +5.0857 -0.1709
+cust 1 255.7 0.1 1000 Epr          | grid +2.9631 +1.4223        | low -0.3391 -0.1528        | formula -0.0057 -0.0061
+cust 1 255.7 0.1 1000 N1           | grid +2.9602 +1.4949        | low -0.3183 -0.1264        | formula -0.0897 -0.1640
+cust 1 255.7 0.1 700 Epr           | grid +6.9506 +1.4226        | low -1.1190 -0.1528        | formula -5.5980 -0.0061
+cust 1 255.7 0.1 700 N1            | grid +4.3415 +1.5086        | low +0.1918 -0.1266        | formula +16.0263 -0.1702
+cust 1 288.15 0.05 1000 Epr        | grid +5.3267 +2.4637        | low +0.0036 +0.0037        | formula +0.0002 +0.0002
+cust 1 288.15 0.05 1000 N1         | grid +5.4166 +2.7172        | low +0.0960 +0.1761        | formula +0.0054 +0.0099
+cust 1 288.15 0.05 700 Epr         | grid +14.5581 +2.4640       | low +0.0246 +0.0038        | formula -27.5221 +0.0002
+cust 1 288.15 0.05 700 N1          | grid -33.4510 +2.7476       | low -0.1368 +0.1834        | formula +56.4197 +0.0103
+cust 1 288.15 0.15 1000 Epr        | grid +2.7175 +1.2497        | low -0.6979 -0.2970        | formula +0.0010 +0.0010
+cust 1 288.15 0.15 1000 N1         | grid +2.7962 +1.4617        | low -0.5936 -0.1304        | formula +0.0092 +0.0160
+cust 1 288.15 0.15 700 Epr         | grid +6.8489 +1.2500        | low -2.8777 -0.2970        | formula -24.6460 +0.0010
+cust 1 288.15 0.15 700 N1          | grid -14.3271 +1.4810       | low +1.2782 -0.1257        | formula +58.6448 +0.0167
+cust 1 288.15 0.25 1000 Epr        | grid +0.7436 +0.3486        | low -0.4803 -0.1954        | formula +0.0030 +0.0029
+cust 1 288.15 0.25 1000 N1         | grid +0.8337 +0.5344        | low -0.3766 -0.0244        | formula +0.0170 +0.0284
+cust 1 288.15 0.25 700 Epr         | grid +1.6674 +0.3489        | low -1.8959 -0.1952        | formula -20.3764 +0.0030
+cust 1 288.15 0.25 700 N1          | grid -3.2566 +0.5454        | low +0.7840 -0.0186        | formula +57.6290 +0.0296
+cust 2 250 0.05 1000 Epr           | grid +3.8183 +1.8454        | low AT-SLICE (tables made here) | formula -0.0034 -0.0036
+cust 2 250 0.05 1000 N1            | grid +3.7962 +1.9007        | low AT-SLICE (tables made here) | formula -0.0909 -0.1871
+cust 2 250 0.05 700 Epr            | grid +9.0911 +1.8457        | low AT-SLICE (tables made here) | formula -4.1323 -0.0037
+cust 2 250 0.05 700 N1             | grid +8.0919 +1.9168        | low AT-SLICE (tables made here) | formula +12.2585 -0.1945
+cust 2 250 0.1 1000 Epr            | grid +2.8172 +1.3596        | low -0.3226 -0.1465        | formula -0.0069 -0.0073
+cust 2 250 0.1 1000 N1             | grid +2.7943 +1.3985        | low -0.3178 -0.1504        | formula -0.0942 -0.1896
+cust 2 250 0.1 700 Epr             | grid +6.5763 +1.3599        | low -1.0278 -0.1466        | formula -3.9374 -0.0073
+cust 2 250 0.1 700 N1              | grid +6.4263 +1.4105        | low +0.1294 -0.1516        | formula +12.2912 -0.1971
+cust 2 250 0.15 1000 Epr           | grid +1.9276 +0.9293        | low -0.4966 -0.2251        | formula -0.0103 -0.0109
+cust 2 250 0.15 1000 N1            | grid +1.9079 +0.9548        | low -0.4890 -0.2308        | formula -0.0967 -0.1904
+cust 2 250 0.15 700 Epr            | grid +4.3816 +0.9296        | low -1.5674 -0.2251        | formula -3.6463 -0.0110
+cust 2 250 0.15 700 N1             | grid +4.7486 +0.9631        | low +0.1569 -0.2328        | formula +12.0560 -0.1979
+cust 2 250 0.2 1000 Epr            | grid +1.1569 +0.5575        | low -0.5094 -0.2304        | formula -0.0137 -0.0143
+cust 2 250 0.2 1000 N1             | grid +1.1431 +0.5722        | low -0.5015 -0.2362        | formula -0.0982 -0.1895
+cust 2 250 0.2 700 Epr             | grid +2.5448 +0.5576        | low -1.5863 -0.2305        | formula -3.2777 -0.0145
+cust 2 250 0.2 700 N1              | grid +3.0776 +0.5771        | low +0.1068 -0.2383        | formula +11.5510 -0.1968
+cust 2 250 0.25 1000 Epr           | grid +0.5122 +0.2468        | low -0.3481 -0.1572        | formula -0.0170 -0.0176
+cust 2 250 0.25 1000 N1            | grid +0.5053 +0.2531        | low -0.3428 -0.1612        | formula -0.0986 -0.1866
+cust 2 250 0.25 700 Epr            | grid +1.0841 +0.2469        | low -1.0662 -0.1573        | formula -2.8535 -0.0178
+cust 2 250 0.25 700 N1             | grid +1.4678 +0.2553        | low +0.0284 -0.1626        | formula +10.7845 -0.1939
+cust 2 250 0.45 1000 Epr           | grid -0.6855 -0.3316        | low -0.6855 -0.3316        | formula -0.0258 -0.0261
+cust 2 250 0.45 1000 N1            | grid -0.6742 -0.3393        | low -0.6742 -0.3393        | formula -0.0886 -0.1560
+cust 2 250 0.45 700 Epr            | grid -1.1970 -0.3318        | low -1.1970 -0.3318        | formula -1.0708 -0.0264
+cust 2 250 0.45 700 N1             | grid -2.4913 -0.3424        | low -2.4913 -0.3424        | formula +5.6467 -0.1619
+cust 2 255.7 0.1 1000 Epr          | grid +2.9690 +1.4223        | low -0.3398 -0.1528        | formula -0.0058 -0.0061
+cust 2 255.7 0.1 1000 N1           | grid +2.9600 +1.4919        | low -0.3211 -0.1282        | formula -0.0765 -0.1541
+cust 2 255.7 0.1 700 Epr           | grid +7.0005 +1.4226        | low -1.1289 -0.1528        | formula -5.7628 -0.0061
+cust 2 255.7 0.1 700 N1            | grid +3.5533 +1.5058        | low +0.2204 -0.1284        | formula +16.8581 -0.1603
+cust 2 288.15 0.05 1000 Epr        | grid +5.3473 +2.4639        | low +0.0037 +0.0037        | formula +0.0002 +0.0002
+cust 2 288.15 0.05 1000 N1         | grid +5.4147 +2.7024        | low +0.0788 +0.1622        | formula +0.0044 +0.0091
+cust 2 288.15 0.05 700 Epr         | grid +14.5670 +2.4642       | low +0.0233 +0.0038        | formula -27.1875 +0.0002
+cust 2 288.15 0.05 700 N1          | grid REFUSED The control's thrust table, blended between Mach 0.3 and 0.6: it does not rise in thrust,  | low -0.1324 +0.1697        | formula +56.8900 +0.0095
+cust 2 288.15 0.15 1000 Epr        | grid +2.7284 +1.2498        | low -0.7007 -0.2970        | formula +0.0010 +0.0010
+cust 2 288.15 0.15 1000 N1         | grid +2.7856 +1.4470        | low -0.6131 -0.1445        | formula +0.0076 +0.0148
+cust 2 288.15 0.15 700 Epr         | grid +6.8802 +1.2502        | low -2.8765 -0.2969        | formula -24.4854 +0.0010
+cust 2 288.15 0.15 700 N1          | grid -14.6142 +1.4669       | low +1.2440 -0.1397        | formula +59.2621 +0.0155
+cust 2 288.15 0.25 1000 Epr        | grid +0.7469 +0.3487        | low -0.4822 -0.1953        | formula +0.0030 +0.0029
+cust 2 288.15 0.25 1000 N1         | grid +0.8172 +0.5197        | low -0.3962 -0.0389        | formula +0.0144 +0.0263
+cust 2 288.15 0.25 700 Epr         | grid +1.6833 +0.3490        | low -1.9038 -0.1952        | formula -20.4345 +0.0030
+cust 2 288.15 0.25 700 N1          | grid -3.3254 +0.5311        | low +0.7647 -0.0329        | formula +58.5199 +0.0275
+cust 3 250 0.05 1000 Epr           | grid +3.7821 +1.8450        | low AT-SLICE (tables made here) | formula -0.0033 -0.0036
+cust 3 250 0.05 1000 N1            | grid +3.7226 +1.9056        | low AT-SLICE (tables made here) | formula +0.0187 -0.0226
+cust 3 250 0.05 700 Epr            | grid REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | low REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | formula REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cust 3 250 0.05 700 N1             | grid REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | low REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | formula REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cust 3 250 0.1 1000 Epr            | grid +2.7903 +1.3593        | low -0.3193 -0.1465        | formula -0.0067 -0.0073
+cust 3 250 0.1 1000 N1             | grid +2.7366 +1.4007        | low -0.3098 -0.1500        | formula +0.0154 -0.0262
+cust 3 250 0.1 700 Epr             | grid REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | low REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | formula REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cust 3 250 0.1 700 N1              | grid REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | low REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | formula REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cust 3 250 0.15 1000 Epr           | grid +1.9090 +0.9292        | low -0.4915 -0.2250        | formula -0.0102 -0.0109
+cust 3 250 0.15 1000 N1            | grid +1.8665 +0.9555        | low -0.4766 -0.2303        | formula +0.0118 -0.0296
+cust 3 250 0.15 700 Epr            | grid REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | low REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | formula REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cust 3 250 0.15 700 N1             | grid REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | low REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | formula REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cust 3 250 0.2 1000 Epr            | grid +1.1457 +0.5574        | low -0.5040 -0.2304        | formula -0.0135 -0.0143
+cust 3 250 0.2 1000 N1             | grid +1.1172 +0.5722        | low -0.4888 -0.2357        | formula +0.0082 -0.0326
+cust 3 250 0.2 700 Epr             | grid REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | low REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | formula REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cust 3 250 0.2 700 N1              | grid REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | low REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | formula REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cust 3 250 0.25 1000 Epr           | grid +0.5072 +0.2468        | low -0.3444 -0.1572        | formula -0.0167 -0.0176
+cust 3 250 0.25 1000 N1            | grid +0.4935 +0.2529        | low -0.3342 -0.1609        | formula +0.0045 -0.0353
+cust 3 250 0.25 700 Epr            | grid REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | low REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | formula REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cust 3 250 0.25 700 N1             | grid REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | low REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | formula REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cust 3 250 0.45 1000 Epr           | grid -0.6781 -0.3316        | low -0.6781 -0.3316        | formula -0.0253 -0.0260
+cust 3 250 0.45 1000 N1            | grid -0.6575 -0.3389        | low -0.6575 -0.3389        | formula -0.0085 -0.0399
+cust 3 250 0.45 700 Epr            | grid REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | low REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | formula REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cust 3 250 0.45 700 N1             | grid REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | low REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | formula REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cust 3 255.7 0.1 1000 Epr          | grid +2.9371 +1.4222        | low -0.3359 -0.1527        | formula -0.0057 -0.0061
+cust 3 255.7 0.1 1000 N1           | grid +2.8810 +1.4706        | low -0.3294 -0.1531        | formula +0.0123 -0.0215
+cust 3 255.7 0.1 700 Epr           | grid REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | low REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | formula REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cust 3 255.7 0.1 700 N1            | grid REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | low REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | formula REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cust 3 288.15 0.05 1000 Epr        | grid +5.2537 +2.4601        | low +0.0036 +0.0037        | formula +0.0002 +0.0002
+cust 3 288.15 0.05 1000 N1         | grid +5.1963 +2.5773        | low -0.0147 +0.0225        | formula -0.0009 +0.0011
+cust 3 288.15 0.05 700 Epr         | grid REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | low REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | formula REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cust 3 288.15 0.05 700 N1          | grid REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | low REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | formula REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cust 3 288.15 0.15 1000 Epr        | grid +2.6796 +1.2478        | low -0.6875 -0.2966        | formula +0.0010 +0.0010
+cust 3 288.15 0.15 1000 N1         | grid +2.6186 +1.3098        | low -0.6886 -0.2860        | formula -0.0008 +0.0025
+cust 3 288.15 0.15 700 Epr         | grid REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | low REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | formula REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cust 3 288.15 0.15 700 N1          | grid REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | low REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | formula REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cust 3 288.15 0.25 1000 Epr        | grid +0.7330 +0.3480        | low -0.4729 -0.1951        | formula +0.0029 +0.0029
+cust 3 288.15 0.25 1000 N1         | grid +0.6980 +0.3775        | low -0.4804 -0.1817        | formula -0.0001 +0.0054
+cust 3 288.15 0.25 700 Epr         | grid REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | low REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | formula REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+cust 3 288.15 0.25 700 N1          | grid REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | low REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | formula REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+plain 0 250 0.05 1000 Epr          | grid +3.3900 +1.6595        | low AT-SLICE (tables made here) | formula -0.0030 -0.0033
+plain 0 250 0.05 1000 N1           | grid +3.3651 +1.7116        | low AT-SLICE (tables made here) | formula -0.0775 -0.1703
+plain 0 250 0.05 700 Epr           | grid +8.0374 +1.6597        | low AT-SLICE (tables made here) | formula -1.3753 -0.0033
+plain 0 250 0.05 700 N1            | grid +9.0129 +1.7277        | low AT-SLICE (tables made here) | formula +4.9609 -0.1783
+plain 0 250 0.1 1000 Epr           | grid +2.4969 +1.2221        | low -0.2848 -0.1308        | formula -0.0061 -0.0066
+plain 0 250 0.1 1000 N1            | grid +2.4729 +1.2588        | low -0.2802 -0.1344        | formula -0.0804 -0.1724
+plain 0 250 0.1 700 Epr            | grid +5.8507 +1.2223        | low -0.8212 -0.1308        | formula -1.2935 -0.0067
+plain 0 250 0.1 700 N1             | grid +7.2228 +1.2707        | low -0.1402 -0.1356        | formula +4.8741 -0.1805
+plain 0 250 0.15 1000 Epr          | grid +1.7056 +0.8350        | low -0.4377 -0.2007        | formula -0.0092 -0.0099
+plain 0 250 0.15 1000 N1           | grid +1.6858 +0.8590        | low -0.4304 -0.2062        | formula -0.0825 -0.1731
+plain 0 250 0.15 700 Epr           | grid +3.9271 +0.8352        | low -1.2533 -0.2008        | formula -1.1680 -0.0101
+plain 0 250 0.15 700 N1            | grid +5.4144 +0.8672        | low -0.2547 -0.2081        | formula +4.6264 -0.1811
+plain 0 250 0.2 1000 Epr           | grid +1.0220 +0.5006        | low -0.4481 -0.2054        | formula -0.0122 -0.0131
+plain 0 250 0.2 1000 N1            | grid +1.0085 +0.5145        | low -0.4406 -0.2109        | formula -0.0837 -0.1721
+plain 0 250 0.2 700 Epr            | grid +2.2993 +0.5008        | low -1.2703 -0.2054        | formula -1.0086 -0.0132
+plain 0 250 0.2 700 N1             | grid +3.5851 +0.5195        | low -0.3075 -0.2129        | formula +4.2231 -0.1800
+plain 0 250 0.25 1000 Epr          | grid +0.4518 +0.2215        | low -0.3057 -0.1401        | formula -0.0151 -0.0160
+plain 0 250 0.25 1000 N1           | grid +0.4451 +0.2275        | low -0.3007 -0.1438        | formula -0.0841 -0.1694
+plain 0 250 0.25 700 Epr           | grid +0.9877 +0.2216        | low -0.8557 -0.1401        | formula -0.8273 -0.0162
+plain 0 250 0.25 700 N1            | grid +1.7605 +0.2297        | low -0.2474 -0.1452        | formula +3.6792 -0.1771
+plain 0 250 0.45 1000 Epr          | grid -0.6010 -0.2973        | low -0.6010 -0.2973        | formula -0.0227 -0.0236
+plain 0 250 0.45 1000 N1           | grid -0.5905 -0.3045        | low -0.5905 -0.3045        | formula -0.0753 -0.1410
+plain 0 250 0.45 700 Epr           | grid -1.1133 -0.2974        | low -1.1133 -0.2974        | formula -0.1554 -0.0239
+plain 0 250 0.45 700 N1            | grid -3.6591 -0.3076        | low -3.6591 -0.3076        | formula +0.8024 -0.1474
+plain 0 255.7 0.1 1000 Epr         | grid +2.6282 +1.2776        | low -0.2997 -0.1362        | formula -0.0051 -0.0055
+plain 0 255.7 0.1 1000 N1          | grid +2.6158 +1.3421        | low -0.2832 -0.1140        | formula -0.0651 -0.1399
+plain 0 255.7 0.1 700 Epr          | grid +6.1359 +1.2778        | low -0.9024 -0.1362        | formula -2.2370 -0.0056
+plain 0 255.7 0.1 700 N1           | grid +7.4136 +1.3560        | low -0.0057 -0.1141        | formula +7.7894 -0.1466
+plain 0 288.15 0.05 1000 Epr       | grid +4.7085 +2.2059        | low +0.0032 +0.0034        | formula +0.0002 +0.0002
+plain 0 288.15 0.05 1000 N1        | grid +4.7566 +2.4230        | low +0.0662 +0.1463        | formula +0.0037 +0.0082
+plain 0 288.15 0.05 700 Epr        | grid +12.1015 +2.2062       | low +0.0223 +0.0034        | formula -15.1929 +0.0002
+plain 0 288.15 0.05 700 N1         | grid -25.1717 +2.4541       | low -0.0996 +0.1542        | formula +35.8169 +0.0087
+plain 0 288.15 0.15 1000 Epr       | grid +2.3899 +1.1172        | low -0.6119 -0.2637        | formula +0.0009 +0.0009
+plain 0 288.15 0.15 1000 N1        | grid +2.4334 +1.2956        | low -0.5378 -0.1266        | formula +0.0064 +0.0133
+plain 0 288.15 0.15 700 Epr        | grid +5.7901 +1.1175        | low -2.2848 -0.2636        | formula -13.6966 +0.0009
+plain 0 288.15 0.15 700 N1         | grid -9.4798 +1.3156        | low +0.7561 -0.1213        | formula +36.6108 +0.0140
+plain 0 288.15 0.25 1000 Epr       | grid +0.6509 +0.3114        | low -0.4188 -0.1729        | formula +0.0026 +0.0027
+plain 0 288.15 0.25 1000 N1        | grid +0.7081 +0.4653        | low -0.3469 -0.0325        | formula +0.0120 +0.0236
+plain 0 288.15 0.25 700 Epr        | grid +1.4419 +0.3117        | low -1.5169 -0.1727        | formula -11.3491 +0.0027
+plain 0 288.15 0.25 700 N1         | grid -1.9897 +0.4769        | low +0.4272 -0.0261        | formula +35.2121 +0.0249
+plain 1 250 0.05 1000 Epr          | grid +3.3879 +1.6596        | low AT-SLICE (tables made here) | formula -0.0030 -0.0033
+plain 1 250 0.05 1000 N1           | grid +3.3709 +1.7124        | low AT-SLICE (tables made here) | formula -0.1020 -0.1944
+plain 1 250 0.05 700 Epr           | grid +8.0075 +1.6598        | low AT-SLICE (tables made here) | formula -1.3244 -0.0033
+plain 1 250 0.05 700 N1            | grid +8.9777 +1.7265        | low AT-SLICE (tables made here) | formula +4.5373 -0.2014
+plain 1 250 0.1 1000 Epr           | grid +2.4954 +1.2221        | low -0.2846 -0.1308        | formula -0.0061 -0.0066
+plain 1 250 0.1 1000 N1            | grid +2.4777 +1.2595        | low -0.2809 -0.1345        | formula -0.1048 -0.1964
+plain 1 250 0.1 700 Epr            | grid +5.8295 +1.2224        | low -0.8151 -0.1308        | formula -1.2418 -0.0067
+plain 1 250 0.1 700 N1             | grid +7.1711 +1.2699        | low -0.1832 -0.1356        | formula +4.4502 -0.2035
+plain 1 250 0.15 1000 Epr          | grid +1.7045 +0.8350        | low -0.4374 -0.2007        | formula -0.0092 -0.0099
+plain 1 250 0.15 1000 N1           | grid +1.6894 +0.8596        | low -0.4315 -0.2064        | formula -0.1066 -0.1968
+plain 1 250 0.15 700 Epr           | grid +3.9136 +0.8352        | low -1.2431 -0.2008        | formula -1.1163 -0.0101
+plain 1 250 0.15 700 N1            | grid +5.3585 +0.8667        | low -0.3214 -0.2081        | formula +4.2098 -0.2038
+plain 1 250 0.2 1000 Epr           | grid +1.0214 +0.5007        | low -0.4478 -0.2054        | formula -0.0122 -0.0131
+plain 1 250 0.2 1000 N1            | grid +1.0107 +0.5149        | low -0.4418 -0.2111        | formula -0.1074 -0.1953
+plain 1 250 0.2 700 Epr            | grid +2.2922 +0.5008        | low -1.2591 -0.2054        | formula -0.9580 -0.0133
+plain 1 250 0.2 700 N1             | grid +3.5374 +0.5192        | low -0.3764 -0.2128        | formula +3.8224 -0.2022
+plain 1 250 0.25 1000 Epr          | grid +0.4515 +0.2216        | low -0.3055 -0.1401        | formula -0.0150 -0.0160
+plain 1 250 0.25 1000 N1           | grid +0.4462 +0.2277        | low -0.3014 -0.1439        | formula -0.1071 -0.1919
+plain 1 250 0.25 700 Epr           | grid +0.9851 +0.2216        | low -0.8476 -0.1401        | formula -0.7794 -0.0162
+plain 1 250 0.25 700 N1            | grid +1.7325 +0.2296        | low -0.2947 -0.1451        | formula +3.3037 -0.1987
+plain 1 250 0.45 1000 Epr          | grid -0.6005 -0.2973        | low -0.6005 -0.2973        | formula -0.0225 -0.0236
+plain 1 250 0.45 1000 N1           | grid -0.5919 -0.3048        | low -0.5919 -0.3048        | formula -0.0936 -0.1590
+plain 1 250 0.45 700 Epr           | grid -1.1176 -0.2974        | low -1.1176 -0.2974        | formula -0.1354 -0.0239
+plain 1 250 0.45 700 N1            | grid -3.5726 -0.3075        | low -3.5726 -0.3075        | formula +0.6326 -0.1646
+plain 1 255.7 0.1 1000 Epr         | grid +2.6261 +1.2776        | low -0.2994 -0.1362        | formula -0.0051 -0.0055
+plain 1 255.7 0.1 1000 N1          | grid +2.6241 +1.3464        | low -0.2801 -0.1103        | formula -0.0854 -0.1600
+plain 1 255.7 0.1 700 Epr          | grid +6.1109 +1.2778        | low -0.8966 -0.1362        | formula -2.1754 -0.0056
+plain 1 255.7 0.1 700 N1           | grid +7.4679 +1.3585        | low -0.0467 -0.1104        | formula +7.2474 -0.1659
+plain 1 288.15 0.05 1000 Epr       | grid +4.6994 +2.2059        | low +0.0032 +0.0034        | formula +0.0002 +0.0002
+plain 1 288.15 0.05 1000 N1        | grid +4.7798 +2.4465        | low +0.0903 +0.1712        | formula +0.0051 +0.0096
+plain 1 288.15 0.05 700 Epr        | grid +12.1409 +2.2062       | low +0.0237 +0.0034        | formula -15.5483 +0.0002
+plain 1 288.15 0.05 700 N1         | grid -22.4025 +2.4740       | low -0.0988 +0.1782        | formula +35.3817 +0.0100
+plain 1 288.15 0.15 1000 Epr       | grid +2.3851 +1.1172        | low -0.6107 -0.2637        | formula +0.0009 +0.0009
+plain 1 288.15 0.15 1000 N1        | grid +2.4588 +1.3206        | low -0.5136 -0.1013        | formula +0.0085 +0.0155
+plain 1 288.15 0.15 700 Epr        | grid +5.7836 +1.1175        | low -2.2924 -0.2636        | formula -13.9110 +0.0009
+plain 1 288.15 0.15 700 N1         | grid -8.5705 +1.3382        | low +0.7655 -0.0966        | formula +36.0714 +0.0161
+plain 1 288.15 0.25 1000 Epr       | grid +0.6495 +0.3114        | low -0.4180 -0.1729        | formula +0.0026 +0.0027
+plain 1 288.15 0.25 1000 N1        | grid +0.7339 +0.4910        | low -0.3218 -0.0068        | formula +0.0157 +0.0274
+plain 1 288.15 0.25 700 Epr        | grid +1.4329 +0.3117        | low -1.5140 -0.1728        | formula -11.3919 +0.0027
+plain 1 288.15 0.25 700 N1         | grid -1.8040 +0.5012        | low +0.4310 -0.0011        | formula +34.4887 +0.0285
+plain 2 250 0.05 1000 Epr          | grid +3.3940 +1.6597        | low AT-SLICE (tables made here) | formula -0.0030 -0.0033
+plain 2 250 0.05 1000 N1           | grid +3.3731 +1.7109        | low AT-SLICE (tables made here) | formula -0.0876 -0.1839
+plain 2 250 0.05 700 Epr           | grid +8.0630 +1.6599        | low AT-SLICE (tables made here) | formula -1.4334 -0.0033
+plain 2 250 0.05 700 N1            | grid +9.0507 +1.7251        | low AT-SLICE (tables made here) | formula +5.0530 -0.1909
+plain 2 250 0.1 1000 Epr           | grid +2.4999 +1.2222        | low -0.2852 -0.1308        | formula -0.0061 -0.0066
+plain 2 250 0.1 1000 N1            | grid +2.4792 +1.2584        | low -0.2811 -0.1344        | formula -0.0904 -0.1860
+plain 2 250 0.1 700 Epr            | grid +5.8662 +1.2224        | low -0.8266 -0.1308        | formula -1.3481 -0.0067
+plain 2 250 0.1 700 N1             | grid +7.2506 +1.2689        | low -0.1395 -0.1355        | formula +4.9679 -0.1931
+plain 2 250 0.15 1000 Epr          | grid +1.7076 +0.8350        | low -0.4382 -0.2007        | formula -0.0092 -0.0099
+plain 2 250 0.15 1000 N1           | grid +1.6903 +0.8588        | low -0.4318 -0.2062        | formula -0.0924 -0.1864
+plain 2 250 0.15 700 Epr           | grid +3.9351 +0.8352        | low -1.2612 -0.2008        | formula -1.2177 -0.0101
+plain 2 250 0.15 700 N1            | grid +5.4324 +0.8661        | low -0.2533 -0.2079        | formula +4.7204 -0.1935
+plain 2 250 0.2 1000 Epr           | grid +1.0233 +0.5007        | low -0.4487 -0.2054        | formula -0.0123 -0.0131
+plain 2 250 0.2 1000 N1            | grid +1.0113 +0.5145        | low -0.4420 -0.2109        | formula -0.0934 -0.1851
+plain 2 250 0.2 700 Epr            | grid +2.3025 +0.5008        | low -1.2779 -0.2054        | formula -1.0524 -0.0133
+plain 2 250 0.2 700 N1             | grid +3.5942 +0.5188        | low -0.3060 -0.2127        | formula +4.3159 -0.1921
+plain 2 250 0.25 1000 Epr          | grid +0.4524 +0.2216        | low -0.3061 -0.1401        | formula -0.0151 -0.0160
+plain 2 250 0.25 1000 N1           | grid +0.4464 +0.2275        | low -0.3016 -0.1438        | formula -0.0935 -0.1819
+plain 2 250 0.25 700 Epr           | grid +0.9884 +0.2216        | low -0.8605 -0.1401        | formula -0.8647 -0.0162
+plain 2 250 0.25 700 N1            | grid +1.7633 +0.2294        | low -0.2464 -0.1450        | formula +3.7692 -0.1888
+plain 2 250 0.45 1000 Epr          | grid -0.6018 -0.2973        | low -0.6018 -0.2973        | formula -0.0227 -0.0236
+plain 2 250 0.45 1000 N1           | grid -0.5923 -0.3045        | low -0.5923 -0.3045        | formula -0.0826 -0.1508
+plain 2 250 0.45 700 Epr           | grid -1.1105 -0.2974        | low -1.1105 -0.2974        | formula -0.1675 -0.0239
+plain 2 250 0.45 700 N1            | grid -3.6463 -0.3072        | low -3.6463 -0.3072        | formula +0.8596 -0.1565
+plain 2 255.7 0.1 1000 Epr         | grid +2.6317 +1.2776        | low -0.3001 -0.1362        | formula -0.0052 -0.0055
+plain 2 255.7 0.1 1000 N1          | grid +2.6242 +1.3436        | low -0.2826 -0.1119        | formula -0.0732 -0.1510
+plain 2 255.7 0.1 700 Epr          | grid +6.1544 +1.2779        | low -0.9089 -0.1362        | formula -2.3209 -0.0056
+plain 2 255.7 0.1 700 N1           | grid +7.4180 +1.3558        | low -0.0060 -0.1120        | formula +7.9190 -0.1570
+plain 2 288.15 0.05 1000 Epr       | grid +4.7188 +2.2062        | low +0.0032 +0.0034        | formula +0.0002 +0.0002
+plain 2 288.15 0.05 1000 N1        | grid +4.7783 +2.4329        | low +0.0744 +0.1584        | formula +0.0042 +0.0089
+plain 2 288.15 0.05 700 Epr        | grid +12.2073 +2.2065       | low +0.0226 +0.0034        | formula -15.7067 +0.0002
+plain 2 288.15 0.05 700 N1         | grid -25.2188 +2.4611       | low -0.0996 +0.1656        | formula +36.4500 +0.0093
+plain 2 288.15 0.15 1000 Epr       | grid +2.3952 +1.1174        | low -0.6134 -0.2637        | formula +0.0009 +0.0009
+plain 2 288.15 0.15 1000 N1        | grid +2.4493 +1.3072        | low -0.5317 -0.1142        | formula +0.0071 +0.0144
+plain 2 288.15 0.15 700 Epr        | grid +5.8303 +1.1177        | low -2.3106 -0.2636        | formula -14.1357 +0.0009
+plain 2 288.15 0.15 700 N1         | grid -9.5571 +1.3252        | low +0.7791 -0.1094        | formula +37.2607 +0.0150
+plain 2 288.15 0.25 1000 Epr       | grid +0.6524 +0.3115        | low -0.4198 -0.1729        | formula +0.0026 +0.0027
+plain 2 288.15 0.25 1000 N1        | grid +0.7188 +0.4775        | low -0.3398 -0.0200        | formula +0.0133 +0.0254
+plain 2 288.15 0.25 700 Epr        | grid +1.4485 +0.3118        | low -1.5315 -0.1728        | formula -11.6843 +0.0027
+plain 2 288.15 0.25 700 N1         | grid -2.0094 +0.4881        | low +0.4428 -0.0142        | formula +35.8231 +0.0266
+plain 3 250 0.05 1000 Epr          | grid +3.3655 +1.6586        | low AT-SLICE (tables made here) | formula -0.0030 -0.0033
+plain 3 250 0.05 1000 N1           | grid +3.3072 +1.7129        | low AT-SLICE (tables made here) | formula +0.0186 -0.0225
+plain 3 250 0.05 700 Epr           | grid +7.8600 +1.6588        | low AT-SLICE (tables made here) | formula -1.0309 -0.0033
+plain 3 250 0.05 700 N1            | grid +8.8005 +1.7453        | low AT-SLICE (tables made here) | formula +4.4103 -0.0387
+plain 3 250 0.1 1000 Epr           | grid +2.4788 +1.2214        | low -0.2826 -0.1307        | formula -0.0060 -0.0067
+plain 3 250 0.1 1000 N1            | grid +2.4278 +1.2587        | low -0.2741 -0.1339        | formula +0.0156 -0.0258
+plain 3 250 0.1 700 Epr            | grid +5.7382 +1.2216        | low -0.7840 -0.1307        | formula -0.9628 -0.0067
+plain 3 250 0.1 700 N1             | grid +7.0778 +1.2825        | low -0.1377 -0.1364        | formula +4.3021 -0.0419
+plain 3 250 0.15 1000 Epr          | grid +1.6931 +0.8346        | low -0.4342 -0.2006        | formula -0.0091 -0.0099
+plain 3 250 0.15 1000 N1           | grid +1.6536 +0.8584        | low -0.4209 -0.2054        | formula +0.0124 -0.0288
+plain 3 250 0.15 700 Epr           | grid +3.8647 +0.8347        | low -1.1962 -0.2006        | formula -0.8585 -0.0101
+plain 3 250 0.15 700 N1            | grid +5.3302 +0.8746        | low -0.2569 -0.2093        | formula +4.0343 -0.0448
+plain 3 250 0.2 1000 Epr           | grid +1.0145 +0.5004        | low -0.4445 -0.2053        | formula -0.0121 -0.0131
+plain 3 250 0.2 1000 N1            | grid +0.9884 +0.5139        | low -0.4309 -0.2102        | formula +0.0091 -0.0316
+plain 3 250 0.2 700 Epr            | grid +2.2718 +0.5006        | low -1.2123 -0.2053        | formula -0.7269 -0.0133
+plain 3 250 0.2 700 N1             | grid +3.5491 +0.5236        | low -0.3149 -0.2141        | formula +3.6150 -0.0472
+plain 3 250 0.25 1000 Epr          | grid +0.4484 +0.2215        | low -0.3032 -0.1400        | formula -0.0148 -0.0160
+plain 3 250 0.25 1000 N1           | grid +0.4360 +0.2271        | low -0.2941 -0.1434        | formula +0.0058 -0.0339
+plain 3 250 0.25 700 Epr           | grid +0.9804 +0.2215        | low -0.8167 -0.1400        | formula -0.5792 -0.0162
+plain 3 250 0.25 700 N1            | grid +1.7543 +0.2314        | low -0.2553 -0.1461        | formula +3.0631 -0.0491
+plain 3 250 0.45 1000 Epr          | grid -0.5960 -0.2972        | low -0.5960 -0.2972        | formula -0.0223 -0.0236
+plain 3 250 0.45 1000 N1           | grid -0.5777 -0.3040        | low -0.5777 -0.3040        | formula -0.0060 -0.0376
+plain 3 250 0.45 700 Epr           | grid -1.1409 -0.2974        | low -1.1409 -0.2974        | formula -0.0758 -0.0239
+plain 3 250 0.45 700 N1            | grid -3.7475 -0.3097        | low -3.7475 -0.3097        | formula +0.3995 -0.0495
+plain 3 255.7 0.1 1000 Epr         | grid +2.6064 +1.2773        | low -0.2970 -0.1362        | formula -0.0051 -0.0055
+plain 3 255.7 0.1 1000 N1          | grid +2.5528 +1.3211        | low -0.2914 -0.1362        | formula +0.0126 -0.0211
+plain 3 255.7 0.1 700 Epr          | grid +6.0023 +1.2775        | low -0.8612 -0.1362        | formula -1.7577 -0.0056
+plain 3 255.7 0.1 700 N1           | grid +7.4695 +1.3482        | low +0.0225 -0.1363        | formula +7.1164 -0.0342
+plain 3 288.15 0.05 1000 Epr       | grid +4.6410 +2.2043        | low +0.0032 +0.0034        | formula +0.0002 +0.0002
+plain 3 288.15 0.05 1000 N1        | grid +4.5800 +2.3103        | low -0.0147 +0.0222        | formula -0.0009 +0.0011
+plain 3 288.15 0.05 700 Epr        | grid REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | low REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | formula REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+plain 3 288.15 0.05 700 N1         | grid REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | low REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | formula REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+plain 3 288.15 0.15 1000 Epr       | grid +2.3550 +1.1162        | low -0.6024 -0.2635        | formula +0.0009 +0.0009
+plain 3 288.15 0.15 1000 N1        | grid +2.2969 +1.1736        | low -0.6050 -0.2522        | formula -0.0008 +0.0024
+plain 3 288.15 0.15 700 Epr        | grid REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | low REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | formula REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+plain 3 288.15 0.15 700 N1         | grid REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | low REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | formula REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+plain 3 288.15 0.25 1000 Epr       | grid +0.6411 +0.3110        | low -0.4122 -0.1728        | formula +0.0026 +0.0026
+plain 3 288.15 0.25 1000 N1        | grid +0.6082 +0.3394        | low -0.4204 -0.1590        | formula -0.0004 +0.0052
+plain 3 288.15 0.25 700 Epr        | grid REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | low REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | formula REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+plain 3 288.15 0.25 700 N1         | grid REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | low REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor | formula REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor

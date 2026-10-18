@@ -1,0 +1,6 @@
+plain, flow/press map. True unchoked point vs the choked design-flight row at the same corrected burner temperature (carried).
+ Mach   T4 | fan true  fan row | pLPC tru pLPC row | pt45 tru pt45 row | πLPT tru πLPT row | F̂(true HP)
+  0.1  650 |   0.5547   0.5926 |   1.6377   1.7530 |   2.1187   2.2214 |   0.7238   0.6884 | -6.66e-14
+  0.1  700 |   0.6081   0.6182 |   1.7946   1.8288 |   2.4346   2.4691 |   0.6972   0.6884 | -1.34e-14
+  0.4  650 |   0.5737   0.5915 |   1.6715   1.7251 |   2.0854   2.1329 |   0.7051   0.6884 | -7.81e-14
+  0.4  700 |   0.6143   0.6168 |   1.7894   1.7976 |   2.3560   2.3659 |   0.6904   0.6884 | +2.14e-14
