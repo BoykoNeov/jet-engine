@@ -1,0 +1,2 @@
+default move: march 8.2 ms with the branch, 8.1 ms on the pin (+1 %)
+SL +40 K 700 K: march 8.1 ms with the branch, 7.7 ms on the pin (+5 %)

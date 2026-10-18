@@ -1,0 +1,7 @@
+plain         boundary 808.6450 K  root-vs-pin 5.15e-14  newton Primary/5 Primary/5 Primary/5 Primary/5  drift 3.9e-14/0.0e0  start gap 2.45e-2
+generator HP  boundary 844.3110 K  root-vs-pin 5.15e-14  newton Primary/5 Primary/5 Primary/5 Primary/5  drift 1.3e-14/0.0e0  start gap 5.19e-2
+generator LP  boundary 839.7447 K  root-vs-pin 5.15e-14  newton Primary/6 Primary/6 Primary/5 Primary/5  drift 1.4e-13/3.3e-16  start gap 4.75e-2
+customer air  boundary 848.9507 K  root-vs-pin 5.15e-14  newton Primary/5 Primary/5 Primary/5 Primary/5  drift 5.7e-15/0.0e0  start gap 4.41e-2
+cooling       boundary 841.4329 K  root-vs-pin 5.15e-14  newton Primary/5 Primary/5 Primary/5 Primary/5  drift 1.9e-14/2.9e-14  start gap 3.48e-2
+bleed lever   boundary 826.9834 K  root-vs-pin 5.15e-14  newton Primary/6 Primary/5 Primary/5 Primary/5  drift 1.6e-14/0.0e0  start gap 3.23e-2
+stator lever  boundary 810.4965 K  root-vs-pin 5.15e-14  newton Primary/6 Primary/5 Primary/5 Primary/5  drift 0.0e0/0.0e0  start gap 2.52e-2

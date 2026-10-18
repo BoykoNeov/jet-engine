@@ -536,7 +536,25 @@ try {
   const pOn = await waitFor(`window.sandbox.ctlState === 'done' && window.sandbox.last.controls && window.sandbox.last.controls.p0 === 50000`, 30000);
   const alt = await ev(`+document.getElementById('altitude').value`);
   check('a_typed_pressure_moves_the_altitude_to_its_pressure_altitude', pOn && Math.abs(alt - 5579) <= 1, JSON.stringify([pOn, alt]));
-  await ev(`window.sandbox.controls({T0: 250, p0: 50000}).then(r => r.run)`);
+  // Rung 97: at sea level on a +40 K day the 700 K start has the nozzle unchoked. The run matches native, its unchoked
+  // stretch is drawn thin and dashed under the full-width choked one, the legend says so, and the table counts it.
+  // check_requests holds this run (rung 97's first entry); find its native answer by its settings, not its spelling.
+  const warmNative = (() => { for (const l of readFileSync(nativeTxt, 'utf8').split(/\r?\n/)) {
+    const [rq, out] = l.split('\t'); if (!out || !rq.startsWith('{"op":"controls"')) continue;
+    const c = JSON.parse(rq).controls;
+    if (c.from === 700 && Math.abs(c.T0 - 328.15) < 1e-9 && c.generator === 'off' && c.cool_vane === 0 && !c.govern) return JSON.parse(out);
+  } })();
+  await ev(`window.sandbox.controls({T0: 328.15, p0: 101325, from: 700}).then(r => r.run)`);
+  const uOn = await waitFor(`window.sandbox.ctlState === 'done' && window.sandbox.last.controls && window.sandbox.last.controls.from === 700`, 30000);
+  const uc = uOn ? (warmNative ? close(await ev('window.sandbox.last'), warmNative) : 'no native answer') : 'no run';
+  const ur = await ev(`(() => { const r = window.sandbox.last; return [r.choked.filter(c => !c).length, r.start.choked,
+      document.querySelectorAll('#ctl-chart path.unch').length, /nozzle unchoked/.test(document.getElementById('ctl-legend').textContent),
+      [...document.getElementById('ctl-table').tBodies[0].rows].some(t => /^Nozzle unchoked/.test(t.cells[0].textContent)
+        && /^9 of 126, starting end too$/.test(t.cells[1].textContent))]; })()`);
+  check('an_unchoked_stretch_is_drawn_dashed_and_counted', uOn && !uc && ur[0] === 9 && ur[1] === 0 && ur[2] >= 1 && ur[3] && ur[4],
+        (uc || '') + JSON.stringify(ur));
+  if (process.env.SANDBOX_SHOTS) await shot('controls-unchoked');
+  await ev(`window.sandbox.controls({T0: 250, p0: 50000, from: 1000}).then(r => r.run)`);
   if (process.env.SANDBOX_SHOTS) {
     await ev(`window.sandbox.controls({settle: 2, ramp: 0.5, lever: 'bleed'})`);
     await shot('controls-light'); await shot('controls-dark', 1280, true); await shot('controls-phone', 390);

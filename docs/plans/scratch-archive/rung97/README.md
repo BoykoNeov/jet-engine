@@ -16,3 +16,16 @@ Run from a scratch crate depending on `turbojet` by path (`W:\temp\claude\rung97
   tail, `.inspect_err(|_| r97_census("abort"))` on the nozzle and `if exit.p9 <= p0 + 1e-6 { r97_census("subsonic") }`.
 - `h1_cells.rs` → `h1_cells.txt` — before freezing H1: each 700 K start end's branch and pin-to-root `π` gap (sea level
   +40 / +20 / 0 K, 2 km +40 K; four maps). Same kind of print as G4.
+
+After the build (the SHIPPED branch):
+- `score.rs` → `score.txt` — § 3: H1 and H2 against the old model (`lp_pinned`), the named risks, and the reported
+  thrust, `Tt4` and flow coefficients. (Written before the crossing print was added; the archived script has it.)
+- `gate_margins.txt` — the boundary gate's root-to-pin gap per variant, the Newton's steps either side, the fixed-point
+  drift and the start ends' pin-to-root gap; `mass_check.txt` — mass conservation at the nozzle per variant (both from a
+  scratch script whose checks are now `tests/rung97.rs`'s).
+- `stepcheck.txt` — 0.02 against 0.005 on the unchoked 700 → 1400 K runs, every governor law at its limit, with the
+  branch and with the pin side by side.
+- `cost.rs` → `cost.txt` — the march's cost with the branch against the pin, best of 15, interleaved.
+- `crash.rs` → `crash14.txt`, `crash15.txt`, `crash16.txt` — sandbox § 27's crash map (seeds 14, 15) re-run, and seed 16
+  at −1 … 3 km; prints unclassified refusals in full (`UNCLASSIFIED`).
+- `rerun.txt` — rungs 95/96's archived scoring scripts re-run against this rung, diffed against their archives.

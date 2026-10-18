@@ -1041,7 +1041,10 @@ footer p { max-width: 90ch; }
   engine can be flown at another altitude and air temperature (Mach stays 0.85): its hardware stays as designed, every
   steady point and the march itself are worked out in the new air, and τ stays the design flight's, so in thin air the
   same move reads slower. There is no Reynolds-number effect: in the model a component's efficiency does not fall in
-  thin air, as a real one's does.</p>
+  thin air, as a real one's does. At low throttles in dense or warm air the nozzle unchokes: it then passes less gas at a
+  given pressure, and the low-pressure turbine expands only as far as still leaves the nozzle enough pressure to push the
+  gas out (rung 97; both turbines' inlet guide vanes stay choked, as modelled throughout). Those stretches are drawn thin
+  and dashed.</p>
   <p><b>Burner.</b> The project's rungs 7–24, beside the cycle: they never change a cycle number. They read four numbers off
   the <b>Design</b> engine run on the equilibrium gas (compressor exit temperature, turbine inlet temperature, fuel-air ratio,
   burner pressure) and do their own chemistry: an equilibrium flame in the front zone, the extended Zeldovich reactions for
@@ -1824,7 +1827,13 @@ function drawCtl() {
   if (ctlQ === "Tt4" && C.redline_on) g += `<line class="redline" x1="62" x2="624" y1="${Y(C.redline)}" y2="${Y(C.redline)}"/><text class="redl" x="620" y="${Y(C.redline) - 4}" text-anchor="end">redline</text>`;
   for (const [v, words] of lims) g += `<line class="redline" x1="62" x2="624" y1="${Y(v)}" y2="${Y(v)}"/><text class="redl" x="620" y="${Y(v) - 4}" text-anchor="end">${words}</text>`;
   if (pinLine) g += `<path class="tpin" d="${pathOf(p.s.map((x, i) => (pinLine[i] === null ? null : [x, pinLine[i]])), X, Y)}"/>`;
-  for (const [v, cls] of lines) g += `<path class="${cls}" d="${pathOf(r.s.map((x, i) => (v[i] === null ? null : [x, v[i]])), X, Y)}"/>`;
+  // Rung 97: the whole run thin and dashed, then its choked stretches drawn over it full width -- where the nozzle is
+  // unchoked the low-pressure turbine expands less (the Fly it slam's convention).
+  for (const [v, cls] of lines) {
+    const pts = r.s.map((x, i) => (v[i] === null ? null : [x, v[i]]));
+    if (r.choked.some(c => !c)) g += `<path class="${cls} unch" d="${pathOf(pts, X, Y)}"/>`;
+    g += `<path class="${cls}" d="${pathOf(pts.map((pt, i) => (r.choked[i] ? pt : null)), X, Y)}"/>`;
+  }
   // Who holds the fuel: a strip above the plot, one cell per point.
   const w = Math.max(1, X(CTL_DS) - X(0));
   r.holder.forEach((h, i) => { if (h !== "none") g += `<rect class="hold-${h}" x="${X(r.s[i]).toFixed(1)}" y="${T - 10}" width="${w.toFixed(1)}" height="6"/>`; });
@@ -1836,7 +1845,8 @@ function drawCtl() {
   }
   svg.innerHTML = g;
   $("ctl-legend").innerHTML = lines.map(([, cls, words]) => `<span><span class="sw ${cls === "rline" ? "" : cls}"></span>${words}</span>`).join(" ")
-    + (q.steady(r).length ? ` <span><span class="sw steady"></span>steady before / after</span>` : "");
+    + (q.steady(r).length ? ` <span><span class="sw steady"></span>steady before / after</span>` : "")
+    + (r.choked.some(c => !c) ? " <span>thin dashed: nozzle unchoked</span>" : "");
   $("ctl-pin-legend").hidden = !pinLine;
   ctlTable();
 }
@@ -1867,6 +1877,11 @@ const CTL_ROWS = [
     ? `${fmt(r.ambient.altitude, 5)} m, ${r.ambient.delta_t >= 0 ? "+" : ""}${fmt(r.ambient.delta_t, 3)} K`
     : `${fmt(r.controls.T0, 4)} K, ${fmt(r.controls.p0, 5)} Pa`],
   ["Air density, × the design flight's", r => r.density_ratio, 3],
+  // Rung 97: below the unchoke boundary the nozzle passes less at a given pressure, and the low-pressure turbine
+  // expands less to push the gas out.
+  ["Nozzle unchoked (of the run's moments)", r => {
+    const n = r.choked.filter(c => !c).length;
+    return n ? `${n} of ${r.choked.length}` + (r.start.choked ? "" : ", starting end too") : "never"; }],
   ["Peak turbine inlet temperature (K)", r => Math.max(...r.Tt4), 5],
   ["Above the final steady temperature (K)", r => Math.max(...r.Tt4) - r.end.Tt4, 3],
   ["Lowest LP flow coefficient", r => Math.min(...r.phi_lp), 4],

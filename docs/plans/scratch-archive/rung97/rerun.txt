@@ -1,0 +1,13 @@
+Rungs 95/96's archived scoring scripts re-run against rung 97 (2026-10-18); diff of each output against its archive, timing lines filtered.
+rung 95 score.rs patched only to skip the gain-200/100 step checks the page's later gain limit refuses.
+=== rung96 score.txt
+=== rung96 report.txt
+=== rung96 claims.txt
+=== rung95 score.txt
+25,26c25,26
+< step check prop 200 : 126 / 501 pts, max |d phi| 0.02 vs 0.005 = 1.95e-2
+< step check prop 100 : 126 / 501 pts, max |d phi| 0.02 vs 0.005 = 9.67e-4
+---
+> step check: refused by the later page limit
+> step check: refused by the later page limit
+=== rung95 ends.txt

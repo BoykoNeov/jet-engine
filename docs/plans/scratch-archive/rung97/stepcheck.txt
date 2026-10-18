@@ -1,0 +1,36 @@
+dT +40 shape 0 open march: 2.15e-8
+    thrust: 5.41e-7 (clamped 0)   old model 3.50e-7 (clamped 0)
+    HP prop: 3.14e-5 (clamped 0)   old model 3.14e-5 (clamped 0)
+    HP rate: 8.05e-5 (clamped 0)   old model 8.07e-5 (clamped 0)
+    EPR: 1.37e-5 (clamped 0)   old model 9.40e-6 (clamped 0)
+    LP rate: 3.22e-4 (clamped 2)   old model 3.25e-4 (clamped 2)
+dT +40 shape 1 open march: 7.40e-9
+    thrust: 6.32e-7 (clamped 0)   old model 6.51e-7 (clamped 0)
+    HP prop: 4.21e-5 (clamped 0)   old model 4.21e-5 (clamped 0)
+    HP rate: 9.39e-5 (clamped 0)   old model 9.42e-5 (clamped 0)
+    EPR: 4.54e-5 (clamped 0)   old model 3.79e-5 (clamped 0)
+    LP rate: 4.04e-4 (clamped 3)   old model 4.03e-4 (clamped 3)
+dT +40 shape 2 open march: 2.00e-8
+    thrust: 5.81e-7 (clamped 0)   old model 6.87e-7 (clamped 0)
+    HP prop: 3.79e-5 (clamped 0)   old model 3.79e-5 (clamped 0)
+    HP rate: 9.12e-5 (clamped 0)   old model 9.15e-5 (clamped 0)
+    EPR: 5.42e-5 (clamped 0)   old model 4.52e-5 (clamped 0)
+    LP rate: 1.69e-4 (clamped 5)   old model 1.68e-4 (clamped 5)
+dT +0 shape 0 open march: 1.84e-8
+    thrust: 6.60e-7 (clamped 0)   old model 7.00e-7 (clamped 0)
+    HP prop: 4.67e-5 (clamped 0)   old model 4.67e-5 (clamped 0)
+    HP rate: 7.30e-5 (clamped 0)   old model 7.32e-5 (clamped 0)
+    EPR: 1.07e-5 (clamped 0)   old model 1.23e-5 (clamped 0)
+    LP rate: 1.32e-4 (clamped 0)   old model 1.31e-4 (clamped 0)
+dT +0 shape 1 open march: 2.07e-8
+    thrust: 1.12e-6 (clamped 0)   old model 1.26e-6 (clamped 0)
+    HP prop: 6.39e-5 (clamped 0)   old model 6.39e-5 (clamped 0)
+    HP rate: 8.48e-5 (clamped 0)   old model 8.49e-5 (clamped 0)
+    EPR: 4.12e-5 (clamped 0)   old model 4.25e-5 (clamped 0)
+    LP rate: 1.45e-4 (clamped 0)   old model 1.44e-4 (clamped 0)
+dT +0 shape 2 open march: 1.93e-8
+    thrust: 1.42e-6 (clamped 0)   old model 1.34e-6 (clamped 0)
+    HP prop: 5.60e-5 (clamped 0)   old model 5.60e-5 (clamped 0)
+    HP rate: 8.24e-5 (clamped 0)   old model 8.26e-5 (clamped 0)
+    EPR: 4.81e-5 (clamped 0)   old model 5.04e-5 (clamped 0)
+    LP rate: 1.44e-4 (clamped 0)   old model 1.43e-4 (clamped 0)

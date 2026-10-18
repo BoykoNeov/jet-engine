@@ -152,3 +152,9 @@ edit chained after it (stopped with TaskStop, file untouched). The project has n
 **A PowerShell `-File` script with `ValueFromRemainingArguments` cannot pass `cargo run --release -- …`** (rung 96): the
 bare `--` breaks the binding ("A positional parameter cannot be found that accepts argument 'cargo'"). Build first,
 then run `rust\target\release\turbojet.exe …` as the command.
+
+**A bash loop that builds a `cmd //c "start … \$b.exe"` path leaves a LITERAL `$b`** (rung 97, 2026-10-18): the
+escaped backslash swallowed the expansion, `start /b /wait` was handed `…release$b.exe`, and waited forever on a program
+that does not exist — it read as a slow run for 25 minutes (found by listing processes; stopped with TaskStop). Loop
+over executables in PowerShell (`Start-Process -FilePath "$d\$b.exe" -PassThru`, set `BelowNormal`, `WaitForExit`), or
+write the path out literally. The same session typed `python -` once more (hung, TaskStop) — the stub rule above.

@@ -2073,8 +2073,9 @@ fn r40_try_instant_tail(
         wgas, tt4, f, core.base.a4, core.base.a45, 1.0, eta_hpt)?;
     let nu_lpt = nu_lp * powp(core.tt45_d / tt45, 0.5);
     let eta_lpt = core.map_lp().eta_t_at(core.base.eta_lpt, nu_lpt);
-    let (pi_lpt, tau_lpt, tt5) = core.base.try_solve_choked_turbine(
-        wgas, tt45, f, core.base.a45, core.base.a8, core.base.pi_n, eta_lpt)?;
+    // RUNG 97: the pin while the nozzle stays choked, else the subsonic root.
+    let (pi_lpt, tau_lpt, tt5) = crate::unchoked_lp::try_lp_turbine(
+        &core.base, wgas, tt45, f, eta_lpt, pi_hpt * c.pt4, flight.p0)?;
 
     // Specific powers, per unit AIR mass, per shaft.
     let pt_hp = core.base.eta_m * (1.0 + f) * (wgas.h_t(tt4, f) - wgas.h_t(tt45, f));
@@ -2106,11 +2107,11 @@ fn r40_try_instant_tail(
 
 /// `(Phi_L, Phi_H)` from an already-closed flow — the Newton's inner loop.
 ///
-/// `flight` is UNUSED, in the Python too: the tail's nozzle and thrust are what read it, and this
-/// body deliberately stops short of them. Kept in the signature because it is a hook every phase-7
-/// override implements against.
+/// `flight` was UNUSED, in the Python too: the tail's nozzle and thrust read it, and this body stops
+/// short of them. RUNG 97 reads its `p0`: below the nozzle's unchoke boundary the LP turbine's
+/// expansion depends on the air the nozzle pushes against ([`crate::unchoked_lp`]).
 fn r40_powers(
-    t: &TwoSpoolTransientCore, c: &CloseState, _flight: &FlightCondition, nu_lp: f64, nu_hp: f64,
+    t: &TwoSpoolTransientCore, c: &CloseState, flight: &FlightCondition, nu_lp: f64, nu_hp: f64,
     tt4: f64,
 ) -> Result<(f64, f64), Abort> {
     POWERS_CALLS.with(|x| x.set(x.get() + 1));
@@ -2120,13 +2121,13 @@ fn r40_powers(
     let core = &t.inner;
     let (wgas, f) = (c.gas(core), c.f);
     let nu_hpt = nu_hp * powp(core.tt4_d / tt4, 0.5);
-    let (_, _, tt45) = core.base.try_solve_choked_turbine(
+    let (pi_hpt, _, tt45) = core.base.try_solve_choked_turbine(
         wgas, tt4, f, core.base.a4, core.base.a45, 1.0,
         core.map_hp().eta_t_at(core.base.eta_hpt, nu_hpt))?;
     let nu_lpt = nu_lp * powp(core.tt45_d / tt45, 0.5);
-    let (_, _, tt5) = core.base.try_solve_choked_turbine(
-        wgas, tt45, f, core.base.a45, core.base.a8, core.base.pi_n,
-        core.map_lp().eta_t_at(core.base.eta_lpt, nu_lpt))?;
+    let (_, _, tt5) = crate::unchoked_lp::try_lp_turbine(
+        &core.base, wgas, tt45, f, core.map_lp().eta_t_at(core.base.eta_lpt, nu_lpt), pi_hpt * c.pt4,
+        flight.p0)?;
     let pt_hp = core.base.eta_m * (1.0 + f) * (wgas.h_t(tt4, f) - wgas.h_t(tt45, f));
     let pt_lp = core.base.eta_m * (1.0 + f) * (wgas.h_t(tt45, f) - wgas.h_t(tt5, f));
     let pc_hp = wgas.h_c(c.tt3) - wgas.h_c(c.tt25);

@@ -206,7 +206,8 @@ separated here.
 * **The table is made at the run's own flight condition**, so the corrections for flight condition cancel. The
   off-design-altitude seam was open when this rung shipped; its solver side was repaired 2026-10-16 (sandbox plan § 26).
 * **Both nozzles are choked** (inherited). That is what makes the pressure ratio read gross thrust exactly; an unchoked
-  nozzle would add a second error.
+  nozzle would add a second error. Rung 97 now solves the unchoked nozzle on this engine: wherever it unchokes (low
+  throttles in dense or warm air) that second error is live; none of this spec's scored runs meet it (rung 97 § 4).
 * The table is 13 rows, read linearly between them. On the pressure ratio this costs nothing in gross thrust (G3). On
   the fan speed it adds a small interpolation error between rows, not separated here.
 * No sensor dynamics, noise or lag. A real `EPR` probe and speed pickup have both.

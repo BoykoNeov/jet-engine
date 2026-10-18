@@ -39,3 +39,7 @@ Mach code edits are in git stash "sandbox-28-mach-wip" (sandbox_controls.rs m0 f
 + powers, every variant; the steady rung 38/39 matcher keeps its refusal — status "transient BUILT, steady OPEN"),
 (2) Mach on Controls (sandbox plan § 28), (3) RUNG 98 = the δ/θ corrected tables → anchor → model/page/spec. Related:
 [[rung96-inferred-thrust]], [[sandbox-altitude]], [[rung95-decisions]].
+
+**Status 2026-10-18:** step (1) RUNG 97 SHIPPED ([[rung97-unchoked-lp]]; spec `docs/rung97-spec.md`, plan § 28). Next:
+pop stash "sandbox-28-mach-wip" → the Mach knob is now plan **§ 29** (its stashed comments say "§ 28" — renumber), then
+rung 98 (δ/θ). The Mach page must keep rung 97's dashed-unchoked drawing and table row.

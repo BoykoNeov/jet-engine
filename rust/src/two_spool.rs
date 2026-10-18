@@ -670,6 +670,10 @@ pub struct TwoSpoolCore {
     /// [`TwoSpoolEngine::offtake`]. Read by rung 92's bodies alone; every other body refuses an
     /// ACTIVE one ([`refuse_offtake`](Self::refuse_offtake)).
     pub offtake: Option<crate::shaft_offtake::ShaftOfftake>,
+    /// RUNG 97: `true` forces rung 38's two-choked-throat pin on the LP turbine even where the nozzle is unchoked —
+    /// "the old model". For the rung's scoring and red check only; nothing on the page or the CLI sets it. Read by
+    /// [`crate::unchoked_lp::try_lp_turbine`].
+    pub lp_pinned: std::cell::Cell<bool>,
 }
 
 impl TwoSpoolCore {
@@ -817,6 +821,7 @@ impl TwoSpoolCore {
             customer,
             cooling,
             offtake,
+            lp_pinned: std::cell::Cell::new(false),
         }
     }
 

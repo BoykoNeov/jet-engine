@@ -233,7 +233,8 @@ built" contract rung 37 used for its plenum/heat-soak clocks.
   full ambient-pressure swing, gets the real rung-30/33 treatment; the inter-turbine duct does
   not.
 - **Nozzle-unchoke is OUT OF SCOPE, not solved.** A rung-33-shaped follow-on (the LP spool's
-  own subsonic branch) is the natural next seam; this rung deliberately does not attempt it.
+  own subsonic branch) is the natural next seam; this rung deliberately does not attempt it. **Built for the
+  transient family by rung 97** (`docs/rung97-spec.md`); this steady matcher still refuses.
 - **No compressor/turbine MAPS.** Isentropic efficiency knobs only (rung 31 parity); "two-spool
   + maps" — the natural rung-32 analogue — is the deferred seam the finding's honesty section
   names explicitly, and is expected to reintroduce genuine spool coupling.

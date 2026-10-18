@@ -824,9 +824,10 @@ struct Turbines {
     nu_lpt: f64,
 }
 
+#[allow(clippy::too_many_arguments)]
 fn turbines(
     t: &TwoSpoolTransientCore, c: &CloseState, wgas: &Gas, cool: TurbineCooling, nu_lp: f64,
-    nu_hp: f64, tt4: f64,
+    nu_hp: f64, tt4: f64, p0: f64,
 ) -> Result<Turbines, Abort> {
     let core = &t.inner;
     let f = c.f;
@@ -842,8 +843,9 @@ fn turbines(
                                    eta_hpt)?;
     let nu_lpt = nu_lp * powp(core.tt45_d / hpt.tt45, 0.5);
     let eta_lpt = core.map_lp().eta_t_at(core.base.eta_lpt, nu_lpt);
-    let (pi_lpt, tau_lpt, tt5) = core.base.try_solve_choked_turbine(
-        wgas, hpt.tt45, hpt.f45, core.base.a45, core.base.a8, core.base.pi_n, eta_lpt)?;
+    // RUNG 97: the pin while the nozzle stays choked, else the subsonic root — at the cooled `Tt45`/`f45`.
+    let (pi_lpt, tau_lpt, tt5) = crate::unchoked_lp::try_lp_turbine(
+        &core.base, wgas, hpt.tt45, hpt.f45, eta_lpt, hpt.pi_hpt * c.pt4, p0)?;
     Ok(Turbines { hpt, pi_lpt, tau_lpt, tt5, eta_hpt, eta_lpt, nu_hpt, nu_lpt })
 }
 
@@ -874,12 +876,12 @@ fn shaft_powers(
 
 /// RUNG 91's `_powers`. Dispatched on the CLOSURE's own `cooling` field (rung 62 § 5.21 (v)).
 pub fn r91_powers(
-    t: &TwoSpoolTransientCore, c: &CloseState, nu_lp: f64, nu_hp: f64, tt4: f64,
+    t: &TwoSpoolTransientCore, c: &CloseState, flight: &FlightCondition, nu_lp: f64, nu_hp: f64, tt4: f64,
 ) -> Result<(f64, f64), Abort> {
     bump(&POWERS_R91);
     let cool = c.cooling.expect("a rung-91 closure carries its cooling");
     let wgas = c.gas(&t.inner);
-    let tb = turbines(t, c, wgas, cool, nu_lp, nu_hp, tt4)?;
+    let tb = turbines(t, c, wgas, cool, nu_lp, nu_hp, tt4, flight.p0)?;
     let (_, _, _, _, pl, ph) = shaft_powers(t, c, wgas, cool, &tb, nu_lp, nu_hp);
     Ok((pl, ph))
 }
@@ -894,7 +896,7 @@ pub fn r91_try_instant_tail(
     let core = &t.inner;
     let cool = c.cooling.expect("a rung-91 closure carries its cooling");
     let wgas = c.gas(core);
-    let tb = turbines(t, c, wgas, cool, nu_lp, nu_hp, tt4)?;
+    let tb = turbines(t, c, wgas, cool, nu_lp, nu_hp, tt4, flight.p0)?;
     let (pt_lp, pt_hp, pc_lp, pc_hp, phi_lp_dot, phi_hp_dot) =
         shaft_powers(t, c, wgas, cool, &tb, nu_lp, nu_hp);
 

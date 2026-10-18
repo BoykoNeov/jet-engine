@@ -1,0 +1,7 @@
+plain         unchoked points   9  worst |A8*rho9*V9 / gas flow - 1| 4.93e-14
+generator HP  unchoked points  12  worst |A8*rho9*V9 / gas flow - 1| 6.51e-14
+generator LP  unchoked points  12  worst |A8*rho9*V9 / gas flow - 1| 5.53e-14
+customer air  unchoked points  12  worst |A8*rho9*V9 / gas flow - 1| 5.24e-14
+cooling       unchoked points  12  worst |A8*rho9*V9 / gas flow - 1| 7.62e-14
+bleed lever   unchoked points  10  worst |A8*rho9*V9 / gas flow - 1| 4.40e-14
+stator lever  unchoked points   9  worst |A8*rho9*V9 / gas flow - 1| 4.77e-14

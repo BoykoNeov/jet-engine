@@ -1163,6 +1163,10 @@ pub fn endpoint_words(message: &str) -> String {
         "the search for the steady shaft speeds does not settle. Measured only with an airflow lever on: at the design \
          flight, one whose schedule does nearly all its travel just below the design speed (start the lever's schedule \
          lower); in other air, every case met also carried a generator load"
+    } else if message.contains("rung-97:") {
+        // Rung 97: the unchoked nozzle cannot pass the flow even with the LP turbine doing almost no work.
+        "at this low a throttle the gas leaving the turbines has too little pressure to be pushed out against the air \
+         outside, even with the low-pressure turbine taking almost no work from it. Raise the throttle"
     } else if message.contains("nozzle back-pressure") {
         // Plan § 27: met only off the design flight (crash map: 3 of 1 400 requests, 600–800 K, every one in air above 250 K).
         "at this low a throttle the gas leaving the turbine has less pressure than the air outside, so the nozzle \
@@ -2179,6 +2183,16 @@ pub fn check_requests() -> Vec<String> {
         ControlsSettings { t0: 281.025575242416, p0: 110666.3721625535, redline_on: true, generator: GeneratorMode::Hp,
                            generator_power: 0.05, customer: CustomerMode::Amount, customer_amount: 0.13, cool_vane: 0.04,
                            cool_blade: 0.12, from: 600.0, to: 870.0, ramp: 0.02, settle: 3.3, rho: 2.3, ..d },
+    ] {
+        out.push(req(s));
+    }
+    // Rung 97: the nozzle unchoked at the start — a +40 K sea-level day from 700 K, bare, with the generator on the LP
+    // shaft, with cooling, and governed on the pressure ratio.
+    for s in [
+        at(0.0, 40.0, ControlsSettings { from: 700.0, ..d }),
+        at(0.0, 40.0, ControlsSettings { from: 700.0, generator: GeneratorMode::Lp, ..d }),
+        at(0.0, 40.0, ControlsSettings { from: 700.0, cool_vane: 0.05, cool_blade: 0.03, ..d }),
+        at(0.0, 40.0, ControlsSettings { from: 700.0, govern: true, hold: Hold::Thrust, thrust_by: ThrustBy::Epr, ..d }),
     ] {
         out.push(req(s));
     }

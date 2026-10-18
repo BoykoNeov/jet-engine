@@ -1652,3 +1652,26 @@ there). Scratch scripts and outputs: `scratch-archive/sandbox-altitude/`.
   the flight flown; the density rule at both ends; every new refusal. `check_requests` adds 5; `browser.mjs` drags the
   altitude to 15 km against a pinned design-flight run and types a pressure (the altitude follows).
 - **No Reynolds-number effect** (none in the model): component efficiencies do not fall in thin air — said on the page.
+
+## 28. The unchoked nozzle on two shafts — rung 97 (2026-10-18) — not a slice
+
+Found while adding a Mach knob to this view (now § 29, parked in git stash `sandbox-28-mach-wip`): since § 27 the
+Controls engine can run points whose nozzle is unchoked (low throttles in dense or warm air — at sea level +40 K, 9–20 of
+126 points from a 700 K start), and the two-shaft transient computed them on rung 38's two-choked-throat pin anyway; the
+reply's `choked` flag was ignored by the page. Offered (refuse in words / draw dashed and warn / build the branch), the
+user chose **"Fix it properly first"**. Rung 97 (`docs/rung97-spec.md`) builds the branch in the model; this view only
+shows it.
+
+- **Readouts:** the chart draws the whole run thin and dashed and its choked stretches full width over it (the *Fly it*
+  slam's convention), with "thin dashed: nozzle unchoked" in the legend when any point is; the table row *Nozzle unchoked
+  (of the run's moments)* — "never", or "9 of 126, starting end too". The *About* paragraph says what the branch does.
+- **Words:** a model refusal `rung-97: …` (the nozzle cannot pass the flow even with the LP turbine nearly unexpanded)
+  reads as "the gas leaving the turbines has too little pressure to be pushed out against the air outside, even with the
+  low-pressure turbine taking almost no work from it. Raise the throttle" (`endpoint_words`). § 27's "the nozzle cannot
+  push it out" stays for the pin's message, met in none of rung 97's 2 400 crash-map requests; § 27's test request now
+  refuses with the off-map words.
+- **Default = the earlier page:** the default move never unchokes, so every earlier check request is unchanged
+  (choked instants are rung 38's pin, bit for bit).
+- **Gates:** `check_requests` adds 4 (+40 K at 700 K: bare, the generator on the LP shaft, cooling, governed on the
+  pressure ratio); `browser.mjs` runs the +40 K 700 K move and checks native agreement, 9 unchoked points with the start
+  unchoked, the dashed path, the legend and the table row.

@@ -1,0 +1,141 @@
+DETAIL OFFMAP z 9950 dT -81.5 T0 142 from 1350 to 1200 lever none gen off 0.04 cust amount 0.08 cool 0/0.01 | At the starting throttle (1350 K): the e
+DETAIL OFFMAP z 18500 dT -95 T0 122 from 1190 to 1620 lever none gen hp 0.045 cust off 0 cool 0.09/0.08 | At the starting throttle (1190 K): with 
+DETAIL OFFMAP z 34450 dT 52.5 T0 287 from 750 to 1070 lever both gen hp 0.1 cust amount 0.03 cool 0.06/0.11 | At the starting throttle (750 K): with t
+DETAIL OFFMAP z 15450 dT -92 T0 125 from 800 to 1170 lever both gen off 0.025 cust share 0.08 cool 0/0 | At the starting throttle (800 K): the en
+DETAIL OFFMAP z 31100 dT -56 T0 172 from 1200 to 1350 lever none gen off 0 cust off 0.11 cool 0.02/0.12 | At the final throttle (1350 K): the engi
+DETAIL OFFMAP z 43150 dT -97 T0 162 from 1460 to 910 lever stator gen lp 0.015 cust off 0.13 cool 0/0 | At the starting throttle (1460 K): with 
+DETAIL OFFMAP z 18200 dT 17 T0 234 from 700 to 1640 lever both gen hp 0.05 cust off 0.12 cool 0/0 | At the starting throttle (700 K): with t
+DETAIL OFFMAP z 1000 dT 60.5 T0 342 from 1010 to 1030 lever stator gen off 0.095 cust off 0.01 cool 0/0 | At the starting throttle (1010 K): the e
+DETAIL OFFMAP z 31650 dT 4.5 T0 233 from 1590 to 710 lever none gen off 0.085 cust share 0.1 cool 0/0 | At the final throttle (710 K): the engin
+DETAIL OFFMAP z 11550 dT -79.5 T0 137 from 1180 to 1110 lever none gen lp 0.06 cust off 0.13 cool 0/0 | At the starting throttle (1180 K): with 
+DETAIL OFFMAP z 20850 dT -97 T0 120 from 990 to 1590 lever bleed gen lp 0.05 cust off 0.09 cool 0/0 | At the starting throttle (990 K): with t
+DETAIL OFFMAP z 34400 dT 2 T0 237 from 910 to 1150 lever both gen hp 0.04 cust amount 0.1 cool 0/0 | At the starting throttle (910 K): with t
+DETAIL OFFMAP z -3400 dT -2.5 T0 308 from 740 to 900 lever none gen lp 0.06 cust amount 0.11 cool 0/0 | At the starting throttle (740 K): with t
+DETAIL OFFMAP z 34850 dT -79 T0 157 from 980 to 1580 lever stator gen off 0.07 cust amount 0.06 cool 0/0 | At the starting throttle (980 K): the en
+DETAIL SETTLE z 26700 dT 17 T0 240 from 1030 to 1270 lever bleed gen hp 0.1 cust off 0.13 cool 0/0 | At the starting throttle (1030 K): the e
+DETAIL OFFMAP z 42050 dT 90.5 T0 347 from 1250 to 710 lever both gen off 0.095 cust amount 0.17 cool 0/0 | At the starting throttle (1250 K): the e
+DETAIL OFFMAP z 14000 dT -95.5 T0 121 from 1380 to 1130 lever bleed gen off 0.03 cust share 0.11 cool 0/0 | At the starting throttle (1380 K): the e
+DETAIL OFFMAP z 36050 dT -43.5 T0 196 from 620 to 1340 lever bleed gen hp 0.02 cust amount 0.03 cool 0/0 | At the starting throttle (620 K): the en
+DETAIL OFFMAP z 44250 dT 89.5 T0 352 from 630 to 1610 lever stator gen off 0.095 cust amount 0.11 cool 0/0 | At the starting throttle (630 K): the en
+DETAIL OFFMAP z 29950 dT -85 T0 141 from 1590 to 1060 lever none gen off 0.09 cust amount 0.12 cool 0/0 | At the starting throttle (1590 K): the e
+DETAIL OFFMAP z 200 dT -35 T0 252 from 610 to 1510 lever both gen off 0.06 cust off 0.19 cool 0/0 | At the starting throttle (610 K): the en
+DETAIL OFFMAP z -500 dT -89 T0 202 from 720 to 1540 lever stator gen off 0.055 cust off 0.13 cool 0.04/0.14 | At the final throttle (1540 K): the engi
+DETAIL OFFMAP z 27000 dT -93 T0 131 from 900 to 1040 lever stator gen off 0.075 cust off 0.15 cool 0/0 | At the starting throttle (900 K): the en
+DETAIL OFFMAP z 32500 dT 92 T0 322 from 890 to 950 lever none gen hp 0.01 cust off 0.07 cool 0.01/0.11 | At the starting throttle (890 K): with t
+DETAIL OFFMAP z 550 dT -20 T0 265 from 1460 to 780 lever both gen lp 0.035 cust share 0.01 cool 0.06/0.09 | At the final throttle (780 K): the engin
+DETAIL OFFMAP z 41400 dT 77.5 T0 332 from 630 to 1500 lever none gen hp 0.05 cust amount 0.05 cool 0.11/0.15 | At the starting throttle (630 K): with t
+DETAIL OFFMAP z 42050 dT -48.5 T0 208 from 1420 to 1150 lever bleed gen lp 0.05 cust amount 0.18 cool 0/0 | At the starting throttle (1420 K): with 
+DETAIL OFFMAP z -2850 dT 54 T0 361 from 730 to 1510 lever stator gen hp 0.005 cust off 0.16 cool 0/0 | At the starting throttle (730 K): with t
+DETAIL OFFMAP z 6950 dT -1.5 T0 242 from 640 to 840 lever stator gen hp 0.05 cust off 0.15 cool 0/0 | At the starting throttle (640 K): with t
+DETAIL OFFMAP z 39000 dT 30.5 T0 278 from 910 to 740 lever none gen off 0.025 cust share 0.16 cool 0.1/0.13 | At the starting throttle (910 K): the en
+DETAIL OFFMAP z 27950 dT -76 T0 148 from 1130 to 1130 lever both gen off 0.02 cust off 0.11 cool 0/0 | At the starting throttle (1130 K): the e
+DETAIL OFFMAP z 43000 dT -98 T0 161 from 850 to 780 lever stator gen off 0.04 cust share 0.06 cool 0.14/0.05 | At the starting throttle (850 K): the en
+DETAIL OFFMAP z 37750 dT 3.5 T0 248 from 1370 to 1670 lever both gen lp 0.01 cust share 0.13 cool 0/0 | At the starting throttle (1370 K): the e
+DETAIL OFFMAP z -1000 dT -39 T0 256 from 790 to 1040 lever both gen off 0.035 cust off 0.03 cool 0.02/0.09 | At the starting throttle (790 K): the en
+DETAIL OFFMAP z 16600 dT -82 T0 135 from 1260 to 1700 lever bleed gen lp 0.035 cust amount 0.15 cool 0/0 | At the starting throttle (1260 K): with 
+DETAIL OFFMAP z -350 dT 69 T0 359 from 1450 to 820 lever none gen off 0.05 cust off 0.06 cool 0/0 | At the final throttle (820 K): the engin
+DETAIL OFFMAP z -800 dT 63 T0 356 from 1580 to 780 lever stator gen hp 0.02 cust off 0.04 cool 0/0 | At the final throttle (780 K): with the 
+DETAIL OFFMAP z 24550 dT -58 T0 163 from 820 to 1360 lever none gen off 0.005 cust amount 0.17 cool 0/0 | At the starting throttle (820 K): the en
+DETAIL OFFMAP z 42600 dT 63.5 T0 321 from 1360 to 1050 lever stator gen off 0.04 cust off 0.02 cool 0.1/0.06 | At the final throttle (1050 K): the engi
+DETAIL OFFMAP z 30400 dT 96.5 T0 323 from 640 to 720 lever bleed gen lp 0.07 cust off 0.09 cool 0/0 | At the starting throttle (640 K): with t
+DETAIL OFFMAP z 36650 dT -17 T0 224 from 1620 to 750 lever bleed gen hp 0.07 cust share 0.04 cool 0.13/0.07 | At the starting throttle (1620 K): the e
+DETAIL OFFMAP z 12450 dT 94.5 T0 311 from 1020 to 950 lever stator gen hp 0.09 cust share 0.11 cool 0.06/0.12 | At the starting throttle (1020 K): the e
+DETAIL OFFMAP z 39750 dT 32.5 T0 282 from 1080 to 1030 lever none gen hp 0.045 cust amount 0.18 cool 0.09/0.09 | At the starting throttle (1080 K): with 
+DETAIL OFFMAP z 20250 dT -79 T0 138 from 1350 to 630 lever none gen lp 0.07 cust off 0.03 cool 0.03/0.12 | At the starting throttle (1350 K): with 
+DETAIL OFFMAP z 14000 dT -93 T0 124 from 1180 to 1450 lever none gen lp 0.035 cust amount 0.12 cool 0/0 | At the starting throttle (1180 K): with 
+DETAIL OFFMAP z 4000 dT -6.5 T0 256 from 1610 to 920 lever none gen lp 0.06 cust off 0.05 cool 0/0 | At the final throttle (920 K): the engin
+DETAIL OFFMAP z 29550 dT -55.5 T0 171 from 730 to 1130 lever stator gen lp 0.005 cust amount 0 cool 0/0 | At the starting throttle (730 K): the en
+DETAIL SETTLE z 31300 dT 88.5 T0 316 from 980 to 840 lever bleed gen hp 0.035 cust off 0.2 cool 0/0 | At the starting throttle (980 K): the en
+DETAIL OFFMAP z 29850 dT 93.5 T0 320 from 1020 to 610 lever stator gen off 0.09 cust off 0.19 cool 0.12/0.11 | At the starting throttle (1020 K): the e
+DETAIL OFFMAP z 11300 dT 93.5 T0 310 from 820 to 890 lever both gen lp 0.095 cust share 0.1 cool 0.06/0.04 | At the starting throttle (820 K): with t
+DETAIL OFFMAP z 39400 dT 14.5 T0 263 from 1390 to 680 lever both gen lp 0.045 cust off 0.14 cool 0/0 | At the starting throttle (1390 K): the e
+unknown #247 z -4700 dT -61.5: 
+DETAIL OFFMAP z 4800 dT -68.5 T0 188 from 1570 to 1550 lever none gen hp 0.09 cust share 0.19 cool 0.05/0.14 | At the starting throttle (1570 K): with 
+DETAIL OFFMAP z 22900 dT 66 T0 285 from 1090 to 1590 lever both gen hp 0.055 cust amount 0.08 cool 0.14/0.11 | At the starting throttle (1090 K): with 
+DETAIL OFFMAP z 41850 dT -81.5 T0 174 from 1230 to 1210 lever both gen hp 0.075 cust share 0.19 cool 0/0 | At the starting throttle (1230 K): the e
+DETAIL SETTLE z 22000 dT 74 T0 293 from 1550 to 880 lever both gen lp 0.055 cust off 0.01 cool 0.04/0.01 | At the starting throttle (1550 K): the e
+DETAIL OFFMAP z 30300 dT 80.5 T0 307 from 770 to 620 lever bleed gen hp 0.005 cust share 0.2 cool 0.08/0.01 | At the starting throttle (770 K): with t
+DETAIL SETTLE z 41800 dT 89.5 T0 345 from 1100 to 1200 lever stator gen lp 0.025 cust off 0.15 cool 0.11/0.05 | At the starting throttle (1100 K): the e
+DETAIL OFFMAP z -4400 dT -8 T0 309 from 1240 to 800 lever none gen off 0.065 cust share 0.06 cool 0/0 | At the final throttle (800 K): the engin
+DETAIL OFFMAP z 24900 dT 33 T0 254 from 720 to 940 lever stator gen hp 0.095 cust amount 0.12 cool 0/0 | At the starting throttle (720 K): the en
+DETAIL OFFMAP z 38300 dT 88.5 T0 334 from 1050 to 690 lever none gen off 0.04 cust amount 0.08 cool 0.13/0.01 | At the starting throttle (1050 K): the e
+DETAIL OFFMAP z 33200 dT -52 T0 180 from 1080 to 1130 lever both gen hp 0.075 cust off 0.19 cool 0.1/0.12 | At the starting throttle (1080 K): the e
+DETAIL OFFMAP z -4200 dT 28 T0 343 from 1310 to 1230 lever stator gen off 0.095 cust off 0.17 cool 0.11/0.08 | At the starting throttle (1310 K): the e
+DETAIL OFFMAP z 45950 dT -14 T0 253 from 1450 to 1620 lever stator gen lp 0.065 cust amount 0.06 cool 0/0.02 | At the starting throttle (1450 K): with 
+DETAIL OFFMAP z 13450 dT 71 T0 288 from 1380 to 1570 lever stator gen hp 0.065 cust share 0.13 cool 0/0 | At the starting throttle (1380 K): the e
+DETAIL OFFMAP z 19300 dT -84.5 T0 132 from 1060 to 1460 lever none gen hp 0.09 cust off 0.09 cool 0.01/0.07 | At the starting throttle (1060 K): with 
+DETAIL OFFMAP z 45600 dT 79.5 T0 345 from 870 to 980 lever bleed gen lp 0.04 cust amount 0.07 cool 0.11/0.04 | At the starting throttle (870 K): with t
+DETAIL OFFMAP z 29000 dT 50.5 T0 276 from 650 to 1260 lever stator gen off 0.065 cust off 0.06 cool 0.01/0.12 | At the starting throttle (650 K): the en
+DETAIL OFFMAP z 41300 dT -66.5 T0 187 from 1690 to 1440 lever stator gen lp 0.095 cust share 0.11 cool 0.09/0.13 | At the starting throttle (1690 K): with 
+DETAIL OFFMAP z 15900 dT -61 T0 156 from 1190 to 970 lever stator gen off 0.03 cust off 0.04 cool 0.13/0.1 | At the starting throttle (1190 K): the e
+DETAIL OFFMAP z 36050 dT -64 T0 175 from 620 to 1210 lever both gen lp 0.08 cust amount 0.04 cool 0/0 | At the starting throttle (620 K): the en
+DETAIL OFFMAP z 29700 dT -83.5 T0 143 from 770 to 790 lever none gen off 0.07 cust amount 0.12 cool 0/0 | At the starting throttle (770 K): the en
+DETAIL OFFMAP z 29200 dT -31 T0 195 from 780 to 1040 lever bleed gen hp 0.085 cust amount 0.05 cool 0.01/0.06 | At the starting throttle (780 K): the en
+DETAIL OFFMAP z 45850 dT -67.5 T0 199 from 950 to 1540 lever stator gen off 0.05 cust amount 0.06 cool 0/0 | At the starting throttle (950 K): the en
+DETAIL OFFMAP z 29000 dT 47 T0 273 from 1560 to 1320 lever none gen off 0.005 cust amount 0.1 cool 0.15/0.1 | At the starting throttle (1560 K): the e
+DETAIL OFFMAP z 42550 dT -18.5 T0 239 from 1300 to 610 lever none gen lp 0.05 cust amount 0.2 cool 0/0 | At the starting throttle (1300 K): with 
+  136  [z  -5000.. 46300]  ran to the end
+   14  [z  -4700.. 38800]  ran, stopped early
+    3  [z   3900.. 29250]  refused: A slow valve cannot run beside the temperatur
+    1  [z  20650.. 20650]  refused: At the final throttle (1100 K), holding HP sp
+    1  [z   2900..  2900]  refused: At the final throttle (800 K): the engine has
+    1  [z  16350.. 16350]  refused: At the starting throttle (1180 K), holding HP
+    1  [z  21700.. 21700]  refused: At the starting throttle (1260 K), holding HP
+    1  [z  29450.. 29450]  refused: At the starting throttle (1280 K), the contro
+    1  [z  15950.. 15950]  refused: At the starting throttle (1300 K), holding HP
+    1  [z   7750..  7750]  refused: At the starting throttle (1350 K), holding HP
+    1  [z   1400..  1400]  refused: The fan-speed governor's gain must be above 0
+    4  [z  21550.. 35950]  refused: The fan-speed governor's time constant must b
+   12  [z  -4450.. 46200]  refused: The governor runs with the instant limiters o
+    5  [z    750.. 38300]  refused: The governor runs with the instant valve only
+    2  [z   2950.. 16450]  refused: The realistic release and the temperature lim
+    9  [z  22450.. 46900]  refused: The speed governor's time constant must be at
+   35  [z  -4700.. 46800]  refused: The temperature limiter's lag delays the limi
+    7  [z  -4500..  4450]  refused: [ 0-5  km] acceleration schedule
+   13  [z  -4400..  4800]  refused: [ 0-5  km] off the part of their maps
+    6  [z   5050..  8750]  refused: [ 5-10 km] acceleration schedule
+    2  [z   7600..  8950]  refused: [ 5-10 km] generator would take
+    2  [z   6950..  9950]  refused: [ 5-10 km] off the part of their maps
+    1  [z   6300..  6300]  refused: [ 5-10 km] thrust asked
+    1  [z  11250.. 11250]  refused: [10-15 km] acceleration schedule
+    1  [z  11550.. 11550]  refused: [10-15 km] customer bleed would take
+    2  [z  11450.. 14250]  refused: [10-15 km] generator would take
+    6  [z  11300.. 14000]  refused: [10-15 km] off the part of their maps
+    2  [z  11500.. 12600]  refused: [10-15 km] thrust asked
+    3  [z  17550.. 19500]  refused: [15-20 km] With this
+    3  [z  16600.. 17350]  refused: [15-20 km] acceleration schedule
+    1  [z  17850.. 17850]  refused: [15-20 km] cooling together
+    3  [z  15600.. 19250]  refused: [15-20 km] customer bleed would take
+    6  [z  15450.. 19300]  refused: [15-20 km] off the part of their maps
+    7  [z  20800.. 24400]  refused: [20-25 km] With this
+    3  [z  22250.. 23500]  refused: [20-25 km] acceleration schedule
+    2  [z  21200.. 24250]  refused: [20-25 km] cooling together
+    3  [z  20100.. 23850]  refused: [20-25 km] customer bleed would take
+    1  [z  22000.. 22000]  refused: [20-25 km] does not settle
+    3  [z  20250.. 22950]  refused: [20-25 km] generator would take
+    5  [z  20250.. 24900]  refused: [20-25 km] off the part of their maps
+    3  [z  29050.. 29400]  refused: [25-30 km] With this
+    3  [z  26000.. 29650]  refused: [25-30 km] acceleration schedule
+    1  [z  26700.. 26700]  refused: [25-30 km] does not settle
+    5  [z  25100.. 26300]  refused: [25-30 km] generator would take
+    9  [z  27000.. 29950]  refused: [25-30 km] off the part of their maps
+    6  [z  30650.. 34900]  refused: [30-35 km] With this
+    3  [z  30300.. 34300]  refused: [30-35 km] acceleration schedule
+    1  [z  31350.. 31350]  refused: [30-35 km] cooling together
+    1  [z  30200.. 30200]  refused: [30-35 km] customer bleed would take
+    1  [z  31300.. 31300]  refused: [30-35 km] does not settle
+    5  [z  30550.. 34550]  refused: [30-35 km] generator would take
+    9  [z  30300.. 34850]  refused: [30-35 km] off the part of their maps
+    8  [z  35300.. 39350]  refused: [35-40 km] With this
+    2  [z  38150.. 39800]  refused: [35-40 km] generator would take
+    8  [z  36050.. 39750]  refused: [35-40 km] off the part of their maps
+    6  [z  40500.. 43200]  refused: [40-45 km] With this
+    2  [z  43750.. 44600]  refused: [40-45 km] acceleration schedule
+    1  [z  41800.. 41800]  refused: [40-45 km] does not settle
+    1  [z  44650.. 44650]  refused: [40-45 km] generator would take
+   10  [z  41300.. 44250]  refused: [40-45 km] off the part of their maps
+    1  [z  46200.. 46200]  refused: [45-50 km] acceleration schedule
+    3  [z  45600.. 45950]  refused: [45-50 km] off the part of their maps
+stop kinds: {"floor_unreachable": 8, "lean": 3, "rich": 2, "unknown": 1}
+0 panics; total 41.7 s, median 0.002 s, slowest 1.70 / 1.33 / 1.29 s
+slowest request: {"op":"controls","controls":{"T0":283.9218711652416,"p0":157.9292820870315,"shape":"tilted","lever":"both","bleed_mode":"schedule","valve_speed":"instant","redline_on":1,"gov_lag_on":0,"accel_on":0,"floor_on":0,"floor_ref":"phi","floor_phi":0.7000000000000001,"release_on":0,"govern":1,"hold":"thrust","thrust_by":"epr","speed_law":"rate","gov_tau":0.33,"gov_gain":5,"generator":"off","generator_power":0.09,"customer":"share","customer_share":0.12,"customer_amount":0.12,"cool_vane":0,"cool_blade":0,"metal_on":0,"from":1460,"to":650,"ramp":0.64,"settle":4.1000000000000005,"rho":2.4000000000000004}}
