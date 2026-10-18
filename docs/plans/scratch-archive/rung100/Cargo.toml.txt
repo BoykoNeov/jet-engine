@@ -36,3 +36,35 @@ path = "src/eprguess.rs"
 [[bin]]
 name = "bars"
 path = "src/bars.rs"
+
+[[bin]]
+name = "smoke"
+path = "src/smoke.rs"
+
+[[bin]]
+name = "score"
+path = "src/score.rs"
+
+[[bin]]
+name = "h4why"
+path = "src/h4why.rs"
+
+[[bin]]
+name = "genlp"
+path = "src/genlp.rs"
+
+[[bin]]
+name = "findref"
+path = "src/findref.rs"
+
+[[bin]]
+name = "crash99"
+path = "src/crash99.rs"
+
+[[bin]]
+name = "census"
+path = "src/census.rs"
+
+[[bin]]
+name = "cost"
+path = "src/cost.rs"

@@ -711,7 +711,7 @@ footer p { max-width: 90ch; }
           <label class="swrow"><input type="checkbox" id="ctl-corr_p"> Corrected for the air's pressure <small>rung 98</small></label>
           <label class="swrow"><input type="checkbox" id="ctl-corr_t"> Corrected for the air's temperature</label>
           <div class="toggle" role="group" aria-label="How the tables are corrected for flight speed">
-            <button type="button" id="ctl-spd-grid" aria-pressed="true">Speed: tables at eight speeds</button>
+            <button type="button" id="ctl-spd-grid" aria-pressed="true">Speed: tables at ten speeds</button>
             <button type="button" id="ctl-spd-formula" aria-pressed="false">Thrust recomputed</button>
             <button type="button" id="ctl-spd-none" aria-pressed="false">Not corrected <small>rung 99</small></button></div></div>
         <p class="note" id="ctl-tables-note">A real control's tables (the thrust it reads from the pressure ratio or the fan
@@ -722,13 +722,21 @@ footer p { max-width: 90ch; }
           the fuel's heat is fixed while the air's grows with temperature. Neither correction sees a change of flight speed:
           a table made at Mach 0.85 alone gives about 8 % too much thrust at Mach 0.5 and 5–10 % too little at Mach 1.4 (the
           jet's push against the outside air and the drag of the air swallowed both change; the engine's inside does not).
-          So the tables are made at eight speeds (Mach 0.3, 0.6, 0.85, 1.2, 1.6, 2.0, 2.5, 3.0, in the design flight's air)
-          and the two around the speed flown are blended: the miss falls to a few tenths of a per cent, short where the
-          thrust-against-speed curve bends up, over where the nozzle's push bends it down; below Mach 0.3 the line through
-          the two slowest tables is carried on, and the miss grows (about 1.7 % at Mach 0.15). Or the thrust is recomputed
-          for the flight speed (the jet's push against this air, less the drag of the air the table expects): exact while
-          the nozzle is choked but for the table's guess of the air swallowed; where the nozzle is not choked it gives too
-          little thrust read from the pressure ratio and about 5 % too much read from the fan speed.
+          So the tables are made at ten speeds (Mach 0.05, 0.15, 0.3, 0.6, 0.85, 1.2, 1.6, 2.0, 2.5, 3.0, in the design
+          flight's air) and the two around the speed flown are blended: the miss falls to a few tenths of a per cent, short
+          where the thrust-against-speed curve bends up, over where the nozzle's push bends it down. The two slow tables
+          matter most at a low throttle: there the nozzle stops choking, the outside air pushes back on the low-pressure
+          turbine, and the engine settles off the line a table made where the nozzle chokes describes (at a given fan speed
+          it burns hotter). Without them, the line through the Mach 0.3 and 0.6 tables carried down to slow flight missed
+          by up to 16 % read from the pressure ratio and 33 % from the fan speed; with them, under 1 % (rung 100).
+          Or the thrust is recomputed for the flight speed: read from the pressure ratio, the jet's push is worked out from
+          the reading itself, the nozzle's area and this air's pressure, exact whether the nozzle chokes or not, less the
+          drag of the air the table expects the engine to swallow — and that guess is the whole miss (a few tenths of a
+          per cent slow; more where the engine runs far off the table's line, near sea level from a low throttle, and at a
+          low throttle flown fast, where the drag is nearly the whole jet). Read from the fan speed, the formula re-solves
+          the low-pressure turbine against this air and finds the hotter burner the fan speed needs, but it reads the
+          compressors of the table's engine, which spin faster at that burner temperature: it gives a little too little
+          thrust, about a third to a half of the old formula's miss, the other way.
           Switch a correction off to see why it is there. Without the pressure one the thrust is off by about as much as
           the air is thinner or denser. Without the temperature one the fan-speed control misses by 22–43 % on a day 16 %
           warmer or 13 % colder at the engine, while the pressure ratio needs no temperature correction at all, and the
@@ -1266,7 +1274,10 @@ const ctlTables = c => (c.govern === 1 && c.hold === "thrust" && c.thrust_by !==
   || (c.govern === 1 && c.hold === "speed" && c.speed_law === "prop");
 // Rung 99: how the tables were corrected for flight speed, in words.
 const speedFor = sp => !sp ? "" : sp.corr === "none" ? "not corrected for flight speed"
-  : sp.corr === "formula" ? "thrust recomputed for this flight speed"
+  : sp.corr === "formula" ? "thrust recomputed for this flight speed" + (!sp.fan_rows ? ""
+      // Rung 100: the fan-speed formula's table row at each end, beside the end's own burner temperature.
+      : `; at the fan speed of each end the formula settles on the table's engine at ${sp.fan_rows.map(q => !q ? "(none)"
+          : `${fmt(q[0], 4)} K (the engine: ${fmt(q[1], 4)} K)`).join(" and ")}`)
   : sp.slices.length === 1 ? `for flight speed: the Mach ${sp.slices[0]} table`
   : `for flight speed: the Mach ${sp.slices[0]} and ${sp.slices[1]} tables blended (${fmt(sp.weight * 100, 3)} % of the way)${sp.extended
       ? ", the line carried past the grid" : ""}`;
@@ -1963,8 +1974,17 @@ const CTL_ROWS = [
     if (k < 0) return "shown for the pressure ratio on a design-flight table, pressure corrected, not blended between speeds";
     if (r.tables.speed.split === "airflow_rest") {
       const d = Math.abs(r.end.thrust - r.start.thrust) || 1, f = a => a.filter(v => v !== null).map(v => v / d * 100);
-      // The rest is exactly 0 in algebra while the nozzle is choked (rounding in arithmetic): so ask the nozzle, not the number.
-      const g = f(r.gap_ram), rest = r.gap_nozzle.map((v, i) => v === null || r.choked[i] ? 0 : Math.abs(v / d * 100));
+      const g = f(r.gap_ram);
+      if (r.controls.formula_choked !== 1) {
+        // Rung 100: the push is worked out from the reading, so the rest is 0 in algebra at EVERY point (rounding in
+        // arithmetic, under 1e-10 N per kg/s measured): read the number itself, against an absolute bar.
+        const worst = Math.max(...r.gap_nozzle.map(v => v === null ? 0 : Math.abs(v)));
+        return `thrust recomputed: the table's guess of the air swallowed ${fmt(Math.max(...g), 3)} / ${fmt(Math.min(...g), 3)}; the rest
+          ${worst <= 1e-9 ? "nothing (the jet's push is worked out from the pressure ratio, choked or not)"
+            : `up to ${fmt(worst / d * 100, 3)}`}`; }
+      // Rung 99's column: the rest is exactly 0 in algebra while the nozzle is choked (rounding in arithmetic): so ask
+      // the nozzle, not the number.
+      const rest = r.gap_nozzle.map((v, i) => v === null || r.choked[i] ? 0 : Math.abs(v / d * 100));
       return `thrust recomputed: the table's guess of the air swallowed ${fmt(Math.max(...g), 3)} / ${fmt(Math.min(...g), 3)}; the rest
         ${r.choked.every(c => c) ? "nothing (the nozzle choked throughout)" : `up to ${fmt(Math.max(...rest), 3)} (where the nozzle is not choked)`}`; }
     const d = Math.abs(r.end.thrust - r.start.thrust) || 1, ram = r.gap_ram.filter(v => v !== null).map(v => v / d * 100);

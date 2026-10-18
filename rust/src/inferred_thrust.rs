@@ -30,6 +30,7 @@ use crate::fuel_transient::FuelTransientCore;
 use crate::gas::Abort;
 use crate::governor::{thrust, TABLE_ROWS};
 use crate::two_spool_transient::Instant2;
+use crate::unchoked_formula::Formula;
 
 /// The engine pressure ratio at an instant: the nozzle inlet's total pressure — every transient tail builds it as
 /// `π_LPT·π_HPT·pt4` (anchor G5) — over the inlet's, `pt2`.
@@ -74,6 +75,9 @@ pub struct Table {
     pub rows: Vec<Row>,
     pub pt2: f64,
     pub v0: f64,
+    /// RUNG 100: the formula's readers, when the thrust is worked out at the reading rather than read off the rows —
+    /// read through [`Table::try_inferred`] / [`Table::try_reading_at`].
+    pub formula: Option<Formula>,
 }
 
 /// Linear in `x` between the rows, the END SEGMENTS carried on beyond (a reading outside the table — a leg cutting, a
@@ -86,19 +90,40 @@ pub fn lin(rows: &[Row], x: impl Fn(&Row) -> f64, y: impl Fn(&Row) -> f64, v: f6
 }
 
 impl Table {
-    /// The reading the table gives at thrust `f` — the reading's demand.
+    /// The reading the table gives at thrust `f` — the reading's demand. A table with a formula is read through
+    /// [`Table::try_reading_at`].
     pub fn reading_at(&self, r: Reading, f: f64) -> f64 {
+        assert!(self.formula.is_none(), "a table with rung 100's formula is read through try_reading_at");
         match r {
             Reading::Epr => lin(&self.rows, |w| w.thrust, |w| w.epr, f),
             Reading::LpSpeed => lin(&self.rows, |w| w.thrust, |w| w.nu_lp, f),
         }
     }
 
-    /// The thrust the control BELIEVES at reading `v` — `F̂`.
+    /// The thrust the control BELIEVES at reading `v` — `F̂`. A table with a formula is read through
+    /// [`Table::try_inferred`].
     pub fn inferred(&self, r: Reading, v: f64) -> f64 {
+        assert!(self.formula.is_none(), "a table with rung 100's formula is read through try_inferred");
         match r {
             Reading::Epr => lin(&self.rows, |w| w.epr, |w| w.thrust, v),
             Reading::LpSpeed => lin(&self.rows, |w| w.nu_lp, |w| w.thrust, v),
+        }
+    }
+
+    /// [`Table::reading_at`], or RUNG 100's formula worked out at the reading (`ft` is the machine whose LP turbine
+    /// the fan-speed formula re-solves).
+    pub fn try_reading_at(&self, ft: &FuelTransientCore, r: Reading, f: f64) -> Result<f64, Abort> {
+        match &self.formula {
+            None => Ok(self.reading_at(r, f)),
+            Some(m) => m.try_reading_at(ft, self, r, f),
+        }
+    }
+
+    /// [`Table::inferred`], or RUNG 100's formula worked out at the reading.
+    pub fn try_inferred(&self, ft: &FuelTransientCore, r: Reading, v: f64) -> Result<f64, Abort> {
+        match &self.formula {
+            None => Ok(self.inferred(r, v)),
+            Some(m) => m.try_inferred(ft, self, r, v),
         }
     }
 
@@ -161,5 +186,5 @@ pub fn try_table(
                               together, so a reading cannot be turned back into thrust".into()));
         }
     }
-    Ok(Table { rows, pt2, v0 })
+    Ok(Table { rows, pt2, v0, formula: None })
 }

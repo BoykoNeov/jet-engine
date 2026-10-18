@@ -1,0 +1,19 @@
+
+BELOW CHOKE (rung 100): the formula worked out at the reading - the jet's push from the pressure ratio, the LP
+shaft rebalanced against the flight's air for the fan speed - and two slow tables (Mach 0.05, 0.15) in the speed
+grid. The thrust the governor gives at the 700 K starting end over what the throttle asks, %, on the map curved
+along flow at LP, along pressure at HP, flown in 250 K, 50 kPa air (Mach 0.1 lies between the slow tables):
+
+  Mach    read                  rung 99     rung 100      grid 99     grid 100
+  0.1     pressure ratio          -1.29        +0.11        +5.85        -0.22
+  0.1     fan speed               +4.87        -2.30        +7.22        -0.01
+  0.5     pressure ratio          -0.07        -0.00        -0.95        -0.95
+  0.5     fan speed               +0.23        -0.17        -3.67        -3.67
+  1.4     pressure ratio          +0.09        -1.67        +1.89        +1.89
+  1.4     fan speed               -6.57        -4.66        +1.81        +1.81
+
+  The pressure ratio's push is now exact below choke: what is left is the table's guess of the air swallowed - small
+  at low speed, but at Mach 1.4 from 700 K larger than rung 99's, whose push and airflow came from the same unchoked
+  design row and cancelled. The fan speed's formula overshoots: it finds the hotter burner but reads the choked fan's
+  compressors. The slow tables bring the grid back, for both readings: an unchoked engine leaves the table's one
+  line, and the flight speed is the second number that finds it.

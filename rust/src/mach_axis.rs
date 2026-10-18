@@ -31,12 +31,18 @@
 //! # Reduce
 //!
 //! `SpeedCorr::None` is rung 98's carry; so is a grid flight at Mach 0.85 (its one slice is the design flight).
+//!
+//! # Rung 100
+//!
+//! Two slow slices (Mach 0.05, 0.15) before the eight — `low` off is rung 99's grid ([`GRID99`]) — and the formula
+//! read at the reading by [`crate::unchoked_formula`] — `choked` on is rung 99's column alone.
 
 use crate::corrected_tables::{self as ct, Carry, RowFailure};
 use crate::engine::FlightCondition;
 use crate::fuel_transient::{AccelSchedule, FuelTransientCore};
 use crate::inferred_thrust::{epr, face, lin, Reading, Row, Table};
 use crate::two_spool_transient::Instant2;
+use crate::unchoked_formula as uf;
 
 /// How the control corrects for flight speed (rung 99's setting; acts only on tables made at the design flight).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -56,38 +62,48 @@ impl SpeedCorr {
     }
 }
 
-/// The grid's flight speeds (the user's, after the reach probe: to Mach 3 so a fast flight's slices can be built).
-pub const GRID: [f64; 8] = [0.3, 0.6, 0.85, 1.2, 1.6, 2.0, 2.5, 3.0];
+/// The grid's flight speeds. Rung 99's eight (the user's, after its reach probe: to Mach 3 so a fast flight's slices
+/// can be built) and RUNG 100's two slow slices before them — the user's, after `docs/rung100-spec.md`'s G6: below
+/// Mach 0.3 rung 99 carried a straight line on, and where the nozzle unchokes that line is far off.
+pub const GRID: [f64; 10] = [0.05, 0.15, 0.3, 0.6, 0.85, 1.2, 1.6, 2.0, 2.5, 3.0];
 
-/// The slice that IS the design flight.
-pub const DESIGN_SLICE: usize = 2;
+/// Rung 99's grid — rung 100's reduce setting (`low_grid` off).
+pub const GRID99: [f64; 8] = [0.3, 0.6, 0.85, 1.2, 1.6, 2.0, 2.5, 3.0];
 
-/// The slices a flight at Mach `m` reads: the first, the second (none at a grid speed), and the weight on the second
-/// (below 0 or above 1 outside the grid).
-pub fn bracket(m: f64) -> (usize, Option<usize>, f64) {
-    if let Some(j) = GRID.iter().position(|&g| g == m) {
+/// The slice that IS the design flight, by its Mach.
+pub const DESIGN_MACH: f64 = 0.85;
+
+/// The grid a run reads: rung 100's with the slow slices, else rung 99's.
+pub fn grid(low: bool) -> &'static [f64] {
+    if low { &GRID } else { &GRID99 }
+}
+
+/// The slices a flight at Mach `m` reads in grid `g`: the first, the second (none at a grid speed), and the weight on
+/// the second (below 0 or above 1 outside the grid).
+pub fn bracket(g: &[f64], m: f64) -> (usize, Option<usize>, f64) {
+    if let Some(j) = g.iter().position(|&x| x == m) {
         return (j, None, 0.0);
     }
-    let n = GRID.len();
-    let a = if m < GRID[0] { 0 } else if m > GRID[n - 1] { n - 2 } else { GRID.iter().rposition(|&g| g < m).expect("inside") };
-    (a, Some(a + 1), (m - GRID[a]) / (GRID[a + 1] - GRID[a]))
+    let n = g.len();
+    let a = if m < g[0] { 0 } else if m > g[n - 1] { n - 2 } else { g.iter().rposition(|&x| x < m).expect("inside") };
+    (a, Some(a + 1), (m - g[a]) / (g[a + 1] - g[a]))
 }
 
-/// Slice `j`'s flight: the design flight ITSELF for the design slice (so it is rung 98's table, bit for bit), else the
-/// design altitude's air at the slice's Mach.
-pub fn slice_flight(design: &FlightCondition, j: usize) -> FlightCondition {
-    if j == DESIGN_SLICE { *design } else { FlightCondition::new(design.t0, design.p0, GRID[j]) }
+/// The flight of the slice at Mach `m`: the design flight ITSELF for the design slice (so it is rung 98's table, bit
+/// for bit), else the design altitude's air at that Mach.
+pub fn slice_flight(design: &FlightCondition, m: f64) -> FlightCondition {
+    if m == DESIGN_MACH { *design } else { FlightCondition::new(design.t0, design.p0, m) }
 }
 
-/// A flight in the design altitude's air at a grid speed — where a slice IS a table made at this flight.
-pub fn at_slice_flight(design: &FlightCondition, flight: &FlightCondition) -> bool {
-    flight.t0 == design.t0 && flight.p0 == design.p0 && GRID.contains(&flight.m0)
+/// A flight in the design altitude's air at a speed of grid `g` — where a slice IS a table made at this flight.
+pub fn at_slice_flight(g: &[f64], design: &FlightCondition, flight: &FlightCondition) -> bool {
+    flight.t0 == design.t0 && flight.p0 == design.p0 && g.contains(&flight.m0)
 }
 
-/// One slice: its grid index and the carry from its flight to the flight flown.
+/// One slice: its Mach and the carry from its flight to the flight flown.
 #[derive(Clone, Copy, Debug)]
 pub struct Slice {
-    pub j: usize,
+    pub m: f64,
     pub carry: Carry,
 }
 
@@ -99,22 +115,26 @@ pub enum Tables {
     /// Two grid slices and the weight on the second (one slice at a grid speed: `b` none).
     Grid { a: Slice, b: Option<Slice>, w: f64 },
     /// Rung 98's carry, the thrust table's thrust recomputed for this flight: the model's nozzle area `a8` (per design
-    /// airflow) and both flights' ambient pressure.
-    Formula { carry: Carry, a8: f64, p0: f64, p0_d: f64 },
+    /// airflow) and both flights' ambient pressure. `choked` is rung 99's column (rung 100's reduce setting); else
+    /// RUNG 100's readers ([`crate::unchoked_formula`]) on the same carry.
+    Formula { carry: Carry, a8: f64, p0: f64, p0_d: f64, choked: bool },
 }
 
 impl Tables {
+    /// `low` is rung 100's grid with the slow slices; `choked` rung 99's formula column.
+    #[allow(clippy::too_many_arguments)]
     pub fn new(ft: &FuelTransientCore, design: &FlightCondition, flight: &FlightCondition, corr: SpeedCorr,
-               pressure: bool, temperature: bool) -> Tables {
+               pressure: bool, temperature: bool, low: bool, choked: bool) -> Tables {
         let carry = |from: &FlightCondition| Carry::new(ft, from, flight, pressure, temperature);
+        let g = grid(low);
         match corr {
             SpeedCorr::None => Tables::Design(carry(design)),
             SpeedCorr::Formula => Tables::Formula { carry: carry(design), a8: ft.inner.inner.base.a8, p0: flight.p0,
-                                                    p0_d: design.p0 },
-            SpeedCorr::Grid => match bracket(flight.m0) {
-                (DESIGN_SLICE, None, _) => Tables::Design(carry(design)),
+                                                    p0_d: design.p0, choked },
+            SpeedCorr::Grid => match bracket(g, flight.m0) {
+                (a, None, _) if g[a] == DESIGN_MACH => Tables::Design(carry(design)),
                 (a, b, w) => {
-                    let slice = |j: usize| Slice { j, carry: carry(&slice_flight(design, j)) };
+                    let slice = |j: usize| Slice { m: g[j], carry: carry(&slice_flight(design, g[j])) };
                     Tables::Grid { a: slice(a), b: b.map(slice), w }
                 }
             },
@@ -136,10 +156,15 @@ impl Tables {
                 let dt = ct::try_design_table(ft, c, lo, hi).map_err(|f| ct::row_words(what, c, lo, hi, &f))?;
                 Ok((c.thrust_table(&dt), Some(dt)))
             }
-            Tables::Formula { carry: c, a8, p0, p0_d } => {
-                let dt = ct::try_design_table(ft, c, lo, hi).map_err(|f| ct::row_words(what, c, lo, hi, &f))?;
-                let t = formula_table(c, &dt, *a8, *p0, *p0_d);
+            Tables::Formula { carry: c, a8, p0, p0_d, choked } => {
+                let (dt, rows) = ct::try_design_table_rows(ft, c, lo, hi).map_err(|f| ct::row_words(what, c, lo, hi, &f))?;
+                let mut t = formula_table(c, &dt, *a8, *p0, *p0_d);
                 check_rise(&t.rows).map_err(|m| format!("The control's thrust table, recomputed for this flight speed: {m}"))?;
+                // RUNG 100: the formula read AT the reading — the jet's push from the pressure ratio, or the LP shaft
+                // rebalanced against this flight's air for the fan speed. Rung 99's column stays as the rows.
+                if !choked {
+                    t.formula = Some(uf::Formula::new(ft, c, &t, &rows, *p0, r)?);
+                }
                 Ok((t, Some(dt)))
             }
             Tables::Grid { a, b, w } => {
@@ -149,7 +174,7 @@ impl Tables {
                 let Some(b) = b else { return Ok((ta, None)) };
                 let t = blend_thrust(&ta, &one(b)?, *w, r);
                 check_rise(&t.rows).map_err(|m| format!("The control's thrust table, blended between Mach {} and {}: {m}",
-                                                        GRID[a.j], GRID[b.j]))?;
+                                                        a.m, b.m))?;
                 Ok((t, None))
             }
         }
@@ -193,14 +218,14 @@ impl Tables {
         let Tables::Grid { a, b, .. } = self else { unreachable!("slice words are the grid's") };
         let d = &s.carry.design;
         let made = match b {
-            Some(b) => format!("Mach {} and {}", GRID[a.j], GRID[b.j]),
-            None => format!("Mach {}", GRID[a.j]),
+            Some(b) => format!("Mach {} and {}", a.m, b.m),
+            None => format!("Mach {}", a.m),
         };
         let at = if f.tt4.is_finite() { format!(", and at {:.0} K the engine has no steady point there", f.tt4) } else { String::new() };
         format!("The control's {what} is made at {made} in the design altitude's air ({:.0} K, {:.0} kPa). At Mach {} this \
                  run's throttles are {:.0}–{:.0} K{at}: tables made there cannot cover this flight. Make the tables at this \
                  flight instead. (The model says: {})",
-                d.t0, d.p0 / 1000.0, GRID[s.j], lo.min(hi) * s.carry.k, lo.max(hi) * s.carry.k, f.message)
+                d.t0, d.p0 / 1000.0, s.m, lo.min(hi) * s.carry.k, lo.max(hi) * s.carry.k, f.message)
     }
 
     /// The pressure-ratio control's gap split under the formula (anchor § 1): the AIRFLOW GUESS `V0·(ṁ̂ − ṁ_face)`,
@@ -248,7 +273,7 @@ pub fn blend_thrust(ta: &Table, tb: &Table, w: f64, r: Reading) -> Table {
         face: mix(v, |q| q.face),
     }).collect();
     rows.sort_by(|a, b| a.thrust.total_cmp(&b.thrust));
-    Table { rows, pt2: ta.pt2, v0: ta.v0 }
+    Table { rows, pt2: ta.pt2, v0: ta.v0, formula: None }
 }
 
 /// Linear between rows rising in `x`, the END VALUES held beyond — rung 95's `steady_fuel` and rung 48's `cap`.

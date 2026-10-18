@@ -17,12 +17,14 @@ use turbojet::sandbox_controls::{build, controls, ControlsSettings, CustomerMode
 const FLOW_PRESS: usize = 0;
 const FLAT_LP: usize = 3;
 
+/// Rung 99 as it shipped: rung 100's two reduce settings (its grid without the slow slices, its formula column).
+fn r99() -> ControlsSettings { ControlsSettings { low_grid: false, formula_choked: true, ..ControlsSettings::defaults() } }
 fn gov(by: ThrustBy) -> ControlsSettings {
-    ControlsSettings { govern: true, hold: Hold::Thrust, thrust_by: by, ..ControlsSettings::defaults() }
+    ControlsSettings { govern: true, hold: Hold::Thrust, thrust_by: by, ..r99() }
 }
-fn accel() -> ControlsSettings { ControlsSettings { accel_on: true, ..ControlsSettings::defaults() } }
+fn accel() -> ControlsSettings { ControlsSettings { accel_on: true, ..r99() } }
 fn prop() -> ControlsSettings {
-    ControlsSettings { govern: true, hold: Hold::HpSpeed, speed_law: SpeedLaw::Prop, ..ControlsSettings::defaults() }
+    ControlsSettings { govern: true, hold: Hold::HpSpeed, speed_law: SpeedLaw::Prop, ..r99() }
 }
 fn at(s: ControlsSettings, t0: f64, p0: f64, m0: f64) -> ControlsSettings { ControlsSettings { t0, p0, m0, ..s } }
 /// The design altitude's air at Mach `m`.
@@ -48,19 +50,19 @@ fn the_grid_is_on_by_default_and_its_design_slice_is_the_design_flight() {
     let d = ControlsSettings::defaults();
     assert_eq!(d.speed_corr, SpeedCorr::Grid);
     let fd = d.design_flight();
-    assert_eq!(ma::GRID[ma::DESIGN_SLICE], fd.m0);
-    let s = ma::slice_flight(&fd, ma::DESIGN_SLICE);
+    assert!(ma::GRID99.contains(&ma::DESIGN_MACH) && ma::GRID.contains(&ma::DESIGN_MACH) && ma::DESIGN_MACH == fd.m0);
+    let s = ma::slice_flight(&fd, ma::DESIGN_MACH);
     assert!(s.t0 == fd.t0 && s.p0 == fd.p0 && s.m0 == fd.m0);
 }
 
 #[test]
 fn a_flight_reads_the_two_slices_around_it_and_the_end_pair_outside() {
-    assert_eq!(ma::bracket(1.2), (3, None, 0.0));
-    let (a, b, w) = ma::bracket(0.5);
+    assert_eq!(ma::bracket(&ma::GRID99, 1.2), (3, None, 0.0));
+    let (a, b, w) = ma::bracket(&ma::GRID99, 0.5);
     assert!(a == 0 && b == Some(1) && (w - 2.0 / 3.0).abs() < 1e-15);
-    let (a, b, w) = ma::bracket(0.15);
+    let (a, b, w) = ma::bracket(&ma::GRID99, 0.15);
     assert!(a == 0 && b == Some(1) && (w + 0.5).abs() < 1e-15, "below the grid: the 0.3/0.6 line carried on");
-    let (a, b, w) = ma::bracket(3.2);
+    let (a, b, w) = ma::bracket(&ma::GRID99, 3.2);
     assert!(a == 6 && b == Some(7) && (w - 1.4).abs() < 1e-12, "above the grid: the 2.5/3.0 line carried on");
 }
 
@@ -80,10 +82,11 @@ fn at_mach_0_85_in_any_air_the_grid_is_rung98_bit_for_bit() {
 #[test]
 fn at_a_slices_own_flight_the_grid_is_a_table_made_there_bit_for_bit() {
     for j in [0, 1, 3, 4, 5, 6, 7] {
+        let m = ma::GRID99[j];
         // The proportional law at gain 5: rammed-dense air lowers the page's step-checked gain limit (plan § 27).
         for base in [gov(ThrustBy::Epr), accel(), ControlsSettings { gov_gain: 5.0, ..prop() }] {
-            let s = air(base, ma::GRID[j]);
-            let sv = build(&s).unwrap_or_else(|e| panic!("Mach {}: {}", ma::GRID[j], e.0));
+            let s = air(base, m);
+            let sv = build(&s).unwrap_or_else(|e| panic!("Mach {m}: {}", e.0));
             assert!(sv.tables.is_none() && sv.carry.is_none(), "nothing carried at a slice's own flight");
             assert_eq!(run_bits(&s), run_bits(&ControlsSettings { table_at: TableAt::Flight, ..s }));
         }
@@ -109,18 +112,18 @@ fn the_pressure_correction_reproduces_each_slice_built_at_a_pressure_only_flight
     // At each slice's Mach in 250 K air at 35 kPa (theta_j = 1 exactly), the carried slice against the tables rungs
     // 96/48/95 build AT the flight by their own solves. Bar 1e-9 (anchor § 2, rung 98's).
     let mut worst = 0.0f64;
-    for j in 0..ma::GRID.len() {
-        for v in [ControlsSettings::defaults(), ControlsSettings { customer: CustomerMode::Share, ..ControlsSettings::defaults() },
-                  ControlsSettings { cool_vane: 0.05, cool_blade: 0.05, ..ControlsSettings::defaults() },
-                  ControlsSettings { lever: LeverChoice::Bleed, ..ControlsSettings::defaults() }] {
+    for &m in &ma::GRID99 {
+        for v in [r99(), ControlsSettings { customer: CustomerMode::Share, ..r99() },
+                  ControlsSettings { cool_vane: 0.05, cool_blade: 0.05, ..r99() },
+                  ControlsSettings { lever: LeverChoice::Bleed, ..r99() }] {
             for base in [gov(ThrustBy::Epr), ControlsSettings { accel_on: true, gov_gain: 5.0, ..prop() }] {
                 let s = at(ControlsSettings { govern: base.govern, hold: base.hold, thrust_by: base.thrust_by,
                                               speed_law: base.speed_law, accel_on: base.accel_on, gov_gain: base.gov_gain, ..v },
-                           250.0, 35_000.0, ma::GRID[j]);
+                           250.0, 35_000.0, m);
                 let (d, f) = (build(&s).unwrap(), build(&ControlsSettings { table_at: TableAt::Flight, ..s }).unwrap());
                 match d.tables.expect("carried") {
-                    Tables::Design(c) => assert!(j == ma::DESIGN_SLICE && c.theta == 1.0),
-                    Tables::Grid { a, b, .. } => assert!(a.j == j && b.is_none() && a.carry.theta == 1.0 && a.carry.k == 1.0),
+                    Tables::Design(c) => assert!(m == ma::DESIGN_MACH && c.theta == 1.0),
+                    Tables::Grid { a, b, .. } => assert!(a.m == m && b.is_none() && a.carry.theta == 1.0 && a.carry.k == 1.0),
                     Tables::Formula { .. } => unreachable!(),
                 }
                 let (gd, gf) = (d.governor.as_ref().unwrap(), f.governor.as_ref().unwrap());

@@ -1,0 +1,24 @@
+flow/press M0.05 700 Epr choked_col true : miss start -1.3753% end -0.0033% | build 0.122s run 0.488s pts 126 | worst |rest| 1.60e0
+flow/press M0.05 700 Epr choked_col false: miss start +0.0542% end -0.0033% | build 0.144s run 0.312s pts 126 | worst |rest| 1.23e-12
+flow/press M0.05 700 N1 choked_col true : miss start +4.9609% end -0.1783% | build 0.054s run 0.273s pts 126 | worst |rest| 0.00e0
+flow/press M0.05 700 N1 choked_col false: miss start -2.3563% end -0.1783% | build 0.051s run 0.307s pts 126 | worst |rest| 0.00e0
+flow/press M0.5  700 Epr choked_col true : miss start -0.0653% end -0.0243% | build 0.056s run 0.278s pts 126 | worst |rest| 5.64e-2
+flow/press M0.5  700 Epr choked_col false: miss start -0.0016% end -0.0243% | build 0.051s run 0.362s pts 126 | worst |rest| 2.72e-12
+flow/press M0.5  700 N1 choked_col true : miss start +0.2338% end -0.1353% | build 0.082s run 0.582s pts 126 | worst |rest| 0.00e0
+flow/press M0.5  700 N1 choked_col false: miss start -0.1733% end -0.1353% | build 0.057s run 0.309s pts 126 | worst |rest| 0.00e0
+flow/press M1.4  700 Epr choked_col true : miss start +0.0900% end +0.1828% | build 0.050s run 0.226s pts 126 | worst |rest| 1.28e0
+flow/press M1.4  700 Epr choked_col false: miss start -1.6730% end +0.1828% | build 0.053s run 0.205s pts 126 | worst |rest| 2.18e-12
+flow/press M1.4  700 N1 choked_col true : miss start -6.5671% end +0.3734% | build 0.046s run 0.218s pts 126 | worst |rest| 0.00e0
+flow/press M1.4  700 N1 choked_col false: miss start -4.6612% end +0.3734% | build 0.048s run 0.231s pts 126 | worst |rest| 0.00e0
+flat-lp    M0.05 700 Epr choked_col true : miss start -1.0309% end -0.0033% | build 0.100s run 0.601s pts 126 | worst |rest| 1.24e0
+flat-lp    M0.05 700 Epr choked_col false: miss start +0.0405% end -0.0033% | build 0.099s run 0.353s pts 126 | worst |rest| 4.99e-12
+flat-lp    M0.05 700 N1 choked_col true : miss start +4.4103% end -0.0387% | build 0.097s run 0.447s pts 126 | worst |rest| 0.00e0
+flat-lp    M0.05 700 N1 choked_col false: miss start -0.9771% end -0.0387% | build 0.111s run 0.453s pts 126 | worst |rest| 0.00e0
+flat-lp    M0.5  700 Epr choked_col true : miss start -0.0306% end -0.0243% | build 0.101s run 0.511s pts 126 | worst |rest| 6.48e-3
+flat-lp    M0.5  700 Epr choked_col false: miss start -0.0235% end -0.0243% | build 0.107s run 0.651s pts 126 | worst |rest| 2.86e-12
+flat-lp    M0.5  700 N1 choked_col true : miss start +0.0339% end -0.0475% | build 0.099s run 0.326s pts 126 | worst |rest| 0.00e0
+flat-lp    M0.5  700 N1 choked_col false: miss start -0.0129% end -0.0475% | build 0.094s run 0.519s pts 126 | worst |rest| 0.00e0
+flat-lp    M1.4  1000 Epr choked_col true : miss start +0.1805% end +0.1789% | build 0.066s run 0.216s pts 126 | worst |rest| 1.56e-12
+flat-lp    M1.4  1000 Epr choked_col false: miss start +0.1805% end +0.1789% | build 0.069s run 0.224s pts 126 | worst |rest| 2.08e-12
+flat-lp    M1.4  1000 N1 choked_col true : miss start +0.1528% end +0.2044% | build 0.069s run 0.215s pts 126 | worst |rest| 0.00e0
+flat-lp    M1.4  1000 N1 choked_col false: miss start +0.1528% end +0.2044% | build 0.070s run 0.278s pts 126 | worst |rest| 0.00e0

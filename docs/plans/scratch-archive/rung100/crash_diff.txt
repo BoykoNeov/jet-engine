@@ -1,0 +1,13 @@
+239	ran to the end	ran to the end
+241	ran to the end	ran to the end
+282	ran to the end	ran to the end
+367	ran to the end	ran to the end
+498	ran to the end	ran to the end
+646	refused: [M 1.0-1.5] design-flight table	refused: [M 1.0-1.5] design-flight table
+855	ran to the end	ran to the end
+938	ran to the end	ran to the end
+965	ran to the end	ran to the end
+1107	ran to the end	ran to the end
+1208	ran to the end	ran to the end
+1355	refused: [M 0.0-0.5] design altitude's air	refused: [M 0.0-0.5] design altitude's air
+1467	ran to the end	ran to the end

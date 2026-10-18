@@ -1770,3 +1770,31 @@ grid; or the thrust table's thrust recomputed for the flight speed; or neither (
   grid (the tables named, the low end a little over) and flips to the formula (the rest nothing). `check.mjs` and
   `browser.mjs` compare the gap's two parts ABSOLUTELY (the rest is zero in algebra, rounding in arithmetic; worst
   1.9e-12, bar 1e-10 N per kg/s); the page reads "nothing" off the nozzle's choke flags, not off a rounded zero.
+
+## 32. Below choke — rung 100 (2026-10-18) — not a slice
+
+Rung 99's seam, scoped by the user on measured probes (memory `rung100-decisions`): the formula's jet push worked out
+from the pressure ratio (exact choked or not); the fan-speed formula B (the LP shaft rebalanced against the flight's
+air on the table's own rows — the user's first approximation measured weak, they asked why, then asked for a slow
+grid table); two slow slices, Mach 0.05 and 0.15, in the speed grid. Anchor `4b5c769`; spec `docs/rung100-spec.md`;
+scratch `scratch-archive/rung100/`.
+
+- **Built** in `sandbox_controls` on `unchoked_formula.rs` and `mach_axis.rs`: two hidden reduce keys, `low_grid`
+  (default on) and `formula_choked` (default off), written to a reply only off their defaults, so every default reply
+  keeps rung 99's shape. The toggle reads *ten speeds*; the note says why the slow tables matter (an unchoked engine
+  leaves a choked table's line) and what each formula now knows. Under the formula on the pressure ratio the gap's
+  rest reads "nothing" off the number itself (≤ 1e−9 N per kg/s; it is zero at every point, choked or not); under the
+  fan-speed formula `tables.speed.fan_rows` names the table row it settles on at each end, beside the engine's own
+  burner temperature, and the results row says so.
+- **What the new defaults moved:** 3 of 91 check requests (rung 99's Mach-1.4 and Mach-0.05 formula requests, its
+  Mach-0.15 fan-speed grid request), pinned to the reduce keys. Crash map (seed 99, 1 500) against a clean worktree of
+  `f041d2d`: no panic; 13 differ, all in the two predicted classes (grid below Mach 0.3 with a carried table; formula
+  with an inferred thrust), none changing outcome class.
+- `check_requests` adds 9 (the slow slices at Mach 0.1 from 700 K, both readings and the schedule; the pressure-ratio
+  formula at Mach 0.05 from 700 K, at Mach 1.4, and at Mach 1.4 from 700 K; the fan-speed formula at Mach 0.05 from
+  700 K and at Mach 1.4; its refusal at sea level from 600 K). `browser.mjs` runs both formulas at Mach 0.05 from 700 K
+  on the page (the rest "nothing" with unchoked points; the rows named). Two bars moved, each measured: `check.mjs`'s
+  Controls relative bar 1e−11 → 1e−10 (worst 1.36e−11 at the new schedule request's unchoked STEADY START, which reads
+  no table — the two builds stop the closure on different iterates below choke); `browser.mjs` now compares
+  `settled_lp`/`settled_hp` absolutely at 1e−11, as `check.mjs` always did (a 7.8e−10 gap 4e−16 apart read 6e−7
+  "relative").

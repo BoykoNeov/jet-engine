@@ -1,0 +1,13 @@
+B formula-inferred	239	ran to the end	ran to the end
+B formula-inferred	241	ran to the end	ran to the end
+B formula-inferred	282	ran to the end	ran to the end
+B formula-inferred	367	ran to the end	ran to the end
+A grid<0.3	498	ran to the end	ran to the end
+B formula-inferred	646	refused: [M 1.0-1.5] design-flight table	refused: [M 1.0-1.5] design-flight table
+B formula-inferred	855	ran to the end	ran to the end
+A grid<0.3	938	ran to the end	ran to the end
+B formula-inferred	965	ran to the end	ran to the end
+B formula-inferred	1107	ran to the end	ran to the end
+A grid<0.3	1208	ran to the end	ran to the end
+A grid<0.3	1355	refused: [M 0.0-0.5] design altitude's air	refused: [M 0.0-0.5] design altitude's air
+B formula-inferred	1467	ran to the end	ran to the end

@@ -28,8 +28,9 @@ pub fn mach_axis_table(p: &mut Printer, _d: &Design) {
     p.print("gives at the 1000 K / 1400 K ends over what the throttle asks, %, pressure ratio read, on the map curved along");
     p.print("flow at LP, along pressure at HP, flown in 250 K, 50 kPa air:");
     p.print(format!("\n  {:<10}{:>16}{:>16}{:>16}", "Mach", "not corrected", "speed grid", "recomputed"));
+    // Rung 99 as it shipped: rung 100's reduce settings (no slow slices, rung 99's formula column).
     let d = ControlsSettings { govern: true, hold: Hold::Thrust, thrust_by: ThrustBy::Epr, t0: 250.0, p0: 50_000.0,
-                               ..ControlsSettings::defaults() };
+                               low_grid: false, formula_choked: true, ..ControlsSettings::defaults() };
     for m0 in [0.15, 0.5, 1.4] {
         let mut row = format!("  {m0:<10}");
         for c in [SpeedCorr::None, SpeedCorr::Grid, SpeedCorr::Formula] {

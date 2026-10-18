@@ -15,3 +15,16 @@ Before the anchor (`docs/plans/rung100-anchor-unchoked-formula.md` § 0):
 - `reach.rs` (rung 99's, `GRID=0.05,0.15,0.3,…,3.0`) → `reach_low.txt` — G7.
 - `eprguess.rs` → `eprguess.txt` — G8: the exact pressure-ratio push's leftover (the airflow guess) at unscored flights.
 - `bars.rs` → `bars.txt` — G2's absolute worst; G9 (B vs rung 99 where choked).
+
+After the build (the SHIPPED code; `crash99.rs` / `census.rs` are rung 99's, unchanged, built also against a clean
+worktree of `f041d2d` at `W:\temp\claude\rung100-base`, deleted):
+- `score.rs` → `score.txt` — § 3 scored: 242 HIT, 35 MISS, 40 VACUOUS of 317, each miss printed.
+- `smoke.rs` → `smoke.txt` — first runs of both formulas (new vs `formula_choked`), timing, the push gate's rest.
+- `h4why.rs` → `h4why.txt` — H4's miss split: the rest ~1e−13, the airflow guess the whole −1.7 %; Mach 1.2 / 1.6.
+- `genlp.rs` → `genlp.txt` — H1's 28 misses: the LP generator's fan-speed miss with tables made at this flight and at
+  the design flight (rung 96's clean table), not the speed axis.
+- `findref.rs` → `findref.txt` — the fan-speed formula's refusals (4 of 72 low-throttle sea-level requests).
+- `cost.rs` → `cost.txt` — rung 100 against its reduce settings, best of 9.
+- `census.rs` → `census_new.txt` / `census_base.txt` — the 91 check requests on both builds: 3 moved (85, 86, 87).
+- `crash99.rs` (seed 99, 1 500) → `crash_diff.txt` (13 differing) and `crash_classified.txt` (each in class A, grid
+  below Mach 0.3, or B, formula with an inferred thrust; none OUTSIDE).

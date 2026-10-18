@@ -139,6 +139,15 @@ impl Governor {
         }
     }
 
+    /// [`Governor::demand`] through RUNG 100's formula when the table carries one (`ft` the machine its fan-speed
+    /// formula re-solves) — every call inside a run goes through here.
+    pub fn try_demand(&self, ft: &FuelTransientCore, s: f64) -> Result<f64, Abort> {
+        match (&self.infer, self.law.reading()) {
+            (Some(t), Some(r)) => t.try_reading_at(ft, r, self.thrust_demand(s)),
+            _ => Ok(self.demand(s)),
+        }
+    }
+
     /// RUNG 96: the thrust the throttle asks for at `s` — rung 95's straight line between the ends' targets.
     pub fn thrust_demand(&self, s: f64) -> f64 { self.lo + (self.hi - self.lo) * self.weight(s) }
 
@@ -301,7 +310,7 @@ pub fn try_governor_fuel(
         _ => None,
     };
     if let Some((gain, nu, table)) = prop {
-        let nd = gov.demand(s);
+        let nd = gov.try_demand(ft, s)?;
         let w = match table { None => gov.steady_fuel(nd), Some(t) => t.fuel_at_speed(nd) };
         let mf = w * (1.0 + gain * (nd - nu));
         if mf > 0.0 && ft.try_instant_fuel(flight, a, b, mf).is_ok() {
@@ -329,9 +338,9 @@ pub fn try_governor_fuel(
         });
     }
     let target = match gov.law {
-        Law::SpeedRate { tau } => (gov.demand(s) - b) / tau,
-        Law::LpRate { tau } => (gov.demand(s) - a) / tau,
-        _ => gov.demand(s),
+        Law::SpeedRate { tau } => (gov.try_demand(ft, s)? - b) / tau,
+        Law::LpRate { tau } => (gov.try_demand(ft, s)? - a) / tau,
+        _ => gov.try_demand(ft, s)?,
     };
     let r = |mf: f64| ft.try_instant_fuel(flight, a, b, mf).map(|i| held_by(gov, ft, &i.base) - target);
     root_or_clamp(ft, flight, a, b, x0, &r)

@@ -1,0 +1,315 @@
+  h1 318.1K 101325Pa M0.08 750 plain flow/press Epr: new -0.3701 r99 +11.0956
+  h1 318.1K 101325Pa M0.08 750 plain flow/press N1: new -0.0349 r99 -24.4009
+  h1 318.1K 101325Pa M0.08 750 plain press/flow Epr: new -0.3737 r99 +11.1368
+  h1 318.1K 101325Pa M0.08 750 plain press/flow N1: new -0.0314 r99 -23.6764
+  h1 318.1K 101325Pa M0.08 750 plain tilted Epr: new -0.3757 r99 +11.1900
+  h1 318.1K 101325Pa M0.08 750 plain tilted N1: new -0.0310 r99 -24.6581
+  VACUOUS H1 318.1K 101325Pa M0.08 750 plain flat-lp Epr: own end: At the starting throttle (750 K): the engine has no steady operating point: the 
+  VACUOUS H1 318.1K 101325Pa M0.08 750 plain flat-lp N1: own end: At the starting throttle (750 K): the engine has no steady operating point: the 
+  h1 318.1K 101325Pa M0.08 750 genLP flow/press Epr: new -0.3228 r99 +11.1502
+  MISS H1 318.1K 101325Pa M0.08 750 genLP flow/press N1: new +2.8542% rung99 -23.0397%
+  h1 318.1K 101325Pa M0.08 750 genLP flow/press N1: new +2.8542 r99 -23.0397
+  h1 318.1K 101325Pa M0.08 750 genLP press/flow Epr: new -0.3245 r99 +11.1944
+  MISS H1 318.1K 101325Pa M0.08 750 genLP press/flow N1: new +2.7239% rung99 -22.3399%
+  h1 318.1K 101325Pa M0.08 750 genLP press/flow N1: new +2.7239 r99 -22.3399
+  h1 318.1K 101325Pa M0.08 750 genLP tilted Epr: new -0.3284 r99 +11.2451
+  MISS H1 318.1K 101325Pa M0.08 750 genLP tilted N1: new +2.7817% rung99 -23.3613%
+  h1 318.1K 101325Pa M0.08 750 genLP tilted N1: new +2.7817 r99 -23.3613
+  VACUOUS H1 318.1K 101325Pa M0.08 750 genLP flat-lp Epr: own end: At the starting throttle (750 K): with the generator off this throttle has no st
+  VACUOUS H1 318.1K 101325Pa M0.08 750 genLP flat-lp N1: own end: At the starting throttle (750 K): with the generator off this throttle has no st
+  h1 318.1K 101325Pa M0.08 750 bleed flow/press Epr: new -0.4014 r99 +11.7001
+  h1 318.1K 101325Pa M0.08 750 bleed flow/press N1: new -0.0216 r99 -22.7844
+  h1 318.1K 101325Pa M0.08 750 bleed press/flow Epr: new -0.4099 r99 +11.7959
+  h1 318.1K 101325Pa M0.08 750 bleed press/flow N1: new -0.0118 r99 -22.1583
+  h1 318.1K 101325Pa M0.08 750 bleed tilted Epr: new -0.4070 r99 +11.7811
+  h1 318.1K 101325Pa M0.08 750 bleed tilted N1: new -0.0146 r99 -22.6364
+  VACUOUS H1 318.1K 101325Pa M0.08 750 bleed flat-lp Epr: own end: At the starting throttle (750 K): the engine has no steady operating point: the 
+  VACUOUS H1 318.1K 101325Pa M0.08 750 bleed flat-lp N1: own end: At the starting throttle (750 K): the engine has no steady operating point: the 
+  h1 318.1K 101325Pa M0.08 800 plain flow/press Epr: new -0.2623 r99 +8.7759
+  h1 318.1K 101325Pa M0.08 800 plain flow/press N1: new -0.0472 r99 -9.0798
+  h1 318.1K 101325Pa M0.08 800 plain press/flow Epr: new -0.2616 r99 +8.7733
+  h1 318.1K 101325Pa M0.08 800 plain press/flow N1: new -0.0394 r99 -6.8351
+  h1 318.1K 101325Pa M0.08 800 plain tilted Epr: new -0.2653 r99 +8.8407
+  h1 318.1K 101325Pa M0.08 800 plain tilted N1: new -0.0446 r99 -9.2655
+  VACUOUS H1 318.1K 101325Pa M0.08 800 plain flat-lp Epr: own end: At the starting throttle (800 K): the engine has no steady operating point: the 
+  VACUOUS H1 318.1K 101325Pa M0.08 800 plain flat-lp N1: own end: At the starting throttle (800 K): the engine has no steady operating point: the 
+  h1 318.1K 101325Pa M0.08 800 genLP flow/press Epr: new -0.2124 r99 +8.8300
+  MISS H1 318.1K 101325Pa M0.08 800 genLP flow/press N1: new +3.9177% rung99 -5.8293%
+  h1 318.1K 101325Pa M0.08 800 genLP flow/press N1: new +3.9177 r99 -5.8293
+  h1 318.1K 101325Pa M0.08 800 genLP press/flow Epr: new -0.2084 r99 +8.8311
+  MISS H1 318.1K 101325Pa M0.08 800 genLP press/flow N1: new +3.7412% rung99 -3.5593%
+  h1 318.1K 101325Pa M0.08 800 genLP press/flow N1: new +3.7412 r99 -3.5593
+  h1 318.1K 101325Pa M0.08 800 genLP tilted Epr: new -0.2146 r99 +8.8959
+  MISS H1 318.1K 101325Pa M0.08 800 genLP tilted N1: new +3.8266% rung99 -6.1027%
+  h1 318.1K 101325Pa M0.08 800 genLP tilted N1: new +3.8266 r99 -6.1027
+  VACUOUS H1 318.1K 101325Pa M0.08 800 genLP flat-lp Epr: own end: At the starting throttle (800 K): with the generator off this throttle has no st
+  VACUOUS H1 318.1K 101325Pa M0.08 800 genLP flat-lp N1: own end: At the starting throttle (800 K): with the generator off this throttle has no st
+  h1 318.1K 101325Pa M0.08 800 bleed flow/press Epr: new -0.2897 r99 +9.4242
+  h1 318.1K 101325Pa M0.08 800 bleed flow/press N1: new -0.0326 r99 -13.2705
+  h1 318.1K 101325Pa M0.08 800 bleed press/flow Epr: new -0.2939 r99 +9.5043
+  h1 318.1K 101325Pa M0.08 800 bleed press/flow N1: new -0.0220 r99 -11.7052
+  h1 318.1K 101325Pa M0.08 800 bleed tilted Epr: new -0.2936 r99 +9.4990
+  h1 318.1K 101325Pa M0.08 800 bleed tilted N1: new -0.0276 r99 -13.0201
+  VACUOUS H1 318.1K 101325Pa M0.08 800 bleed flat-lp Epr: own end: At the starting throttle (800 K): the engine has no steady operating point: the 
+  VACUOUS H1 318.1K 101325Pa M0.08 800 bleed flat-lp N1: own end: At the starting throttle (800 K): the engine has no steady operating point: the 
+  h1 318.1K 101325Pa M0.22 750 plain flow/press Epr: new -0.8242 r99 +2.7822
+  h1 318.1K 101325Pa M0.22 750 plain flow/press N1: new +0.2957 r99 -4.9452
+  h1 318.1K 101325Pa M0.22 750 plain press/flow Epr: new -0.8239 r99 +2.7697
+  h1 318.1K 101325Pa M0.22 750 plain press/flow N1: new +0.3155 r99 -4.8214
+  h1 318.1K 101325Pa M0.22 750 plain tilted Epr: new -0.8325 r99 +2.7969
+  h1 318.1K 101325Pa M0.22 750 plain tilted N1: new +0.3119 r99 -5.0339
+  VACUOUS H1 318.1K 101325Pa M0.22 750 plain flat-lp Epr: own end: At the starting throttle (750 K): the engine has no steady operating point: the 
+  VACUOUS H1 318.1K 101325Pa M0.22 750 plain flat-lp N1: own end: At the starting throttle (750 K): the engine has no steady operating point: the 
+  h1 318.1K 101325Pa M0.22 750 genLP flow/press Epr: new -0.6615 r99 +2.9517
+  MISS H1 318.1K 101325Pa M0.22 750 genLP flow/press N1: new +3.9787% rung99 -1.6391%
+  h1 318.1K 101325Pa M0.22 750 genLP flow/press N1: new +3.9787 r99 -1.6391
+  h1 318.1K 101325Pa M0.22 750 genLP press/flow Epr: new -0.6530 r99 +2.9482
+  MISS H1 318.1K 101325Pa M0.22 750 genLP press/flow N1: new +3.8511% rung99 -1.6359%
+  h1 318.1K 101325Pa M0.22 750 genLP press/flow N1: new +3.8511 r99 -1.6359
+  h1 318.1K 101325Pa M0.22 750 genLP tilted Epr: new -0.6688 r99 +2.9676
+  MISS H1 318.1K 101325Pa M0.22 750 genLP tilted N1: new +3.9123% rung99 -1.8098%
+  h1 318.1K 101325Pa M0.22 750 genLP tilted N1: new +3.9123 r99 -1.8098
+  VACUOUS H1 318.1K 101325Pa M0.22 750 genLP flat-lp Epr: own end: At the starting throttle (750 K): with the generator off this throttle has no st
+  VACUOUS H1 318.1K 101325Pa M0.22 750 genLP flat-lp N1: own end: At the starting throttle (750 K): with the generator off this throttle has no st
+  h1 318.1K 101325Pa M0.22 750 bleed flow/press Epr: new -0.8913 r99 +2.9860
+  h1 318.1K 101325Pa M0.22 750 bleed flow/press N1: new +0.3163 r99 -5.0200
+  h1 318.1K 101325Pa M0.22 750 bleed press/flow Epr: new -0.9011 r99 +2.9887
+  h1 318.1K 101325Pa M0.22 750 bleed press/flow N1: new +0.3379 r99 -4.9295
+  h1 318.1K 101325Pa M0.22 750 bleed tilted Epr: new -0.9007 r99 +3.0003
+  h1 318.1K 101325Pa M0.22 750 bleed tilted N1: new +0.3271 r99 -5.0178
+  VACUOUS H1 318.1K 101325Pa M0.22 750 bleed flat-lp Epr: own end: At the starting throttle (750 K): the engine has no steady operating point: the 
+  VACUOUS H1 318.1K 101325Pa M0.22 750 bleed flat-lp N1: own end: At the starting throttle (750 K): the engine has no steady operating point: the 
+  h1 318.1K 101325Pa M0.22 800 plain flow/press Epr: new -0.6187 r99 +2.2601
+  h1 318.1K 101325Pa M0.22 800 plain flow/press N1: new +0.0840 r99 -1.6404
+  h1 318.1K 101325Pa M0.22 800 plain press/flow Epr: new -0.6144 r99 +2.2489
+  h1 318.1K 101325Pa M0.22 800 plain press/flow N1: new +0.0863 r99 -1.2100
+  h1 318.1K 101325Pa M0.22 800 plain tilted Epr: new -0.6234 r99 +2.2716
+  h1 318.1K 101325Pa M0.22 800 plain tilted N1: new +0.0920 r99 -1.6769
+  VACUOUS H1 318.1K 101325Pa M0.22 800 plain flat-lp Epr: own end: At the starting throttle (800 K): the engine has no steady operating point: the 
+  VACUOUS H1 318.1K 101325Pa M0.22 800 plain flat-lp N1: own end: At the starting throttle (800 K): the engine has no steady operating point: the 
+  h1 318.1K 101325Pa M0.22 800 genLP flow/press Epr: new -0.4565 r99 +2.4261
+  MISS H1 318.1K 101325Pa M0.22 800 genLP flow/press N1: new +4.8517% rung99 +2.9741%
+  h1 318.1K 101325Pa M0.22 800 genLP flow/press N1: new +4.8517 r99 +2.9741
+  h1 318.1K 101325Pa M0.22 800 genLP press/flow Epr: new -0.4412 r99 +2.4264
+  MISS H1 318.1K 101325Pa M0.22 800 genLP press/flow N1: new +4.6411% rung99 +3.2379%
+  h1 318.1K 101325Pa M0.22 800 genLP press/flow N1: new +4.6411 r99 +3.2379
+  h1 318.1K 101325Pa M0.22 800 genLP tilted Epr: new -0.4581 r99 +2.4410
+  MISS H1 318.1K 101325Pa M0.22 800 genLP tilted N1: new +4.7556% rung99 +2.8343%
+  h1 318.1K 101325Pa M0.22 800 genLP tilted N1: new +4.7556 r99 +2.8343
+  VACUOUS H1 318.1K 101325Pa M0.22 800 genLP flat-lp Epr: own end: At the starting throttle (800 K): with the generator off this throttle has no st
+  VACUOUS H1 318.1K 101325Pa M0.22 800 genLP flat-lp N1: own end: At the starting throttle (800 K): with the generator off this throttle has no st
+  h1 318.1K 101325Pa M0.22 800 bleed flow/press Epr: new -0.6796 r99 +2.4725
+  h1 318.1K 101325Pa M0.22 800 bleed flow/press N1: new +0.1178 r99 -2.4001
+  h1 318.1K 101325Pa M0.22 800 bleed press/flow Epr: new -0.6842 r99 +2.4805
+  h1 318.1K 101325Pa M0.22 800 bleed press/flow N1: new +0.1284 r99 -2.1255
+  h1 318.1K 101325Pa M0.22 800 bleed tilted Epr: new -0.6860 r99 +2.4871
+  h1 318.1K 101325Pa M0.22 800 bleed tilted N1: new +0.1257 r99 -2.3633
+  VACUOUS H1 318.1K 101325Pa M0.22 800 bleed flat-lp Epr: own end: At the starting throttle (800 K): the engine has no steady operating point: the 
+  VACUOUS H1 318.1K 101325Pa M0.22 800 bleed flat-lp N1: own end: At the starting throttle (800 K): the engine has no steady operating point: the 
+  h1 268.7K 70121Pa M0.12 750 plain flow/press Epr: new -0.1753 r99 +5.0663
+  h1 268.7K 70121Pa M0.12 750 plain flow/press N1: new -0.0439 r99 +6.6003
+  h1 268.7K 70121Pa M0.12 750 plain press/flow Epr: new -0.1739 r99 +5.0495
+  h1 268.7K 70121Pa M0.12 750 plain press/flow N1: new -0.0425 r99 +6.5553
+  h1 268.7K 70121Pa M0.12 750 plain tilted Epr: new -0.1766 r99 +5.0782
+  h1 268.7K 70121Pa M0.12 750 plain tilted N1: new -0.0422 r99 +6.6240
+  h1 268.7K 70121Pa M0.12 750 plain flat-lp Epr: new -0.1669 r99 +4.9789
+  h1 268.7K 70121Pa M0.12 750 plain flat-lp N1: new -0.0610 r99 +6.4687
+  h1 268.7K 70121Pa M0.12 750 genLP flow/press Epr: new -0.1037 r99 +5.1401
+  MISS H1 268.7K 70121Pa M0.12 750 genLP flow/press N1: new +6.1897% rung99 +13.8410%
+  h1 268.7K 70121Pa M0.12 750 genLP flow/press N1: new +6.1897 r99 +13.8410
+  h1 268.7K 70121Pa M0.12 750 genLP press/flow Epr: new -0.0972 r99 +5.1285
+  MISS H1 268.7K 70121Pa M0.12 750 genLP press/flow N1: new +5.7631% rung99 +13.2361%
+  h1 268.7K 70121Pa M0.12 750 genLP press/flow N1: new +5.7631 r99 +13.2361
+  h1 268.7K 70121Pa M0.12 750 genLP tilted Epr: new -0.1031 r99 +5.1538
+  MISS H1 268.7K 70121Pa M0.12 750 genLP tilted N1: new +6.0071% rung99 +13.6277%
+  h1 268.7K 70121Pa M0.12 750 genLP tilted N1: new +6.0071 r99 +13.6277
+  h1 268.7K 70121Pa M0.12 750 genLP flat-lp Epr: new -0.0929 r99 +5.0548
+  MISS H1 268.7K 70121Pa M0.12 750 genLP flat-lp N1: new +7.6503% rung99 +15.6871%
+  h1 268.7K 70121Pa M0.12 750 genLP flat-lp N1: new +7.6503 r99 +15.6871
+  h1 268.7K 70121Pa M0.12 750 bleed flow/press Epr: new -0.1964 r99 +5.4158
+  h1 268.7K 70121Pa M0.12 750 bleed flow/press N1: new -0.0276 r99 +6.8679
+  h1 268.7K 70121Pa M0.12 750 bleed press/flow Epr: new -0.1980 r99 +5.4293
+  h1 268.7K 70121Pa M0.12 750 bleed press/flow N1: new -0.0247 r99 +6.8897
+  h1 268.7K 70121Pa M0.12 750 bleed tilted Epr: new -0.1984 r99 +5.4363
+  h1 268.7K 70121Pa M0.12 750 bleed tilted N1: new -0.0257 r99 +6.8535
+  h1 268.7K 70121Pa M0.12 750 bleed flat-lp Epr: new -0.1915 r99 +5.3611
+  h1 268.7K 70121Pa M0.12 750 bleed flat-lp N1: new -0.0367 r99 +6.9719
+  h1 268.7K 70121Pa M0.12 800 plain flow/press Epr: new -0.1283 r99 +4.5136
+  h1 268.7K 70121Pa M0.12 800 plain flow/press N1: new -0.1024 r99 +4.4268
+  h1 268.7K 70121Pa M0.12 800 plain press/flow Epr: new -0.1275 r99 +4.4951
+  h1 268.7K 70121Pa M0.12 800 plain press/flow N1: new -0.0935 r99 +4.4289
+  h1 268.7K 70121Pa M0.12 800 plain tilted Epr: new -0.1290 r99 +4.5278
+  h1 268.7K 70121Pa M0.12 800 plain tilted N1: new -0.0988 r99 +4.4571
+  h1 268.7K 70121Pa M0.12 800 plain flat-lp Epr: new -0.1236 r99 +4.4049
+  h1 268.7K 70121Pa M0.12 800 plain flat-lp N1: new -0.1410 r99 +4.2367
+  h1 268.7K 70121Pa M0.12 800 genLP flow/press Epr: new -0.0635 r99 +4.5796
+  MISS H1 268.7K 70121Pa M0.12 800 genLP flow/press N1: new +8.3071% rung99 +13.3724%
+  h1 268.7K 70121Pa M0.12 800 genLP flow/press N1: new +8.3071 r99 +13.3724
+  h1 268.7K 70121Pa M0.12 800 genLP press/flow Epr: new -0.0580 r99 +4.5658
+  MISS H1 268.7K 70121Pa M0.12 800 genLP press/flow N1: new +7.4915% rung99 +12.4434%
+  h1 268.7K 70121Pa M0.12 800 genLP press/flow N1: new +7.4915 r99 +12.4434
+  h1 268.7K 70121Pa M0.12 800 genLP tilted Epr: new -0.0624 r99 +4.5957
+  MISS H1 268.7K 70121Pa M0.12 800 genLP tilted N1: new +7.9916% rung99 +13.0999%
+  h1 268.7K 70121Pa M0.12 800 genLP tilted N1: new +7.9916 r99 +13.0999
+  h1 268.7K 70121Pa M0.12 800 genLP flat-lp Epr: new -0.0570 r99 +4.4725
+  MISS H1 268.7K 70121Pa M0.12 800 genLP flat-lp N1: new +10.7723% rung99 +15.5937%
+  h1 268.7K 70121Pa M0.12 800 genLP flat-lp N1: new +10.7723 r99 +15.5937
+  h1 268.7K 70121Pa M0.12 800 bleed flow/press Epr: new -0.1436 r99 +4.8347
+  h1 268.7K 70121Pa M0.12 800 bleed flow/press N1: new -0.0800 r99 +5.3509
+  h1 268.7K 70121Pa M0.12 800 bleed press/flow Epr: new -0.1444 r99 +4.8479
+  h1 268.7K 70121Pa M0.12 800 bleed press/flow N1: new -0.0715 r99 +5.3986
+  h1 268.7K 70121Pa M0.12 800 bleed tilted Epr: new -0.1448 r99 +4.8500
+  h1 268.7K 70121Pa M0.12 800 bleed tilted N1: new -0.0758 r99 +5.4277
+  h1 268.7K 70121Pa M0.12 800 bleed flat-lp Epr: new -0.1388 r99 +4.7677
+  h1 268.7K 70121Pa M0.12 800 bleed flat-lp N1: new -0.1143 r99 +5.0040
+  h1 268.7K 70121Pa M0.22 750 plain flow/press Epr: new -0.4292 r99 +1.7525
+  h1 268.7K 70121Pa M0.22 750 plain flow/press N1: new -0.1720 r99 +2.8655
+  h1 268.7K 70121Pa M0.22 750 plain press/flow Epr: new -0.4253 r99 +1.7476
+  h1 268.7K 70121Pa M0.22 750 plain press/flow N1: new -0.1903 r99 +2.8387
+  h1 268.7K 70121Pa M0.22 750 plain tilted Epr: new -0.4315 r99 +1.7545
+  h1 268.7K 70121Pa M0.22 750 plain tilted N1: new -0.1689 r99 +2.8722
+  h1 268.7K 70121Pa M0.22 750 plain flat-lp Epr: new -0.4110 r99 +1.7348
+  h1 268.7K 70121Pa M0.22 750 plain flat-lp N1: new -0.2041 r99 +2.8312
+  h1 268.7K 70121Pa M0.22 750 genLP flow/press Epr: new -0.2862 r99 +1.8972
+  MISS H1 268.7K 70121Pa M0.22 750 genLP flow/press N1: new +6.7713% rung99 +10.2873%
+  h1 268.7K 70121Pa M0.22 750 genLP flow/press N1: new +6.7713 r99 +10.2873
+  h1 268.7K 70121Pa M0.22 750 genLP press/flow Epr: new -0.2721 r99 +1.9027
+  MISS H1 268.7K 70121Pa M0.22 750 genLP press/flow N1: new +6.2679% rung99 +9.7151%
+  h1 268.7K 70121Pa M0.22 750 genLP press/flow N1: new +6.2679 r99 +9.7151
+  h1 268.7K 70121Pa M0.22 750 genLP tilted Epr: new -0.2847 r99 +1.9030
+  MISS H1 268.7K 70121Pa M0.22 750 genLP tilted N1: new +6.5681% rung99 +10.0620%
+  h1 268.7K 70121Pa M0.22 750 genLP tilted N1: new +6.5681 r99 +10.0620
+  h1 268.7K 70121Pa M0.22 750 genLP flat-lp Epr: new -0.2634 r99 +1.8839
+  MISS H1 268.7K 70121Pa M0.22 750 genLP flat-lp N1: new +8.4345% rung99 +12.1987%
+  h1 268.7K 70121Pa M0.22 750 genLP flat-lp N1: new +8.4345 r99 +12.1987
+  h1 268.7K 70121Pa M0.22 750 bleed flow/press Epr: new -0.4802 r99 +1.8845
+  h1 268.7K 70121Pa M0.22 750 bleed flow/press N1: new -0.1055 r99 +2.9459
+  h1 268.7K 70121Pa M0.22 750 bleed press/flow Epr: new -0.4823 r99 +1.8868
+  h1 268.7K 70121Pa M0.22 750 bleed press/flow N1: new -0.1146 r99 +2.9499
+  h1 268.7K 70121Pa M0.22 750 bleed tilted Epr: new -0.4840 r99 +1.8901
+  h1 268.7K 70121Pa M0.22 750 bleed tilted N1: new -0.1042 r99 +2.9316
+  h1 268.7K 70121Pa M0.22 750 bleed flat-lp Epr: new -0.4733 r99 +1.8651
+  h1 268.7K 70121Pa M0.22 750 bleed flat-lp N1: new -0.0768 r99 +3.0320
+  h1 268.7K 70121Pa M0.22 800 plain flow/press Epr: new -0.3288 r99 +1.6535
+  h1 268.7K 70121Pa M0.22 800 plain flow/press N1: new -0.4639 r99 +1.6344
+  h1 268.7K 70121Pa M0.22 800 plain press/flow Epr: new -0.3288 r99 +1.6473
+  h1 268.7K 70121Pa M0.22 800 plain press/flow N1: new -0.4362 r99 +1.6379
+  h1 268.7K 70121Pa M0.22 800 plain tilted Epr: new -0.3290 r99 +1.6578
+  h1 268.7K 70121Pa M0.22 800 plain tilted N1: new -0.4624 r99 +1.6540
+  h1 268.7K 70121Pa M0.22 800 plain flat-lp Epr: new -0.3335 r99 +1.6141
+  h1 268.7K 70121Pa M0.22 800 plain flat-lp N1: new -0.4311 r99 +1.5319
+  h1 268.7K 70121Pa M0.22 800 genLP flow/press Epr: new -0.2010 r99 +1.7822
+  MISS H1 268.7K 70121Pa M0.22 800 genLP flow/press N1: new +8.5746% rung99 +10.8736%
+  h1 268.7K 70121Pa M0.22 800 genLP flow/press N1: new +8.5746 r99 +10.8736
+  h1 268.7K 70121Pa M0.22 800 genLP press/flow Epr: new -0.1921 r99 +1.7850
+  MISS H1 268.7K 70121Pa M0.22 800 genLP press/flow N1: new +7.7114% rung99 +9.9389%
+  h1 268.7K 70121Pa M0.22 800 genLP press/flow N1: new +7.7114 r99 +9.9389
+  h1 268.7K 70121Pa M0.22 800 genLP tilted Epr: new -0.1979 r99 +1.7899
+  MISS H1 268.7K 70121Pa M0.22 800 genLP tilted N1: new +8.2628% rung99 +10.5896%
+  h1 268.7K 70121Pa M0.22 800 genLP tilted N1: new +8.2628 r99 +10.5896
+  h1 268.7K 70121Pa M0.22 800 genLP flat-lp Epr: new -0.2025 r99 +1.7459
+  MISS H1 268.7K 70121Pa M0.22 800 genLP flat-lp N1: new +11.0506% rung99 +13.1740%
+  h1 268.7K 70121Pa M0.22 800 genLP flat-lp N1: new +11.0506 r99 +13.1740
+  h1 268.7K 70121Pa M0.22 800 bleed flow/press Epr: new -0.3661 r99 +1.7504
+  h1 268.7K 70121Pa M0.22 800 bleed flow/press N1: new -0.4022 r99 +2.2383
+  h1 268.7K 70121Pa M0.22 800 bleed press/flow Epr: new -0.3678 r99 +1.7536
+  h1 268.7K 70121Pa M0.22 800 bleed press/flow N1: new -0.3841 r99 +2.2577
+  h1 268.7K 70121Pa M0.22 800 bleed tilted Epr: new -0.3688 r99 +1.7529
+  h1 268.7K 70121Pa M0.22 800 bleed tilted N1: new -0.3883 r99 +2.2789
+  h1 268.7K 70121Pa M0.22 800 bleed flat-lp Epr: new -0.3537 r99 +1.7368
+  h1 268.7K 70121Pa M0.22 800 bleed flat-lp N1: new -0.4921 r99 +2.0508
+H1: 140 HIT, 28 MISS, 24 VACUOUS
+H1 worst |new| 11.0506%
+  epr M0.05 plain flow/press: new +0.0542 r99 -1.3753
+  fan M0.05 plain flow/press: new -2.3563 r99 +4.9609 ratio 0.475
+  epr M0.05 plain press/flow: new +0.0535 r99 -1.3244
+  fan M0.05 plain press/flow: new -2.7119 r99 +4.5373 ratio 0.598
+  epr M0.05 plain tilted: new +0.0571 r99 -1.4334
+  fan M0.05 plain tilted: new -2.5830 r99 +5.0530 ratio 0.511
+  epr M0.05 plain flat-lp: new +0.0405 r99 -1.0309
+  fan M0.05 plain flat-lp: new -0.9771 r99 +4.4103 ratio 0.222
+  epr M0.05 cool flow/press: new +0.2531 r99 -6.0759
+  fan M0.05 cool flow/press: new -5.4166 r99 +16.8918 ratio 0.321
+  epr M0.05 cool press/flow: new +0.2486 r99 -5.8028
+  fan M0.05 cool press/flow: new -6.3872 r99 +15.6678 ratio 0.408
+  epr M0.05 cool tilted: new +0.2605 r99 -6.1888
+  fan M0.05 cool tilted: new -5.8047 r99 +16.9582 ratio 0.342
+  VACUOUS H2 M0.05 cool flat-lp: own end
+  VACUOUS H3 M0.05 cool flat-lp: own end
+  VACUOUS H5 M0.05 cool flat-lp: own end
+  epr M0.05 cust flow/press: new +0.1692 r99 -4.0043
+  fan M0.05 cust flow/press: new -4.6390 r99 +12.1125 ratio 0.383
+  epr M0.05 cust press/flow: new +0.1728 r99 -3.9874
+  fan M0.05 cust press/flow: new -5.5511 r99 +11.5440 ratio 0.481
+  epr M0.05 cust tilted: new +0.1762 r99 -4.1323
+  fan M0.05 cust tilted: new -5.0409 r99 +12.2585 ratio 0.411
+  VACUOUS H2 M0.05 cust flat-lp: own end
+  VACUOUS H3 M0.05 cust flat-lp: own end
+  VACUOUS H5 M0.05 cust flat-lp: own end
+  epr M0.15 plain flow/press: new +0.1496 r99 -1.1680
+  fan M0.15 plain flow/press: new -2.1692 r99 +4.6264 ratio 0.469
+  epr M0.15 plain press/flow: new +0.1469 r99 -1.1163
+  fan M0.15 plain press/flow: new -2.4834 r99 +4.2098 ratio 0.590
+  epr M0.15 plain tilted: new +0.1580 r99 -1.2177
+  fan M0.15 plain tilted: new -2.3806 r99 +4.7204 ratio 0.504
+  epr M0.15 plain flat-lp: new +0.1090 r99 -0.8585
+  fan M0.15 plain flat-lp: new -0.8787 r99 +4.0343 ratio 0.218
+  epr M0.15 cool flow/press: new +0.7402 r99 -5.3602
+  fan M0.15 cool flow/press: new -5.2536 r99 +16.6617 ratio 0.315
+  epr M0.15 cool press/flow: new +0.7228 r99 -5.0755
+  fan M0.15 cool press/flow: new -6.1648 r99 +15.3843 ratio 0.401
+  epr M0.15 cool tilted: new +0.7610 r99 -5.4468
+  fan M0.15 cool tilted: new -5.6265 r99 +16.7171 ratio 0.337
+  VACUOUS H2 M0.15 cool flat-lp: own end
+  VACUOUS H3 M0.15 cool flat-lp: own end
+  VACUOUS H5 M0.15 cool flat-lp: own end
+  epr M0.15 cust flow/press: new +0.4947 r99 -3.5378
+  fan M0.15 cust flow/press: new -4.4767 r99 +11.9079 ratio 0.376
+  epr M0.15 cust press/flow: new +0.5034 r99 -3.5004
+  fan M0.15 cust press/flow: new -5.3410 r99 +11.3205 ratio 0.472
+  epr M0.15 cust tilted: new +0.5152 r99 -3.6463
+  fan M0.15 cust tilted: new -4.8651 r99 +12.0560 ratio 0.404
+  VACUOUS H2 M0.15 cust flat-lp: own end
+  VACUOUS H3 M0.15 cust flat-lp: own end
+  VACUOUS H5 M0.15 cust flat-lp: own end
+  epr M0.5 plain flow/press: new -0.0016 r99 -0.0653
+  MISS H3 M0.5 plain flow/press: new -0.0016% bar 0.3%
+  fan M0.5 plain flow/press: new -0.1733 r99 +0.2338 ratio 0.741
+  H6 below floor M0.5 plain flow/press: rung99 +0.2338%
+  epr M0.5 plain press/flow: new -0.0071 r99 -0.0551
+  MISS H3 M0.5 plain press/flow: new -0.0071% bar 0.3%
+  fan M0.5 plain press/flow: new -0.1729 r99 +0.1386 ratio 1.248
+  MISS H5 M0.5 plain press/flow: new -0.1729% rung99 +0.1386%
+  H6 below floor M0.5 plain press/flow: rung99 +0.1386%
+  epr M0.5 plain tilted: new +0.0030 r99 -0.0718
+  fan M0.5 plain tilted: new -0.2057 r99 +0.2707 ratio 0.760
+  H6 below floor M0.5 plain tilted: rung99 +0.2707%
+  epr M0.5 plain flat-lp: new -0.0235 r99 -0.0306
+  MISS H3 M0.5 plain flat-lp: new -0.0235% bar 0.3%
+  fan M0.5 plain flat-lp: new -0.0129 r99 +0.0339 ratio 0.381
+  H6 below floor M0.5 plain flat-lp: rung99 +0.0339%
+  epr M0.5 cool flow/press: new +0.7762 r99 -1.1594
+  fan M0.5 cool flow/press: new -2.3137 r99 +6.4117 ratio 0.361
+  epr M0.5 cool press/flow: new +0.6980 r99 -1.0025
+  fan M0.5 cool press/flow: new -2.4680 r99 +5.4804 ratio 0.450
+  epr M0.5 cool tilted: new +0.7924 r99 -1.1623
+  fan M0.5 cool tilted: new -2.4529 r99 +6.3910 ratio 0.384
+  VACUOUS H3 M0.5 cool flat-lp: own end
+  VACUOUS H5 M0.5 cool flat-lp: own end
+  epr M0.5 cust flow/press: new +0.4471 r99 -0.6852
+  fan M0.5 cust flow/press: new -1.6312 r99 +3.9968 ratio 0.408
+  epr M0.5 cust press/flow: new +0.4323 r99 -0.6382
+  fan M0.5 cust press/flow: new -1.8350 r99 +3.6090 ratio 0.508
+  epr M0.5 cust tilted: new +0.4720 r99 -0.7092
+  fan M0.5 cust tilted: new -1.7837 r99 +4.0891 ratio 0.436
+  VACUOUS H3 M0.5 cust flat-lp: own end
+  VACUOUS H5 M0.5 cust flat-lp: own end
+  MISS H4 M1.4 700 flow/press: new -1.6730% rung99 +0.0900%
+  MISS H4 M1.4 700 press/flow: new -1.5107% rung99 +0.0679%
+  MISS H4 M1.4 700 tilted: new -1.7547% rung99 +0.0725%
+H2: 20 HIT, 0 MISS, 4 VACUOUS
+H3: 27 HIT, 3 MISS, 6 VACUOUS
+H4: 0 HIT, 3 MISS, 0 VACUOUS
+H5: 29 HIT, 1 MISS, 6 VACUOUS
+H6: 26 HIT, 0 MISS, 0 VACUOUS
+TOTAL: 242 HIT, 35 MISS, 40 VACUOUS

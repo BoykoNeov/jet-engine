@@ -1,0 +1,8 @@
+flow/press 318.1K M0.08 N1: grid +3.918% | tables made at this flight +3.969% | loaded table (table_clean off) -0.046%
+flow/press 318.1K M0.08 Epr: grid -0.212% | tables made at this flight +0.050% | loaded table (table_clean off) -0.263%
+flow/press 268.7K M0.12 N1: grid +8.307% | tables made at this flight +8.427% | loaded table (table_clean off) -0.102%
+flow/press 268.7K M0.12 Epr: grid -0.063% | tables made at this flight +0.065% | loaded table (table_clean off) -0.128%
+flow/press 250.0K M0.5 N1: grid +8.370% | tables made at this flight +9.329% | loaded table (table_clean off) -0.910%
+flow/press 250.0K M0.5 Epr: grid -0.646% | tables made at this flight +0.302% | loaded table (table_clean off) -0.945%
+flow/press 250.0K M0.85 N1: grid +10.429% | tables made at this flight +10.429% | loaded table (table_clean off) -0.000%
+flow/press 250.0K M0.85 Epr: grid +0.627% | tables made at this flight +0.627% | loaded table (table_clean off) -0.000%

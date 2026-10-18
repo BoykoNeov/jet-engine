@@ -42,6 +42,7 @@ use crate::governor::{self as gv, GovCall, GovMark, Governor, Law, Leg};
 use crate::inferred_thrust as inf;
 use crate::corrected_tables::{Carry, TableAt};
 use crate::mach_axis::{self as ma, SpeedCorr, Tables};
+use crate::unchoked_formula::Formula;
 use crate::engine::FlightCondition;
 use crate::fuel_transient::{r43_cut_below_ceiling, release_weight, AccelSchedule, AsymmetricLag, FuelInstant, FuelLimiters,
                             FuelPoint, FuelTransientCore, PointExtra, SurgeLimiter};
@@ -265,6 +266,11 @@ pub struct ControlsSettings {
     /// Rung 99: how a design-flight table is corrected for flight SPEED — tables at eight grid speeds blended at the one
     /// flown (the default, the user's choice), the thrust recomputed for it, or not at all (rung 98).
     pub speed_corr: SpeedCorr,
+    /// RUNG 100's two reduce settings, hidden (request keys, not on the page): `low_grid` — the grid's two slow slices
+    /// (off: rung 99's eight); `formula_choked` — rung 99's formula column (off: the formula read at the reading).
+    /// Written to a reply only when not at their defaults, so every default reply is rung 99's in shape.
+    pub low_grid: bool,
+    pub formula_choked: bool,
     /// The flight FLOWN (plan § 27): ambient static temperature, K, and pressure, Pa — the page's altitude and
     /// deviation from the standard day, linked to these through the standard atmosphere as on *Fly it*. The hardware
     /// stays captured at the DESIGN flight ([`ControlsSettings::design_flight`]). The defaults ARE the design flight,
@@ -390,6 +396,7 @@ impl ControlsSettings {
             govern: false, speed_law: SpeedLaw::Rate, gov_tau: 0.1, gov_gain: 20.0,
             thrust_by: ThrustBy::True, table_clean: true,
             table_at: TableAt::Design, corr_p: true, corr_t: true, speed_corr: SpeedCorr::Grid,
+            low_grid: true, formula_choked: false,
             t0: fd.t0, p0: fd.p0, m0: fd.m0,
         }
     }
@@ -481,7 +488,8 @@ impl ControlsSettings {
     /// Rung 99: under the speed grid, flown at a grid slice's own flight, the slice IS a table made at this flight.
     pub fn carried(&self) -> bool {
         self.table_at == TableAt::Design && self.uses_table() && !self.at_design_flight()
-            && !(self.speed_corr == SpeedCorr::Grid && ma::at_slice_flight(&self.design_flight(), &self.flight()))
+            && !(self.speed_corr == SpeedCorr::Grid
+                 && ma::at_slice_flight(ma::grid(self.low_grid), &self.design_flight(), &self.flight()))
     }
 
     /// The flight the hardware was captured at — the *Size the blades* rig's (250 K, 50 kPa, Mach 0.85). Every
@@ -510,7 +518,7 @@ impl ControlsSettings {
 
     pub fn to_json(&self) -> Json {
         let b = |x: bool| Json::Int(x as i64);
-        jobj! {
+        let mut j = jobj! {
             "shape" => CONTROL_SHAPES[self.shape], "rho" => self.rho, "from" => self.from, "to" => self.to,
             "ramp" => self.ramp, "settle" => self.settle,
             "redline_on" => b(self.redline_on), "redline" => self.redline,
@@ -538,7 +546,13 @@ impl ControlsSettings {
             "table_at" => self.table_at.key(), "corr_p" => b(self.corr_p), "corr_t" => b(self.corr_t),
             "speed_corr" => self.speed_corr.key(),
             "T0" => self.t0, "p0" => self.p0, "M0" => self.m0,
+        };
+        // Rung 100's hidden reduce settings, only off their defaults.
+        if let Json::Obj(kv) = &mut j {
+            if !self.low_grid { kv.push(("low_grid".into(), b(false))); }
+            if self.formula_choked { kv.push(("formula_choked".into(), b(true))); }
         }
+        j
     }
 
     /// Read settings; a missing key keeps its default.
@@ -603,7 +617,8 @@ impl ControlsSettings {
                           ("accel_on", &mut s.accel_on), ("floor_on", &mut s.floor_on),
                           ("release_on", &mut s.release_on), ("metal_on", &mut s.metal_on), ("hold_cap", &mut s.hold_cap),
                           ("govern", &mut s.govern), ("table_clean", &mut s.table_clean),
-                          ("corr_p", &mut s.corr_p), ("corr_t", &mut s.corr_t)] {
+                          ("corr_p", &mut s.corr_p), ("corr_t", &mut s.corr_t), ("low_grid", &mut s.low_grid),
+                          ("formula_choked", &mut s.formula_choked)] {
             flag(k, into)?;
         }
         if let Some(t) = text("floor_spool")? { s.floor_spool = spool(&t)?; }
@@ -1087,7 +1102,9 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
     // here (below), and an inferred thrust's ends are calibrated on the carried table instead.
     // Rung 99: and where they come from — rung 98's one design-flight table, two grid slices blended, or the design
     // table with its thrust recomputed for this flight speed. `carry` stays rung 98's (the air against the design's).
-    let tables = s.carried().then(|| Tables::new(&core.fuel, &fd, &fl, s.speed_corr, s.corr_p, s.corr_t));
+    // Rung 100: two slow slices in the grid, the formula read at the reading (each with its hidden reduce setting).
+    let tables = s.carried().then(|| Tables::new(&core.fuel, &fd, &fl, s.speed_corr, s.corr_p, s.corr_t, s.low_grid,
+                                                 s.formula_choked));
     let carry = s.carried().then(|| Carry::new(&core.fuel, &fd, &fl, s.corr_p, s.corr_t));
     let clean = match (s.calibrated() && tables.is_none(), unloaded.as_ref()) {
         (true, Some(de)) => {
@@ -1203,7 +1220,8 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
                 }
             };
             let calibrate = |which: &str, t_set: f64, target: f64| -> Result<(Instant2, Option<HoldInfo>), DoesNotRun> {
-                let want = table.reading_at(r, target);
+                let want = table.try_reading_at(&core.fuel, r, target).map_err(|e| DoesNotRun(format!(
+                    "At the {which} throttle ({t_set:.0} K): {}", e.0)))?;
                 let q_at = |t: f64| core.fuel.inner.try_equilibrium(&fl, t, None).map(|(i, _, _)| table.read(r, &i));
                 let root = bh::try_hold_root(&q_at, want, HOLD_LO, HOLD_HI).map_err(|e| DoesNotRun(format!(
                     "At the {which} throttle ({t_set:.0} K), the control holding the {} its design-flight table gives for \
@@ -1273,17 +1291,18 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
 /// Rung 99: how the tables were corrected for flight speed — the setting, the grid slices read (Mach), the weight on
 /// the second, whether the trend is carried past the grid, and how the pressure-ratio gap is split.
 fn speed_json(s: &ControlsSettings, t: Option<&Tables>) -> Json {
-    let split = match (t, s.corr_p && s.thrust_by == ThrustBy::Epr) {
-        (Some(Tables::Design(_)), true) => "ram_nozzle",
-        (Some(Tables::Formula { .. }), true) => "airflow_rest",
+    let epr = s.thrust_by == ThrustBy::Epr;
+    let split = match t {
+        Some(Tables::Design(_)) if epr && s.corr_p => "ram_nozzle",
+        Some(Tables::Formula { .. }) if epr && (s.corr_p || !s.formula_choked) => "airflow_rest",
         _ => "whole",
     };
     let (slices, w) = match t {
         Some(Tables::Grid { a, b, w }) => match b {
-            Some(b) => (vec![Json::Float(ma::GRID[a.j]), Json::Float(ma::GRID[b.j])], Json::Float(*w)),
-            None => (vec![Json::Float(ma::GRID[a.j])], Json::Null),
+            Some(b) => (vec![Json::Float(a.m), Json::Float(b.m)], Json::Float(*w)),
+            None => (vec![Json::Float(a.m)], Json::Null),
         },
-        Some(Tables::Design(_)) if s.speed_corr == SpeedCorr::Grid => (vec![Json::Float(ma::GRID[ma::DESIGN_SLICE])], Json::Null),
+        Some(Tables::Design(_)) if s.speed_corr == SpeedCorr::Grid => (vec![Json::Float(ma::DESIGN_MACH)], Json::Null),
         _ => (Vec::new(), Json::Null),
     };
     let extended = matches!(t, Some(Tables::Grid { b: Some(_), w, .. }) if *w < 0.0 || *w > 1.0);
@@ -2054,7 +2073,7 @@ impl ControlsSolver {
         let (reading, inferred) = match self.governor.as_ref().and_then(|g| Some((g.infer.as_ref()?, g.law.reading()?))) {
             Some((t, r)) => {
                 let v = t.read(r, i);
-                (Some(v), Some(t.inferred(r, v)))
+                (Some(v), Some(t.try_inferred(&self.core.fuel, r, v)?))
             }
             None => (None, None),
         };
@@ -2062,8 +2081,10 @@ impl ControlsSolver {
             (Some(Tables::Design(_)), Some(c), Some(dt), Some(f_hat))
                 if s.corr_p && s.thrust_by == ThrustBy::Epr && i.branch == Branch::Choked =>
                 (Some(c.ram_part(dt, i)), Some(c.nozzle_part(dt, i, Self::thrust(i), f_hat))),
-            // Rung 99: under the formula, the airflow guess and the rest — zero while the nozzle is choked.
-            (Some(tb @ Tables::Formula { .. }), _, _, Some(f_hat)) if s.corr_p && s.thrust_by == ThrustBy::Epr => {
+            // Rung 99: under the formula, the airflow guess and the rest — zero while the nozzle is choked. Rung 100:
+            // the push worked out from the reading, the rest is zero at every point, whatever the pressure switch.
+            (Some(tb @ Tables::Formula { .. }), _, _, Some(f_hat))
+                if (s.corr_p || !s.formula_choked) && s.thrust_by == ThrustBy::Epr => {
                 let t = self.governor.as_ref().and_then(|g| g.infer.as_ref()).expect("an inferred run reads its table");
                 tb.formula_split(t, i, Self::thrust(i), f_hat).map_or((None, None), |(a, b)| (Some(a), Some(b)))
             }
@@ -2201,7 +2222,8 @@ pub fn controls_json(sv: &ControlsSolver, o: &ControlsOutcome) -> Json {
         },
         "demand" => match &sv.governor {
             None => Json::Null,
-            Some(g) => col(&|x| g.demand(x.s)),
+            // Rung 100: through the formula when the table carries one — it ran at every one of these points.
+            Some(g) => col(&|x| g.try_demand(&sv.core.fuel, x.s).unwrap_or(f64::NAN)),
         },
         // Rung 96: an inferred thrust — what the control reads, the thrust it believes, the thrust the throttle asks,
         // and the table it reads them through.
@@ -2227,7 +2249,19 @@ pub fn controls_json(sv: &ControlsSolver, o: &ControlsOutcome) -> Json {
             None => jobj! { "at" => "flight", "carried" => Json::Int(0) },
             Some(c) => jobj! { "at" => "design", "carried" => Json::Int(1), "theta" => c.theta, "delta" => c.delta,
                                "corr_p" => Json::Int(o.settings.corr_p as i64), "corr_t" => Json::Int(o.settings.corr_t as i64),
-                               "speed" => speed_json(&o.settings, sv.tables.as_ref()) },
+                               "speed" => {
+                                   let mut j = speed_json(&o.settings, sv.tables.as_ref());
+                                   // Rung 100: under the fan-speed formula, the burner temperature of the table row it
+                                   // settles on at each end, beside the end's own (written only then).
+                                   let fan = sv.governor.as_ref().and_then(|g| g.infer.as_ref())
+                                       .and_then(|t| t.formula.as_ref().filter(|f| matches!(f, Formula::Fan { .. })).map(|f| (t, f)));
+                                   if let (Some((t, f)), Json::Obj(kv)) = (fan, &mut j) {
+                                       let row = |i: &Instant2| f.try_fan_root(&sv.core.fuel, t, i.nu_lp)
+                                           .map_or(Json::Null, |(x, _)| Json::List(vec![Json::Float(f.flight_tt4(x)), Json::Float(i.tt4)]));
+                                       kv.push(("fan_rows".into(), Json::List(vec![row(&sv.start), row(&sv.end)])));
+                                   }
+                                   j
+                               } },
         },
         "gap_ram" => rcol(&|r| r.gap_ram.unwrap_or(f64::NAN)),
         "gap_nozzle" => rcol(&|r| r.gap_nozzle.unwrap_or(f64::NAN)),
@@ -2418,13 +2452,34 @@ pub fn check_requests() -> Vec<String> {
     for s in [
         ControlsSettings { m0: 1.4, govern: true, hold: Hold::Thrust, thrust_by: ThrustBy::Epr, ..d },
         ControlsSettings { m0: 0.5, govern: true, hold: Hold::Thrust, thrust_by: ThrustBy::Epr, ..d },
-        ControlsSettings { m0: 1.4, govern: true, hold: Hold::Thrust, thrust_by: ThrustBy::Epr, speed_corr: SpeedCorr::Formula, ..d },
-        ControlsSettings { m0: 0.15, govern: true, hold: Hold::Thrust, thrust_by: ThrustBy::N1, ..d },
+        // These three moved under rung 100's defaults: pinned to rung 99's grid and formula column.
+        ControlsSettings { m0: 1.4, govern: true, hold: Hold::Thrust, thrust_by: ThrustBy::Epr, speed_corr: SpeedCorr::Formula,
+                           formula_choked: true, ..d },
+        ControlsSettings { m0: 0.15, govern: true, hold: Hold::Thrust, thrust_by: ThrustBy::N1, low_grid: false, ..d },
         ControlsSettings { m0: 0.05, from: 700.0, govern: true, hold: Hold::Thrust, thrust_by: ThrustBy::Epr,
-                           speed_corr: SpeedCorr::Formula, ..d },
+                           speed_corr: SpeedCorr::Formula, formula_choked: true, ..d },
         ControlsSettings { m0: 1.4, accel_on: true, ..d },
         ControlsSettings { m0: 1.4, govern: true, hold: Hold::HpSpeed, speed_law: SpeedLaw::Prop, ..d },
         at(0.0, 0.0, ControlsSettings { m0: 3.0, govern: true, hold: Hold::Thrust, thrust_by: ThrustBy::Epr, ..d }),
+    ] {
+        out.push(req(s));
+    }
+    // Rung 100: below choke -- the slow slices at Mach 0.1 from 700 K on both readings and the schedule there, the
+    // pressure ratio's push worked out from the reading (Mach 0.05 from 700 K, unchoked at the start; Mach 1.4, choked;
+    // Mach 1.4 from 700 K, the airflow guess left alone), the fan-speed formula at Mach 0.05 from 700 K (its table rows
+    // named) and at Mach 1.4 (choked: rung 99's column), and its refusal at sea level from 600 K.
+    let slow = |m0: f64, by: ThrustBy| ControlsSettings { m0, from: 700.0, govern: true, hold: Hold::Thrust, thrust_by: by, ..d };
+    let fx = |s: ControlsSettings| ControlsSettings { speed_corr: SpeedCorr::Formula, ..s };
+    for s in [
+        slow(0.1, ThrustBy::Epr),
+        slow(0.1, ThrustBy::N1),
+        ControlsSettings { m0: 0.1, from: 700.0, accel_on: true, ..d },
+        fx(slow(0.05, ThrustBy::Epr)),
+        fx(ControlsSettings { m0: 1.4, govern: true, hold: Hold::Thrust, thrust_by: ThrustBy::Epr, ..d }),
+        fx(slow(1.4, ThrustBy::Epr)),
+        fx(slow(0.05, ThrustBy::N1)),
+        fx(ControlsSettings { m0: 1.4, govern: true, hold: Hold::Thrust, thrust_by: ThrustBy::N1, ..d }),
+        at(0.0, 0.0, fx(ControlsSettings { m0: 0.1, from: 600.0, ..slow(0.1, ThrustBy::N1) })),
     ] {
         out.push(req(s));
     }

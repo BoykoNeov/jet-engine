@@ -95,6 +95,7 @@ impl Carry {
             }).collect(),
             pt2: self.pt2,
             v0: self.v0,
+            formula: None,
         }
     }
 
@@ -140,7 +141,15 @@ fn try_rows(ft: &FuelTransientCore, c: &Carry, lo: f64, hi: f64, n: usize) -> Re
 /// RUNG 98. Rung 96's thrust table at the DESIGN flight (13 rows, `lo`..`hi` translated), checked to rise as rung
 /// 96's is. Not yet carried: [`Carry::thrust_table`].
 pub fn try_design_table(ft: &FuelTransientCore, c: &Carry, lo: f64, hi: f64) -> Result<Table, RowFailure> {
-    let mut rows: Vec<Row> = try_rows(ft, c, lo, hi, TABLE_ROWS)?.iter().map(|i| Row::of(i, c.pt2_d)).collect();
+    try_design_table_rows(ft, c, lo, hi).map(|(t, _)| t)
+}
+
+/// [`try_design_table`] and the design-flight equilibria its rows were read off (in throttle order) — RUNG 100's
+/// fan-speed formula reads their turbines.
+pub fn try_design_table_rows(ft: &FuelTransientCore, c: &Carry, lo: f64, hi: f64)
+                             -> Result<(Table, Vec<Instant2>), RowFailure> {
+    let eqs = try_rows(ft, c, lo, hi, TABLE_ROWS)?;
+    let mut rows: Vec<Row> = eqs.iter().map(|i| Row::of(i, c.pt2_d)).collect();
     rows.sort_by(|a, b| a.thrust.total_cmp(&b.thrust));
     for w in rows.windows(2) {
         if !(w[1].thrust > w[0].thrust && w[1].epr > w[0].epr && w[1].nu_lp > w[0].nu_lp && w[1].fuel > w[0].fuel) {
@@ -148,7 +157,7 @@ pub fn try_design_table(ft: &FuelTransientCore, c: &Carry, lo: f64, hi: f64) -> 
                 thrust, pressure ratio, LP speed and fuel together, so a reading cannot be turned back into thrust".into() });
         }
     }
-    Ok(Table { rows, pt2: c.pt2_d, v0: c.v0_d })
+    Ok((Table { rows, pt2: c.pt2_d, v0: c.v0_d, formula: None }, eqs))
 }
 
 /// RUNG 98. Rung 95's steady `(ν_H, fuel)` table at the DESIGN flight, rising in `ν_H`. Not yet carried.

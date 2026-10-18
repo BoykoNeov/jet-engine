@@ -155,10 +155,13 @@ only as far as the nozzle can push the gas out.
 Since rung 98 (plan § 30) the control's tables — the thrust the governor reads, the acceleration schedule, the speed
 governor's fuel — are made once at the design flight by default and read here through two switchable corrections, for
 the air's pressure and its temperature (or made at this flight, as before). Neither correction sees a change of
-flight speed, so since rung 99 (plan § 31) the tables are made at eight speeds (Mach 0.3–3.0 in the design flight's air)
-and the two around the speed flown are blended — the miss falls from several per cent to a few tenths, more below
-Mach 0.3 where the line is carried on — or the thrust is recomputed for the speed flown (exact while the nozzle is
-choked, but for the table's guess of the air swallowed), or left uncorrected (rung 98). The table names the tables used.
+flight speed, so since rung 99 (plan § 31) the tables are made at several speeds — ten since rung 100 (plan § 32: Mach
+0.05 and 0.15 added before 0.3–3.0, in the design flight's air) — and the two around the speed flown are blended: the
+miss falls from several per cent to a few tenths, and the slow tables keep it under 1 % at a low throttle flown slowly,
+where the nozzle stops choking and the engine leaves the line a choked table describes. Or the thrust is recomputed
+for the speed flown (since rung 100 the jet's push is worked out from the pressure ratio, exact choked or not, leaving
+the table's guess of the air swallowed; read from the fan speed, the low-pressure turbine is re-solved against the
+flight's air), or left uncorrected (rung 98). The table names the tables used.
 
 **Readouts:** turbine temperature against the redline, both shaft speeds, burnt vs scheduled fuel, each
 compressor's flow coefficient against its (moving) stall line and the floor, thrust (the bleed's dumped air
