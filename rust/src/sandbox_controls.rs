@@ -43,7 +43,8 @@ use crate::inferred_thrust as inf;
 use crate::engine::FlightCondition;
 use crate::fuel_transient::{r43_cut_below_ceiling, release_weight, AccelSchedule, AsymmetricLag, FuelInstant, FuelLimiters,
                             FuelPoint, FuelTransientCore, PointExtra, SurgeLimiter};
-use crate::gas::Abort;
+use crate::components::ram_recovery;
+use crate::gas::{powp, Abort};
 use crate::jobj;
 use crate::map::ComponentMap;
 use crate::matcher::Branch;
@@ -255,10 +256,12 @@ pub struct ControlsSettings {
     pub table_clean: bool,
     /// The flight FLOWN (plan § 27): ambient static temperature, K, and pressure, Pa — the page's altitude and
     /// deviation from the standard day, linked to these through the standard atmosphere as on *Fly it*. The hardware
-    /// stays captured at the DESIGN flight ([`ControlsSettings::design_flight`]); Mach stays the design's 0.85. The
-    /// defaults ARE the design flight, so every saved setting stays valid.
+    /// stays captured at the DESIGN flight ([`ControlsSettings::design_flight`]). The defaults ARE the design flight,
+    /// so every saved setting stays valid.
     pub t0: f64,
     pub p0: f64,
+    /// The flight Mach number FLOWN (plan § 29); the default is the design's 0.85.
+    pub m0: f64,
 }
 
 /// Rung 96's switch: where a governed thrust is read from.
@@ -375,7 +378,7 @@ impl ControlsSettings {
             hold: Hold::BurnerTemp, hold_cap: false,
             govern: false, speed_law: SpeedLaw::Rate, gov_tau: 0.1, gov_gain: 20.0,
             thrust_by: ThrustBy::True, table_clean: true,
-            t0: fd.t0, p0: fd.p0,
+            t0: fd.t0, p0: fd.p0, m0: fd.m0,
         }
     }
 
@@ -453,14 +456,19 @@ impl ControlsSettings {
     /// CONSTRUCTOR takes this one; the flight flown is [`ControlsSettings::flight`].
     pub fn design_flight(&self) -> FlightCondition { BladeSettings::defaults().flight() }
 
-    /// The flight FLOWN: the knobs' `T0`/`p0` at the design's Mach. Every solve and the march take this one.
-    pub fn flight(&self) -> FlightCondition { FlightCondition::new(self.t0, self.p0, self.design_flight().m0) }
+    /// The flight FLOWN: the knobs' `T0`/`p0`/`M0`. Every solve and the march take this one.
+    pub fn flight(&self) -> FlightCondition { FlightCondition::new(self.t0, self.p0, self.m0) }
 
-    /// The air's density over the design flight's, `(p0/p0d)·(T0d/T0)` — exactly 1 at the design flight. The governor's
-    /// step-checked knob limits scale by it (plan § 27): the shafts answer fuel harder in denser air.
+    /// The density of the air the engine SWALLOWS over the design flight's — the inlet's total density,
+    /// `(p0/p0d)·(T0d/T0)·(k(M0)/k(M0d))` with `k = π_ram·(1 + (γ−1)/2·M²)^(1/(γ−1))` — exactly 1 at the design flight.
+    /// The governor's step-checked knob limits scale by it (plan § 27): the shafts answer fuel harder in denser air.
+    /// Plan § 29: flight speed rams the air denser, so the Mach factor joins; at the design's Mach it is `x/x`, exactly
+    /// 1, and the ratio is § 27's bit for bit.
     pub fn density_ratio(&self) -> f64 {
         let d = self.design_flight();
-        (self.p0 / d.p0) * (d.t0 / self.t0)
+        let g = BladeSettings::defaults().gas.gas().gamma_c();
+        let k = |m: f64| ram_recovery(m) * powp(1.0 + 0.5 * (g - 1.0) * m * m, 1.0 / (g - 1.0));
+        (self.p0 / d.p0) * (d.t0 / self.t0) * (k(self.m0) / k(d.m0))
     }
 
     pub fn s_end(&self) -> f64 { self.ramp + self.settle }
@@ -495,7 +503,7 @@ impl ControlsSettings {
             "govern" => b(self.govern), "speed_law" => self.speed_law.key(), "gov_tau" => self.gov_tau,
             "gov_gain" => self.gov_gain,
             "thrust_by" => self.thrust_by.key(), "table_clean" => b(self.table_clean),
-            "T0" => self.t0, "p0" => self.p0,
+            "T0" => self.t0, "p0" => self.p0, "M0" => self.m0,
         }
     }
 
@@ -542,7 +550,7 @@ impl ControlsSettings {
                           ("cool_blade", &mut s.cool_blade), ("generator_share", &mut s.generator_share),
                           ("generator_power", &mut s.generator_power), ("metal_year", &mut s.metal_year),
                           ("metal_life", &mut s.metal_life), ("gov_tau", &mut s.gov_tau), ("gov_gain", &mut s.gov_gain),
-                          ("T0", &mut s.t0), ("p0", &mut s.p0)] {
+                          ("T0", &mut s.t0), ("p0", &mut s.p0), ("M0", &mut s.m0)] {
             num(k, into)?;
         }
         if let Some(t) = text("customer")? {
@@ -672,7 +680,7 @@ fn gain_text(g: f64) -> String { format!("{}", ((g * 10.0) + 1e-6).floor() / 10.
 fn thin_words(s: &ControlsSettings, at_design: &str) -> String {
     match s.density_ratio() < 1.0 {
         false => at_design.to_string(),
-        true => format!(" here: the air is {:.0} % as dense as at the design flight, so the shafts answer the fuel more \
+        true => format!(" here: the air the engine takes in is {:.0} % as dense as at the design flight, so the shafts answer the fuel more \
                          slowly and a fast commanded rate rides the rich edge", 100.0 * s.density_ratio()),
     }
 }
@@ -681,7 +689,7 @@ fn thin_words(s: &ControlsSettings, at_design: &str) -> String {
 fn dense_words(s: &ControlsSettings) -> String {
     match s.density_ratio() > 1.0 {
         false => String::new(),
-        true => format!(" here (the air is {:.2} times as dense as at the design flight, so the shafts answer the fuel \
+        true => format!(" here (the air the engine takes in is {:.2} times as dense as at the design flight, so the shafts answer the fuel \
                          harder)", s.density_ratio()),
     }
 }
@@ -698,12 +706,15 @@ pub fn controls_precheck(s: &ControlsSettings) -> Result<(), DoesNotRun> {
                  ("customer_share", s.customer_share), ("customer_amount", s.customer_amount),
                  ("cool_vane", s.cool_vane), ("cool_blade", s.cool_blade),
                  ("generator_share", s.generator_share), ("generator_power", s.generator_power),
-                 ("gov_tau", s.gov_tau), ("gov_gain", s.gov_gain), ("T0", s.t0), ("p0", s.p0)];
+                 ("gov_tau", s.gov_tau), ("gov_gain", s.gov_gain), ("T0", s.t0), ("p0", s.p0), ("M0", s.m0)];
     if let Some((k, _)) = named.iter().find(|(_, v)| !v.is_finite()) {
         return Err(DoesNotRun(format!("Setting {k} is not a number.")));
     }
     if s.t0 <= 0.0 || s.p0 <= 0.0 {
         return no("The air's temperature and pressure must be above zero.");
+    }
+    if s.m0 <= 0.0 {
+        return no("The flight Mach number must be above zero.");
     }
     // Rung 94: the metal cap binds a FLOATING burner, so it needs a hold, the metal read, and cooling (uncooled, the
     // 1985 metals allow about 990 K — below every opening throttle, so the cap would clamp both ends).
@@ -1177,7 +1188,8 @@ pub fn endpoint_words(message: &str) -> String {
         // which way to move.
         "the compressors would have to run off the part of their maps the model covers. Mostly this is a throttle too \
          low for the air (on the flat-LP map at the design flight, below about 700–900 K; warmer air raises that, \
-         colder air lowers it), or a large fixed load or amount of air in thin air; away from the design flight it can \
+         and so does flying faster, which warms the air before it reaches the engine; colder air lowers it), or the \
+         flat-LP map flown faster than about Mach 1.5 (at every throttle measured), or a large fixed load or amount of air in thin air; away from the design flight it can \
          also be the top of the range (measured: 1700 K at 11 km on the map curved along flow at LP, along pressure at \
          HP); or a lever whose schedule does nearly all its travel just below the design speed. Move this throttle \
          toward the middle of its range, or start the lever's schedule lower"
@@ -2193,6 +2205,19 @@ pub fn check_requests() -> Vec<String> {
         at(0.0, 40.0, ControlsSettings { from: 700.0, generator: GeneratorMode::Lp, ..d }),
         at(0.0, 40.0, ControlsSettings { from: 700.0, cool_vane: 0.05, cool_blade: 0.03, ..d }),
         at(0.0, 40.0, ControlsSettings { from: 700.0, govern: true, hold: Hold::Thrust, thrust_by: ThrustBy::Epr, ..d }),
+    ] {
+        out.push(req(s));
+    }
+    // Plan § 29: the Mach knob — slow, fast and governed beside the redline, slow from 700 K (the nozzle unchoked at the
+    // start), high and fast in thin air, the gain refused in rammed-dense air, Mach zero, and off the maps at Mach 3.5.
+    for s in [
+        ControlsSettings { m0: 0.3, ..d },
+        ControlsSettings { m0: 1.6, govern: true, hold: Hold::HpSpeed, redline_on: true, ..d },
+        ControlsSettings { m0: 0.05, from: 700.0, ..d },
+        at(20_000.0, 0.0, ControlsSettings { m0: 2.5, govern: true, hold: Hold::Thrust, ..d }),
+        ControlsSettings { m0: 1.6, govern: true, hold: Hold::HpSpeed, speed_law: SpeedLaw::Prop, gov_gain: GAIN_MAX, ..d },
+        ControlsSettings { m0: 0.0, ..d },
+        ControlsSettings { m0: 3.5, ..d },
     ] {
         out.push(req(s));
     }

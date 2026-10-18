@@ -1675,3 +1675,47 @@ shows it.
 - **Gates:** `check_requests` adds 4 (+40 K at 700 K: bare, the generator on the LP shaft, cooling, governed on the
   pressure ratio); `browser.mjs` runs the +40 K 700 K move and checks native agreement, 9 unchoked points with the start
   unchoked, the dashed path, the legend and the table row.
+
+## 29. Mach on the Controls view (2026-10-18) — a sandbox page change, not a rung
+
+Asked with rung 96's seam (the user, scoping rung 98: "Yes, add it"): corrected tables cannot undo a change of flight
+SPEED, so the Controls engine needs a Mach knob before rung 98 can be scored over one. Built after rung 97 (§ 28),
+which it waited on: low Mach is where the nozzle unchokes. Scratch scripts and outputs:
+`scratch-archive/rung97/mach_*`.
+
+- **Built** in `sandbox_controls`: `ControlsSettings` gains `m0` (key `M0`, default the design flight's 0.85, so every
+  saved setting stays valid). As § 27 split the air, every constructor keeps the DESIGN flight (Mach 0.85) and every
+  solve and the march fly `m0`. The governor's density rule now reads the density of the air the engine TAKES IN — the
+  inlet's total density, `σ = (p0/p0d)(T0d/T0)·k(M0)/k(M0d)`, `k(M) = recovery(M)·(1 + (γ−1)/2·M²)^(1/(γ−1))` — exactly
+  § 27's σ at the design Mach (the ratio is x/x). Mach must be above zero (refused in words). The page shows the Mach row
+  on this view, a table row for it, and the density row now says "of the air taken in".
+- **Default = the earlier page:** all 69 of the previous commit's check requests through a worktree of it and through
+  this tree — every reply identical with the new `M0` settings key removed, except two refusals whose WORDS changed on
+  purpose (the gain limit says "the air the engine takes in"; the off-map words add flying faster and the flat-LP
+  map's Mach limit). A test holds a missing key ≡ naming Mach 0.85.
+- **Reach** (the default 1000 → 1400 K move, design air): every map runs Mach 0.05–3.0 except flat-LP, which runs to
+  1.5 and is refused above it at every throttle tried (1000–1700 K starts). At Mach 3.5 the 1000 K start leaves the maps
+  (the ram has heated the air to about 860 K) and a 1300 K start runs on the three other maps. Flown fast at a low
+  throttle the thrust goes negative (Mach 3, 1000 K: −324 N — the ram drag beats the jet); shown as is, said on the page.
+- **Unchoked points** (rung 97's branch, drawn dashed): the default move never unchokes at any Mach. From 700 K it
+  unchokes more as the flight slows — design air 1/126 at Mach 0.5, 5 at 0.05; sea level 1 at 0.85, 14 at 0.05; sea level
+  +40 K 9 at 0.85, 25 at 0.05; none at 11 km.
+- **The density rule with Mach** (0.02 vs 0.005, 792 governed runs: Mach 0.05–3.0 × seven airs from sea level −40 K to
+  20 km × four maps × both shafts' laws, at the scaled limits): byte-identical to the same check before rung 97 (no
+  governed default run unchokes). 76 runs exceed 1e−4; all but 8 ride a fuel edge (worst 6.4e−4, thin air — § 27's rich
+  edge); the 8 that do not are cold flat-LP days (worst 1.7e−4). The page note says so (up to about 0.0006; elsewhere
+  about 0.0001), not refused.
+- **Crash map** (§ 14.3's instrument, 1 500 requests, seed 29, Mach 0.05–3.5, altitude −1 … 20 km, ±45 K, every knob at
+  random): **no panic.** 558 ran to the end, 96 stopped with a reason (75 floor unreachable, 8 lean, 7 rich, 4 cause
+  unknown — all on the temperature limiter's lag route, as before — and 2 at their very first step with the catch-all
+  words: governed with both levers at Mach 1.35/1.56, the redline below the flow's floor temperature, and a bled closure
+  off the maps); the rest refused in words, the off-map words most of all and more so with Mach (11–41 a half-Mach band below 2.5, 70 at
+  2.5–3, 102 at 3–3.5). Rung 97's "too little pressure" refusal met 4 times, all below Mach 1. Native median 0.005 s a request,
+  slowest 3.3 s.
+- **Gates:** `tests/sandbox_mach.rs` — the default is the design Mach and a missing key the earlier reply; the engine reads
+  only its inlet (Mach 0.5 in air chosen to give the design inlet: speeds, airflow and fuel equal to 1e−10, thrust not);
+  the hardware stays captured at Mach 0.85 (the 1500 K point is design speed there only); the view's march is the core's at
+  the Mach flown, and Mach 0.05 from 700 K starts unchoked; the density rule at both ends with Mach; every new refusal.
+  `check_requests` adds 7 (Mach 0.3; 1.6 governed beside the redline; 0.05 from 700 K; 2.5 at 20 km governed; the gain
+  refused at 1.6; Mach 0; Mach 3.5); `browser.mjs` types Mach 1.6 and checks the density above 1.5× (it is 1.93×), the air unchanged and
+  the table's Mach row.

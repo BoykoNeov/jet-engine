@@ -1,0 +1,699 @@
+DETAIL OFFMAP M 0.2 z 750 dT 38.5 T0 322 from 790 to 780 lever both gen off 0.095 cust off 0.12 cool 0/0 | At the starting throttle (790 K): the en
+UNCLASSIFIED #4 z 2550 dT 19.5: The speed governor's gain must be above 0 and at most 12.6 here (the air the engine takes in is 3.96 times as dense as at the design flight, so the shafts answer the fu
+DETAIL OFFMAP M 3.24 z 17750 dT 18 T0 235 from 820 to 1500 lever none gen off 0.095 cust off 0.08 cool 0/0 | At the starting throttle (820 K): the en
+UNCLASSIFIED #6 z 19150 dT -42.5: At the final throttle (880 K), holding thrust: The search for the thrust met a burner temperature (972 K) where the engine has no steady point. The model says: rung-9
+DETAIL OFFMAP M 2.57 z 450 dT 11.5 T0 297 from 640 to 1050 lever stator gen hp 0.015 cust amount 0.09 cool 0.02/0.04 | At the starting throttle (640 K): with t
+UNCLASSIFIED #9 z 1900 dT 24.5: The fan-speed governor's gain must be above 0 and at most 5.4 here (the air the engine takes in is 9.26 times as dense as at the design flight, so the shafts answer the
+UNCLASSIFIED #11 z 7300 dT 31.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #12 z 600 dT 2: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 1.9000000000000001 z 6850 dT 22 T0 266 from 630 to 1050 lever stator gen lp 0.01 cust share 0.14 cool 0/0 | At the starting throttle (630 K): with t
+UNCLASSIFIED #15 z 18400 dT -43: The speed governor's gain must be above 0 and at most 22.3 here (the air the engine takes in is 2.24 times as dense as at the design flight, so the shafts answer the f
+DETAIL OFFMAP M 2.81 z 16850 dT -24 T0 193 from 670 to 840 lever none gen off 0.05 cust amount 0.17 cool 0.02/0.06 | At the starting throttle (670 K): the en
+UNCLASSIFIED #22 z 14200 dT 11.5: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model
+UNCLASSIFIED #24 z 12300 dT 12: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a different
+UNCLASSIFIED #26 z 3000 dT -9.5: The fan-speed governor's gain must be above 0 and at most 6.2 here (the air the engine takes in is 7.97 times as dense as at the design flight, so the shafts answer th
+UNCLASSIFIED #27 z 14500 dT 40.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #28 z 2600 dT -4: The governor runs with the instant valve only: a slow valve is a state on its own march, and a governor on that march is a different model. Make the valve instant."}
+DETAIL OFFMAP M 0.7000000000000001 z 18450 dT -20 T0 197 from 770 to 650 lever bleed gen lp 0.045 cust off 0.03 cool 0/0 | At the starting throttle (770 K): the en
+DETAIL OFFMAP M 0.55 z 1050 dT 20.5 T0 302 from 840 to 850 lever none gen off 0.1 cust amount 0.09 cool 0.09/0.09 | At the starting throttle (840 K): the en
+UNCLASSIFIED #37 z -450 dT -32: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. 
+DETAIL OFFMAP M 3.2 z 15000 dT 32.5 T0 249 from 690 to 610 lever none gen off 0.095 cust off 0.16 cool 0.14/0.09 | At the starting throttle (690 K): the en
+UNCLASSIFIED #42 z 5900 dT 28: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #47 z 17700 dT 42: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 0.65 z -300 dT 43 T0 333 from 1040 to 660 lever bleed gen lp 0.035 cust off 0.17 cool 0/0 | At the final throttle (660 K): the engin
+UNCLASSIFIED #52 z 6700 dT -31: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 3.17 z 19400 dT -15.5 T0 201 from 1100 to 720 lever none gen lp 0 cust share 0.05 cool 0.14/0.02 | At the final throttle (720 K): with the 
+UNCLASSIFIED #56 z 9450 dT 24: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a different 
+UNCLASSIFIED #58 z 4300 dT -17: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #61 z 11050 dT -5.5: The governor runs with the instant valve only: a slow valve is a state on its own march, and a governor on that march is a different model. Make the valve instant."}
+DETAIL OFFMAP M 0.53 z 19900 dT 22.5 T0 239 from 800 to 750 lever bleed gen off 0.085 cust share 0.12 cool 0.13/0.13 | At the starting throttle (800 K): the en
+UNCLASSIFIED #67 z 3950 dT -41: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a different
+DETAIL OFFMAP M 1.6500000000000001 z 11750 dT 24 T0 241 from 600 to 1380 lever stator gen off 0.065 cust share 0.11 cool 0/0 | At the starting throttle (600 K): the en
+UNCLASSIFIED #70 z 7600 dT 27.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 2.54 z 850 dT -39 T0 244 from 700 to 1560 lever none gen hp 0.08 cust share 0.1 cool 0.06/0.12 | At the starting throttle (700 K): with t
+unknown #72 z 6700 dT -24.5: 
+   REQ {"op":"controls","controls":{"T0":220.1458531561259,"p0":42867.18017815278,"shape":"flow/press","lever":"none","bleed_mode":"schedule","valve_speed":"slow","redline_on":1,"gov_lag_on":1,"accel_on":0,"floor_on":1,"floor_ref":"phi","floor_phi":0.8150000000000001,"release_on":0,"govern":0,"hold":"thrust","thrust_by":"epr","speed_law":"rate","gov_tau":0.71,"gov_gain":21,"generator":"off","generator_power":0.07,"customer":"amount","customer_share":0.02,"customer_amount":0.02,"cool_vane":0,"cool_blade":0,"metal_on":1,"from":1590,"to":1560,"ramp":1.08,"settle":0.9,"rho":0.8,"M0":2.39}}
+DETAIL OFFMAP M 3.3000000000000003 z 3650 dT 2 T0 266 from 720 to 1290 lever stator gen off 0.035 cust amount 0.12 cool 0/0 | At the starting throttle (720 K): the en
+DETAIL OFFMAP M 1.59 z 13750 dT 3 T0 220 from 890 to 1380 lever both gen lp 0.06 cust off 0.04 cool 0/0 | At the starting throttle (890 K): the en
+UNCLASSIFIED #83 z -1000 dT 35: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #84 z 8800 dT 36: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #88 z 15850 dT 7: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #90 z 17350 dT -29.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 1.75 z 18250 dT -4.5 T0 212 from 1560 to 890 lever none gen hp 0.015 cust off 0.12 cool 0/0 | At the final throttle (890 K): the engin
+DETAIL OFFMAP M 2.68 z 400 dT -0 T0 286 from 1590 to 750 lever none gen lp 0.025 cust share 0.15 cool 0/0 | At the starting throttle (1590 K): the e
+DETAIL OFFMAP M 3.3200000000000003 z 11900 dT 30.5 T0 247 from 1280 to 790 lever both gen lp 0.01 cust share 0.05 cool 0/0 | At the starting throttle (1280 K): with 
+DETAIL OFFMAP M 2.59 z 8500 dT 10.5 T0 243 from 1660 to 610 lever bleed gen hp 0.04 cust share 0.06 cool 0.02/0.08 | At the final throttle (610 K): with the 
+UNCLASSIFIED #100 z 15800 dT 34: At the final throttle (760 K), the control holding the pressure ratio its table gives for the asked thrust: the pressure ratio asked for (0.7519) is below the least th
+DETAIL OFFMAP M 2.2 z 8250 dT -43 T0 192 from 1330 to 600 lever bleed gen off 0.045 cust off 0.09 cool 0/0 | At the final throttle (600 K): the engin
+DETAIL OFFMAP M 3.3000000000000003 z 3850 dT 42 T0 305 from 780 to 1440 lever bleed gen off 0.06 cust off 0.14 cool 0/0 | At the starting throttle (780 K): the en
+DETAIL OFFMAP M 3.38 z 3100 dT 25.5 T0 294 from 950 to 610 lever none gen off 0.015 cust off 0.18 cool 0.02/0.12 | At the starting throttle (950 K): the en
+UNCLASSIFIED #105 z -50 dT 29: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #106 z 17000 dT 34: A slow valve cannot run beside the temperature limiter's lag or the realistic release: a lagging valve beside a lagging fuel cut is two lags on two levers (rung 66's t
+DETAIL OFFMAP M 1.48 z 16700 dT -43.5 T0 173 from 610 to 1570 lever stator gen lp 0.025 cust off 0.03 cool 0/0 | At the starting throttle (610 K): the en
+DETAIL OFFMAP M 3.24 z 12500 dT 42.5 T0 259 from 830 to 1220 lever bleed gen off 0.04 cust off 0.03 cool 0/0 | At the starting throttle (830 K): the en
+DETAIL OFFMAP M 2.1 z 5050 dT 3 T0 258 from 610 to 1280 lever none gen hp 0.01 cust off 0.06 cool 0.02/0.14 | At the starting throttle (610 K): the en
+DETAIL OFFMAP M 2.5300000000000002 z 11800 dT 41.5 T0 258 from 770 to 1000 lever none gen off 0.075 cust share 0.04 cool 0.05/0.03 | At the starting throttle (770 K): the en
+DETAIL OFFMAP M 3.49 z 7100 dT 15.5 T0 258 from 710 to 730 lever bleed gen off 0.04 cust off 0.08 cool 0.02/0.06 | At the starting throttle (710 K): the en
+DETAIL OFFMAP M 2.2 z 15450 dT 24.5 T0 241 from 1190 to 1200 lever bleed gen lp 0 cust amount 0.12 cool 0/0 | At the starting throttle (1190 K): with 
+DETAIL OFFMAP M 2.4 z 15100 dT -17.5 T0 199 from 1430 to 800 lever bleed gen off 0.075 cust amount 0.06 cool 0/0 | At the final throttle (800 K): the engin
+DETAIL OFFMAP M 2.88 z 4400 dT 40 T0 300 from 940 to 1130 lever both gen hp 0.07 cust amount 0.13 cool 0/0 | At the starting throttle (940 K): the en
+UNCLASSIFIED #135 z 7300 dT -43: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model.
+UNCLASSIFIED #136 z 12450 dT 6.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #137 z 8500 dT 24: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 2.0100000000000002 z -250 dT 13 T0 303 from 830 to 710 lever none gen off 0.08 cust amount 0.03 cool 0/0 | At the starting throttle (830 K): the en
+UNCLASSIFIED #144 z 4700 dT 9: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 2.07 z 10300 dT 10.5 T0 232 from 1220 to 1010 lever stator gen off 0.02 cust off 0.06 cool 0.09/0.02 | At the starting throttle (1220 K): the e
+DETAIL OFFMAP M 2.8000000000000003 z 2250 dT 9.5 T0 283 from 720 to 1170 lever both gen hp 0 cust off 0.13 cool 0/0 | At the starting throttle (720 K): the en
+UNCLASSIFIED #158 z 6500 dT 24.5: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a differe
+UNCLASSIFIED #159 z 18900 dT -43: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL SETTLE M 0.97 z 13500 dT 26 T0 243 from 1510 to 1210 lever bleed gen hp 0.055 cust amount 0.02 cool 0.03/0.09 | At the starting throttle (1510 K): the e
+DETAIL OFFMAP M 3.29 z 8350 dT -6.5 T0 227 from 1470 to 610 lever stator gen hp 0.04 cust share 0.05 cool 0/0 | At the final throttle (610 K): the engin
+UNCLASSIFIED #164 z -450 dT 9.5: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a differen
+UNCLASSIFIED #165 z 200 dT 11: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. S
+DETAIL OFFMAP M 3.3000000000000003 z 6600 dT 44.5 T0 290 from 1660 to 690 lever stator gen off 0.095 cust amount 0.02 cool 0/0 | At the starting throttle (1660 K): the e
+UNCLASSIFIED #167 z 4050 dT -30.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 3.4 z -950 dT 36 T0 330 from 760 to 970 lever bleed gen lp 0.08 cust off 0.07 cool 0.06/0.02 | At the starting throttle (760 K): the en
+DETAIL OFFMAP M 3.13 z 2850 dT 19.5 T0 289 from 700 to 910 lever stator gen off 0.045 cust off 0.18 cool 0/0 | At the starting throttle (700 K): the en
+DETAIL OFFMAP M 3.34 z 12450 dT -5 T0 212 from 870 to 1490 lever both gen off 0.095 cust amount 0 cool 0/0 | At the starting throttle (870 K): the en
+UNCLASSIFIED #172 z 12650 dT -44: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #173 z 13350 dT -3.5: The governor runs with the instant valve only: a slow valve is a state on its own march, and a governor on that march is a different model. Make the valve instant."}
+UNCLASSIFIED #174 z 3300 dT 31: The governor runs with the instant valve only: a slow valve is a state on its own march, and a governor on that march is a different model. Make the valve instant."}
+UNCLASSIFIED #183 z 1750 dT 43: A slow valve cannot run beside the temperature limiter's lag or the realistic release: a lagging valve beside a lagging fuel cut is two lags on two levers (rung 66's tw
+DETAIL OFFMAP M 3.44 z 12000 dT -8 T0 209 from 1270 to 690 lever none gen hp 0.075 cust off 0.15 cool 0/0 | At the final throttle (690 K): the engin
+DETAIL OFFMAP M 1.85 z 19150 dT 32 T0 249 from 920 to 1520 lever bleed gen off 0.02 cust off 0.16 cool 0/0 | At the starting throttle (920 K): the en
+DETAIL OFFMAP M 3.0300000000000002 z 6150 dT 36.5 T0 285 from 1410 to 1530 lever none gen off 0 cust off 0.02 cool 0/0 | At the starting throttle (1410 K): the e
+DETAIL OFFMAP M 3.25 z 12300 dT 24.5 T0 241 from 930 to 1610 lever none gen lp 0.035 cust off 0.19 cool 0/0 | At the starting throttle (930 K): with t
+UNCLASSIFIED #193 z 13300 dT 5: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. 
+DETAIL OFFMAP M 2.67 z 14500 dT 15 T0 232 from 1380 to 1290 lever stator gen lp 0.095 cust amount 0.16 cool 0/0 | At the starting throttle (1380 K): with 
+UNCLASSIFIED #198 z 16250 dT -35: The speed governor's gain must be above 0 and at most 28.4 here (the air the engine takes in is 1.76 times as dense as at the design flight, so the shafts answer the 
+UNCLASSIFIED #199 z 19700 dT -36.5: At the starting throttle (1700 K), holding HP speed: The HP shaft speed asked for (113.5166 % of design) is below the least this load allows: the engine needs at le
+DETAIL OFFMAP M 3.09 z 11900 dT -31.5 T0 185 from 1450 to 1320 lever none gen lp 0.01 cust off 0.16 cool 0/0 | At the final throttle (1320 K): with the
+DETAIL OFFMAP M 1.94 z 17050 dT 39 T0 256 from 1640 to 650 lever none gen off 0.09 cust share 0.07 cool 0.11/0.13 | At the starting throttle (1640 K): the e
+DETAIL OFFMAP M 1.6 z 2050 dT 22 T0 297 from 1090 to 670 lever both gen hp 0.06 cust amount 0.16 cool 0/0 | At the starting throttle (1090 K): the e
+UNCLASSIFIED #210 z 13850 dT -32.5: The governor runs with the instant valve only: a slow valve is a state on its own march, and a governor on that march is a different model. Make the valve instant."
+UNCLASSIFIED #212 z 10550 dT -40: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL SETTLE M 0.4 z 14100 dT -34 T0 183 from 620 to 1620 lever both gen hp 0.065 cust off 0.07 cool 0/0 | At the starting throttle (620 K): the en
+UNCLASSIFIED #220 z 13950 dT 28: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 3.25 z 850 dT -16.5 T0 266 from 1240 to 780 lever none gen lp 0.035 cust amount 0.18 cool 0/0 | At the final throttle (780 K): with the 
+DETAIL OFFMAP M 1.29 z 15100 dT -22.5 T0 194 from 800 to 790 lever both gen hp 0.065 cust share 0.16 cool 0/0 | At the starting throttle (800 K): the en
+UNCLASSIFIED #223 z 13600 dT -1: At the final throttle (760 K), holding HP speed: The HP shaft speed asked for (59.6027 % of design) is below the least this load allows: the engine needs at least 1576
+UNCLASSIFIED #226 z 1350 dT 24: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 1.3900000000000001 z 9350 dT -8.5 T0 219 from 1540 to 990 lever none gen off 0.035 cust amount 0.19 cool 0/0 | At the final throttle (990 K): the engin
+UNCLASSIFIED #230 z 13300 dT -15: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #234 z 15200 dT -17: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #236 z 19650 dT -10.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 3.19 z 100 dT 14.5 T0 302 from 1060 to 1360 lever bleed gen off 0.08 cust share 0.01 cool 0/0 | At the starting throttle (1060 K): the e
+UNCLASSIFIED #244 z -250 dT 26: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 3.48 z 7900 dT -0.5 T0 236 from 1080 to 1020 lever both gen off 0.08 cust share 0.12 cool 0/0 | At the starting throttle (1080 K): the e
+DETAIL OFFMAP M 3.12 z 5650 dT -35 T0 216 from 620 to 1250 lever none gen off 0.075 cust off 0.11 cool 0/0 | At the starting throttle (620 K): the en
+UNCLASSIFIED #260 z 5800 dT 27.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 1.18 z 17500 dT -27 T0 190 from 1610 to 1280 lever stator gen lp 0.05 cust off 0.03 cool 0.06/0.12 | At the starting throttle (1610 K): the e
+UNCLASSIFIED #263 z 16450 dT 0.5: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model
+UNCLASSIFIED #269 z 7650 dT -38: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a differen
+UNCLASSIFIED #270 z 2050 dT 28.5: A slow valve cannot run beside the temperature limiter's lag or the realistic release: a lagging valve beside a lagging fuel cut is two lags on two levers (rung 66's 
+DETAIL OFFMAP M 3.35 z 5000 dT -20.5 T0 235 from 750 to 1660 lever bleed gen lp 0.025 cust off 0.16 cool 0.1/0.05 | At the starting throttle (750 K): with t
+DETAIL OFFMAP M 2.93 z 11600 dT 15.5 T0 232 from 1150 to 810 lever none gen off 0.045 cust off 0.11 cool 0.06/0.06 | At the final throttle (810 K): the engin
+UNCLASSIFIED #276 z 4400 dT 40: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 2.99 z 2800 dT -16 T0 254 from 1580 to 960 lever bleed gen lp 0.055 cust amount 0.07 cool 0/0 | At the starting throttle (1580 K): with 
+UNCLASSIFIED #279 z 5350 dT -38: The realistic release and the temperature limiter's lag cannot run together: each carries a cut as a lagging state on a different limiter, and two such lags at once is
+UNCLASSIFIED #284 z 3100 dT 0: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 3.4 z 2200 dT -31.5 T0 242 from 770 to 1470 lever bleed gen hp 0.1 cust amount 0.15 cool 0/0 | At the starting throttle (770 K): with t
+DETAIL OFFMAP M 2.02 z 16850 dT 31 T0 248 from 710 to 910 lever none gen off 0.005 cust off 0.05 cool 0.07/0.14 | At the starting throttle (710 K): the en
+DETAIL OFFMAP M 1.32 z 17900 dT -15 T0 202 from 890 to 1400 lever both gen lp 0.095 cust off 0.07 cool 0/0 | At the starting throttle (890 K): the en
+DETAIL OFFMAP M 2.63 z 9250 dT -29.5 T0 199 from 1290 to 920 lever bleed gen lp 0.1 cust off 0.07 cool 0/0 | At the final throttle (920 K): with the 
+UNCLASSIFIED #292 z 15950 dT 35.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 2.62 z 14900 dT 10.5 T0 227 from 890 to 1240 lever bleed gen off 0.01 cust share 0.02 cool 0/0 | At the starting throttle (890 K): the en
+DETAIL OFFMAP M 3.29 z 18500 dT -3 T0 214 from 1380 to 1660 lever none gen lp 0.04 cust off 0.13 cool 0.11/0.03 | At the starting throttle (1380 K): the e
+DETAIL OFFMAP M 3.21 z 9800 dT 12.5 T0 237 from 1150 to 1500 lever stator gen lp 0.095 cust off 0.09 cool 0/0 | At the starting throttle (1150 K): with 
+UNCLASSIFIED #303 z 9800 dT -30.5: At the final throttle (720 K), holding HP speed: The HP shaft speed asked for (65.4731 % of design) is below the least this load allows: the engine needs at least 11
+DETAIL OFFMAP M 1.6300000000000001 z 8050 dT 22.5 T0 258 from 1130 to 1220 lever stator gen lp 0.065 cust off 0.17 cool 0.08/0.02 | At the starting throttle (1130 K): the e
+DETAIL OFFMAP M 1.03 z 18050 dT 9 T0 226 from 680 to 1320 lever stator gen off 0.005 cust off 0.01 cool 0/0 | At the starting throttle (680 K): the en
+DETAIL OFFMAP M 3.04 z 15600 dT -23 T0 194 from 1510 to 660 lever none gen lp 0.04 cust amount 0.2 cool 0/0 | At the starting throttle (1510 K): with 
+UNCLASSIFIED #310 z 6350 dT 23.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #313 z 400 dT -14: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #315 z 19850 dT -38: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 3.2800000000000002 z 12650 dT 25.5 T0 242 from 720 to 870 lever stator gen hp 0.075 cust off 0.16 cool 0/0 | At the starting throttle (720 K): with t
+DETAIL SETTLE M 0.28 z 19350 dT 9.5 T0 226 from 1540 to 1020 lever stator gen lp 0.04 cust off 0.18 cool 0/0 | At the starting throttle (1540 K): the e
+DETAIL OFFMAP M 0.8300000000000001 z 5450 dT -39 T0 214 from 660 to 720 lever stator gen off 0.005 cust off 0.1 cool 0/0 | At the starting throttle (660 K): the en
+UNCLASSIFIED #333 z 5050 dT 30.5: The governor runs with the instant valve only: a slow valve is a state on its own march, and a governor on that march is a different model. Make the valve instant."}
+DETAIL OFFMAP M 0.75 z 15800 dT -41 T0 176 from 830 to 1510 lever stator gen off 0.095 cust share 0.01 cool 0/0 | The control's table has a throttle with 
+DETAIL OFFMAP M 2.71 z 18750 dT 7.5 T0 224 from 680 to 1670 lever bleed gen lp 0.05 cust off 0.09 cool 0.12/0.14 | At the starting throttle (680 K): with t
+DETAIL OFFMAP M 1.18 z -800 dT 13.5 T0 307 from 690 to 1110 lever none gen lp 0.035 cust amount 0.11 cool 0.03/0.11 | At the starting throttle (690 K): with t
+UNCLASSIFIED #346 z 15000 dT -7: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 3.13 z 6600 dT -37 T0 208 from 1610 to 830 lever none gen off 0.03 cust amount 0 cool 0.05/0.07 | At the starting throttle (1610 K): the e
+DETAIL OFFMAP M 3.45 z -900 dT 10.5 T0 305 from 990 to 1360 lever none gen hp 0.01 cust amount 0.16 cool 0/0 | At the starting throttle (990 K): with t
+DETAIL OFFMAP M 2.91 z 13500 dT 41.5 T0 258 from 630 to 740 lever both gen off 0.07 cust off 0.06 cool 0.13/0.01 | At the starting throttle (630 K): the en
+UNCLASSIFIED #358 z 4750 dT 24: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a different
+UNCLASSIFIED #360 z 3700 dT 26: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a different
+UNCLASSIFIED #361 z 10900 dT 20.5: At the starting throttle (820 K), holding HP speed: The HP shaft speed asked for (71.6120 % of design) is below the least this load allows: the engine needs at least
+UNCLASSIFIED #363 z 6800 dT -26.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 3.25 z 9750 dT -30.5 T0 194 from 1640 to 700 lever none gen lp 0.08 cust off 0 cool 0.11/0.14 | At the final throttle (700 K): with the 
+DETAIL OFFMAP M 3.3200000000000003 z 19400 dT -16.5 T0 200 from 1510 to 1050 lever none gen hp 0.075 cust share 0.11 cool 0/0 | At the starting throttle (1510 K): with 
+DETAIL OFFMAP M 1.28 z 1250 dT -21 T0 259 from 1010 to 1550 lever both gen off 0.075 cust off 0.14 cool 0.01/0.08 | At the starting throttle (1010 K): the e
+UNCLASSIFIED #367 z 2550 dT -2: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 3.15 z 7300 dT 8.5 T0 249 from 650 to 1590 lever none gen off 0.02 cust off 0.1 cool 0.06/0.06 | At the starting throttle (650 K): the en
+UNCLASSIFIED #371 z 6000 dT 35.5: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model
+UNCLASSIFIED #374 z 8750 dT 2: The speed governor's gain must be above 0 and at most 28.9 here (the air the engine takes in is 1.73 times as dense as at the design flight, so the shafts answer the fue
+UNCLASSIFIED #376 z 8400 dT -33: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 0.54 z 13900 dT -8.5 T0 208 from 1060 to 1590 lever both gen hp 0.045 cust off 0.06 cool 0/0 | At the final throttle (1590 K): with the
+other #379 z 14700 dT 29: "message":"rung-46 topping cannot reach Tt4_max=1480.0 at nu=(1.0184,0.7162) -- redline below the flow's floor Tt4.","s_last":null,"s":0.0,"mixture":null,"min_fuel_fraction":null},"s":[],"nu_lp":[],"nu_hp":[],"Tt4"
+   REQ {"op":"controls","controls":{"T0":245.64999999999998,"p0":12695.766315741415,"shape":"flat-lp","lever":"both","bleed_mode":"schedule","valve_speed":"instant","redline_on":1,"gov_lag_on":0,"accel_on":0,"floor_on":0,"floor_ref":"incidence","floor_phi":0.62,"release_on":0,"govern":1,"hold":"thrust","thrust_by":"true","speed_law":"rate","gov_tau":0.43,"gov_gain":17,"generator":"hp","generator_power":0.095,"customer":"share","customer_share":0.02,"customer_amount":0.02,"cool_vane":0,"cool_blade":0,"metal_on":1,"from":1260,"to":1250,"ramp":0.7000000000000001,"settle":5.9,"rho":2.9000000000000004,"M0":1.56}}
+unknown #380 z 17900 dT 10.5: 
+   REQ {"op":"controls","controls":{"T0":227.14999999999998,"p0":7684.793497792667,"shape":"flow/press","lever":"none","bleed_mode":"schedule","valve_speed":"instant","redline_on":1,"gov_lag_on":1,"accel_on":0,"floor_on":1,"floor_ref":"incidence","floor_phi":0.675,"release_on":0,"govern":0,"hold":"thrust","thrust_by":"n1","speed_law":"rate","gov_tau":0.33,"gov_gain":7,"generator":"off","generator_power":0.095,"customer":"off","customer_share":0.12,"customer_amount":0.12,"cool_vane":0,"cool_blade":0,"metal_on":0,"from":720,"to":1120,"ramp":0.7000000000000001,"settle":1,"rho":3.7,"M0":1.77}}
+UNCLASSIFIED #382 z 300 dT -6.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #383 z 19150 dT 11.5: At the starting throttle (760 K), holding HP speed: The HP shaft speed asked for (69.8615 % of design) is below the least this load allows: the engine needs at least
+UNCLASSIFIED #389 z 13500 dT -32.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 2.92 z 7250 dT -41.5 T0 200 from 680 to 880 lever stator gen off 0.075 cust share 0.09 cool 0.02/0.14 | At the starting throttle (680 K): the en
+DETAIL OFFMAP M 3.24 z 350 dT -38.5 T0 247 from 1650 to 930 lever stator gen off 0.02 cust off 0.11 cool 0/0 | At the final throttle (930 K): the engin
+UNCLASSIFIED #394 z 13050 dT -14: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #399 z 2950 dT -13: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 1.83 z 4050 dT 20 T0 282 from 650 to 1350 lever none gen lp 0.03 cust off 0.05 cool 0/0 | At the starting throttle (650 K): with t
+UNCLASSIFIED #404 z 13200 dT 2: A slow valve cannot run beside the temperature limiter's lag or the realistic release: a lagging valve beside a lagging fuel cut is two lags on two levers (rung 66's tw
+DETAIL OFFMAP M 2.29 z 15100 dT 33 T0 250 from 660 to 900 lever stator gen hp 0.095 cust off 0.06 cool 0.11/0.1 | At the starting throttle (660 K): the en
+DETAIL OFFMAP M 1.6400000000000001 z 150 dT 21.5 T0 309 from 1470 to 600 lever none gen lp 0.095 cust amount 0.11 cool 0/0 | At the final throttle (600 K): with the 
+other #415 z 14100 dT -18.5: "message":"rung-90 bled fuel closure does not bracket (customer bleed on) at nu=(0.6282,0.6566), mdot_fuel=0.00282, b=0.1000 \u2014 off the modeled speed-line region.","s_last":null,"s":0.0,"mixture":null,"min_f
+   REQ {"op":"controls","controls":{"T0":198.14999999999998,"p0":13949.650062783085,"shape":"flow/press","lever":"both","bleed_mode":"schedule","valve_speed":"instant","redline_on":0,"gov_lag_on":0,"accel_on":0,"floor_on":0,"floor_ref":"incidence","floor_phi":0.8,"release_on":0,"govern":1,"hold":"tt4","thrust_by":"epr","speed_law":"prop","gov_tau":0.68,"gov_gain":37,"generator":"off","generator_power":0.02,"customer":"amount","customer_share":0.12,"customer_amount":0.12,"cool_vane":0,"cool_blade":0,"metal_on":1,"from":1040,"to":1420,"ramp":0.34,"settle":5.9,"rho":4.9,"M0":1.35}}
+UNCLASSIFIED #416 z 17850 dT -4: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 2.7600000000000002 z 8700 dT 31 T0 263 from 880 to 1370 lever none gen off 0.025 cust off 0.1 cool 0/0 | At the starting throttle (880 K): the en
+DETAIL OFFMAP M 1.27 z 19100 dT 6.5 T0 223 from 660 to 940 lever both gen off 0.055 cust amount 0.04 cool 0/0 | At the starting throttle (660 K): the en
+DETAIL OFFMAP M 2.5 z 11850 dT 4.5 T0 221 from 1450 to 1100 lever none gen hp 0.01 cust off 0.06 cool 0/0 | At the final throttle (1100 K): with the
+DETAIL OFFMAP M 1.18 z 1250 dT -41.5 T0 239 from 1310 to 730 lever both gen hp 0.03 cust amount 0.17 cool 0.04/0.04 | At the final throttle (730 K): the engin
+UNCLASSIFIED #427 z 600 dT 36.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 0.76 z 3750 dT 17.5 T0 281 from 620 to 890 lever both gen hp 0.03 cust amount 0.07 cool 0.07/0.03 | At the starting throttle (620 K): with t
+DETAIL OFFMAP M 1.27 z -50 dT 1.5 T0 290 from 1450 to 680 lever none gen off 0.005 cust share 0.01 cool 0/0 | At the final throttle (680 K): the engin
+UNCLASSIFIED #435 z 3150 dT -22.5: The speed governor's gain must be above 0 and at most 16.9 here (the air the engine takes in is 2.96 times as dense as at the design flight, so the shafts answer the
+DETAIL OFFMAP M 1.09 z -100 dT 33.5 T0 322 from 650 to 800 lever none gen off 0.07 cust off 0.18 cool 0/0 | At the starting throttle (650 K): the en
+UNCLASSIFIED #437 z -700 dT -42.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #438 z 8200 dT 23: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 0.52 z 5500 dT 39.5 T0 292 from 1630 to 1620 lever none gen hp 0.05 cust amount 0.18 cool 0/0 | At the starting throttle (1630 K): the e
+DETAIL OFFMAP M 1.32 z 1250 dT 44 T0 324 from 750 to 1150 lever none gen off 0.03 cust share 0.05 cool 0/0 | At the starting throttle (750 K): the en
+DETAIL OFFMAP M 2.2600000000000002 z 600 dT -3.5 T0 281 from 670 to 1370 lever none gen lp 0.035 cust amount 0.04 cool 0/0 | At the starting throttle (670 K): with t
+DETAIL OFFMAP M 1.85 z 9900 dT -10 T0 214 from 930 to 1660 lever stator gen off 0.025 cust share 0.04 cool 0/0 | At the starting throttle (930 K): the en
+DETAIL OFFMAP M 1.44 z -400 dT -42.5 T0 248 from 1070 to 1080 lever stator gen hp 0.1 cust share 0.07 cool 0/0 | At the starting throttle (1070 K): with 
+DETAIL OFFMAP M 1.8 z 4450 dT 29.5 T0 289 from 1100 to 1180 lever bleed gen hp 0.04 cust off 0.06 cool 0/0 | At the starting throttle (1100 K): with 
+UNCLASSIFIED #449 z 1250 dT -18.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 3.48 z 4450 dT 14.5 T0 274 from 800 to 930 lever both gen off 0.09 cust off 0.02 cool 0/0 | At the starting throttle (800 K): the en
+UNCLASSIFIED #455 z 19500 dT 41: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 2.84 z 17100 dT 3 T0 220 from 610 to 1660 lever bleed gen off 0.015 cust off 0.07 cool 0/0 | At the starting throttle (610 K): the en
+UNCLASSIFIED #461 z 7100 dT -41: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 1.83 z 5100 dT 43.5 T0 299 from 1420 to 630 lever bleed gen off 0.005 cust off 0.03 cool 0.1/0.03 | At the final throttle (630 K): the engin
+UNCLASSIFIED #467 z 19050 dT -40.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #468 z 14050 dT 15: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 2.7600000000000002 z 11450 dT 10.5 T0 227 from 1460 to 1060 lever none gen off 0.055 cust off 0.06 cool 0/0 | At the starting throttle (1460 K): the e
+DETAIL OFFMAP M 1.06 z 19350 dT 21 T0 238 from 1080 to 1430 lever stator gen lp 0.08 cust off 0.04 cool 0/0 | At the starting throttle (1080 K): the e
+UNCLASSIFIED #473 z 14250 dT 40: At the starting throttle (1470 K), holding HP speed: The HP shaft speed asked for (88.8016 % of design) is below the least this load allows: the engine needs at least 
+DETAIL OFFMAP M 2.25 z 450 dT 0.5 T0 286 from 1230 to 820 lever stator gen off 0.02 cust amount 0.01 cool 0/0 | At the starting throttle (1230 K): the e
+DETAIL OFFMAP M 2.39 z 19950 dT -29.5 T0 187 from 1510 to 860 lever stator gen off 0.045 cust share 0.06 cool 0/0 | At the final throttle (860 K): the engin
+DETAIL OFFMAP M 3.4 z 15200 dT 21 T0 238 from 840 to 1550 lever none gen hp 0.055 cust off 0.12 cool 0.07/0.07 | At the starting throttle (840 K): with t
+UNCLASSIFIED #485 z 19850 dT 8: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a different
+UNCLASSIFIED #488 z 10400 dT 38: At the starting throttle (1330 K), holding HP speed: The HP shaft speed asked for (89.5015 % of design) is below the least this load allows: the engine needs at least 
+DETAIL SETTLE M 0.51 z -100 dT 4.5 T0 293 from 1280 to 620 lever bleed gen lp 0.03 cust amount 0.02 cool 0/0 | At the final throttle (620 K): the engin
+DETAIL OFFMAP M 3.37 z 7850 dT -17 T0 220 from 1270 to 820 lever bleed gen off 0 cust amount 0.14 cool 0/0 | At the final throttle (820 K): the engin
+UNCLASSIFIED #494 z 17500 dT 4: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. 
+DETAIL OFFMAP M 3.34 z 11650 dT 11.5 T0 228 from 710 to 670 lever bleed gen hp 0.085 cust off 0.08 cool 0/0 | At the starting throttle (710 K): the en
+UNCLASSIFIED #497 z 13350 dT -9.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 1.36 z 13750 dT -37.5 T0 179 from 1460 to 620 lever none gen off 0.01 cust off 0.19 cool 0/0 | At the final throttle (620 K): the engin
+UNCLASSIFIED #499 z 11650 dT 13.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 2.7600000000000002 z -100 dT 27.5 T0 316 from 890 to 1200 lever both gen lp 0.03 cust amount 0.1 cool 0/0 | At the starting throttle (890 K): the en
+UNCLASSIFIED #505 z 11950 dT 4: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. 
+DETAIL OFFMAP M 0.17 z -750 dT -26.5 T0 267 from 840 to 1290 lever both gen lp 0.015 cust amount 0.19 cool 0.15/0.11 | At the starting throttle (840 K): the en
+DETAIL SETTLE M 1.72 z 16450 dT 11.5 T0 228 from 970 to 1660 lever both gen hp 0.085 cust off 0.19 cool 0/0 | At the starting throttle (970 K): the en
+DETAIL OFFMAP M 2.87 z 15050 dT -11.5 T0 205 from 1650 to 1060 lever stator gen lp 0.055 cust share 0.03 cool 0/0 | At the starting throttle (1650 K): with 
+UNCLASSIFIED #514 z 6750 dT 36: The speed governor's gain must be above 0 and at most 27.1 here (the air the engine takes in is 1.84 times as dense as at the design flight, so the shafts answer the fu
+DETAIL OFFMAP M 2.25 z 50 dT -8.5 T0 279 from 680 to 1530 lever stator gen hp 0.03 cust share 0.05 cool 0.11/0.08 | At the starting throttle (680 K): with t
+DETAIL OFFMAP M 2.58 z 750 dT -2.5 T0 281 from 690 to 1530 lever stator gen off 0.09 cust share 0.04 cool 0.08/0.09 | At the starting throttle (690 K): the en
+DETAIL OFFMAP M 2.71 z -400 dT -37.5 T0 253 from 1120 to 880 lever stator gen lp 0.055 cust share 0.04 cool 0/0 | At the starting throttle (1120 K): with 
+UNCLASSIFIED #526 z 6650 dT -42: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a differen
+DETAIL OFFMAP M 0.12 z 200 dT 7.5 T0 294 from 1020 to 1020 lever none gen off 0.05 cust amount 0.19 cool 0/0 | At the starting throttle (1020 K): the e
+DETAIL OFFMAP M 3.39 z 8850 dT -5.5 T0 225 from 810 to 1650 lever none gen hp 0.09 cust off 0.18 cool 0.03/0.09 | At the starting throttle (810 K): with t
+DETAIL OFFMAP M 3.04 z 7450 dT -35.5 T0 204 from 670 to 1350 lever both gen off 0.085 cust off 0.17 cool 0.04/0.05 | At the starting throttle (670 K): the en
+UNCLASSIFIED #534 z 17550 dT 40: The speed governor's time constant must be at least 0.119 spool time constants here: the air the engine takes in is 34 % as dense as at the design flight, so the shaft
+DETAIL OFFMAP M 2.86 z 4900 dT 20.5 T0 277 from 1070 to 770 lever bleed gen hp 0.035 cust off 0.13 cool 0/0 | At the final throttle (770 K): with the 
+DETAIL OFFMAP M 1.3900000000000001 z 5900 dT 20.5 T0 270 from 1040 to 730 lever bleed gen hp 0.05 cust amount 0.16 cool 0/0 | At the starting throttle (1040 K): the e
+UNCLASSIFIED #542 z 18200 dT 1: At the starting throttle (1270 K), holding HP speed: The HP shaft speed asked for (88.8967 % of design) is below the least this load allows: the engine needs at least 1
+DETAIL OFFMAP M 3.44 z 3050 dT -32 T0 236 from 1270 to 1640 lever both gen off 0.015 cust share 0.19 cool 0.13/0.02 | At the starting throttle (1270 K): the e
+DETAIL OFFMAP M 3.43 z 600 dT -1.5 T0 283 from 850 to 1380 lever stator gen hp 0.065 cust off 0.18 cool 0/0 | At the starting throttle (850 K): the en
+DETAIL OFFMAP M 3.2600000000000002 z 6900 dT -10 T0 233 from 750 to 1650 lever stator gen off 0.07 cust off 0.05 cool 0/0 | At the starting throttle (750 K): the en
+DETAIL OFFMAP M 0.53 z 1500 dT -26 T0 252 from 1290 to 660 lever stator gen lp 0.06 cust share 0.12 cool 0.07/0.11 | At the final throttle (660 K): the engin
+UNCLASSIFIED #559 z 12000 dT -30.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 3.22 z 3850 dT 25.5 T0 289 from 890 to 760 lever bleed gen off 0.045 cust off 0.14 cool 0/0 | At the starting throttle (890 K): the en
+UNCLASSIFIED #561 z 200 dT 2.5: The speed governor's gain must be above 0 and at most 9 here (the air the engine takes in is 5.53 times as dense as at the design flight, so the shafts answer the fuel 
+DETAIL OFFMAP M 3.5 z 5200 dT -32.5 T0 222 from 950 to 1320 lever none gen off 0.08 cust amount 0.15 cool 0/0 | At the starting throttle (950 K): the en
+DETAIL OFFMAP M 1.7 z 1600 dT -7 T0 271 from 850 to 800 lever none gen hp 0.045 cust off 0.01 cool 0/0.12 | At the starting throttle (850 K): the en
+DETAIL OFFMAP M 3.48 z 2900 dT 4 T0 273 from 1050 to 1270 lever bleed gen hp 0.09 cust amount 0.01 cool 0/0 | At the starting throttle (1050 K): with 
+DETAIL OFFMAP M 1.92 z 13950 dT 15.5 T0 232 from 1000 to 930 lever bleed gen off 0.03 cust amount 0.17 cool 0/0 | At the starting throttle (1000 K): the e
+DETAIL OFFMAP M 2.65 z 13350 dT -43.5 T0 173 from 610 to 1560 lever both gen off 0.045 cust amount 0.12 cool 0.1/0.07 | At the starting throttle (610 K): the en
+DETAIL OFFMAP M 3 z 14950 dT 43.5 T0 260 from 1120 to 1000 lever stator gen off 0.08 cust off 0.14 cool 0/0 | At the starting throttle (1120 K): the e
+UNCLASSIFIED #578 z 15550 dT -10.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 3.5 z 7700 dT 11.5 T0 250 from 1470 to 860 lever none gen lp 0.09 cust amount 0.1 cool 0/0 | At the final throttle (860 K): the engin
+UNCLASSIFIED #586 z -450 dT 28: At the final throttle (910 K), holding HP speed: The HP shaft speed asked for (74.7818 % of design) is below the least this load allows: the engine needs at least 1013 
+DETAIL OFFMAP M 0.14 z 1100 dT 40 T0 321 from 1380 to 980 lever none gen hp 0.03 cust share 0.17 cool 0/0 | At the final throttle (980 K): the engin
+UNCLASSIFIED #591 z 4000 dT -43: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 3.2600000000000002 z 15050 dT 27.5 T0 244 from 1270 to 930 lever none gen off 0.005 cust off 0.19 cool 0/0 | At the final throttle (930 K): the engin
+DETAIL OFFMAP M 2.83 z 5150 dT -19 T0 236 from 1150 to 920 lever both gen off 0.035 cust amount 0.13 cool 0/0 | At the starting throttle (1150 K): the e
+UNCLASSIFIED #597 z 12750 dT -15.5: At the starting throttle (1090 K), holding HP speed: The HP shaft speed asked for (83.4784 % of design) is below the least this load allows: the engine needs at lea
+DETAIL OFFMAP M 2.97 z 12950 dT -3 T0 214 from 810 to 1640 lever none gen off 0.05 cust off 0.02 cool 0/0 | At the starting throttle (810 K): the en
+UNCLASSIFIED #601 z 14750 dT -41: At the final throttle (860 K), holding HP speed: The HP shaft speed asked for (73.5735 % of design) is below the least this load allows: the engine needs at least 993
+UNCLASSIFIED #602 z 13250 dT -9: The governor runs with the instant valve only: a slow valve is a state on its own march, and a governor on that march is a different model. Make the valve instant."}
+DETAIL OFFMAP M 0.85 z 100 dT -35 T0 253 from 700 to 670 lever none gen off 0.035 cust off 0.02 cool 0.04/0.15 | At the starting throttle (700 K): the en
+DETAIL OFFMAP M 1.43 z 5750 dT -5 T0 246 from 680 to 1610 lever none gen hp 0.08 cust off 0.19 cool 0/0 | At the starting throttle (680 K): with t
+DETAIL OFFMAP M 3.16 z 7950 dT -44 T0 193 from 910 to 840 lever bleed gen off 0.035 cust off 0.08 cool 0/0 | At the starting throttle (910 K): the en
+DETAIL OFFMAP M 3.34 z 18250 dT -29.5 T0 187 from 1170 to 680 lever both gen hp 0.03 cust off 0 cool 0/0 | At the final throttle (680 K): with the 
+DETAIL OFFMAP M 2.99 z 5850 dT -9.5 T0 241 from 1270 to 710 lever none gen lp 0.015 cust amount 0.01 cool 0.05/0.06 | At the final throttle (710 K): with the 
+DETAIL OFFMAP M 2.7 z 5100 dT 21.5 T0 277 from 780 to 1090 lever both gen off 0.075 cust off 0.01 cool 0.05/0.06 | At the starting throttle (780 K): the en
+DETAIL OFFMAP M 2.87 z 10400 dT 32 T0 253 from 1240 to 700 lever both gen hp 0.065 cust share 0.17 cool 0/0 | At the starting throttle (1240 K): the e
+DETAIL OFFMAP M 3.27 z 850 dT -39 T0 244 from 600 to 1030 lever both gen lp 0.08 cust amount 0.16 cool 0/0 | At the starting throttle (600 K): with t
+UNCLASSIFIED #622 z 13150 dT 28.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #626 z 15900 dT -34.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 3.18 z 15450 dT -1 T0 216 from 1620 to 650 lever stator gen off 0.09 cust share 0.17 cool 0/0 | At the starting throttle (1620 K): the e
+DETAIL OFFMAP M 0.27 z 16400 dT 45 T0 262 from 1270 to 650 lever none gen off 0.07 cust off 0.03 cool 0/0 | At the final throttle (650 K): the engin
+DETAIL OFFMAP M 3.27 z 13250 dT 27.5 T0 244 from 680 to 1560 lever none gen lp 0.025 cust off 0.01 cool 0/0 | At the starting throttle (680 K): with t
+UNCLASSIFIED #634 z 17550 dT -0.5: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a differ
+UNCLASSIFIED #637 z 4000 dT -36: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 0.88 z -150 dT 13.5 T0 303 from 1580 to 930 lever stator gen off 0.03 cust off 0.04 cool 0/0 | At the final throttle (930 K): the engin
+UNCLASSIFIED #641 z 11650 dT 25: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 1.21 z 7150 dT -34 T0 208 from 600 to 1130 lever both gen off 0.04 cust off 0.14 cool 0/0 | At the starting throttle (600 K): the en
+UNCLASSIFIED #664 z 14550 dT 22: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 3.11 z 10400 dT 13.5 T0 234 from 740 to 1060 lever both gen hp 0.03 cust amount 0.15 cool 0.04/0.12 | At the starting throttle (740 K): with t
+DETAIL OFFMAP M 3.13 z 11150 dT -39 T0 178 from 770 to 620 lever bleed gen lp 0.03 cust off 0.13 cool 0/0 | At the starting throttle (770 K): the en
+DETAIL OFFMAP M 0.5700000000000001 z 18000 dT -20 T0 197 from 1570 to 810 lever bleed gen hp 0.065 cust off 0.09 cool 0/0 | At the starting throttle (1570 K): with 
+DETAIL OFFMAP M 3.18 z 2600 dT 31 T0 302 from 850 to 980 lever stator gen off 0.005 cust off 0 cool 0/0 | At the starting throttle (850 K): the en
+UNCLASSIFIED #677 z 8950 dT 17: The governor runs with the instant valve only: a slow valve is a state on its own march, and a governor on that march is a different model. Make the valve instant."}
+UNCLASSIFIED #683 z 13650 dT -37.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 1.55 z 9150 dT 29.5 T0 258 from 850 to 1280 lever none gen off 0.095 cust off 0.08 cool 0/0 | At the starting throttle (850 K): the en
+DETAIL OFFMAP M 2.83 z 7350 dT 18.5 T0 259 from 1330 to 800 lever none gen hp 0.09 cust off 0.1 cool 0/0 | At the final throttle (800 K): with the 
+UNCLASSIFIED #690 z 16500 dT -34.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #693 z 13400 dT -39.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #694 z 5000 dT -26: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #696 z 14850 dT 22: At the starting throttle (840 K), holding HP speed: The HP shaft speed asked for (72.0786 % of design) is below the least this load allows: the engine needs at least 1
+DETAIL OFFMAP M 3.2 z 17350 dT -3 T0 214 from 1240 to 800 lever bleed gen off 0.02 cust off 0.03 cool 0/0 | At the final throttle (800 K): the engin
+DETAIL OFFMAP M 0.72 z 10250 dT -7 T0 215 from 1680 to 660 lever both gen lp 0.07 cust off 0.15 cool 0.01/0.12 | At the final throttle (660 K): the engin
+UNCLASSIFIED #701 z 7050 dT -42.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 1.1300000000000001 z 1800 dT 38.5 T0 315 from 620 to 990 lever stator gen lp 0.03 cust amount 0.03 cool 0/0 | At the starting throttle (620 K): with t
+DETAIL OFFMAP M 1.28 z 16350 dT 14 T0 231 from 1120 to 730 lever stator gen lp 0.045 cust off 0.13 cool 0/0 | At the starting throttle (1120 K): the e
+DETAIL OFFMAP M 1.42 z 6000 dT 17 T0 266 from 1530 to 1130 lever both gen hp 0.02 cust share 0.09 cool 0/0 | At the final throttle (1130 K): with the
+DETAIL OFFMAP M 2.2 z -200 dT -19 T0 270 from 1440 to 960 lever none gen lp 0.01 cust share 0.13 cool 0.03/0.02 | At the starting throttle (1440 K): the e
+UNCLASSIFIED #712 z 7650 dT -19: The realistic release and the temperature limiter's lag cannot run together: each carries a cut as a lagging state on a different limiter, and two such lags at once is
+UNCLASSIFIED #715 z 3650 dT 8: At the starting throttle (790 K), the control holding the fan (LP shaft) speed its table gives for the asked thrust: the fan speed asked for (69.5227 % of design) is bel
+DETAIL OFFMAP M 1.19 z 17750 dT 11 T0 228 from 990 to 1440 lever bleed gen hp 0.08 cust off 0.01 cool 0.08/0.08 | At the starting throttle (990 K): the en
+UNCLASSIFIED #724 z 3550 dT -7: The speed governor's gain must be above 0 and at most 4.9 here (the air the engine takes in is 10.12 times as dense as at the design flight, so the shafts answer the fu
+UNCLASSIFIED #727 z 16700 dT 24: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #729 z 19100 dT -14: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #730 z 14700 dT 35.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #732 z 2000 dT 8: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #734 z 450 dT 36.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #737 z 6200 dT 26.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 2.49 z 19550 dT -26 T0 191 from 1580 to 1170 lever none gen off 0.02 cust off 0.19 cool 0.06/0.06 | At the final throttle (1170 K): the engi
+DETAIL OFFMAP M 0.19 z -350 dT 44 T0 334 from 800 to 980 lever none gen hp 0 cust amount 0.11 cool 0/0 | At the starting throttle (800 K): with t
+UNCLASSIFIED #744 z 9000 dT -3.5: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model
+DETAIL OFFMAP M 2.25 z 19900 dT 12 T0 229 from 610 to 850 lever bleed gen hp 0.1 cust off 0.19 cool 0/0.15 | At the starting throttle (610 K): with t
+DETAIL OFFMAP M 2.38 z 12650 dT 1 T0 218 from 680 to 1400 lever none gen lp 0.05 cust amount 0.09 cool 0/0 | At the starting throttle (680 K): with t
+UNCLASSIFIED #747 z 17700 dT -36.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 1.36 z 13350 dT -23 T0 194 from 660 to 800 lever both gen lp 0.015 cust off 0.1 cool 0/0 | At the starting throttle (660 K): with t
+UNCLASSIFIED #749 z 17400 dT 9: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. 
+UNCLASSIFIED #751 z -800 dT 24.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #754 z 50 dT 30: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 3.48 z 3250 dT 8.5 T0 276 from 1280 to 850 lever both gen off 0.07 cust off 0.14 cool 0/0 | At the final throttle (850 K): the engin
+DETAIL OFFMAP M 0.64 z -700 dT 4.5 T0 297 from 1250 to 1000 lever stator gen hp 0.005 cust amount 0.12 cool 0/0 | At the final throttle (1000 K): with the
+UNCLASSIFIED #760 z 1850 dT 23.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #762 z 6150 dT 24: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 2.97 z 10000 dT -6 T0 217 from 1590 to 1580 lever none gen lp 0.095 cust share 0.18 cool 0/0 | At the starting throttle (1590 K): the e
+UNCLASSIFIED #765 z 19000 dT -40: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 3.13 z 4600 dT 36 T0 294 from 680 to 1120 lever none gen hp 0.015 cust share 0 cool 0.01/0.13 | At the starting throttle (680 K): with t
+DETAIL OFFMAP M 2.66 z 7050 dT 14 T0 256 from 770 to 1560 lever both gen lp 0.015 cust off 0.09 cool 0/0 | At the starting throttle (770 K): the en
+DETAIL OFFMAP M 2.6 z -450 dT 35 T0 326 from 1530 to 870 lever none gen hp 0.075 cust share 0.05 cool 0/0 | At the final throttle (870 K): with the 
+DETAIL OFFMAP M 2.7800000000000002 z 3800 dT 44 T0 307 from 820 to 1250 lever both gen off 0.005 cust off 0.04 cool 0/0 | At the starting throttle (820 K): the en
+UNCLASSIFIED #788 z 15650 dT -32: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #790 z 13350 dT 3.5: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model
+UNCLASSIFIED #791 z 18700 dT 29: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 2.9 z 14000 dT -8 T0 209 from 970 to 670 lever none gen off 0.085 cust share 0.18 cool 0/0 | At the final throttle (670 K): the engin
+UNCLASSIFIED #794 z 11050 dT 44: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 3.2 z 6850 dT -0.5 T0 243 from 640 to 1540 lever none gen lp 0.01 cust off 0.17 cool 0.06/0.04 | At the starting throttle (640 K): with t
+DETAIL OFFMAP M 1.5 z 1350 dT -4 T0 275 from 760 to 1490 lever bleed gen lp 0.075 cust share 0.13 cool 0.1/0.1 | At the starting throttle (760 K): with t
+UNCLASSIFIED #800 z 18150 dT -1.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 3.17 z 14550 dT 19 T0 236 from 1260 to 800 lever stator gen hp 0.095 cust share 0.13 cool 0.06/0.09 | At the final throttle (800 K): with the 
+UNCLASSIFIED #804 z 1950 dT -5.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 0.36 z 3450 dT 21.5 T0 287 from 720 to 860 lever none gen lp 0.035 cust off 0.06 cool 0/0 | At the starting throttle (720 K): with t
+UNCLASSIFIED #808 z 5750 dT -24: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 3.34 z 150 dT 1 T0 288 from 870 to 1040 lever both gen lp 0.015 cust amount 0.13 cool 0/0 | At the starting throttle (870 K): with t
+UNCLASSIFIED #810 z 13700 dT 5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 1.82 z 4350 dT 33 T0 293 from 1050 to 630 lever none gen off 0.08 cust off 0.1 cool 0/0 | At the final throttle (630 K): the engin
+UNCLASSIFIED #815 z 11000 dT -36.5: The governor runs with the instant valve only: a slow valve is a state on its own march, and a governor on that march is a different model. Make the valve instant."
+UNCLASSIFIED #816 z 8150 dT 32: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #817 z 9150 dT 33.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 1.43 z -100 dT -34.5 T0 254 from 600 to 1430 lever bleed gen off 0.025 cust amount 0.15 cool 0.12/0.11 | At the starting throttle (600 K): the en
+unknown #821 z 19600 dT 25.5: 
+   REQ {"op":"controls","controls":{"T0":242.14999999999998,"p0":5887.006513373738,"shape":"tilted","lever":"stator","bleed_mode":"schedule","valve_speed":"instant","redline_on":1,"gov_lag_on":1,"accel_on":0,"floor_on":1,"floor_ref":"phi","floor_phi":0.84,"release_on":0,"govern":0,"hold":"speed","thrust_by":"n1","speed_law":"prop","gov_tau":0.7000000000000001,"gov_gain":4,"generator":"off","generator_power":0.01,"customer":"share","customer_share":0.17,"customer_amount":0.17,"cool_vane":0,"cool_blade":0,"metal_on":0,"from":640,"to":1120,"ramp":0.58,"settle":4.3,"rho":0.30000000000000004,"M0":1.08}}
+DETAIL OFFMAP M 3.2800000000000002 z 16600 dT 14.5 T0 231 from 740 to 1040 lever stator gen hp 0.025 cust off 0.18 cool 0/0 | At the starting throttle (740 K): with t
+UNCLASSIFIED #831 z 19700 dT -36.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 2.96 z 18300 dT -8.5 T0 208 from 1300 to 620 lever both gen hp 0.065 cust share 0.14 cool 0.11/0.02 | At the starting throttle (1300 K): with 
+DETAIL OFFMAP M 1.62 z 12950 dT -7.5 T0 209 from 630 to 1430 lever none gen off 0.035 cust off 0.15 cool 0.06/0.14 | At the starting throttle (630 K): the en
+UNCLASSIFIED #837 z 8250 dT 33: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #838 z 18150 dT 13.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #839 z 15950 dT 16.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 2.92 z 12500 dT -22 T0 195 from 840 to 650 lever none gen off 0.05 cust share 0.03 cool 0/0 | At the final throttle (650 K): the engin
+UNCLASSIFIED #842 z 16800 dT -23: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 3.36 z 15950 dT 28 T0 245 from 840 to 940 lever bleed gen off 0.095 cust off 0.05 cool 0.02/0.13 | At the starting throttle (840 K): the en
+DETAIL OFFMAP M 2.91 z 10150 dT -44 T0 178 from 920 to 910 lever both gen lp 0.02 cust amount 0.12 cool 0/0 | At the starting throttle (920 K): the en
+UNCLASSIFIED #850 z 17750 dT 20.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 2.82 z 13200 dT -43 T0 174 from 620 to 850 lever none gen lp 0.055 cust off 0.16 cool 0/0 | At the starting throttle (620 K): with t
+DETAIL OFFMAP M 3 z 15800 dT -38 T0 179 from 1260 to 1380 lever none gen off 0 cust share 0.15 cool 0/0 | At the starting throttle (1260 K): the e
+UNCLASSIFIED #855 z 11500 dT -2: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a differen
+UNCLASSIFIED #858 z 14650 dT 25: At the final throttle (640 K), the control holding the fan (LP shaft) speed its table gives for the asked thrust: the fan speed asked for (56.7695 % of design) is belo
+DETAIL OFFMAP M 2.41 z 3800 dT -29 T0 234 from 1440 to 1570 lever none gen hp 0.02 cust off 0.11 cool 0.07/0.05 | At the starting throttle (1440 K): with 
+DETAIL OFFMAP M 0.84 z 13800 dT -24 T0 193 from 1260 to 1300 lever bleed gen lp 0.09 cust off 0.13 cool 0/0 | At the starting throttle (1260 K): the e
+DETAIL OFFMAP M 3.14 z 9550 dT 9 T0 235 from 960 to 790 lever none gen lp 0.035 cust off 0.11 cool 0.03/0.03 | At the final throttle (790 K): the engin
+DETAIL OFFMAP M 3.34 z 6050 dT -33.5 T0 215 from 1330 to 750 lever bleed gen off 0.045 cust off 0.06 cool 0.07/0.13 | At the final throttle (750 K): the engin
+DETAIL OFFMAP M 3.08 z 10400 dT 39.5 T0 260 from 720 to 1330 lever bleed gen off 0.07 cust off 0.17 cool 0.08/0.1 | At the starting throttle (720 K): the en
+DETAIL OFFMAP M 1.85 z 1250 dT 0.5 T0 281 from 660 to 660 lever stator gen off 0.05 cust amount 0.1 cool 0/0 | At the starting throttle (660 K): the en
+DETAIL OFFMAP M 1.3 z 5000 dT 35.5 T0 291 from 870 to 890 lever bleed gen hp 0.08 cust share 0.15 cool 0/0 | At the starting throttle (870 K): with t
+DETAIL OFFMAP M 2.05 z 9650 dT -10.5 T0 215 from 1170 to 1330 lever stator gen lp 0.085 cust off 0.16 cool 0/0 | At the starting throttle (1170 K): with 
+DETAIL OFFMAP M 0.61 z -150 dT 17.5 T0 307 from 1050 to 1100 lever both gen hp 0.06 cust amount 0.07 cool 0/0 | At the starting throttle (1050 K): with 
+DETAIL OFFMAP M 2.72 z 5700 dT 32 T0 283 from 670 to 1290 lever none gen hp 0.01 cust share 0.16 cool 0/0 | At the starting throttle (670 K): the en
+UNCLASSIFIED #882 z 4400 dT -4: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 2.7600000000000002 z 2800 dT 14 T0 284 from 1520 to 670 lever stator gen lp 0 cust amount 0.1 cool 0/0 | At the starting throttle (1520 K): the e
+DETAIL OFFMAP M 2.32 z 9250 dT -6.5 T0 222 from 680 to 1590 lever none gen lp 0.03 cust off 0.05 cool 0/0 | At the starting throttle (680 K): with t
+DETAIL OFFMAP M 3.17 z 900 dT -34.5 T0 248 from 1090 to 680 lever none gen lp 0.02 cust share 0.17 cool 0/0 | At the final throttle (680 K): with the 
+DETAIL OFFMAP M 2.25 z 4900 dT -38.5 T0 218 from 800 to 1540 lever none gen off 0.045 cust off 0.17 cool 0/0 | At the starting throttle (800 K): the en
+DETAIL OFFMAP M 0.88 z 0 dT -24.5 T0 264 from 1380 to 650 lever bleed gen off 0.06 cust share 0.14 cool 0/0 | At the final throttle (650 K): the engin
+UNCLASSIFIED #903 z 7150 dT -23: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #904 z 4650 dT 29.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #912 z 17450 dT 0.5: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model
+UNCLASSIFIED #915 z 3700 dT -17: The governor runs with the instant valve only: a slow valve is a state on its own march, and a governor on that march is a different model. Make the valve instant."}
+UNCLASSIFIED #917 z 18050 dT 44.5: The governor runs with the instant valve only: a slow valve is a state on its own march, and a governor on that march is a different model. Make the valve instant."}
+DETAIL SETTLE M 0.9 z 13500 dT -4.5 T0 212 from 1560 to 1410 lever both gen hp 0.06 cust amount 0.03 cool 0.11/0.14 | At the starting throttle (1560 K): the e
+UNCLASSIFIED #920 z 9450 dT -9.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #921 z 9450 dT 37.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #925 z 400 dT -14: The speed governor's gain must be above 0 and at most 13.8 here (the air the engine takes in is 3.61 times as dense as at the design flight, so the shafts answer the fu
+unknown #929 z 3600 dT 30.5: 
+   REQ {"op":"controls","controls":{"T0":295.2632445208342,"p0":64939.01866928342,"shape":"press/flow","lever":"stator","bleed_mode":"valve","valve_speed":"instant","redline_on":1,"gov_lag_on":1,"accel_on":0,"floor_on":1,"floor_ref":"phi","floor_phi":0.625,"release_on":0,"govern":0,"hold":"tt4","thrust_by":"true","speed_law":"rate","gov_tau":0.72,"gov_gain":42,"generator":"off","generator_power":0.085,"customer":"off","customer_share":0.02,"customer_amount":0.02,"cool_vane":0.07,"cool_blade":0.13,"metal_on":0,"from":1630,"to":800,"ramp":1.72,"settle":1.1,"rho":4.9,"M0":2.2600000000000002}}
+UNCLASSIFIED #934 z 10800 dT 43.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #938 z 15000 dT 29.5: The fan-speed governor's gain must be above 0 and at most 19.2 here (the air the engine takes in is 2.60 times as dense as at the design flight, so the shafts answer
+UNCLASSIFIED #939 z 3550 dT 7.5: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model.
+DETAIL OFFMAP M 2.47 z 1200 dT 40 T0 320 from 620 to 1230 lever bleed gen off 0.07 cust amount 0 cool 0/0 | At the starting throttle (620 K): the en
+DETAIL OFFMAP M 3.38 z 17350 dT 5.5 T0 222 from 1320 to 670 lever stator gen off 0.04 cust off 0 cool 0/0 | At the final throttle (670 K): the engin
+UNCLASSIFIED #947 z 16200 dT -13.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #951 z 6650 dT -30: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 0.8300000000000001 z 14250 dT -13.5 T0 203 from 1480 to 1450 lever bleed gen hp 0.04 cust off 0.15 cool 0.15/0.12 | At the starting throttle (1480 K): with 
+UNCLASSIFIED #954 z 8900 dT -2.5: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a differe
+DETAIL OFFMAP M 2.91 z 1850 dT -39 T0 237 from 680 to 750 lever stator gen hp 0.065 cust amount 0.15 cool 0.04/0.14 | At the starting throttle (680 K): with t
+UNCLASSIFIED #957 z 13000 dT 10: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 2.73 z 19400 dT 36 T0 253 from 680 to 1510 lever stator gen off 0.09 cust share 0.07 cool 0.12/0.03 | At the starting throttle (680 K): the en
+DETAIL OFFMAP M 2.95 z 7750 dT -3.5 T0 234 from 1040 to 1100 lever both gen hp 0.045 cust share 0.14 cool 0/0 | At the starting throttle (1040 K): the e
+DETAIL OFFMAP M 1.12 z 14500 dT -39.5 T0 177 from 1670 to 640 lever none gen hp 0.045 cust off 0.15 cool 0/0 | At the starting throttle (1670 K): with 
+UNCLASSIFIED #964 z 3400 dT 9: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. S
+UNCLASSIFIED #966 z 19750 dT 37.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 1.16 z 10700 dT -7.5 T0 211 from 1220 to 940 lever bleed gen off 0.045 cust off 0.18 cool 0.12/0.12 | At the final throttle (940 K): the engin
+DETAIL OFFMAP M 2.23 z 250 dT -28.5 T0 258 from 620 to 1600 lever stator gen lp 0.075 cust share 0.02 cool 0/0 | At the starting throttle (620 K): with t
+UNCLASSIFIED #975 z 9750 dT 2: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #979 z 16400 dT -41.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 3.14 z 17050 dT -22 T0 195 from 690 to 1450 lever bleed gen off 0.005 cust off 0.08 cool 0/0 | At the starting throttle (690 K): the en
+DETAIL OFFMAP M 1.98 z 1550 dT -12 T0 266 from 780 to 1190 lever both gen off 0.035 cust amount 0.11 cool 0/0 | At the starting throttle (780 K): the en
+UNCLASSIFIED #987 z 7550 dT 28: The realistic release and the temperature limiter's lag cannot run together: each carries a cut as a lagging state on a different limiter, and two such lags at once is 
+DETAIL OFFMAP M 2.49 z 10150 dT -28 T0 194 from 1660 to 610 lever none gen off 0.085 cust amount 0.12 cool 0/0 | At the final throttle (610 K): the engin
+DETAIL OFFMAP M 2.11 z 11800 dT 28 T0 245 from 1040 to 1660 lever bleed gen hp 0.065 cust amount 0.11 cool 0.14/0.06 | At the starting throttle (1040 K): the e
+DETAIL OFFMAP M 3.09 z 300 dT 26 T0 312 from 680 to 740 lever stator gen off 0.09 cust off 0.18 cool 0/0 | At the starting throttle (680 K): the en
+UNCLASSIFIED #991 z 13600 dT 11: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model.
+DETAIL OFFMAP M 2.17 z 1950 dT 34 T0 309 from 980 to 600 lever none gen off 0.05 cust off 0.14 cool 0/0 | At the final throttle (600 K): the engin
+UNCLASSIFIED #997 z 18400 dT 34.5: At the starting throttle (1290 K), holding HP speed: The HP shaft speed asked for (92.0557 % of design) is below the least this load allows: the engine needs at leas
+DETAIL OFFMAP M 0.78 z 16650 dT 15 T0 232 from 770 to 1540 lever stator gen hp 0.075 cust off 0.07 cool 0.02/0.01 | At the starting throttle (770 K): the en
+DETAIL OFFMAP M 3.13 z 7200 dT 13 T0 254 from 1560 to 740 lever none gen off 0.02 cust off 0.03 cool 0/0 | At the final throttle (740 K): the engin
+DETAIL OFFMAP M 0.92 z 9850 dT 20.5 T0 245 from 800 to 1140 lever stator gen hp 0.01 cust share 0.19 cool 0/0 | At the starting throttle (800 K): with t
+DETAIL OFFMAP M 1.99 z 12100 dT 26 T0 243 from 1060 to 1470 lever none gen hp 0.02 cust off 0.05 cool 0/0 | At the starting throttle (1060 K): with 
+UNCLASSIFIED #1020 z 8850 dT -44.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1023 z 16700 dT -19.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 0.55 z 14400 dT 30 T0 247 from 790 to 850 lever both gen lp 0.09 cust share 0.11 cool 0/0 | At the starting throttle (790 K): the en
+DETAIL OFFMAP M 1.87 z 18950 dT 26 T0 243 from 610 to 970 lever none gen off 0.035 cust off 0.02 cool 0.01/0.01 | At the starting throttle (610 K): the en
+DETAIL OFFMAP M 3.2 z 15450 dT -10.5 T0 206 from 740 to 1210 lever none gen lp 0.07 cust off 0.18 cool 0.06/0.13 | At the starting throttle (740 K): the en
+UNCLASSIFIED #1036 z 5200 dT 2.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 2.92 z 13200 dT 5.5 T0 222 from 1610 to 620 lever both gen hp 0.055 cust off 0.06 cool 0.06/0.04 | At the starting throttle (1610 K): with 
+DETAIL OFFMAP M 2.33 z 7250 dT -15.5 T0 226 from 700 to 860 lever none gen off 0.035 cust off 0.01 cool 0/0 | At the starting throttle (700 K): the en
+DETAIL OFFMAP M 1.81 z -200 dT -2 T0 287 from 620 to 1490 lever none gen off 0.04 cust amount 0.18 cool 0/0 | At the starting throttle (620 K): the en
+DETAIL OFFMAP M 3.17 z 18700 dT 42 T0 259 from 900 to 780 lever stator gen off 0.095 cust share 0.2 cool 0.14/0.05 | At the starting throttle (900 K): the en
+DETAIL OFFMAP M 3.0500000000000003 z 4950 dT 33.5 T0 290 from 760 to 1510 lever none gen off 0.055 cust amount 0.17 cool 0.07/0.1 | At the starting throttle (760 K): the en
+DETAIL OFFMAP M 2.35 z 11700 dT 45 T0 262 from 810 to 1340 lever both gen lp 0.035 cust share 0.15 cool 0.02/0.03 | At the starting throttle (810 K): with t
+DETAIL OFFMAP M 2.56 z 6350 dT 2 T0 249 from 720 to 1520 lever none gen off 0.035 cust off 0.16 cool 0/0 | At the starting throttle (720 K): the en
+UNCLASSIFIED #1058 z 13050 dT 21: The governor runs with the instant valve only: a slow valve is a state on its own march, and a governor on that march is a different model. Make the valve instant."}
+DETAIL OFFMAP M 0.77 z -400 dT -1.5 T0 289 from 660 to 1130 lever none gen hp 0.035 cust share 0.12 cool 0/0 | At the starting throttle (660 K): the en
+DETAIL OFFMAP M 2.64 z 15050 dT -18 T0 199 from 610 to 1000 lever none gen off 0.1 cust off 0.03 cool 0/0 | At the starting throttle (610 K): the en
+DETAIL OFFMAP M 1.05 z 9650 dT -32 T0 194 from 790 to 620 lever both gen off 0.06 cust share 0.14 cool 0/0 | At the starting throttle (790 K): the en
+DETAIL OFFMAP M 0.98 z 1450 dT -15.5 T0 263 from 890 to 1620 lever stator gen lp 0.09 cust off 0.07 cool 0.13/0.02 | At the starting throttle (890 K): with t
+DETAIL OFFMAP M 3.2 z 7800 dT 13 T0 251 from 1380 to 1250 lever none gen lp 0.1 cust off 0.03 cool 0/0 | At the starting throttle (1380 K): with 
+UNCLASSIFIED #1078 z 850 dT 29.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1087 z 8400 dT -33: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a differe
+UNCLASSIFIED #1093 z 18950 dT -38.5: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different mo
+UNCLASSIFIED #1099 z 16500 dT 0: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1102 z 750 dT 20.5: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model
+DETAIL OFFMAP M 2.91 z 8100 dT -32 T0 204 from 1220 to 710 lever both gen lp 0.025 cust amount 0.18 cool 0/0 | At the starting throttle (1220 K): with 
+UNCLASSIFIED #1104 z 5150 dT 5.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1108 z 12250 dT -2: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1109 z 14000 dT -3: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1112 z 9850 dT 42.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 2.69 z 5750 dT 13.5 T0 264 from 620 to 910 lever both gen lp 0.07 cust off 0.18 cool 0/0 | At the starting throttle (620 K): with t
+UNCLASSIFIED #1117 z 16450 dT -36.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1119 z 100 dT 45: At the final throttle (1250 K), holding HP speed: The HP shaft speed asked for (80.5242 % of design) is below the least this load allows: the engine needs at least 1242
+DETAIL OFFMAP M 2.34 z -350 dT 4.5 T0 295 from 1680 to 880 lever none gen hp 0.03 cust share 0.04 cool 0/0 | At the starting throttle (1680 K): with 
+DETAIL OFFMAP M 2.99 z 2950 dT 2 T0 271 from 900 to 1690 lever both gen lp 0 cust share 0.15 cool 0/0 | At the starting throttle (900 K): the en
+UNCLASSIFIED #1126 z 500 dT 21.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1133 z 14150 dT 19: At the starting throttle (1090 K), holding HP speed: The HP shaft speed asked for (74.7305 % of design) is below the least this load allows: the engine needs at least
+UNCLASSIFIED #1135 z 6600 dT 11.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 2.24 z 9450 dT -3.5 T0 223 from 1270 to 1410 lever none gen lp 0.07 cust share 0.13 cool 0/0 | At the starting throttle (1270 K): with 
+UNCLASSIFIED #1137 z 1850 dT 30: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 0.76 z 15700 dT -38 T0 179 from 810 to 600 lever both gen off 0.065 cust off 0.16 cool 0/0 | At the final throttle (600 K): the engin
+DETAIL OFFMAP M 3.19 z -950 dT -3 T0 291 from 980 to 1260 lever none gen lp 0.08 cust off 0.1 cool 0/0 | At the starting throttle (980 K): with t
+UNCLASSIFIED #1145 z 10200 dT -8: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 0.47000000000000003 z 3950 dT 10.5 T0 273 from 1350 to 830 lever both gen off 0.02 cust amount 0.14 cool 0/0 | At the final throttle (830 K): the engin
+DETAIL OFFMAP M 2.87 z 11200 dT 28 T0 245 from 1620 to 830 lever both gen off 0.03 cust off 0.16 cool 0/0 | At the final throttle (830 K): the engin
+DETAIL OFFMAP M 3.0500000000000003 z 4150 dT 24 T0 285 from 820 to 720 lever bleed gen off 0.095 cust off 0.11 cool 0/0 | At the starting throttle (820 K): the en
+DETAIL OFFMAP M 2.96 z 18000 dT -0.5 T0 216 from 630 to 1160 lever bleed gen lp 0.035 cust amount 0.12 cool 0.1/0.05 | At the starting throttle (630 K): the en
+UNCLASSIFIED #1157 z 9050 dT -18.5: At the final throttle (960 K), holding HP speed: The HP shaft speed asked for (78.1580 % of design) is below the least this load allows: the engine needs at least 9
+DETAIL OFFMAP M 3.17 z 19600 dT -0.5 T0 216 from 820 to 990 lever both gen off 0.03 cust off 0.13 cool 0/0 | At the starting throttle (820 K): the en
+DETAIL SETTLE M 0.13 z 1250 dT -18 T0 262 from 660 to 1520 lever bleed gen lp 0.1 cust off 0.07 cool 0/0 | At the starting throttle (660 K): the en
+UNCLASSIFIED #1166 z 16400 dT 6.5: At the final throttle (1680 K), holding HP speed: The HP shaft speed asked for (76.8110 % of design) is more than this loaded engine gives even at 2000 K (71.4616 % 
+UNCLASSIFIED #1168 z 2000 dT 45: The realistic release and the temperature limiter's lag cannot run together: each carries a cut as a lagging state on a different limiter, and two such lags at once is
+UNCLASSIFIED #1169 z 300 dT -12: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1170 z 14800 dT 40.5: The speed governor's time constant must be at least 0.221 spool time constants here: the air the engine takes in is 18 % as dense as at the design flight, so the sh
+DETAIL OFFMAP M 2.09 z 8150 dT -7.5 T0 228 from 660 to 890 lever bleed gen lp 0.045 cust off 0.12 cool 0/0 | At the starting throttle (660 K): with t
+DETAIL OFFMAP M 3.5 z 1200 dT -2.5 T0 278 from 880 to 1030 lever bleed gen off 0.07 cust amount 0.11 cool 0.07/0 | At the starting throttle (880 K): the en
+DETAIL OFFMAP M 2.32 z 12500 dT 35 T0 252 from 660 to 870 lever bleed gen off 0.055 cust share 0.17 cool 0/0 | At the starting throttle (660 K): the en
+DETAIL OFFMAP M 0.5700000000000001 z 3450 dT 35.5 T0 301 from 1000 to 850 lever bleed gen off 0.015 cust share 0.01 cool 0/0 | At the final throttle (850 K): the engin
+DETAIL OFFMAP M 2.3000000000000003 z 13000 dT 24.5 T0 241 from 980 to 1390 lever both gen off 0.08 cust amount 0.11 cool 0/0.15 | At the starting throttle (980 K): the en
+UNCLASSIFIED #1190 z 14700 dT -5: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model
+UNCLASSIFIED #1196 z 18350 dT -4: At the starting throttle (820 K), the control holding the fan (LP shaft) speed its table gives for the asked thrust: with the generator on the engine has no steady po
+DETAIL OFFMAP M 2.79 z -350 dT -8.5 T0 282 from 910 to 1580 lever bleed gen off 0.085 cust off 0.03 cool 0/0 | At the starting throttle (910 K): the en
+UNCLASSIFIED #1206 z 13150 dT -44: At the starting throttle (690 K), the control holding the fan (LP shaft) speed its table gives for the asked thrust: the fan speed asked for (56.2871 % of design) is
+DETAIL OFFMAP M 2.84 z 2800 dT 28 T0 298 from 900 to 1560 lever stator gen off 0.05 cust off 0.15 cool 0.03/0.05 | At the starting throttle (900 K): the en
+UNCLASSIFIED #1209 z 11950 dT 8: The speed governor's gain must be above 0 and at most 30.5 here (the air the engine takes in is 1.64 times as dense as at the design flight, so the shafts answer the f
+UNCLASSIFIED #1211 z 16650 dT -28: At the starting throttle (1470 K), holding HP speed: The search for the HP shaft speed met a burner temperature (1852 K) where the engine has no steady point. The mo
+UNCLASSIFIED #1212 z -700 dT -3.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1213 z 18600 dT -42: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 2.8000000000000003 z 16450 dT 33.5 T0 250 from 710 to 1370 lever none gen off 0.055 cust amount 0.07 cool 0.04/0.15 | At the starting throttle (710 K): the en
+DETAIL OFFMAP M 1.3 z 2400 dT 39.5 T0 312 from 840 to 1550 lever bleed gen hp 0.07 cust share 0.2 cool 0.03/0.1 | At the starting throttle (840 K): with t
+DETAIL OFFMAP M 2.57 z 8300 dT 13.5 T0 248 from 1300 to 1110 lever none gen off 0.035 cust amount 0.08 cool 0/0 | At the starting throttle (1300 K): the e
+DETAIL OFFMAP M 3.08 z 4600 dT 13.5 T0 272 from 1320 to 880 lever none gen lp 0.005 cust amount 0.17 cool 0/0 | At the final throttle (880 K): with the 
+UNCLASSIFIED #1232 z 2850 dT -42: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a differe
+UNCLASSIFIED #1233 z 11500 dT -18.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1239 z 11700 dT -35.5: At the starting throttle (840 K), holding HP speed: The HP shaft speed asked for (71.3953 % of design) is below the least this load allows: the engine needs at lea
+UNCLASSIFIED #1240 z 17600 dT -39.5: The realistic release and the temperature limiter's lag cannot run together: each carries a cut as a lagging state on a different limiter, and two such lags at onc
+DETAIL OFFMAP M 1.69 z -600 dT 7 T0 299 from 1480 to 780 lever none gen lp 0.015 cust share 0.01 cool 0/0 | At the final throttle (780 K): with the 
+DETAIL OFFMAP M 2.17 z 10950 dT -3 T0 214 from 1000 to 1670 lever stator gen lp 0.1 cust off 0.07 cool 0.15/0.06 | At the starting throttle (1000 K): the e
+UNCLASSIFIED #1246 z 12600 dT 22.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 3.42 z 12450 dT -17 T0 200 from 1460 to 720 lever none gen lp 0.01 cust share 0.03 cool 0/0 | At the final throttle (720 K): the engin
+DETAIL OFFMAP M 2.57 z 3850 dT 42.5 T0 306 from 1090 to 830 lever both gen lp 0.05 cust off 0.07 cool 0/0 | At the final throttle (830 K): the engin
+DETAIL OFFMAP M 1.93 z -850 dT -8 T0 286 from 930 to 1250 lever none gen off 0.085 cust off 0.11 cool 0/0 | At the starting throttle (930 K): the en
+UNCLASSIFIED #1250 z 13750 dT 39.5: At the starting throttle (720 K), holding HP speed: The HP shaft speed asked for (67.1922 % of design) is below the least this load allows: the engine needs at leas
+UNCLASSIFIED #1252 z 16450 dT 37.5: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different mod
+DETAIL OFFMAP M 1.6400000000000001 z 1550 dT 15 T0 293 from 1670 to 960 lever none gen off 0.04 cust share 0.18 cool 0/0 | At the final throttle (960 K): the engin
+DETAIL OFFMAP M 3.35 z 12050 dT -42 T0 175 from 1390 to 1250 lever none gen lp 0.095 cust share 0.13 cool 0/0 | At the starting throttle (1390 K): with 
+DETAIL OFFMAP M 3.14 z 16300 dT 15 T0 232 from 730 to 780 lever none gen lp 0.065 cust off 0.08 cool 0.13/0.11 | At the starting throttle (730 K): with t
+UNCLASSIFIED #1256 z 15700 dT -22: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 2.96 z 9000 dT -30 T0 200 from 850 to 1480 lever none gen hp 0.08 cust amount 0.13 cool 0/0 | At the starting throttle (850 K): with t
+UNCLASSIFIED #1260 z 11350 dT -6: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 3.25 z 13050 dT 14 T0 231 from 610 to 1290 lever bleed gen off 0.095 cust amount 0.1 cool 0/0 | At the starting throttle (610 K): the en
+DETAIL OFFMAP M 3.4 z 7450 dT 29.5 T0 269 from 1050 to 830 lever none gen off 0.095 cust amount 0.04 cool 0/0 | At the starting throttle (1050 K): the e
+UNCLASSIFIED #1265 z 850 dT -9: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 2.73 z 1450 dT 9.5 T0 288 from 830 to 740 lever bleed gen off 0.06 cust off 0.15 cool 0/0 | At the starting throttle (830 K): the en
+DETAIL OFFMAP M 2.99 z 12800 dT 29.5 T0 246 from 790 to 1620 lever stator gen off 0.08 cust amount 0.12 cool 0/0 | At the starting throttle (790 K): the en
+UNCLASSIFIED #1270 z -200 dT -25: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1272 z 8200 dT 4: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1273 z 12100 dT 35.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 1.2 z 8650 dT -2 T0 230 from 630 to 1680 lever stator gen hp 0.06 cust share 0.07 cool 0/0 | At the starting throttle (630 K): with t
+DETAIL OFFMAP M 3.38 z 17450 dT 6.5 T0 223 from 1510 to 1420 lever none gen off 0.065 cust off 0.15 cool 0/0.12 | At the starting throttle (1510 K): the e
+UNCLASSIFIED #1277 z 11650 dT -35.5: At the final throttle (770 K), holding HP speed: The HP shaft speed asked for (65.7884 % of design) is below the least this load allows: the engine needs at least 
+DETAIL OFFMAP M 3.36 z 17000 dT 12 T0 229 from 820 to 830 lever none gen off 0.02 cust off 0.16 cool 0/0 | At the starting throttle (820 K): the en
+UNCLASSIFIED #1280 z 7900 dT 15: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 2.89 z 12050 dT -10.5 T0 206 from 730 to 1410 lever none gen off 0.01 cust share 0.01 cool 0/0 | At the starting throttle (730 K): the en
+UNCLASSIFIED #1285 z 2650 dT -13.5: The speed governor's gain must be above 0 and at most 28.9 here (the air the engine takes in is 1.73 times as dense as at the design flight, so the shafts answer th
+UNCLASSIFIED #1286 z 1200 dT -37: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model
+UNCLASSIFIED #1288 z 5750 dT -2: The speed governor's gain must be above 0 and at most 9.8 here (the air the engine takes in is 5.05 times as dense as at the design flight, so the shafts answer the fu
+DETAIL OFFMAP M 2.67 z -600 dT 25 T0 317 from 1510 to 1000 lever stator gen off 0.01 cust off 0.07 cool 0/0 | At the starting throttle (1510 K): the e
+DETAIL OFFMAP M 3 z 15600 dT -9.5 T0 207 from 1480 to 680 lever none gen off 0.01 cust off 0.17 cool 0/0 | At the final throttle (680 K): the engin
+DETAIL OFFMAP M 2.04 z 1350 dT 28.5 T0 308 from 1640 to 750 lever none gen hp 0.085 cust amount 0.16 cool 0.08/0.03 | At the final throttle (750 K): with the 
+DETAIL OFFMAP M 3.24 z 10100 dT 32 T0 255 from 670 to 1410 lever bleed gen off 0.06 cust amount 0.12 cool 0.02/0.08 | At the starting throttle (670 K): the en
+UNCLASSIFIED #1302 z 18850 dT 43.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 2.47 z 8950 dT -38 T0 192 from 720 to 1090 lever bleed gen hp 0.025 cust off 0.18 cool 0/0 | At the starting throttle (720 K): the en
+DETAIL OFFMAP M 0.42 z 6050 dT -25 T0 224 from 1320 to 1100 lever bleed gen hp 0.08 cust amount 0.04 cool 0/0 | At the final throttle (1100 K): the engi
+DETAIL OFFMAP M 1.73 z 8550 dT 18 T0 251 from 870 to 1480 lever bleed gen hp 0.075 cust off 0.02 cool 0/0 | At the starting throttle (870 K): the en
+UNCLASSIFIED #1313 z 2350 dT 19.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1314 z 6900 dT 22.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 1.68 z 10300 dT -24 T0 197 from 820 to 1700 lever stator gen lp 0.05 cust amount 0.18 cool 0.15/0.15 | At the starting throttle (820 K): the en
+DETAIL OFFMAP M 2.75 z 3950 dT 41 T0 303 from 790 to 1210 lever none gen hp 0.075 cust off 0.11 cool 0/0 | At the starting throttle (790 K): with t
+DETAIL OFFMAP M 0.46 z 3200 dT 25 T0 292 from 1180 to 730 lever none gen off 0.05 cust share 0.05 cool 0/0 | At the final throttle (730 K): the engin
+DETAIL OFFMAP M 2.87 z 17150 dT 26 T0 243 from 640 to 730 lever none gen off 0.08 cust share 0.08 cool 0/0 | At the starting throttle (640 K): the en
+DETAIL OFFMAP M 2.17 z 12950 dT 24.5 T0 241 from 1090 to 1340 lever bleed gen off 0.03 cust off 0.18 cool 0.04/0 | At the starting throttle (1090 K): the e
+DETAIL OFFMAP M 1.6400000000000001 z 19400 dT -19.5 T0 197 from 690 to 1180 lever bleed gen off 0.01 cust share 0.11 cool 0/0 | At the starting throttle (690 K): the en
+DETAIL OFFMAP M 1.8 z 10050 dT 7 T0 230 from 1470 to 750 lever none gen off 0.03 cust off 0.13 cool 0/0 | At the final throttle (750 K): the engin
+DETAIL OFFMAP M 3.1 z 8150 dT -26 T0 209 from 990 to 1620 lever bleed gen lp 0.015 cust share 0.02 cool 0.03/0.09 | At the starting throttle (990 K): with t
+DETAIL OFFMAP M 3.3000000000000003 z 900 dT 24.5 T0 307 from 1090 to 1530 lever bleed gen off 0.075 cust off 0.04 cool 0/0 | At the starting throttle (1090 K): the e
+DETAIL OFFMAP M 2.39 z 1150 dT 21 T0 302 from 800 to 1310 lever bleed gen hp 0.055 cust off 0.17 cool 0/0 | At the starting throttle (800 K): with t
+DETAIL OFFMAP M 2.84 z 19750 dT -42 T0 175 from 630 to 870 lever both gen hp 0.015 cust off 0.02 cool 0/0 | At the starting throttle (630 K): the en
+UNCLASSIFIED #1340 z 800 dT -26: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model.
+UNCLASSIFIED #1345 z 16650 dT 2.5: The governor runs with the instant valve only: a slow valve is a state on its own march, and a governor on that march is a different model. Make the valve instant."}
+UNCLASSIFIED #1349 z 2150 dT 15.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1353 z 16050 dT -5.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 2.89 z 6000 dT -38 T0 211 from 940 to 680 lever both gen off 0.05 cust off 0.19 cool 0/0 | At the final throttle (680 K): the engin
+DETAIL OFFMAP M 1.92 z 5050 dT -36.5 T0 219 from 1630 to 760 lever both gen off 0.025 cust off 0.19 cool 0/0 | At the final throttle (760 K): the engin
+DETAIL OFFMAP M 3.41 z 17250 dT -42.5 T0 174 from 780 to 1260 lever stator gen off 0.005 cust amount 0.15 cool 0/0 | At the starting throttle (780 K): the en
+DETAIL OFFMAP M 3.42 z 6500 dT 32 T0 278 from 1530 to 1030 lever none gen lp 0.005 cust off 0.12 cool 0/0 | At the final throttle (1030 K): the engi
+UNCLASSIFIED #1377 z 5950 dT -5.5: At the starting throttle (1180 K), holding HP speed: The HP shaft speed asked for (69.0726 % of design) is below the least this load allows: the engine needs at leas
+UNCLASSIFIED #1378 z 14150 dT -27: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1380 z 3500 dT -0.5: At the final throttle (1180 K), holding HP speed: The HP shaft speed asked for (66.5447 % of design) is below the least this load allows: the engine needs at least 1
+DETAIL OFFMAP M 3 z 14200 dT 17.5 T0 234 from 1410 to 1520 lever stator gen lp 0.08 cust off 0.17 cool 0/0 | At the starting throttle (1410 K): with 
+UNCLASSIFIED #1382 z 1200 dT -35.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1383 z 650 dT 12.5: The fan-speed governor's gain must be above 0 and at most 14.4 here (the air the engine takes in is 3.47 times as dense as at the design flight, so the shafts answer 
+DETAIL OFFMAP M 1.87 z 6550 dT 42 T0 288 from 1250 to 770 lever none gen hp 0.025 cust off 0.04 cool 0/0 | At the starting throttle (1250 K): with 
+UNCLASSIFIED #1392 z 18750 dT -24: The realistic release and the temperature limiter's lag cannot run together: each carries a cut as a lagging state on a different limiter, and two such lags at once 
+UNCLASSIFIED #1393 z 4650 dT -5.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 1.84 z 13350 dT -2 T0 215 from 1250 to 1100 lever none gen off 0.04 cust off 0.09 cool 0.12/0.11 | At the final throttle (1100 K): the engi
+UNCLASSIFIED #1398 z 13200 dT 33.5: At the starting throttle (1140 K), holding HP speed: The HP shaft speed asked for (78.8556 % of design) is below the least this load allows: the engine needs at lea
+DETAIL OFFMAP M 2.14 z 600 dT 14 T0 298 from 640 to 1250 lever bleed gen lp 0.055 cust off 0.06 cool 0/0 | At the starting throttle (640 K): with t
+UNCLASSIFIED #1401 z 1750 dT 0: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 0.85 z 1200 dT -33.5 T0 247 from 1670 to 630 lever none gen off 0.04 cust off 0.1 cool 0/0 | At the final throttle (630 K): the engin
+DETAIL OFFMAP M 0.71 z 1550 dT -5 T0 273 from 640 to 1420 lever stator gen off 0.025 cust off 0 cool 0.08/0.14 | At the starting throttle (640 K): the en
+UNCLASSIFIED #1404 z 16350 dT 5.5: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different mode
+UNCLASSIFIED #1405 z 14200 dT 28: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model
+UNCLASSIFIED #1409 z 12050 dT -33.5: At the starting throttle (970 K), holding HP speed: The HP shaft speed asked for (73.8177 % of design) is below the least this load allows: the engine needs at lea
+DETAIL OFFMAP M 2.44 z 18550 dT 15.5 T0 232 from 1120 to 710 lever both gen lp 0.085 cust off 0.04 cool 0/0 | At the starting throttle (1120 K): the e
+DETAIL OFFMAP M 1.69 z 9200 dT -7.5 T0 221 from 1100 to 1250 lever none gen hp 0.06 cust off 0.03 cool 0.15/0.05 | At the starting throttle (1100 K): the e
+DETAIL OFFMAP M 1.79 z 7850 dT -39.5 T0 198 from 1020 to 1680 lever stator gen lp 0.09 cust amount 0.17 cool 0/0 | At the starting throttle (1020 K): the e
+UNCLASSIFIED #1424 z 15700 dT -22: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different mode
+DETAIL OFFMAP M 2.59 z 5200 dT 23 T0 277 from 1370 to 690 lever none gen lp 0.08 cust off 0.04 cool 0/0 | At the final throttle (690 K): with the 
+UNCLASSIFIED #1428 z -350 dT -34.5: The governor runs with the instant valve only: a slow valve is a state on its own march, and a governor on that march is a different model. Make the valve instant."
+UNCLASSIFIED #1429 z 11300 dT -42: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1431 z 12400 dT -3.5: The governor runs with the instant valve only: a slow valve is a state on its own march, and a governor on that march is a different model. Make the valve instant."
+DETAIL OFFMAP M 2.45 z 9400 dT -43 T0 184 from 1110 to 1220 lever stator gen off 0.075 cust amount 0.07 cool 0/0 | At the starting throttle (1110 K): the e
+UNCLASSIFIED #1439 z 14900 dT -14.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1444 z 7950 dT -3.5: The governor runs with the instant valve only: a slow valve is a state on its own march, and a governor on that march is a different model. Make the valve instant."}
+DETAIL OFFMAP M 3.0100000000000002 z 7800 dT -28 T0 210 from 1690 to 1180 lever none gen off 0.04 cust off 0.19 cool 0.12/0.02 | At the starting throttle (1690 K): the e
+UNCLASSIFIED #1447 z 10450 dT -42: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 3 z 15950 dT -20.5 T0 196 from 1350 to 680 lever none gen off 0.025 cust off 0.05 cool 0/0 | At the final throttle (680 K): the engin
+DETAIL OFFMAP M 1.85 z 4650 dT -39.5 T0 218 from 1190 to 830 lever none gen off 0.025 cust off 0.07 cool 0.1/0.07 | At the final throttle (830 K): the engin
+UNCLASSIFIED #1454 z 14750 dT 1.5: At the starting throttle (1480 K), holding HP speed: The HP shaft speed asked for (101.1743 % of design) is below the least this load allows: the engine needs at lea
+UNCLASSIFIED #1455 z 2550 dT -38: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model
+UNCLASSIFIED #1456 z 2350 dT 13.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+DETAIL OFFMAP M 3.43 z 1650 dT -13 T0 264 from 1630 to 900 lever bleed gen off 0.015 cust off 0.14 cool 0/0 | At the final throttle (900 K): the engin
+DETAIL OFFMAP M 2.95 z 13300 dT -5 T0 212 from 630 to 1530 lever stator gen hp 0.055 cust off 0.08 cool 0/0 | At the starting throttle (630 K): with t
+DETAIL OFFMAP M 3 z 14900 dT -18.5 T0 198 from 1050 to 1680 lever stator gen hp 0.03 cust amount 0.12 cool 0/0 | At the starting throttle (1050 K): with 
+DETAIL OFFMAP M 3.47 z 15650 dT 25 T0 242 from 720 to 1440 lever stator gen off 0.01 cust off 0.04 cool 0/0 | At the starting throttle (720 K): the en
+UNCLASSIFIED #1474 z 10700 dT -39.5: The governor runs with the instant valve only: a slow valve is a state on its own march, and a governor on that march is a different model. Make the valve instant.
+UNCLASSIFIED #1475 z 18500 dT 16: The speed governor's gain must be above 0 and at most 35.7 here (the air the engine takes in is 1.40 times as dense as at the design flight, so the shafts answer the 
+DETAIL OFFMAP M 3.19 z 9150 dT 11.5 T0 240 from 810 to 960 lever both gen off 0.035 cust share 0.05 cool 0/0 | At the starting throttle (810 K): the en
+DETAIL OFFMAP M 2.33 z 18450 dT 41.5 T0 258 from 1270 to 870 lever none gen hp 0.06 cust share 0.16 cool 0/0 | At the starting throttle (1270 K): with 
+UNCLASSIFIED #1482 z 5900 dT 27: The realistic release and the temperature limiter's lag cannot run together: each carries a cut as a lagging state on a different limiter, and two such lags at once is
+UNCLASSIFIED #1483 z 450 dT 35: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. 
+DETAIL OFFMAP M 3.46 z 900 dT 14.5 T0 297 from 970 to 1170 lever none gen off 0.05 cust off 0.04 cool 0/0 | At the starting throttle (970 K): the en
+UNCLASSIFIED #1485 z 13450 dT 8.5: At the starting throttle (1090 K), the control holding the pressure ratio its table gives for the asked thrust: with the generator on the engine has no steady point 
+DETAIL OFFMAP M 0.36 z 6400 dT 17 T0 264 from 1190 to 1690 lever stator gen lp 0.08 cust share 0.04 cool 0/0 | At the starting throttle (1190 K): the e
+DETAIL OFFMAP M 1.8900000000000001 z 4500 dT 1 T0 260 from 1150 to 1090 lever none gen off 0.09 cust off 0.09 cool 0/0 | At the starting throttle (1150 K): the e
+DETAIL OFFMAP M 3.19 z 2900 dT 24.5 T0 294 from 1430 to 960 lever both gen hp 0 cust off 0.01 cool 0.09/0.11 | At the final throttle (960 K): with the 
+  558  [z  -1000.. 19900]  ran to the end
+   96  [z   -900.. 19600]  ran, stopped early
+    4  [z   1750.. 17000]  refused: A slow valve cannot run beside the temperatur
+    1  [z   3500..  3500]  refused: At the final throttle (1180 K), holding HP sp
+    1  [z    100..   100]  refused: At the final throttle (1250 K), holding HP sp
+    1  [z  16400.. 16400]  refused: At the final throttle (1680 K), holding HP sp
+    1  [z  14650.. 14650]  refused: At the final throttle (640 K), the control ho
+    1  [z   9800..  9800]  refused: At the final throttle (720 K), holding HP spe
+    1  [z  13600.. 13600]  refused: At the final throttle (760 K), holding HP spe
+    1  [z  15800.. 15800]  refused: At the final throttle (760 K), the control ho
+    1  [z  11650.. 11650]  refused: At the final throttle (770 K), holding HP spe
+    1  [z  14750.. 14750]  refused: At the final throttle (860 K), holding HP spe
+    1  [z  19150.. 19150]  refused: At the final throttle (880 K), holding thrust
+    1  [z   -450..  -450]  refused: At the final throttle (910 K), holding HP spe
+    1  [z   9050..  9050]  refused: At the final throttle (960 K), holding HP spe
+    2  [z  12750.. 14150]  refused: At the starting throttle (1090 K), holding HP
+    1  [z  13450.. 13450]  refused: At the starting throttle (1090 K), the contro
+    1  [z  13200.. 13200]  refused: At the starting throttle (1140 K), holding HP
+    1  [z   5950..  5950]  refused: At the starting throttle (1180 K), holding HP
+    1  [z  18200.. 18200]  refused: At the starting throttle (1270 K), holding HP
+    1  [z  18400.. 18400]  refused: At the starting throttle (1290 K), holding HP
+    1  [z  10400.. 10400]  refused: At the starting throttle (1330 K), holding HP
+    2  [z  14250.. 16650]  refused: At the starting throttle (1470 K), holding HP
+    1  [z  14750.. 14750]  refused: At the starting throttle (1480 K), holding HP
+    1  [z  19700.. 19700]  refused: At the starting throttle (1700 K), holding HP
+    1  [z  13150.. 13150]  refused: At the starting throttle (690 K), the control
+    1  [z  13750.. 13750]  refused: At the starting throttle (720 K), holding HP 
+    1  [z  19150.. 19150]  refused: At the starting throttle (760 K), holding HP 
+    1  [z   3650..  3650]  refused: At the starting throttle (790 K), the control
+    1  [z  10900.. 10900]  refused: At the starting throttle (820 K), holding HP 
+    1  [z  18350.. 18350]  refused: At the starting throttle (820 K), the control
+    2  [z  11700.. 14850]  refused: At the starting throttle (840 K), holding HP 
+    1  [z  12050.. 12050]  refused: At the starting throttle (970 K), holding HP 
+    4  [z    650.. 15000]  refused: The fan-speed governor's gain must be above 0
+   42  [z   -450.. 19850]  refused: The governor runs with the instant limiters o
+   17  [z   -350.. 18050]  refused: The governor runs with the instant valve only
+    7  [z   2000.. 18750]  refused: The realistic release and the temperature lim
+   13  [z    200.. 18500]  refused: The speed governor's gain must be above 0 and
+    2  [z  14800.. 17550]  refused: The speed governor's time constant must be at
+  143  [z  -1000.. 19850]  refused: The temperature limiter's lag delays the limi
+    3  [z  17000.. 18550]  refused: [M 0.0-0.5] With this
+   13  [z   -400.. 19850]  refused: [M 0.0-0.5] acceleration schedule
+    7  [z   2100.. 15500]  refused: [M 0.0-0.5] cooling together
+   10  [z   9700.. 17250]  refused: [M 0.0-0.5] customer bleed would take
+    3  [z   1250.. 19350]  refused: [M 0.0-0.5] does not settle
+   10  [z   -700.. 19550]  refused: [M 0.0-0.5] generator would take
+   11  [z   -750.. 16400]  refused: [M 0.0-0.5] off the part of their maps
+   11  [z   2050.. 19900]  refused: [M 0.0-0.5] thrust asked
+    3  [z   3750..  8000]  refused: [M 0.0-0.5] too little pressure
+    3  [z  11450.. 17250]  refused: [M 0.5-1.0] With this
+   11  [z   -650.. 16200]  refused: [M 0.5-1.0] acceleration schedule
+    3  [z   5550.. 18000]  refused: [M 0.5-1.0] cooling together
+    7  [z   9200.. 19100]  refused: [M 0.5-1.0] customer bleed would take
+    3  [z   -100.. 13500]  refused: [M 0.5-1.0] does not settle
+   16  [z   -350.. 19100]  refused: [M 0.5-1.0] generator would take
+   28  [z   -700.. 19900]  refused: [M 0.5-1.0] off the part of their maps
+    5  [z   -750.. 18500]  refused: [M 0.5-1.0] thrust asked
+    1  [z   1500..  1500]  refused: [M 0.5-1.0] too little pressure
+    3  [z  14700.. 19600]  refused: [M 1.0-1.5] With this
+   12  [z   1050.. 18350]  refused: [M 1.0-1.5] acceleration schedule
+    3  [z    650.. 13250]  refused: [M 1.0-1.5] cooling together
+    5  [z  15500.. 19650]  refused: [M 1.0-1.5] customer bleed would take
+   10  [z   7400.. 18250]  refused: [M 1.0-1.5] generator would take
+   31  [z   -800.. 19350]  refused: [M 1.0-1.5] off the part of their maps
+    4  [z   4450.. 17900]  refused: [M 1.0-1.5] thrust asked
+    4  [z  16700.. 19400]  refused: [M 1.5-2.0] With this
+   17  [z   1750.. 19900]  refused: [M 1.5-2.0] acceleration schedule
+    2  [z  12700.. 17300]  refused: [M 1.5-2.0] cooling together
+    5  [z  16100.. 19750]  refused: [M 1.5-2.0] customer bleed would take
+    1  [z  16450.. 16450]  refused: [M 1.5-2.0] does not settle
+    7  [z  12500.. 19600]  refused: [M 1.5-2.0] generator would take
+   38  [z   -850.. 19400]  refused: [M 1.5-2.0] off the part of their maps
+    4  [z   8950.. 19050]  refused: [M 1.5-2.0] thrust asked
+    2  [z  17000.. 19200]  refused: [M 2.0-2.5] With this
+   16  [z   -750.. 19500]  refused: [M 2.0-2.5] acceleration schedule
+    2  [z  17750.. 18850]  refused: [M 2.0-2.5] customer bleed would take
+    2  [z  19600.. 19700]  refused: [M 2.0-2.5] generator would take
+   41  [z   -350.. 19950]  refused: [M 2.0-2.5] off the part of their maps
+    6  [z  12300.. 19100]  refused: [M 2.0-2.5] thrust asked
+   17  [z   3000.. 18300]  refused: [M 2.5-3.0] acceleration schedule
+    1  [z  18250.. 18250]  refused: [M 2.5-3.0] cooling together
+    3  [z  18400.. 19900]  refused: [M 2.5-3.0] generator would take
+   70  [z   -600.. 19750]  refused: [M 2.5-3.0] off the part of their maps
+    3  [z  13650.. 15850]  refused: [M 2.5-3.0] thrust asked
+   18  [z   -500.. 18300]  refused: [M 3.0-3.5] acceleration schedule
+    1  [z  19750.. 19750]  refused: [M 3.0-3.5] generator would take
+  102  [z   -950.. 19600]  refused: [M 3.0-3.5] off the part of their maps
+    3  [z   1200..  7700]  refused: [M 3.5-4.0] off the part of their maps
+stop kinds: {"floor_unreachable": 75, "lean": 8, "other": 2, "rich": 7, "unknown": 4}
+0 panics; total 118.0 s, median 0.005 s, slowest 3.30 / 1.46 / 1.24 s
+slowest request: {"op":"controls","controls":{"T0":239.78168667593934,"p0":38573.048587709614,"shape":"press/flow","lever":"none","bleed_mode":"schedule","valve_speed":"instant","redline_on":1,"gov_lag_on":0,"accel_on":0,"floor_on":1,"floor

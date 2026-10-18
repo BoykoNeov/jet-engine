@@ -26,6 +26,7 @@ new slices and step links go THERE, not here.
 - [Solver walls repair](solver-walls-repair.md) — a fix to failing cases moved 1 416 oracle keys (failure was control flow); a continuation crashed a diagnostic, so it ships default-OFF
 - [Back-pressure repair](back-pressure-repair.md) — 2026-10-16: a census logger in a threaded test process must write each record in ONE call; red-check by stashing src only
 - [Sandbox altitude](sandbox-altitude.md) — a step-checked limit holds only at its flight; a ×2 similarity cannot see a re-capture; empty-vs-empty cmp says IDENTICAL
+- [Sandbox Mach](sandbox-mach.md) — an archived probe source was a copy of another probe; equal output sizes were the tell — cmp them
 - [Schedule-check census](schedule-check-census.md) — census a fix's reach by RUNNING, not by the seam's stated scope (it said 63; it was 49–73)
 - [Schedule-check flip](schedule-check-flip.md) — a total over a run compares only at equal run length (rung 65 § 3 did not)
 - [Reused-machine map reset](reused-machine-map-reset.md) — leftover state can be oracle-gated Python behaviour; fix where it harms (next march's start), not everywhere

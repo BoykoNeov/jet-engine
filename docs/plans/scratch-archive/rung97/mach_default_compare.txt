@@ -1,0 +1,7 @@
+69 requests, previous commit vs this tree, M0 key removed; only these lines differ:
+65,66c65,66
+< {"ok":0,"reason":"The speed governor's gain must be above 0 and at most 26.4 here (the air is 1.89 times as dense as at the design flight, so the shafts answer the fuel harder): a larger gain is worked out too coarsely at this march's step."}
+< {"ok":0,"reason":"At the starting throttle (600 K): the engine has no steady operating point: the compressors would have to run off the part of their maps the model covers. Mostly this is a throttle too low for the air (on the flat-LP map at the design flight, below about 700\u2013900 K; warmer air raises that, colder air lowers it), or a large fixed load or amount of air in thin air; away from 
+---
+> {"ok":0,"reason":"The speed governor's gain must be above 0 and at most 26.4 here (the air the engine takes in is 1.89 times as dense as at the design flight, so the shafts answer the fuel harder): a larger gain is worked out too coarsely at this march's step."}
+> {"ok":0,"reason":"At the starting throttle (600 K): the engine has no steady operating point: the compressors would have to run off the part of their maps the model covers. Mostly this is a throttle too low for the air (on the flat-LP map at the design flight, below about 700\u2013900 K; warmer air raises that, and so does flying faster, which warms the air before it reaches the engine; colder a

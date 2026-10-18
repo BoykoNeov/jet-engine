@@ -306,8 +306,8 @@ footer p { max-width: 90ch; }
       <legend>The two-shaft engine, throttle slammed</legend>
       <p class="frozen">A separate engine, not the one in <b>Design</b> or <b>Fly it</b>: the <b>Size the blades</b> engine at
         its opening settings (pressure ratios 3 and 6, designed for 1500 K at the turbine inlet while flying at 250 K, 50 kPa,
-        Mach 0.85, on the perfect gas). Its hardware stays as designed; <b>Flight</b> below sets the air it flies in (Mach stays
-        0.85). The fuel moves from one throttle's steady fuel flow to the other's; the controls below cut it.</p>
+        Mach 0.85, on the perfect gas). Its hardware stays as designed; <b>Flight</b> below sets the air it flies in and how
+        fast. The fuel moves from one throttle's steady fuel flow to the other's; the controls below cut it.</p>
       <div class="knob"><label for="ctl-shape">Compressor map shape</label>
         <select id="ctl-shape" style="grid-column: 1 / -1">
           <option value="flow/press">LP curved along flow, HP along pressure</option>
@@ -690,13 +690,19 @@ footer p { max-width: 90ch; }
         <div class="derived" id="atmo-note"></div></div>
       <div class="knob" id="M0-row"><label for="M0">Flight Mach number</label><input type="number" id="M0" step="0.01">
         <input type="range" id="M0-r" min="0.05" max="3.5" step="0.01" aria-label="Mach slider"></div>
-      <p class="note" id="ctl-flight-note" hidden>The two-shaft engine keeps the hardware it was designed with and flies here at
-        Mach 0.85. Thinner air passes less of it through the engine, so the shafts spin up more slowly: time stays in the
-        spool time constant of the design flight, so the same throttle move reads slower up high, and runs hotter while the
-        shafts catch up. The throttles stay in kelvin: in colder air the same turbine temperature runs the shafts faster. The
-        speed governor's limits scale with the air's density: a smaller gain in denser air, a longer time constant in thinner.
+      <p class="note" id="ctl-flight-note" hidden>The two-shaft engine keeps the hardware it was designed with (at Mach 0.85) and
+        flies here in the air and at the speed set above. Flying faster rams the air denser and warmer before it reaches the
+        compressor; flying slower does the opposite. Thinner air at the engine passes less of it through, so the shafts spin
+        up more slowly: time stays in the spool time constant of the design flight, so the same throttle move reads slower up
+        high or slow, and runs hotter while the shafts catch up. The throttles stay in kelvin: in colder air the same turbine
+        temperature runs the shafts faster. The speed governor's limits scale with the density of the air the engine takes
+        in: a smaller gain in denser air, a longer time constant in thinner.
         Even so, on a cold day, or where the governor sits at its rich edge in thin air, its run is somewhat rougher (up to
-        about 0.0007 in flow coefficient against a finer step, measured; elsewhere about 0.0001).</p>
+        about 0.0006 in flow coefficient against a finer step, measured; elsewhere about 0.0001). Flying very fast heats
+        the air so much that a low throttle has no steady point (the default move is refused at Mach 3.5, runs from
+        1300 K), and the flat-LP map is refused faster than about Mach 1.5. Flown fast at a low throttle the thrust can go
+        below zero (Mach 3 from 1000 K: about −320 N): slowing the air the engine swallows costs more push than its jet
+        gives back.</p>
     </fieldset>
     <fieldset id="cycle-set">
       <legend>Cycle</legend>
@@ -1038,13 +1044,13 @@ footer p { max-width: 90ch; }
   mixture became leaner or richer than the model's fuel solver searches (0.004 and 0.065 kg of fuel per kg of air). With
   the temperature limiter's lag on, the model does not record the lag's state, so a stop there is reported without a cause.
   Time is in the high-pressure shaft's response time τ; the bleed thrust counts the dumped air's full ram drag. The
-  engine can be flown at another altitude and air temperature (Mach stays 0.85): its hardware stays as designed, every
-  steady point and the march itself are worked out in the new air, and τ stays the design flight's, so in thin air the
-  same move reads slower. There is no Reynolds-number effect: in the model a component's efficiency does not fall in
-  thin air, as a real one's does. At low throttles in dense or warm air the nozzle unchokes: it then passes less gas at a
-  given pressure, and the low-pressure turbine expands only as far as still leaves the nozzle enough pressure to push the
-  gas out (rung 97; both turbines' inlet guide vanes stay choked, as modelled throughout). Those stretches are drawn thin
-  and dashed.</p>
+  engine can be flown at another altitude, air temperature and Mach number: its hardware stays as designed, every
+  steady point and the march itself are worked out in the new flight, and τ stays the design flight's, so where the
+  engine takes in thinner air the same move reads slower. There is no Reynolds-number effect: in the model a
+  component's efficiency does not fall in thin air, as a real one's does. At low throttles in dense or warm air, or
+  flying slowly, the nozzle unchokes: it then passes less gas at a given pressure, and the low-pressure turbine expands
+  only as far as still leaves the nozzle enough pressure to push the gas out (rung 97; both turbines' inlet guide vanes
+  stay choked, as modelled throughout). Those stretches are drawn thin and dashed.</p>
   <p><b>Burner.</b> The project's rungs 7–24, beside the cycle: they never change a cycle number. They read four numbers off
   the <b>Design</b> engine run on the equilibrium gas (compressor exit temperature, turbine inlet temperature, fuel-air ratio,
   burner pressure) and do their own chemistry: an equilibrium flame in the front zone, the extended Zeldovich reactions for
@@ -1251,7 +1257,7 @@ function fmt(x, sig = 4) {
 function showSettings() {
   for (const k of NUM) {
     const v = FLIGHT.includes(k) ? target()[k] : S[k];
-    if (v === undefined) continue;                // Controls flies at the design's Mach: it has no M0 of its own
+    if (v === undefined) continue;                // a Controls setting saved before plan § 29 has no M0 (the model reads 0.85)
     const n = $(k); if (n && document.activeElement !== n) n.value = +v.toPrecision(8);
     const r = $(k + "-r"); if (r) r.value = v;
   }
@@ -1282,10 +1288,10 @@ function showSettings() {
   for (const id of BN_VIEW) $(id).hidden = !burner;
   for (const id of CL_VIEW) $(id).hidden = !cooling;
   $("bn-jet-card").hidden = !burner || !BK || BK.quench !== "jets";
-  // Plan § 27: the Controls engine flies too -- the same linked knobs, set beside its engine, without Mach.
+  // Plan § 27: the Controls engine flies too -- the same linked knobs, set beside its engine; Mach as well since § 29.
   $("flight-set").hidden = blades || cooling;
   if (controls) $("ctl-set").after($("flight-set")); else $("cycle-set").before($("flight-set"));
-  $("M0-row").hidden = controls; $("ctl-flight-note").hidden = !controls;
+  $("ctl-flight-note").hidden = !controls;
   for (const id of ["out", "ts-card", "stations-card", "perf-card"]) $(id).hidden = blades || controls || burner || cooling;
   $("mode-note").innerHTML = fly
     ? "The hardware is frozen. Move the throttle or the flight; press <b>Design the engine</b> to change the design."
@@ -1876,7 +1882,8 @@ const CTL_ROWS = [
   ["The air: altitude (m), warmer than standard (K)", r => r.ambient
     ? `${fmt(r.ambient.altitude, 5)} m, ${r.ambient.delta_t >= 0 ? "+" : ""}${fmt(r.ambient.delta_t, 3)} K`
     : `${fmt(r.controls.T0, 4)} K, ${fmt(r.controls.p0, 5)} Pa`],
-  ["Air density, × the design flight's", r => r.density_ratio, 3],
+  ["Flight Mach number", r => r.controls.M0, 3],
+  ["Density of the air taken in, × the design flight's", r => r.density_ratio, 3],
   // Rung 97: below the unchoke boundary the nozzle passes less at a given pressure, and the low-pressure turbine
   // expands less to push the gas out.
   ["Nozzle unchoked (of the run's moments)", r => {
@@ -1945,7 +1952,7 @@ function ctlTable() {
     const d = document.createElement("div"); d.className = "note";
     // Plan § 27: in thin air the shafts are slow too, on the design flight's clock.
     const why = [];
-    if (r.density_ratio < 1) why.push(`the air is ${fmt(r.density_ratio * 100, 2)} % as dense as at the design flight, so both shafts spin up more slowly`);
+    if (r.density_ratio < 1) why.push(`the air the engine takes in is ${fmt(r.density_ratio * 100, 2)} % as dense as at the design flight, so both shafts spin up more slowly`);
     if (r.controls.rho > 1) why.push(`a slow LP shaft (response time ${fmt(r.controls.rho, 2)} × the HP's)`);
     d.textContent = `The run ends before the shafts settle (still ${fmt(Math.max(r.settled_lp, r.settled_hp) * 100, 2)} % short of a final steady speed).` +
       (why.length ? ` Here ${why.join(", and ")}: a longer run settles further.` : " A longer run settles further.");

@@ -1,13 +1,21 @@
-# Rung 97 (and the parked sandbox § 28 Mach knob) — scratch scripts and their outputs
+# Rung 97 and the sandbox § 29 Mach knob — scratch scripts and their outputs
 
 Run from a scratch crate depending on `turbojet` by path (`W:\temp\claude\rung97-probe`, deleted after the work).
 
 - `sim.txt` — the pre-anchor similarity probe for rung 98 (δ/θ): pressure scaling exact, temperature scaling not
   (the fuel's fixed heating value); fixed generator power / customer amount break pressure scaling.
-- `mach_reach.txt` — the default move over Mach 0.05–2.2 on four maps (§ 28, needs the stashed Mach field).
+- `mach_reach.rs` → `mach_reach.txt` — § 29: the default move over Mach 0.05–3.5 on four maps, after rung 97.
+- `mach_choke.rs` → `mach_choke.txt` — § 29: unchoked points per run over Mach and air (default move and from 700 K), after
+  rung 97.
+- `mach_high.rs` → `mach_high.txt` — § 29: higher throttles at Mach 3 and 3.5 (three maps run from 1300 K; flat-LP never).
+- `mach_crash.rs` → `mach_crash29.txt` — § 29: the crash map over Mach 0.05–3.5 (`crash.rs` plus a random Mach; seed 29,
+  1 500 requests; the full request is kept only behind the odd stops).
+- `mach_default_compare.txt` — § 29: the previous commit's 69 check requests through a worktree of it and through the
+  Mach tree; only two refusals differ, in words.
 - `choke.rs` → `choke.txt` — unchoked points per run over Mach and flight (§ 28's field; G1 of the rung-97 anchor).
-- `mach_rulecheck.rs` → `mach_rulecheck.txt` — the governor's density rule with the Mach factor, checked at its limits
-  (792 runs).
+- `mach_rulecheck.rs` → `mach_rulecheck.txt` — § 29: the governor's density rule with the Mach factor, checked at its limits
+  (792 runs; measured before rung 97, rerun after it byte-identical. The .rs was archived as a copy of the choke probe by
+  mistake and restored from the session transcript on 2026-10-18).
 - `g1_root.rs` → `g1_root.txt` — the rung-97 prototype: the subsonic LP-turbine root at 1 667 unchoked instants
   (anchor G3/G4). Prints no speed, thrust, temperature or margin.
 - `census.tsv` — anchor G2: a logger (never committed) in the four transient tails, `RUNG97_CENSUS=<file>`, run over

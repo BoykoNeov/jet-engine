@@ -1,0 +1,24 @@
+shape 0 M 3 1000->1400: OK
+shape 0 M 3 1300->1600: OK
+shape 0 M 3 1500->1700: OK
+shape 0 M 3.5 1000->1400: REFUSED At the starting throttle (1000 K): the engine has no steady operating 
+shape 0 M 3.5 1300->1600: OK
+shape 0 M 3.5 1500->1700: OK
+shape 1 M 3 1000->1400: OK
+shape 1 M 3 1300->1600: OK
+shape 1 M 3 1500->1700: OK
+shape 1 M 3.5 1000->1400: REFUSED At the starting throttle (1000 K): the engine has no steady operating 
+shape 1 M 3.5 1300->1600: OK
+shape 1 M 3.5 1500->1700: OK
+shape 2 M 3 1000->1400: OK
+shape 2 M 3 1300->1600: OK
+shape 2 M 3 1500->1700: OK
+shape 2 M 3.5 1000->1400: REFUSED At the starting throttle (1000 K): the engine has no steady operating 
+shape 2 M 3.5 1300->1600: OK
+shape 2 M 3.5 1500->1700: OK
+shape 3 M 3 1000->1400: REFUSED At the starting throttle (1000 K): the engine has no steady operating 
+shape 3 M 3 1300->1600: REFUSED At the starting throttle (1300 K): the engine has no steady operating 
+shape 3 M 3 1500->1700: REFUSED At the starting throttle (1500 K): the engine has no steady operating 
+shape 3 M 3.5 1000->1400: REFUSED At the starting throttle (1000 K): the engine has no steady operating 
+shape 3 M 3.5 1300->1600: REFUSED At the starting throttle (1300 K): the engine has no steady operating 
+shape 3 M 3.5 1500->1700: REFUSED At the starting throttle (1500 K): the engine has no steady operating 

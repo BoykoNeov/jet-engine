@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: f1e86d85-6f2a-4ab4-9593-9fd477e71319
-  modified: 2026-10-18T05:09:15.665Z
+  modified: 2026-10-18T05:55:59.216Z
 ---
 
 Rung 96's seam "the table made at one flight condition and flown at another, corrected by δ/θ". User picked it
@@ -40,6 +40,20 @@ Mach code edits are in git stash "sandbox-28-mach-wip" (sandbox_controls.rs m0 f
 + powers, every variant; the steady rung 38/39 matcher keeps its refusal — status "transient BUILT, steady OPEN"),
 (2) Mach on Controls (sandbox plan § 28), (3) RUNG 98 = the δ/θ corrected tables → anchor → model/page/spec. Related:
 [[rung96-inferred-thrust]], [[sandbox-altitude]], [[rung95-decisions]].
+
+**Status 2026-10-18 (latest):** § 29 Mach knob DONE in the tree: tests pass, rulecheck rerun (byte-identical to
+pre-97), page note + off-map words updated, 7 check_requests, crash map seed 29 (0 panics), default ≡ previous commit
+(worktree compare, only 2 reworded refusals), plan § 29 + sandbox README + archive written, page rebuilt; gate running →
+commit + push. NEXT: rung 98 (anchor first). Then delete `W:\temp\claude\rung97-probe`.
+
+**Status 2026-10-18 (later):** rung 97 + review follow-ups pushed (`d04538e`, `01b5b21`). Mach stash POPPED and
+DROPPED — the Mach work is now UNCOMMITTED in the tree (sandbox_controls.rs m0 + density Mach factor, template with
+conflicts resolved — Mach row + "taken in" density row + rung 97's unchoked row, browser.mjs Mach check then unchoked
+check, reset `{T0:250,p0:50000,M0:0.85,from:1000}`), renumbered to plan § 29; NEW `rust/tests/sandbox_mach.rs` (not yet
+compiled/run). Post-rung-97 re-measures in `W:\temp\claude\rung97-probe\mach_{reach,choke,rulecheck}.txt`: reach — every
+map runs M 0.05–3.0 (flat-LP to 1.5), M 3.5 off-map; the default move never unchokes at any Mach; 700 K starts unchoke
+more as Mach falls. Rulecheck output not yet read. TODO for § 29: run the tests, read rulecheck, update the page note's
+roughness numbers, add Mach check_requests, crash map over Mach, plan § 29 text, sandbox README, gate, commit. Then rung 98.
 
 **Status 2026-10-18:** step (1) RUNG 97 SHIPPED ([[rung97-unchoked-lp]]; spec `docs/rung97-spec.md`, plan § 28). Next:
 pop stash "sandbox-28-mach-wip" → the Mach knob is now plan **§ 29** (its stashed comments say "§ 28" — renumber), then

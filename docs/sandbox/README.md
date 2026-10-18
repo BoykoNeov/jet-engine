@@ -144,10 +144,14 @@ engine with the generator off, or on this one). The thrust chart then shows the 
 thrust the engine gives.
 
 **Flight (plan § 27, 2026-10-16):** the *Flight* fieldset's altitude and "warmer than a standard day" (linked to the
-air temperature and pressure, as on *Fly it*) also fly this engine; Mach stays 0.85. The hardware stays as designed at
-250 K / 50 kPa; every steady point and the march run in the new air, and time stays in the design flight's spool time
-constant, so the same move reads slower — and runs hotter — up high. The speed governor's two step-checked limits scale
-with the air's density (a smaller gain in denser air, a longer time constant in thinner).
+air temperature and pressure, as on *Fly it*) also fly this engine, and since plan § 29 (2026-10-18) so does the
+flight Mach number. The hardware stays as designed at 250 K / 50 kPa / Mach 0.85; every steady point and the march run
+in the new air at the new speed, and time stays in the design flight's spool time constant, so the same move reads
+slower — and runs hotter — up high or slow. The speed governor's two step-checked limits scale with the density of the
+air the engine takes in (the ram included: a smaller gain in denser air, a longer time constant in thinner). Where the
+nozzle is unchoked (rung 97: low throttles in warm or dense air, or flown slowly) the chart draws those stretches thin
+and dashed and the table counts them; the model solves them on rung 97's branch, where the low-pressure turbine expands
+only as far as the nozzle can push the gas out.
 
 **Readouts:** turbine temperature against the redline, both shaft speeds, burnt vs scheduled fuel, each
 compressor's flow coefficient against its (moving) stall line and the floor, thrust (the bleed's dumped air
