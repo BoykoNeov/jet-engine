@@ -44,8 +44,10 @@ function check(name, ok, detail = '') {
 function close(a, b, path = '') {
   if (typeof a === 'number') {
     const isS = /\.s$|\.ts_(burner|reject)\.\d+\.0$/.test(path);
-    const d = isS ? Math.abs(a - b) : Math.abs(a - b) / Math.max(Math.abs(a), Math.abs(b), 1e-300);
-    return a === b || d <= (isS ? 1e-6 : 1e-9) ? null : `${path}: ${a} vs ${b}`;
+    // Rung 99: the thrust gap's parts are small differences (the formula's rest is 0 in algebra): absolute, as check.mjs.
+    const isGap = /\.gap_(ram|nozzle)\.\d+$/.test(path);
+    const d = isS || isGap ? Math.abs(a - b) : Math.abs(a - b) / Math.max(Math.abs(a), Math.abs(b), 1e-300);
+    return a === b || d <= (isGap ? 1e-10 : isS ? 1e-6 : 1e-9) ? null : `${path}: ${a} vs ${b}`;
   }
   if (a && typeof a === 'object') {
     for (const k of Object.keys(b)) { const e = close(a[k], b[k], `${path}.${k}`); if (e) return e; }
@@ -553,11 +555,13 @@ try {
   const r98Native = at => (() => { for (const l of readFileSync(nativeTxt, 'utf8').split(/\r?\n/)) {
     const [rq, out] = l.split('\t'); if (!out || !rq.startsWith('{"op":"controls"')) continue;
     const c = JSON.parse(rq).controls;
-    if (c.M0 === 1.4 && c.thrust_by === 'epr' && c.govern === 1 && c.table_at === at) return JSON.parse(out);
+    if (c.M0 === 1.4 && c.thrust_by === 'epr' && c.govern === 1 && c.table_at === at && c.T0 === 250
+        && (at === 'flight' || c.speed_corr === 'none')) return JSON.parse(out);
   } })();
-  await ev(`window.sandbox.controls({govern: 1, hold: 'thrust', thrust_by: 'epr', M0: 1.4}).then(r => r.run)`);
+  // (Pinned to no speed correction: rung 99 made the speed grid the default.)
+  await ev(`window.sandbox.controls({govern: 1, hold: 'thrust', thrust_by: 'epr', M0: 1.4, speed_corr: 'none'}).then(r => r.run)`);
   const tOn = await waitFor(`window.sandbox.ctlState === 'done' && window.sandbox.last.controls && window.sandbox.last.controls.M0 === 1.4
-      && window.sandbox.last.controls.thrust_by === 'epr'`, 30000);
+      && window.sandbox.last.controls.thrust_by === 'epr' && window.sandbox.last.controls.speed_corr === 'none'`, 30000);
   const tNat = r98Native('design');
   const tc = tOn ? (tNat ? close(await ev('window.sandbox.last'), tNat) : 'no native answer') : 'no run';
   const tr = await ev(`(() => { const r = window.sandbox.last; return [r.tables.carried, r.start.hold_achieved < r.start.hold_target,
@@ -567,13 +571,46 @@ try {
   check('tables_made_at_the_design_flight_fly_mach_1_4_short_of_the_asked_thrust', tOn && !tc && tr[0] === 1 && tr[1] && tr[2]
         && tr[3] === false && tr[4] === false && tr[5], (tc || '') + JSON.stringify(tr));
   if (process.env.SANDBOX_SHOTS) await shot('controls-tables');
+  // (The speed setting back to the default first, so the run matches its native answer.)
+  await ev(`window.sandbox.controls({speed_corr: 'grid'}).then(r => r.run)`);
   await ev(`document.getElementById('ctl-tat-flight').click()`);
   const fOn = await waitFor(`window.sandbox.ctlState === 'done' && window.sandbox.last.controls && window.sandbox.last.controls.table_at === 'flight'`, 30000);
   const fNat = r98Native('flight');
   const fc = fOn ? (fNat ? close(await ev('window.sandbox.last'), fNat) : 'no native answer') : 'no run';
   const tf = await ev(`[window.sandbox.last.tables.carried, document.getElementById('ctl-corr-box').hidden]`);
   check('tables_made_at_this_flight_carry_nothing', fOn && !fc && tf[0] === 0 && tf[1] === true, (fc || '') + JSON.stringify(tf));
-  await ev(`window.sandbox.controls({govern: 0, hold: 'tt4', thrust_by: 'true', M0: 0.85, table_at: 'design'}).then(r => r.run)`);
+  // Rung 99: the same flight on the speed grid (the default): the run matches native, the speed toggle shows, the
+  // starting end now gives a little MORE thrust than asked (the nozzle's push bends the curve down there), and the
+  // results table names the two tables blended. Then the thrust recomputed: the gap splits into the airflow guess and a
+  // rest of nothing (the nozzle choked throughout).
+  const r99Native = sc => (() => { for (const l of readFileSync(nativeTxt, 'utf8').split(/\r?\n/)) {
+    const [rq, out] = l.split('\t'); if (!out || !rq.startsWith('{"op":"controls"')) continue;
+    const c = JSON.parse(rq).controls;
+    if (c.M0 === 1.4 && c.thrust_by === 'epr' && c.govern === 1 && c.table_at === 'design' && c.T0 === 250 && c.speed_corr === sc)
+      return JSON.parse(out);
+  } })();
+  await ev(`window.sandbox.controls({table_at: 'design', speed_corr: 'grid'}).then(r => r.run)`);
+  const s99gOn = await waitFor(`window.sandbox.ctlState === 'done' && window.sandbox.last.controls && window.sandbox.last.controls.speed_corr === 'grid'
+      && window.sandbox.last.controls.table_at === 'design' && window.sandbox.last.controls.M0 === 1.4`, 30000);
+  const s99gNat = r99Native('grid');
+  const s99gc = s99gOn ? (s99gNat ? close(await ev('window.sandbox.last'), s99gNat) : 'no native answer') : 'no run';
+  const s99gr = await ev(`(() => { const r = window.sandbox.last; return [r.tables.speed.slices.join(','), r.start.hold_achieved > r.start.hold_target,
+      Math.abs(r.end.hold_achieved / r.end.hold_target - 1) < 0.01, document.getElementById('ctl-spd-grid').getAttribute('aria-pressed'),
+      [...document.getElementById('ctl-table').tBodies[0].rows].some(t => /^The control's tables/.test(t.cells[0].textContent)
+        && /Mach 1\\.2 and 1\\.6 tables blended/.test(t.cells[1].textContent))]; })()`);
+  check('the_speed_grid_blends_the_mach_1_2_and_1_6_tables_and_misses_by_tenths', s99gOn && !s99gc && s99gr[0] === '1.2,1.6' && s99gr[1] && s99gr[2]
+        && s99gr[3] === 'true' && s99gr[4], (s99gc || '') + JSON.stringify(s99gr));
+  await ev(`document.getElementById('ctl-spd-formula').click()`);
+  const s99xOn = await waitFor(`window.sandbox.ctlState === 'done' && window.sandbox.last.controls && window.sandbox.last.controls.speed_corr === 'formula'`, 30000);
+  const s99xNat = r99Native('formula');
+  const s99xc = s99xOn ? (s99xNat ? close(await ev('window.sandbox.last'), s99xNat) : 'no native answer') : 'no run';
+  const s99xr = await ev(`(() => { const r = window.sandbox.last; return [r.tables.speed.split,
+      [...document.getElementById('ctl-table').tBodies[0].rows].some(t => /^That gap's two parts/.test(t.cells[0].textContent)
+        && /the rest\\s+nothing/.test(t.cells[1].textContent))]; })()`);
+  check('the_thrust_recomputed_leaves_only_the_airflow_guess_while_choked', s99xOn && !s99xc && s99xr[0] === 'airflow_rest' && s99xr[1],
+        (s99xc || '') + JSON.stringify(s99xr));
+  if (process.env.SANDBOX_SHOTS) await shot('controls-speed');
+  await ev(`window.sandbox.controls({govern: 0, hold: 'tt4', thrust_by: 'true', M0: 0.85, table_at: 'design', speed_corr: 'grid'}).then(r => r.run)`);
   // Rung 97: at sea level on a +40 K day the 700 K start has the nozzle unchoked. The run matches native, its unchoked
   // stretch is drawn thin and dashed under the full-width choked one, the legend says so, and the table counts it.
   // check_requests holds this run (rung 97's first entry); find its native answer by its settings, not its spelling.

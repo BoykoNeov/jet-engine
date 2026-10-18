@@ -5,6 +5,7 @@
 
 use super::Design;
 use crate::burner_hold::Hold;
+use crate::mach_axis::SpeedCorr;
 use crate::pyfmt::Printer;
 use crate::sandbox_controls::{build, ControlsSettings, ThrustBy};
 
@@ -26,7 +27,8 @@ pub fn corrected_tables_table(p: &mut Printer, _d: &Design) {
     p.print("over what the throttle asks, %, on the map curved along flow at LP, along pressure at HP:");
     p.print(format!("\n  {:<22}{:>10}{:>10}{:>10}{:>10}{:>10}{:>10}", "flight", "EPR", "no temp", "no press", "fan", "no temp",
                     "no press"));
-    let d = ControlsSettings { govern: true, hold: Hold::Thrust, ..ControlsSettings::defaults() };
+    // Rung 99 made the speed grid the default; this panel keeps showing rung 98's one design-flight table.
+    let d = ControlsSettings { govern: true, hold: Hold::Thrust, speed_corr: SpeedCorr::None, ..ControlsSettings::defaults() };
     for (name, t0, p0, m0) in [("hot 290 K", 290.0, 50_000.0, 0.85), ("cold 216.65 K", 216.65, 50_000.0, 0.85),
                                ("thin 26.5 kPa", 250.0, 26_500.0, 0.85), ("Mach 0.5", 250.0, 50_000.0, 0.5),
                                ("Mach 1.4", 250.0, 50_000.0, 1.4)] {

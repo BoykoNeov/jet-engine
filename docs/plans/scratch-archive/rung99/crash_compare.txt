@@ -1,0 +1,752 @@
+# Rung 99 crash map, seed 99, 1500 requests: this tree against a worktree of 7113ed3 (classify99.py)
+76 differ; 0 outside the class (reads a table, tables at design, speed corrected, off Mach 0.85 for the grid)
+     8  ('formula', 'ran to the end -> ran to the end')
+     1  ('formula', 'refused: [M 1.0-1.5] design-flight table -> refused: [M 1.0-1.5] design-flight table')
+     1  ('formula', 'refused: [M 2.0-2.5] design-flight table -> refused: [M 2.0-2.5] design-flight table')
+    23  ('grid', 'ran to the end -> ran to the end')
+     2  ('grid', "ran to the end -> refused: [M 0.0-0.5] design altitude's air")
+     2  ('grid', 'ran, stopped early -> ran, stopped early')
+     1  ('grid', "ran, stopped early -> refused: [M 0.5-1.0] design altitude's air")
+     2  ('grid', "refused: [M 0.0-0.5] made at the design flight -> refused: [M 0.0-0.5] design altitude's air")
+     3  ('grid', "refused: [M 1.0-1.5] made at the design flight -> refused: [M 1.0-1.5] design altitude's air")
+     6  ('grid', 'refused: [M 1.5-2.0] made at the design flight -> ran to the end')
+     1  ('grid', 'refused: [M 1.5-2.0] made at the design flight -> ran, stopped early')
+     1  ('grid', "refused: [M 1.5-2.0] made at the design flight -> refused: [M 1.5-2.0] design altitude's air")
+     8  ('grid', 'refused: [M 2.0-2.5] made at the design flight -> ran to the end')
+     1  ('grid', 'refused: [M 2.0-2.5] made at the design flight -> ran, stopped early')
+     1  ('grid', "refused: [M 2.0-2.5] made at the design flight -> refused: [M 2.0-2.5] design altitude's air")
+     8  ('grid', 'refused: [M 2.5-3.0] made at the design flight -> ran to the end')
+     2  ('grid', 'refused: [M 2.5-3.0] made at the design flight -> ran, stopped early')
+     1  ('grid', "refused: [M 2.5-3.0] made at the design flight -> refused: [M 2.5-3.0] design altitude's air")
+     2  ('grid', 'refused: [M 3.0-3.5] made at the design flight -> ran to the end')
+     2  ('grid', "refused: [M 3.0-3.5] made at the design flight -> refused: [M 3.0-3.5] design altitude's air")
+eligible but unchanged: 315
+
+# Tallies, old (7113ed3)
+UNCLASSIFIED #7 z 14950 dT -14: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #9 z 16300 dT 39.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #10 z 11750 dT -16: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #19 z -50 dT 19.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #22 z 2250 dT -15: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #26 z 8450 dT -20.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #30 z 23250 dT 29.5: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a different model. Switch the lag off."}
+UNCLASSIFIED #36 z 2100 dT 5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #41 z 6050 dT -22.5: A slow valve cannot run beside the temperature limiter's lag or the realistic release: a lagging valve beside a lagging fuel cut is two lags on two levers (rung 66's two-lag cascade), a different model from this one. Make the valve instant, or switch the lag off."}
+UNCLASSIFIED #45 z 5600 dT -27: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #62 z 12250 dT 37.5: The speed governor's time constant must be at least 0.101 spool time constants here: the air the engine takes in is 40 % as dense as at the design flight, so the shafts answer the fuel more slowly and a fast commanded rate rides the rich edge: measured, one step moves the flow coefficients by about 0.001 against a finer step."}
+UNCLASSIFIED #64 z 15200 dT -40.5: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #66 z 10650 dT -26: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #67 z 23300 dT -44: The fan-speed governor's time constant must be at least 0.407 spool time constants here: the air the engine takes in is 10 % as dense as at the design flight, so the shafts answer the fuel more slowly and a fast commanded rate rides the rich edge: a faster one is worked out too coarsely at this march's step."}
+UNCLASSIFIED #72 z 17950 dT 7.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #73 z 24850 dT -12.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #77 z 9800 dT 28: The fan-speed governor's gain must be above 0 and at most 8.3 here (the air the engine takes in is 6.02 times as dense as at the design flight, so the shafts answer the fuel harder): a larger gain is worked out too coarsely at this march's step."}
+UNCLASSIFIED #80 z 22850 dT -31: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #81 z 24500 dT 4.5: The governor runs with the instant valve only: a slow valve is a state on its own march, and a governor on that march is a different model. Make the valve instant."}
+UNCLASSIFIED #83 z 24350 dT 43: The speed governor's time constant must be at least 0.728 spool time constants here: the air the engine takes in is 5 % as dense as at the design flight, so the shafts answer the fuel more slowly and a fast commanded rate rides the rich edge: measured, one step moves the flow coefficients by about 0.001 against a finer step."}
+UNCLASSIFIED #95 z 450 dT -1: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #96 z 23050 dT -35.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #98 z 18650 dT 1: At the starting throttle (1300 K), holding HP speed: The HP shaft speed asked for (93.9928 % of design) is below the least this load allows: the engine needs at least 1800 K to carry it at all, and gives 99.8960 % of design there."}
+UNCLASSIFIED #101 z 21900 dT -9: At the starting throttle (1690 K), holding HP speed: The HP shaft speed asked for (101.5838 % of design) is below the least this load allows: the engine needs at least 1771 K to carry it at all, and gives 105.4300 % of design there."}
+UNCLASSIFIED #116 z 6500 dT -31.5: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a different model. Switch the lag off."}
+UNCLASSIFIED #118 z 22300 dT 2.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #121 z 18600 dT -41.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #130 z 6350 dT -32.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #132 z 19300 dT -27.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #133 z 9150 dT 44.5: A slow valve cannot run beside the temperature limiter's lag or the realistic release: a lagging valve beside a lagging fuel cut is two lags on two levers (rung 66's two-lag cascade), a different model from this one. Make the valve instant, or switch the lag off."}
+UNCLASSIFIED #143 z 10250 dT 16: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #145 z 21400 dT -7: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #150 z 10750 dT 7.5: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #152 z 17500 dT -42.5: At the final throttle (930 K), holding HP speed: The HP shaft speed asked for (63.4640 % of design) is below the least this load allows: the engine needs at least 1109 K to carry it at all, and gives 67.2151 % of design there."}
+UNCLASSIFIED #161 z 23050 dT 5.5: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #163 z 6050 dT -40.5: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #172 z 11550 dT -3.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #173 z 22450 dT 44.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #178 z 13100 dT 34: The fan-speed governor's time constant must be at least 0.058 spool time constants here: the air the engine takes in is 70 % as dense as at the design flight, so the shafts answer the fuel more slowly and a fast commanded rate rides the rich edge: a faster one is worked out too coarsely at this march's step."}
+UNCLASSIFIED #184 z 650 dT -6.5: The speed governor's gain must be above 0 and at most 12.4 here (the air the engine takes in is 4.01 times as dense as at the design flight, so the shafts answer the fuel harder): a larger gain is worked out too coarsely at this march's step."}
+unknown #188 z 18550 dT -33: 
+UNCLASSIFIED #191 z 14800 dT 8.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #196 z 23000 dT 2: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #199 z 17900 dT -4.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #200 z 11450 dT -18: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #210 z 12100 dT -20.5: The governor runs with the instant valve only: a slow valve is a state on its own march, and a governor on that march is a different model. Make the valve instant."}
+UNCLASSIFIED #219 z 24050 dT -25.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #227 z 23500 dT 42.5: The speed governor's time constant must be at least 0.749 spool time constants here: the air the engine takes in is 5 % as dense as at the design flight, so the shafts answer the fuel more slowly and a fast commanded rate rides the rich edge: measured, one step moves the flow coefficients by about 0.001 against a finer step."}
+UNCLASSIFIED #228 z 6150 dT 39.5: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a different model. Switch the lag off."}
+UNCLASSIFIED #230 z 11850 dT -28: At the final throttle (760 K), holding HP speed: The HP shaft speed asked for (65.2003 % of design) is below the least this load allows: the engine needs at least 984 K to carry it at all, and gives 76.9878 % of design there."}
+UNCLASSIFIED #245 z 24000 dT -21: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #249 z 19200 dT 23.5: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #251 z 18100 dT -34: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #258 z 23950 dT 26.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #277 z 13100 dT -17.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #290 z 23750 dT 37: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #305 z 13650 dT -29: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #306 z 5550 dT 34.5: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #310 z 6900 dT 25.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #321 z 7750 dT -25: At the starting throttle (630 K), holding HP speed: The HP shaft speed asked for (58.2852 % of design) is below the least this load allows: the engine needs at least 733 K to carry it at all, and gives 62.6005 % of design there."}
+UNCLASSIFIED #331 z 450 dT 34: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #332 z 1000 dT 32.5: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #335 z 17600 dT -35.5: The realistic release and the temperature limiter's lag cannot run together: each carries a cut as a lagging state on a different limiter, and two such lags at once is a different model (rung 66's two-lag cascade), not this one."}
+UNCLASSIFIED #336 z 15450 dT 6: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #341 z 19400 dT 36.5: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a different model. Switch the lag off."}
+UNCLASSIFIED #346 z 9550 dT 42: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a different model. Switch the lag off."}
+UNCLASSIFIED #351 z 5850 dT -43.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #352 z 16900 dT -33: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a different model. Switch the lag off."}
+UNCLASSIFIED #353 z -0 dT 40.5: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a different model. Switch the lag off."}
+UNCLASSIFIED #361 z 18400 dT 10: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #366 z 16700 dT -28: At the starting throttle (1040 K), holding HP speed: The HP shaft speed asked for (72.6637 % of design) is below the least this load allows: the engine needs at least 1626 K to carry it at all, and gives 95.0706 % of design there."}
+UNCLASSIFIED #370 z 8750 dT 15.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #378 z 3900 dT 11.5: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #383 z 23050 dT -7.5: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #386 z 22700 dT 6.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+unknown #393 z 24650 dT 24: 
+UNCLASSIFIED #400 z 18050 dT -41.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+unknown #401 z -650 dT 7: 
+UNCLASSIFIED #416 z 9150 dT -42.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #419 z 13850 dT 26: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #424 z 17200 dT 18.5: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #427 z 17250 dT 42.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #435 z 15250 dT 41: At the final throttle (1650 K), holding HP speed: The HP shaft speed asked for (105.6751 % of design) is more than this loaded engine gives even at 2000 K (102.7571 % of design)."}
+UNCLASSIFIED #438 z 800 dT 21.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #440 z 4850 dT 44.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #447 z 14000 dT 10: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #455 z 21150 dT -14: At the final throttle (660 K), holding HP speed: The HP shaft speed asked for (60.5909 % of design) is below the least this load allows: the engine needs at least 715 K to carry it at all, and gives 62.9046 % of design there."}
+UNCLASSIFIED #464 z 2100 dT 22.5: The speed governor's gain must be above 0 and at most 4.2 here (the air the engine takes in is 11.87 times as dense as at the design flight, so the shafts answer the fuel harder): a larger gain is worked out too coarsely at this march's step."}
+UNCLASSIFIED #473 z 23300 dT 22: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #476 z 250 dT -24.5: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a different model. Switch the lag off."}
+UNCLASSIFIED #479 z 18600 dT 25: At the starting throttle (1470 K), holding HP speed: The HP shaft speed asked for (86.6331 % of design) is below the least this load allows: the engine needs at least 1912 K to carry it at all, and gives 97.4666 % of design there."}
+UNCLASSIFIED #486 z 2750 dT -42: The fan-speed governor's gain must be above 0 and at most 23.2 here (the air the engine takes in is 2.15 times as dense as at the design flight, so the shafts answer the fuel harder): a larger gain is worked out too coarsely at this march's step."}
+UNCLASSIFIED #499 z 14100 dT -44: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #505 z 6500 dT 25: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #507 z 3000 dT 30: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #516 z 4750 dT 11: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #521 z 20800 dT 18: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #522 z 21650 dT 35.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #552 z 1950 dT -29.5: The speed governor's gain must be above 0 and at most 2.7 here (the air the engine takes in is 18.40 times as dense as at the design flight, so the shafts answer the fuel harder): a larger gain is worked out too coarsely at this march's step."}
+UNCLASSIFIED #555 z 2350 dT 2: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a different model. Switch the lag off."}
+UNCLASSIFIED #562 z 3650 dT 4.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #563 z 8200 dT -23.5: At the starting throttle (600 K), holding HP speed: The HP shaft speed asked for (53.4920 % of design) is below the least this load allows: the engine needs at least 1050 K to carry it at all, and gives 67.6584 % of design there."}
+UNCLASSIFIED #567 z 15400 dT 43: The governor runs with the instant valve only: a slow valve is a state on its own march, and a governor on that march is a different model. Make the valve instant."}
+UNCLASSIFIED #569 z 7550 dT -28: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #610 z 12300 dT 40: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a different model. Switch the lag off."}
+UNCLASSIFIED #622 z 4600 dT 14: The governor runs with the instant valve only: a slow valve is a state on its own march, and a governor on that march is a different model. Make the valve instant."}
+UNCLASSIFIED #629 z 24750 dT -42: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #634 z 9600 dT -17.5: The fan-speed governor's gain must be above 0 and at most 17.1 here (the air the engine takes in is 2.92 times as dense as at the design flight, so the shafts answer the fuel harder): a larger gain is worked out too coarsely at this march's step."}
+UNCLASSIFIED #635 z 3400 dT 43.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #662 z 9900 dT 34: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #668 z 15550 dT -36.5: A slow valve cannot run beside the temperature limiter's lag or the realistic release: a lagging valve beside a lagging fuel cut is two lags on two levers (rung 66's two-lag cascade), a different model from this one. Make the valve instant, or switch the lag off."}
+UNCLASSIFIED #671 z 17650 dT -9: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #687 z 15300 dT 43: The governor runs with the instant valve only: a slow valve is a state on its own march, and a governor on that march is a different model. Make the valve instant."}
+UNCLASSIFIED #688 z 5250 dT 2: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a different model. Switch the lag off."}
+UNCLASSIFIED #691 z 14650 dT -37: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a different model. Switch the lag off."}
+UNCLASSIFIED #695 z 16350 dT 2: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #698 z 12700 dT -11: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #700 z 3550 dT -43: The fan-speed governor's gain must be above 0 and at most 14.3 here (the air the engine takes in is 3.49 times as dense as at the design flight, so the shafts answer the fuel harder): a larger gain is worked out too coarsely at this march's step."}
+UNCLASSIFIED #702 z 13750 dT -18.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #703 z 24200 dT 31: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #707 z 14950 dT 6.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #712 z 19800 dT 16: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #731 z 5000 dT 22: At the final throttle (630 K), holding HP speed: The HP shaft speed asked for (57.2273 % of design) is below the least this load allows: the engine needs at least 941 K to carry it at all, and gives 68.8078 % of design there."}
+UNCLASSIFIED #732 z 250 dT -18.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #735 z 12850 dT 41.5: The speed governor's gain must be above 0 and at most 28.6 here (the air the engine takes in is 1.74 times as dense as at the design flight, so the shafts answer the fuel harder): a larger gain is worked out too coarsely at this march's step."}
+UNCLASSIFIED #739 z 11450 dT -42.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #741 z 8650 dT 34.5: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #746 z 5500 dT 37: The governor runs with the instant valve only: a slow valve is a state on its own march, and a governor on that march is a different model. Make the valve instant."}
+UNCLASSIFIED #750 z 18700 dT 41: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #751 z 13450 dT -30.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #752 z 7150 dT -7: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #756 z 4100 dT 8.5: The realistic release and the temperature limiter's lag cannot run together: each carries a cut as a lagging state on a different limiter, and two such lags at once is a different model (rung 66's two-lag cascade), not this one."}
+UNCLASSIFIED #757 z 23300 dT 7: The speed governor's time constant must be at least 0.476 spool time constants here: the air the engine takes in is 8 % as dense as at the design flight, so the shafts answer the fuel more slowly and a fast commanded rate rides the rich edge: measured, one step moves the flow coefficients by about 0.001 against a finer step."}
+UNCLASSIFIED #785 z 12750 dT 18: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #790 z 22200 dT 19.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #792 z 4100 dT 9.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #795 z 23050 dT -7: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #798 z 4950 dT -42.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #799 z 10450 dT 35: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a different model. Switch the lag off."}
+UNCLASSIFIED #803 z 5400 dT -12.5: The fan-speed governor's gain must be above 0 and at most 10 here (the air the engine takes in is 4.97 times as dense as at the design flight, so the shafts answer the fuel harder): a larger gain is worked out too coarsely at this march's step."}
+UNCLASSIFIED #806 z 4200 dT -16.5: The speed governor's gain must be above 0 and at most 6.7 here (the air the engine takes in is 7.38 times as dense as at the design flight, so the shafts answer the fuel harder): a larger gain is worked out too coarsely at this march's step."}
+UNCLASSIFIED #807 z 2750 dT 34.5: At the starting throttle (660 K), holding HP speed: The HP shaft speed asked for (57.4087 % of design) is below the least this load allows: the engine needs at least 894 K to carry it at all, and gives 63.6450 % of design there."}
+UNCLASSIFIED #813 z 6250 dT 15: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #814 z 600 dT -17.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #820 z 21200 dT 1.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #825 z 12200 dT -8: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #837 z 1850 dT -28: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #847 z 8200 dT 18.5: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #850 z 16500 dT 6.5: At the starting throttle (930 K), holding HP speed: The HP shaft speed asked for (75.2857 % of design) is below the least this load allows: the engine needs at least 1828 K to carry it at all, and gives 117.1251 % of design there."}
+UNCLASSIFIED #858 z 14300 dT -0: A slow valve cannot run beside the temperature limiter's lag or the realistic release: a lagging valve beside a lagging fuel cut is two lags on two levers (rung 66's two-lag cascade), a different model from this one. Make the valve instant, or switch the lag off."}
+UNCLASSIFIED #882 z 19250 dT 10.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #884 z 17450 dT 16: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #891 z 24750 dT -1: The fan-speed governor's time constant must be at least 0.577 spool time constants here: the air the engine takes in is 7 % as dense as at the design flight, so the shafts answer the fuel more slowly and a fast commanded rate rides the rich edge: a faster one is worked out too coarsely at this march's step."}
+UNCLASSIFIED #893 z 3450 dT 14.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #894 z 16550 dT -22.5: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a different model. Switch the lag off."}
+UNCLASSIFIED #901 z 0 dT 29: The speed governor's gain must be above 0 and at most 22.4 here (the air the engine takes in is 2.22 times as dense as at the design flight, so the shafts answer the fuel harder): a larger gain is worked out too coarsely at this march's step."}
+UNCLASSIFIED #902 z 8750 dT 22.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #903 z 13700 dT -35.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #907 z 19500 dT -21: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #909 z 11700 dT 11.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #911 z 6050 dT -21: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #913 z 16250 dT 17: The governor runs with the instant valve only: a slow valve is a state on its own march, and a governor on that march is a different model. Make the valve instant."}
+UNCLASSIFIED #919 z 19500 dT -38.5: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #925 z 14800 dT 14.5: The speed governor's gain must be above 0 and at most 16.8 here (the air the engine takes in is 2.96 times as dense as at the design flight, so the shafts answer the fuel harder): a larger gain is worked out too coarsely at this march's step."}
+UNCLASSIFIED #937 z 14900 dT -38: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #940 z -150 dT -43.5: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a different model. Switch the lag off."}
+UNCLASSIFIED #945 z 21400 dT -45: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #948 z 20800 dT -35.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #963 z 12200 dT -33: The speed governor's time constant must be at least 0.072 spool time constants here: the air the engine takes in is 56 % as dense as at the design flight, so the shafts answer the fuel more slowly and a fast commanded rate rides the rich edge: measured, one step moves the flow coefficients by about 0.001 against a finer step."}
+UNCLASSIFIED #971 z 2100 dT 5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #975 z 11150 dT -27.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #984 z 21350 dT -15: At the final throttle (910 K), holding HP speed: The HP shaft speed asked for (72.9594 % of design) is below the least this load allows: the engine needs at least 1593 K to carry it at all, and gives 78.2716 % of design there."}
+UNCLASSIFIED #996 z 13150 dT 30: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1002 z 2850 dT 19: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a different model. Switch the lag off."}
+UNCLASSIFIED #1003 z 6350 dT -9.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1008 z 5100 dT 26: The governor runs with the instant valve only: a slow valve is a state on its own march, and a governor on that march is a different model. Make the valve instant."}
+UNCLASSIFIED #1010 z 6050 dT -16: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1011 z 1600 dT 18: The speed governor's gain must be above 0 and at most 8.2 here (the air the engine takes in is 6.04 times as dense as at the design flight, so the shafts answer the fuel harder): a larger gain is worked out too coarsely at this march's step."}
+UNCLASSIFIED #1016 z 14550 dT 28.5: The speed governor's time constant must be at least 0.211 spool time constants here: the air the engine takes in is 19 % as dense as at the design flight, so the shafts answer the fuel more slowly and a fast commanded rate rides the rich edge: measured, one step moves the flow coefficients by about 0.001 against a finer step."}
+UNCLASSIFIED #1023 z 12700 dT -13: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a different model. Switch the lag off."}
+UNCLASSIFIED #1047 z 4900 dT 1: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1050 z 18550 dT -22.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1055 z -50 dT -35.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1056 z 4650 dT 23: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1059 z 6350 dT 32.5: The speed governor's gain must be above 0 and at most 9.6 here (the air the engine takes in is 5.16 times as dense as at the design flight, so the shafts answer the fuel harder): a larger gain is worked out too coarsely at this march's step."}
+UNCLASSIFIED #1068 z 17850 dT 1: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1071 z 20800 dT -27.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1079 z 15450 dT 25: At the final throttle (1270 K), holding HP speed: The HP shaft speed asked for (91.7549 % of design) is below the least this load allows: the engine needs at least 1867 K to carry it at all, and gives 92.1184 % of design there."}
+UNCLASSIFIED #1084 z 18900 dT 25.5: At the starting throttle (660 K), holding HP speed: The HP shaft speed asked for (64.2525 % of design) is below the least this load allows: the engine needs at least 1470 K to carry it at all, and gives 75.0859 % of design there."}
+UNCLASSIFIED #1086 z 14700 dT 7: The fan-speed governor's gain must be above 0 and at most 26.9 here (the air the engine takes in is 1.85 times as dense as at the design flight, so the shafts answer the fuel harder): a larger gain is worked out too coarsely at this march's step."}
+UNCLASSIFIED #1087 z 4250 dT -34: The speed governor's gain must be above 0 and at most 6.8 here (the air the engine takes in is 7.25 times as dense as at the design flight, so the shafts answer the fuel harder): a larger gain is worked out too coarsely at this march's step."}
+UNCLASSIFIED #1091 z 24200 dT -34.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1092 z 12050 dT -19.5: The governor runs with the instant valve only: a slow valve is a state on its own march, and a governor on that march is a different model. Make the valve instant."}
+UNCLASSIFIED #1096 z 19700 dT 22: The governor runs with the instant valve only: a slow valve is a state on its own march, and a governor on that march is a different model. Make the valve instant."}
+UNCLASSIFIED #1098 z 24600 dT 34.5: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a different model. Switch the lag off."}
+UNCLASSIFIED #1099 z 9650 dT 28.5: The governor runs with the instant valve only: a slow valve is a state on its own march, and a governor on that march is a different model. Make the valve instant."}
+UNCLASSIFIED #1105 z 12250 dT -31.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1110 z 3700 dT 37.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1150 z 9750 dT 1.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1159 z 8950 dT 25: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1160 z 5700 dT -23.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1175 z 21750 dT 8: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #1176 z 5700 dT -29: The speed governor's gain must be above 0 and at most 29.3 here (the air the engine takes in is 1.70 times as dense as at the design flight, so the shafts answer the fuel harder): a larger gain is worked out too coarsely at this march's step."}
+UNCLASSIFIED #1181 z 7500 dT -22.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1182 z 13850 dT -28: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1185 z 20600 dT 36.5: The speed governor's time constant must be at least 0.475 spool time constants here: the air the engine takes in is 8 % as dense as at the design flight, so the shafts answer the fuel more slowly and a fast commanded rate rides the rich edge: measured, one step moves the flow coefficients by about 0.001 against a finer step."}
+UNCLASSIFIED #1186 z 20400 dT -5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1192 z 6650 dT 39.5: The speed governor's gain must be above 0 and at most 7.4 here (the air the engine takes in is 6.75 times as dense as at the design flight, so the shafts answer the fuel harder): a larger gain is worked out too coarsely at this march's step."}
+UNCLASSIFIED #1195 z 2350 dT 41: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1197 z 24900 dT 26.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1198 z 16950 dT -22: At the starting throttle (1000 K), holding HP speed: The HP shaft speed asked for (66.3207 % of design) is below the least this load allows: the engine needs at least 1413 K to carry it at all, and gives 79.6601 % of design there."}
+UNCLASSIFIED #1203 z 20600 dT -41.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1205 z -300 dT 30: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1216 z 13550 dT -42: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1223 z 11600 dT -6: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1234 z 19300 dT 24.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1238 z 20100 dT 8: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #1249 z 11650 dT 38: The speed governor's gain must be above 0 and at most 18.8 here (the air the engine takes in is 2.65 times as dense as at the design flight, so the shafts answer the fuel harder): a larger gain is worked out too coarsely at this march's step."}
+UNCLASSIFIED #1258 z 19450 dT 27.5: At the starting throttle (1570 K), holding HP speed: The HP shaft speed asked for (94.6068 % of design) is below the least this load allows: the engine needs at least 1795 K to carry it at all, and gives 103.9849 % of design there."}
+UNCLASSIFIED #1260 z 11100 dT -17.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1264 z 1100 dT -17.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1269 z 5650 dT 42: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1270 z 10800 dT 10.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1274 z 11350 dT 35.5: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #1275 z 4550 dT 3: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1281 z 16600 dT -42.5: The fan-speed governor's time constant must be at least 0.111 spool time constants here: the air the engine takes in is 36 % as dense as at the design flight, so the shafts answer the fuel more slowly and a fast commanded rate rides the rich edge: a faster one is worked out too coarsely at this march's step."}
+UNCLASSIFIED #1284 z 22650 dT -25: At the final throttle (710 K), holding HP speed: The HP shaft speed asked for (57.3836 % of design) is below the least this load allows: the engine needs at least 1188 K to carry it at all, and gives 69.9741 % of design there."}
+UNCLASSIFIED #1291 z 13650 dT 4.5: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a different model. Switch the lag off."}
+UNCLASSIFIED #1293 z 17150 dT -23.5: The fan-speed governor's gain must be above 0 and at most 32.3 here (the air the engine takes in is 1.55 times as dense as at the design flight, so the shafts answer the fuel harder): a larger gain is worked out too coarsely at this march's step."}
+UNCLASSIFIED #1294 z 12900 dT -42: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1295 z 13000 dT 7.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1299 z 15150 dT -11: At the starting throttle (1190 K), holding HP speed: The HP shaft speed asked for (86.8459 % of design) is below the least this load allows: the engine needs at least 1181 K to carry it at all, and gives 88.6096 % of design there."}
+UNCLASSIFIED #1305 z 18550 dT 22: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1307 z 19700 dT -1.5: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #1310 z 8000 dT -1: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #1313 z 150 dT 11: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1322 z 5500 dT 21: The speed governor's gain must be above 0 and at most 5.9 here (the air the engine takes in is 8.44 times as dense as at the design flight, so the shafts answer the fuel harder): a larger gain is worked out too coarsely at this march's step."}
+UNCLASSIFIED #1334 z 5300 dT 9.5: The speed governor's gain must be above 0 and at most 22.6 here (the air the engine takes in is 2.21 times as dense as at the design flight, so the shafts answer the fuel harder): a larger gain is worked out too coarsely at this march's step."}
+UNCLASSIFIED #1345 z 18200 dT -13: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a different model. Switch the lag off."}
+UNCLASSIFIED #1348 z 20350 dT -38.5: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #1350 z 3000 dT 2.5: The realistic release and the temperature limiter's lag cannot run together: each carries a cut as a lagging state on a different limiter, and two such lags at once is a different model (rung 66's two-lag cascade), not this one."}
+UNCLASSIFIED #1351 z 5450 dT -12: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1356 z 2450 dT -44: A slow valve cannot run beside the temperature limiter's lag or the realistic release: a lagging valve beside a lagging fuel cut is two lags on two levers (rung 66's two-lag cascade), a different model from this one. Make the valve instant, or switch the lag off."}
+UNCLASSIFIED #1365 z 23550 dT 27: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1370 z 5900 dT 15: The realistic release and the temperature limiter's lag cannot run together: each carries a cut as a lagging state on a different limiter, and two such lags at once is a different model (rung 66's two-lag cascade), not this one."}
+UNCLASSIFIED #1374 z 23800 dT -12.5: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a different model. Switch the lag off."}
+UNCLASSIFIED #1376 z 11450 dT -8.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1393 z 4800 dT -30: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1394 z 15500 dT 11: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1399 z 15100 dT 45: A slow valve cannot run beside the temperature limiter's lag or the realistic release: a lagging valve beside a lagging fuel cut is two lags on two levers (rung 66's two-lag cascade), a different model from this one. Make the valve instant, or switch the lag off."}
+UNCLASSIFIED #1407 z -650 dT 7: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #1420 z -300 dT 31: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1424 z 2150 dT 3.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1427 z 23650 dT -30: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1428 z 650 dT -8.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1442 z 9500 dT -29.5: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a different model. Switch the lag off."}
+unknown #1443 z 14800 dT -37: 
+UNCLASSIFIED #1453 z 19000 dT -28: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1455 z 10700 dT -31: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #1456 z 10400 dT -20.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1459 z 6750 dT 14: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1464 z 17850 dT 34: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1476 z 18650 dT 30.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+  471  [z  -1000.. 24900]  ran to the end
+   56  [z   -900.. 24750]  ran, stopped early
+    6  [z   2450.. 15550]  refused: A slow valve cannot run beside the temperatur
+    1  [z  15450.. 15450]  refused: At the final throttle (1270 K), holding HP sp
+    1  [z  15250.. 15250]  refused: At the final throttle (1650 K), holding HP sp
+    1  [z   5000..  5000]  refused: At the final throttle (630 K), holding HP spe
+    1  [z  21150.. 21150]  refused: At the final throttle (660 K), holding HP spe
+    1  [z  22650.. 22650]  refused: At the final throttle (710 K), holding HP spe
+    1  [z  11850.. 11850]  refused: At the final throttle (760 K), holding HP spe
+    1  [z  21350.. 21350]  refused: At the final throttle (910 K), holding HP spe
+    1  [z  17500.. 17500]  refused: At the final throttle (930 K), holding HP spe
+    1  [z  16950.. 16950]  refused: At the starting throttle (1000 K), holding HP
+    1  [z  16700.. 16700]  refused: At the starting throttle (1040 K), holding HP
+    1  [z  15150.. 15150]  refused: At the starting throttle (1190 K), holding HP
+    1  [z  18650.. 18650]  refused: At the starting throttle (1300 K), holding HP
+    1  [z  18600.. 18600]  refused: At the starting throttle (1470 K), holding HP
+    1  [z  19450.. 19450]  refused: At the starting throttle (1570 K), holding HP
+    1  [z  21900.. 21900]  refused: At the starting throttle (1690 K), holding HP
+    1  [z   8200..  8200]  refused: At the starting throttle (600 K), holding HP 
+    1  [z   7750..  7750]  refused: At the starting throttle (630 K), holding HP 
+    2  [z   2750.. 18900]  refused: At the starting throttle (660 K), holding HP 
+    1  [z  16500.. 16500]  refused: At the starting throttle (930 K), holding HP 
+    7  [z   2750.. 17150]  refused: The fan-speed governor's gain must be above 0
+    4  [z  13100.. 24750]  refused: The fan-speed governor's time constant must b
+   54  [z   -650.. 24750]  refused: The governor runs with the instant limiters o
+   11  [z   4600.. 24500]  refused: The governor runs with the instant valve only
+    4  [z   3000.. 17600]  refused: The realistic release and the temperature lim
+   15  [z      0.. 14800]  refused: The speed governor's gain must be above 0 and
+    7  [z  12200.. 24350]  refused: The speed governor's time constant must be at
+  131  [z   -300.. 24900]  refused: The temperature limiter's lag delays the limi
+   16  [z   6600.. 24900]  refused: [M 0.0-0.5] With this
+   12  [z   1000.. 20900]  refused: [M 0.0-0.5] acceleration schedule
+    4  [z   -400.. 18400]  refused: [M 0.0-0.5] cooling together
+   14  [z   9000.. 23450]  refused: [M 0.0-0.5] customer bleed would take
+    2  [z   4400.. 12200]  refused: [M 0.0-0.5] design-flight table
+    5  [z  16600.. 23600]  refused: [M 0.0-0.5] does not settle
+    8  [z   3800.. 23250]  refused: [M 0.0-0.5] generator would take
+    2  [z   1300..  5600]  refused: [M 0.0-0.5] made at the design flight
+   22  [z  -1000.. 23700]  refused: [M 0.0-0.5] off the part of their maps
+    8  [z   4750.. 21500]  refused: [M 0.0-0.5] thrust asked
+    2  [z    450..  3350]  refused: [M 0.0-0.5] too little pressure
+   15  [z  11350.. 24800]  refused: [M 0.5-1.0] With this
+   16  [z    850.. 23750]  refused: [M 0.5-1.0] acceleration schedule
+    5  [z   9800.. 22550]  refused: [M 0.5-1.0] cooling together
+    7  [z   9500.. 22500]  refused: [M 0.5-1.0] customer bleed would take
+    2  [z  20850.. 23050]  refused: [M 0.5-1.0] does not settle
+    7  [z   1050.. 22600]  refused: [M 0.5-1.0] generator would take
+   27  [z    300.. 24200]  refused: [M 0.5-1.0] off the part of their maps
+    4  [z   6750.. 17450]  refused: [M 0.5-1.0] thrust asked
+   13  [z  14250.. 24650]  refused: [M 1.0-1.5] With this
+   16  [z   1850.. 24550]  refused: [M 1.0-1.5] acceleration schedule
+    5  [z   9400.. 23300]  refused: [M 1.0-1.5] cooling together
+   10  [z  10200.. 22900]  refused: [M 1.0-1.5] customer bleed would take
+    2  [z  17900.. 21600]  refused: [M 1.0-1.5] design-flight table
+    2  [z  18800.. 19300]  refused: [M 1.0-1.5] does not settle
+    4  [z   4750.. 24750]  refused: [M 1.0-1.5] generator would take
+    4  [z   1800..  6000]  refused: [M 1.0-1.5] made at the design flight
+   28  [z   -250.. 24850]  refused: [M 1.0-1.5] off the part of their maps
+    1  [z  15500.. 15500]  refused: [M 1.0-1.5] steady solve fails
+    5  [z   8500.. 21050]  refused: [M 1.0-1.5] thrust asked
+    5  [z  19350.. 22900]  refused: [M 1.5-2.0] With this
+   15  [z   -950.. 22650]  refused: [M 1.5-2.0] acceleration schedule
+    1  [z  11350.. 11350]  refused: [M 1.5-2.0] cooling together
+    7  [z  13100.. 24700]  refused: [M 1.5-2.0] customer bleed would take
+   15  [z   5050.. 24600]  refused: [M 1.5-2.0] generator would take
+   11  [z   -900.. 21800]  refused: [M 1.5-2.0] made at the design flight
+   32  [z   -600.. 24600]  refused: [M 1.5-2.0] off the part of their maps
+    5  [z   5050.. 24450]  refused: [M 1.5-2.0] thrust asked
+    3  [z  21350.. 24100]  refused: [M 2.0-2.5] With this
+   19  [z   -900.. 22500]  refused: [M 2.0-2.5] acceleration schedule
+    4  [z  19400.. 24000]  refused: [M 2.0-2.5] cooling together
+    1  [z  24450.. 24450]  refused: [M 2.0-2.5] customer bleed would take
+    1  [z  22800.. 22800]  refused: [M 2.0-2.5] design-flight table
+    1  [z  15100.. 15100]  refused: [M 2.0-2.5] does not settle
+    5  [z  13150.. 22950]  refused: [M 2.0-2.5] generator would take
+   16  [z   -500.. 15300]  refused: [M 2.0-2.5] made at the design flight
+   66  [z   -250.. 24800]  refused: [M 2.0-2.5] off the part of their maps
+    4  [z  13200.. 24500]  refused: [M 2.0-2.5] thrust asked
+   17  [z   5100.. 24900]  refused: [M 2.5-3.0] acceleration schedule
+    1  [z  23050.. 23050]  refused: [M 2.5-3.0] cooling together
+    1  [z  22300.. 22300]  refused: [M 2.5-3.0] does not settle
+    4  [z  19600.. 23900]  refused: [M 2.5-3.0] generator would take
+   18  [z     50.. 21650]  refused: [M 2.5-3.0] made at the design flight
+   67  [z   -450.. 24400]  refused: [M 2.5-3.0] off the part of their maps
+    1  [z  23300.. 23300]  refused: [M 2.5-3.0] thrust asked
+   12  [z   -800.. 22000]  refused: [M 3.0-3.5] acceleration schedule
+    1  [z  24300.. 24300]  refused: [M 3.0-3.5] generator would take
+   10  [z     50.. 20100]  refused: [M 3.0-3.5] made at the design flight
+  101  [z   -850.. 24800]  refused: [M 3.0-3.5] off the part of their maps
+    1  [z  20050.. 20050]  refused: [M 3.0-3.5] thrust asked
+    1  [z  14200.. 14200]  refused: [M 3.5-4.0] made at the design flight
+stop kinds: {"customer": 1, "floor_unreachable": 35, "lean": 10, "rich": 6, "unknown": 4}
+0 panics; total 138.7 s, median 0.001 s, slowest 2.23 / 2.17 / 1.94 s
+slowest request: {"op":"controls","controls":{"T0":273.2271493843556,"p0":85079.5479580318,"shape":"press/flow","lever":"none","bleed_mode":"schedule","valve_speed":"instant","redline_on":1,"gov_lag_on":0,"accel_on":1,"floor_on":0,"floor_ref":"phi","floor_phi":0.8200000000000001,"release_on":0,"govern":1,"hold":"thrust","thrust_by":"epr","speed_law":"rate","gov_tau":0.79,"gov_gain":27,"generator":"hp","generator_power":0.025,"customer":"off","customer_share":0.12,"customer_amount":0.12,"cool_vane":0,"cool_blade":0,"metal_on":0,"from":1350,"to":1390,"ramp":1,"settle":5.300000000000001,"rho":3.7,"M0":1.02,"table_at":"design","corr_p":0,"corr_t":0,"speed_corr":"grid"}}
+
+# Tallies, new
+UNCLASSIFIED #7 z 14950 dT -14: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #9 z 16300 dT 39.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #10 z 11750 dT -16: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #19 z -50 dT 19.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #22 z 2250 dT -15: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #26 z 8450 dT -20.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #30 z 23250 dT 29.5: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a different model. Switch the lag off."}
+UNCLASSIFIED #36 z 2100 dT 5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #41 z 6050 dT -22.5: A slow valve cannot run beside the temperature limiter's lag or the realistic release: a lagging valve beside a lagging fuel cut is two lags on two levers (rung 66's two-lag cascade), a different model from this one. Make the valve instant, or switch the lag off."}
+UNCLASSIFIED #45 z 5600 dT -27: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #62 z 12250 dT 37.5: The speed governor's time constant must be at least 0.101 spool time constants here: the air the engine takes in is 40 % as dense as at the design flight, so the shafts answer the fuel more slowly and a fast commanded rate rides the rich edge: measured, one step moves the flow coefficients by about 0.001 against a finer step."}
+UNCLASSIFIED #64 z 15200 dT -40.5: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #66 z 10650 dT -26: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #67 z 23300 dT -44: The fan-speed governor's time constant must be at least 0.407 spool time constants here: the air the engine takes in is 10 % as dense as at the design flight, so the shafts answer the fuel more slowly and a fast commanded rate rides the rich edge: a faster one is worked out too coarsely at this march's step."}
+UNCLASSIFIED #72 z 17950 dT 7.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #73 z 24850 dT -12.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #77 z 9800 dT 28: The fan-speed governor's gain must be above 0 and at most 8.3 here (the air the engine takes in is 6.02 times as dense as at the design flight, so the shafts answer the fuel harder): a larger gain is worked out too coarsely at this march's step."}
+UNCLASSIFIED #80 z 22850 dT -31: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #81 z 24500 dT 4.5: The governor runs with the instant valve only: a slow valve is a state on its own march, and a governor on that march is a different model. Make the valve instant."}
+UNCLASSIFIED #83 z 24350 dT 43: The speed governor's time constant must be at least 0.728 spool time constants here: the air the engine takes in is 5 % as dense as at the design flight, so the shafts answer the fuel more slowly and a fast commanded rate rides the rich edge: measured, one step moves the flow coefficients by about 0.001 against a finer step."}
+UNCLASSIFIED #95 z 450 dT -1: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #96 z 23050 dT -35.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #98 z 18650 dT 1: At the starting throttle (1300 K), holding HP speed: The HP shaft speed asked for (93.9928 % of design) is below the least this load allows: the engine needs at least 1800 K to carry it at all, and gives 99.8960 % of design there."}
+UNCLASSIFIED #101 z 21900 dT -9: At the starting throttle (1690 K), holding HP speed: The HP shaft speed asked for (101.5838 % of design) is below the least this load allows: the engine needs at least 1771 K to carry it at all, and gives 105.4300 % of design there."}
+UNCLASSIFIED #116 z 6500 dT -31.5: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a different model. Switch the lag off."}
+UNCLASSIFIED #118 z 22300 dT 2.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #121 z 18600 dT -41.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #130 z 6350 dT -32.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #132 z 19300 dT -27.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #133 z 9150 dT 44.5: A slow valve cannot run beside the temperature limiter's lag or the realistic release: a lagging valve beside a lagging fuel cut is two lags on two levers (rung 66's two-lag cascade), a different model from this one. Make the valve instant, or switch the lag off."}
+UNCLASSIFIED #143 z 10250 dT 16: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #145 z 21400 dT -7: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #150 z 10750 dT 7.5: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #152 z 17500 dT -42.5: At the final throttle (930 K), holding HP speed: The HP shaft speed asked for (63.4640 % of design) is below the least this load allows: the engine needs at least 1109 K to carry it at all, and gives 67.2151 % of design there."}
+UNCLASSIFIED #161 z 23050 dT 5.5: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #163 z 6050 dT -40.5: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #172 z 11550 dT -3.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #173 z 22450 dT 44.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #178 z 13100 dT 34: The fan-speed governor's time constant must be at least 0.058 spool time constants here: the air the engine takes in is 70 % as dense as at the design flight, so the shafts answer the fuel more slowly and a fast commanded rate rides the rich edge: a faster one is worked out too coarsely at this march's step."}
+UNCLASSIFIED #184 z 650 dT -6.5: The speed governor's gain must be above 0 and at most 12.4 here (the air the engine takes in is 4.01 times as dense as at the design flight, so the shafts answer the fuel harder): a larger gain is worked out too coarsely at this march's step."}
+unknown #188 z 18550 dT -33: 
+UNCLASSIFIED #191 z 14800 dT 8.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #196 z 23000 dT 2: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #199 z 17900 dT -4.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #200 z 11450 dT -18: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #210 z 12100 dT -20.5: The governor runs with the instant valve only: a slow valve is a state on its own march, and a governor on that march is a different model. Make the valve instant."}
+UNCLASSIFIED #219 z 24050 dT -25.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #227 z 23500 dT 42.5: The speed governor's time constant must be at least 0.749 spool time constants here: the air the engine takes in is 5 % as dense as at the design flight, so the shafts answer the fuel more slowly and a fast commanded rate rides the rich edge: measured, one step moves the flow coefficients by about 0.001 against a finer step."}
+UNCLASSIFIED #228 z 6150 dT 39.5: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a different model. Switch the lag off."}
+UNCLASSIFIED #230 z 11850 dT -28: At the final throttle (760 K), holding HP speed: The HP shaft speed asked for (65.2003 % of design) is below the least this load allows: the engine needs at least 984 K to carry it at all, and gives 76.9878 % of design there."}
+UNCLASSIFIED #245 z 24000 dT -21: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #249 z 19200 dT 23.5: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #251 z 18100 dT -34: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #258 z 23950 dT 26.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #277 z 13100 dT -17.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #290 z 23750 dT 37: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #305 z 13650 dT -29: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #306 z 5550 dT 34.5: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #310 z 6900 dT 25.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #321 z 7750 dT -25: At the starting throttle (630 K), holding HP speed: The HP shaft speed asked for (58.2852 % of design) is below the least this load allows: the engine needs at least 733 K to carry it at all, and gives 62.6005 % of design there."}
+UNCLASSIFIED #331 z 450 dT 34: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #332 z 1000 dT 32.5: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #335 z 17600 dT -35.5: The realistic release and the temperature limiter's lag cannot run together: each carries a cut as a lagging state on a different limiter, and two such lags at once is a different model (rung 66's two-lag cascade), not this one."}
+UNCLASSIFIED #336 z 15450 dT 6: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #341 z 19400 dT 36.5: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a different model. Switch the lag off."}
+UNCLASSIFIED #346 z 9550 dT 42: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a different model. Switch the lag off."}
+UNCLASSIFIED #351 z 5850 dT -43.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #352 z 16900 dT -33: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a different model. Switch the lag off."}
+UNCLASSIFIED #353 z -0 dT 40.5: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a different model. Switch the lag off."}
+UNCLASSIFIED #361 z 18400 dT 10: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #366 z 16700 dT -28: At the starting throttle (1040 K), holding HP speed: The HP shaft speed asked for (72.6637 % of design) is below the least this load allows: the engine needs at least 1626 K to carry it at all, and gives 95.0706 % of design there."}
+UNCLASSIFIED #370 z 8750 dT 15.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #378 z 3900 dT 11.5: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #383 z 23050 dT -7.5: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #386 z 22700 dT 6.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+unknown #393 z 24650 dT 24: 
+UNCLASSIFIED #400 z 18050 dT -41.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+unknown #401 z -650 dT 7: 
+UNCLASSIFIED #416 z 9150 dT -42.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #419 z 13850 dT 26: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #424 z 17200 dT 18.5: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #427 z 17250 dT 42.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #435 z 15250 dT 41: At the final throttle (1650 K), holding HP speed: The HP shaft speed asked for (105.6751 % of design) is more than this loaded engine gives even at 2000 K (102.7571 % of design)."}
+UNCLASSIFIED #438 z 800 dT 21.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #440 z 4850 dT 44.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #447 z 14000 dT 10: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #455 z 21150 dT -14: At the final throttle (660 K), holding HP speed: The HP shaft speed asked for (60.5909 % of design) is below the least this load allows: the engine needs at least 715 K to carry it at all, and gives 62.9046 % of design there."}
+UNCLASSIFIED #464 z 2100 dT 22.5: The speed governor's gain must be above 0 and at most 4.2 here (the air the engine takes in is 11.87 times as dense as at the design flight, so the shafts answer the fuel harder): a larger gain is worked out too coarsely at this march's step."}
+UNCLASSIFIED #473 z 23300 dT 22: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #476 z 250 dT -24.5: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a different model. Switch the lag off."}
+UNCLASSIFIED #479 z 18600 dT 25: At the starting throttle (1470 K), holding HP speed: The HP shaft speed asked for (86.6331 % of design) is below the least this load allows: the engine needs at least 1912 K to carry it at all, and gives 97.4666 % of design there."}
+UNCLASSIFIED #486 z 2750 dT -42: The fan-speed governor's gain must be above 0 and at most 23.2 here (the air the engine takes in is 2.15 times as dense as at the design flight, so the shafts answer the fuel harder): a larger gain is worked out too coarsely at this march's step."}
+UNCLASSIFIED #499 z 14100 dT -44: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #505 z 6500 dT 25: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #507 z 3000 dT 30: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #516 z 4750 dT 11: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #521 z 20800 dT 18: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #522 z 21650 dT 35.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #552 z 1950 dT -29.5: The speed governor's gain must be above 0 and at most 2.7 here (the air the engine takes in is 18.40 times as dense as at the design flight, so the shafts answer the fuel harder): a larger gain is worked out too coarsely at this march's step."}
+UNCLASSIFIED #555 z 2350 dT 2: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a different model. Switch the lag off."}
+UNCLASSIFIED #562 z 3650 dT 4.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #563 z 8200 dT -23.5: At the starting throttle (600 K), holding HP speed: The HP shaft speed asked for (53.4920 % of design) is below the least this load allows: the engine needs at least 1050 K to carry it at all, and gives 67.6584 % of design there."}
+UNCLASSIFIED #567 z 15400 dT 43: The governor runs with the instant valve only: a slow valve is a state on its own march, and a governor on that march is a different model. Make the valve instant."}
+UNCLASSIFIED #569 z 7550 dT -28: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #610 z 12300 dT 40: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a different model. Switch the lag off."}
+UNCLASSIFIED #622 z 4600 dT 14: The governor runs with the instant valve only: a slow valve is a state on its own march, and a governor on that march is a different model. Make the valve instant."}
+UNCLASSIFIED #629 z 24750 dT -42: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #634 z 9600 dT -17.5: The fan-speed governor's gain must be above 0 and at most 17.1 here (the air the engine takes in is 2.92 times as dense as at the design flight, so the shafts answer the fuel harder): a larger gain is worked out too coarsely at this march's step."}
+UNCLASSIFIED #635 z 3400 dT 43.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #662 z 9900 dT 34: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #668 z 15550 dT -36.5: A slow valve cannot run beside the temperature limiter's lag or the realistic release: a lagging valve beside a lagging fuel cut is two lags on two levers (rung 66's two-lag cascade), a different model from this one. Make the valve instant, or switch the lag off."}
+UNCLASSIFIED #671 z 17650 dT -9: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #687 z 15300 dT 43: The governor runs with the instant valve only: a slow valve is a state on its own march, and a governor on that march is a different model. Make the valve instant."}
+UNCLASSIFIED #688 z 5250 dT 2: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a different model. Switch the lag off."}
+UNCLASSIFIED #691 z 14650 dT -37: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a different model. Switch the lag off."}
+UNCLASSIFIED #695 z 16350 dT 2: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #698 z 12700 dT -11: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #700 z 3550 dT -43: The fan-speed governor's gain must be above 0 and at most 14.3 here (the air the engine takes in is 3.49 times as dense as at the design flight, so the shafts answer the fuel harder): a larger gain is worked out too coarsely at this march's step."}
+UNCLASSIFIED #702 z 13750 dT -18.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #703 z 24200 dT 31: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #707 z 14950 dT 6.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #712 z 19800 dT 16: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #731 z 5000 dT 22: At the final throttle (630 K), holding HP speed: The HP shaft speed asked for (57.2273 % of design) is below the least this load allows: the engine needs at least 941 K to carry it at all, and gives 68.8078 % of design there."}
+UNCLASSIFIED #732 z 250 dT -18.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #735 z 12850 dT 41.5: The speed governor's gain must be above 0 and at most 28.6 here (the air the engine takes in is 1.74 times as dense as at the design flight, so the shafts answer the fuel harder): a larger gain is worked out too coarsely at this march's step."}
+UNCLASSIFIED #739 z 11450 dT -42.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #741 z 8650 dT 34.5: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #746 z 5500 dT 37: The governor runs with the instant valve only: a slow valve is a state on its own march, and a governor on that march is a different model. Make the valve instant."}
+UNCLASSIFIED #750 z 18700 dT 41: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #751 z 13450 dT -30.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #752 z 7150 dT -7: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #756 z 4100 dT 8.5: The realistic release and the temperature limiter's lag cannot run together: each carries a cut as a lagging state on a different limiter, and two such lags at once is a different model (rung 66's two-lag cascade), not this one."}
+UNCLASSIFIED #757 z 23300 dT 7: The speed governor's time constant must be at least 0.476 spool time constants here: the air the engine takes in is 8 % as dense as at the design flight, so the shafts answer the fuel more slowly and a fast commanded rate rides the rich edge: measured, one step moves the flow coefficients by about 0.001 against a finer step."}
+UNCLASSIFIED #785 z 12750 dT 18: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #790 z 22200 dT 19.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #792 z 4100 dT 9.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #795 z 23050 dT -7: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #798 z 4950 dT -42.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #799 z 10450 dT 35: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a different model. Switch the lag off."}
+UNCLASSIFIED #803 z 5400 dT -12.5: The fan-speed governor's gain must be above 0 and at most 10 here (the air the engine takes in is 4.97 times as dense as at the design flight, so the shafts answer the fuel harder): a larger gain is worked out too coarsely at this march's step."}
+UNCLASSIFIED #806 z 4200 dT -16.5: The speed governor's gain must be above 0 and at most 6.7 here (the air the engine takes in is 7.38 times as dense as at the design flight, so the shafts answer the fuel harder): a larger gain is worked out too coarsely at this march's step."}
+UNCLASSIFIED #807 z 2750 dT 34.5: At the starting throttle (660 K), holding HP speed: The HP shaft speed asked for (57.4087 % of design) is below the least this load allows: the engine needs at least 894 K to carry it at all, and gives 63.6450 % of design there."}
+UNCLASSIFIED #813 z 6250 dT 15: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #814 z 600 dT -17.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #820 z 21200 dT 1.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #825 z 12200 dT -8: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #837 z 1850 dT -28: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #847 z 8200 dT 18.5: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #850 z 16500 dT 6.5: At the starting throttle (930 K), holding HP speed: The HP shaft speed asked for (75.2857 % of design) is below the least this load allows: the engine needs at least 1828 K to carry it at all, and gives 117.1251 % of design there."}
+UNCLASSIFIED #858 z 14300 dT -0: A slow valve cannot run beside the temperature limiter's lag or the realistic release: a lagging valve beside a lagging fuel cut is two lags on two levers (rung 66's two-lag cascade), a different model from this one. Make the valve instant, or switch the lag off."}
+UNCLASSIFIED #882 z 19250 dT 10.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #884 z 17450 dT 16: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #891 z 24750 dT -1: The fan-speed governor's time constant must be at least 0.577 spool time constants here: the air the engine takes in is 7 % as dense as at the design flight, so the shafts answer the fuel more slowly and a fast commanded rate rides the rich edge: a faster one is worked out too coarsely at this march's step."}
+UNCLASSIFIED #893 z 3450 dT 14.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #894 z 16550 dT -22.5: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a different model. Switch the lag off."}
+UNCLASSIFIED #901 z 0 dT 29: The speed governor's gain must be above 0 and at most 22.4 here (the air the engine takes in is 2.22 times as dense as at the design flight, so the shafts answer the fuel harder): a larger gain is worked out too coarsely at this march's step."}
+UNCLASSIFIED #902 z 8750 dT 22.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #903 z 13700 dT -35.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #907 z 19500 dT -21: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #909 z 11700 dT 11.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #911 z 6050 dT -21: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #913 z 16250 dT 17: The governor runs with the instant valve only: a slow valve is a state on its own march, and a governor on that march is a different model. Make the valve instant."}
+UNCLASSIFIED #919 z 19500 dT -38.5: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #925 z 14800 dT 14.5: The speed governor's gain must be above 0 and at most 16.8 here (the air the engine takes in is 2.96 times as dense as at the design flight, so the shafts answer the fuel harder): a larger gain is worked out too coarsely at this march's step."}
+UNCLASSIFIED #937 z 14900 dT -38: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #940 z -150 dT -43.5: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a different model. Switch the lag off."}
+UNCLASSIFIED #945 z 21400 dT -45: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #948 z 20800 dT -35.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #963 z 12200 dT -33: The speed governor's time constant must be at least 0.072 spool time constants here: the air the engine takes in is 56 % as dense as at the design flight, so the shafts answer the fuel more slowly and a fast commanded rate rides the rich edge: measured, one step moves the flow coefficients by about 0.001 against a finer step."}
+UNCLASSIFIED #971 z 2100 dT 5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #975 z 11150 dT -27.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #984 z 21350 dT -15: At the final throttle (910 K), holding HP speed: The HP shaft speed asked for (72.9594 % of design) is below the least this load allows: the engine needs at least 1593 K to carry it at all, and gives 78.2716 % of design there."}
+UNCLASSIFIED #996 z 13150 dT 30: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1002 z 2850 dT 19: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a different model. Switch the lag off."}
+UNCLASSIFIED #1003 z 6350 dT -9.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1008 z 5100 dT 26: The governor runs with the instant valve only: a slow valve is a state on its own march, and a governor on that march is a different model. Make the valve instant."}
+UNCLASSIFIED #1010 z 6050 dT -16: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1011 z 1600 dT 18: The speed governor's gain must be above 0 and at most 8.2 here (the air the engine takes in is 6.04 times as dense as at the design flight, so the shafts answer the fuel harder): a larger gain is worked out too coarsely at this march's step."}
+UNCLASSIFIED #1016 z 14550 dT 28.5: The speed governor's time constant must be at least 0.211 spool time constants here: the air the engine takes in is 19 % as dense as at the design flight, so the shafts answer the fuel more slowly and a fast commanded rate rides the rich edge: measured, one step moves the flow coefficients by about 0.001 against a finer step."}
+UNCLASSIFIED #1023 z 12700 dT -13: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a different model. Switch the lag off."}
+UNCLASSIFIED #1047 z 4900 dT 1: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1050 z 18550 dT -22.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1055 z -50 dT -35.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1056 z 4650 dT 23: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1059 z 6350 dT 32.5: The speed governor's gain must be above 0 and at most 9.6 here (the air the engine takes in is 5.16 times as dense as at the design flight, so the shafts answer the fuel harder): a larger gain is worked out too coarsely at this march's step."}
+UNCLASSIFIED #1068 z 17850 dT 1: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1071 z 20800 dT -27.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1079 z 15450 dT 25: At the final throttle (1270 K), holding HP speed: The HP shaft speed asked for (91.7549 % of design) is below the least this load allows: the engine needs at least 1867 K to carry it at all, and gives 92.1184 % of design there."}
+UNCLASSIFIED #1084 z 18900 dT 25.5: At the starting throttle (660 K), holding HP speed: The HP shaft speed asked for (64.2525 % of design) is below the least this load allows: the engine needs at least 1470 K to carry it at all, and gives 75.0859 % of design there."}
+UNCLASSIFIED #1086 z 14700 dT 7: The fan-speed governor's gain must be above 0 and at most 26.9 here (the air the engine takes in is 1.85 times as dense as at the design flight, so the shafts answer the fuel harder): a larger gain is worked out too coarsely at this march's step."}
+UNCLASSIFIED #1087 z 4250 dT -34: The speed governor's gain must be above 0 and at most 6.8 here (the air the engine takes in is 7.25 times as dense as at the design flight, so the shafts answer the fuel harder): a larger gain is worked out too coarsely at this march's step."}
+UNCLASSIFIED #1091 z 24200 dT -34.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1092 z 12050 dT -19.5: The governor runs with the instant valve only: a slow valve is a state on its own march, and a governor on that march is a different model. Make the valve instant."}
+UNCLASSIFIED #1096 z 19700 dT 22: The governor runs with the instant valve only: a slow valve is a state on its own march, and a governor on that march is a different model. Make the valve instant."}
+UNCLASSIFIED #1098 z 24600 dT 34.5: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a different model. Switch the lag off."}
+UNCLASSIFIED #1099 z 9650 dT 28.5: The governor runs with the instant valve only: a slow valve is a state on its own march, and a governor on that march is a different model. Make the valve instant."}
+UNCLASSIFIED #1105 z 12250 dT -31.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1110 z 3700 dT 37.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1150 z 9750 dT 1.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1159 z 8950 dT 25: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1160 z 5700 dT -23.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1175 z 21750 dT 8: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #1176 z 5700 dT -29: The speed governor's gain must be above 0 and at most 29.3 here (the air the engine takes in is 1.70 times as dense as at the design flight, so the shafts answer the fuel harder): a larger gain is worked out too coarsely at this march's step."}
+UNCLASSIFIED #1181 z 7500 dT -22.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1182 z 13850 dT -28: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1185 z 20600 dT 36.5: The speed governor's time constant must be at least 0.475 spool time constants here: the air the engine takes in is 8 % as dense as at the design flight, so the shafts answer the fuel more slowly and a fast commanded rate rides the rich edge: measured, one step moves the flow coefficients by about 0.001 against a finer step."}
+UNCLASSIFIED #1186 z 20400 dT -5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1192 z 6650 dT 39.5: The speed governor's gain must be above 0 and at most 7.4 here (the air the engine takes in is 6.75 times as dense as at the design flight, so the shafts answer the fuel harder): a larger gain is worked out too coarsely at this march's step."}
+UNCLASSIFIED #1195 z 2350 dT 41: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1197 z 24900 dT 26.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1198 z 16950 dT -22: At the starting throttle (1000 K), holding HP speed: The HP shaft speed asked for (66.3207 % of design) is below the least this load allows: the engine needs at least 1413 K to carry it at all, and gives 79.6601 % of design there."}
+UNCLASSIFIED #1203 z 20600 dT -41.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1205 z -300 dT 30: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1216 z 13550 dT -42: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1223 z 11600 dT -6: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1234 z 19300 dT 24.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1238 z 20100 dT 8: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #1249 z 11650 dT 38: The speed governor's gain must be above 0 and at most 18.8 here (the air the engine takes in is 2.65 times as dense as at the design flight, so the shafts answer the fuel harder): a larger gain is worked out too coarsely at this march's step."}
+UNCLASSIFIED #1258 z 19450 dT 27.5: At the starting throttle (1570 K), holding HP speed: The HP shaft speed asked for (94.6068 % of design) is below the least this load allows: the engine needs at least 1795 K to carry it at all, and gives 103.9849 % of design there."}
+UNCLASSIFIED #1260 z 11100 dT -17.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1264 z 1100 dT -17.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1269 z 5650 dT 42: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1270 z 10800 dT 10.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1274 z 11350 dT 35.5: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #1275 z 4550 dT 3: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1281 z 16600 dT -42.5: The fan-speed governor's time constant must be at least 0.111 spool time constants here: the air the engine takes in is 36 % as dense as at the design flight, so the shafts answer the fuel more slowly and a fast commanded rate rides the rich edge: a faster one is worked out too coarsely at this march's step."}
+UNCLASSIFIED #1284 z 22650 dT -25: At the final throttle (710 K), holding HP speed: The HP shaft speed asked for (57.3836 % of design) is below the least this load allows: the engine needs at least 1188 K to carry it at all, and gives 69.9741 % of design there."}
+UNCLASSIFIED #1291 z 13650 dT 4.5: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a different model. Switch the lag off."}
+UNCLASSIFIED #1293 z 17150 dT -23.5: The fan-speed governor's gain must be above 0 and at most 32.3 here (the air the engine takes in is 1.55 times as dense as at the design flight, so the shafts answer the fuel harder): a larger gain is worked out too coarsely at this march's step."}
+UNCLASSIFIED #1294 z 12900 dT -42: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1295 z 13000 dT 7.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1299 z 15150 dT -11: At the starting throttle (1190 K), holding HP speed: The HP shaft speed asked for (86.8459 % of design) is below the least this load allows: the engine needs at least 1181 K to carry it at all, and gives 88.6096 % of design there."}
+UNCLASSIFIED #1305 z 18550 dT 22: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1307 z 19700 dT -1.5: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #1310 z 8000 dT -1: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #1313 z 150 dT 11: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1322 z 5500 dT 21: The speed governor's gain must be above 0 and at most 5.9 here (the air the engine takes in is 8.44 times as dense as at the design flight, so the shafts answer the fuel harder): a larger gain is worked out too coarsely at this march's step."}
+UNCLASSIFIED #1334 z 5300 dT 9.5: The speed governor's gain must be above 0 and at most 22.6 here (the air the engine takes in is 2.21 times as dense as at the design flight, so the shafts answer the fuel harder): a larger gain is worked out too coarsely at this march's step."}
+UNCLASSIFIED #1345 z 18200 dT -13: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a different model. Switch the lag off."}
+UNCLASSIFIED #1348 z 20350 dT -38.5: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #1350 z 3000 dT 2.5: The realistic release and the temperature limiter's lag cannot run together: each carries a cut as a lagging state on a different limiter, and two such lags at once is a different model (rung 66's two-lag cascade), not this one."}
+UNCLASSIFIED #1351 z 5450 dT -12: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1356 z 2450 dT -44: A slow valve cannot run beside the temperature limiter's lag or the realistic release: a lagging valve beside a lagging fuel cut is two lags on two levers (rung 66's two-lag cascade), a different model from this one. Make the valve instant, or switch the lag off."}
+UNCLASSIFIED #1365 z 23550 dT 27: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1370 z 5900 dT 15: The realistic release and the temperature limiter's lag cannot run together: each carries a cut as a lagging state on a different limiter, and two such lags at once is a different model (rung 66's two-lag cascade), not this one."}
+UNCLASSIFIED #1374 z 23800 dT -12.5: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a different model. Switch the lag off."}
+UNCLASSIFIED #1376 z 11450 dT -8.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1393 z 4800 dT -30: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1394 z 15500 dT 11: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1399 z 15100 dT 45: A slow valve cannot run beside the temperature limiter's lag or the realistic release: a lagging valve beside a lagging fuel cut is two lags on two levers (rung 66's two-lag cascade), a different model from this one. Make the valve instant, or switch the lag off."}
+UNCLASSIFIED #1407 z -650 dT 7: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #1420 z -300 dT 31: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1424 z 2150 dT 3.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1427 z 23650 dT -30: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1428 z 650 dT -8.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1442 z 9500 dT -29.5: The governor runs with the instant limiters only: the temperature limiter's lag carries its cut as a state on its own march, and a governor on that march is a different model. Switch the lag off."}
+unknown #1443 z 14800 dT -37: 
+UNCLASSIFIED #1453 z 19000 dT -28: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1455 z 10700 dT -31: The governor runs with the instant limiters only: the realistic release carries its cut as a state on its own march, and a governor on that march is a different model. Switch the release off."}
+UNCLASSIFIED #1456 z 10400 dT -20.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1459 z 6750 dT 14: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1464 z 17850 dT 34: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+UNCLASSIFIED #1476 z 18650 dT 30.5: The temperature limiter's lag delays the limiter's cut, so it needs the limiter switched on."}
+  493  [z  -1000.. 24900]  ran to the end
+   59  [z   -900.. 24750]  ran, stopped early
+    6  [z   2450.. 15550]  refused: A slow valve cannot run beside the temperatur
+    1  [z  15450.. 15450]  refused: At the final throttle (1270 K), holding HP sp
+    1  [z  15250.. 15250]  refused: At the final throttle (1650 K), holding HP sp
+    1  [z   5000..  5000]  refused: At the final throttle (630 K), holding HP spe
+    1  [z  21150.. 21150]  refused: At the final throttle (660 K), holding HP spe
+    1  [z  22650.. 22650]  refused: At the final throttle (710 K), holding HP spe
+    1  [z  11850.. 11850]  refused: At the final throttle (760 K), holding HP spe
+    1  [z  21350.. 21350]  refused: At the final throttle (910 K), holding HP spe
+    1  [z  17500.. 17500]  refused: At the final throttle (930 K), holding HP spe
+    1  [z  16950.. 16950]  refused: At the starting throttle (1000 K), holding HP
+    1  [z  16700.. 16700]  refused: At the starting throttle (1040 K), holding HP
+    1  [z  15150.. 15150]  refused: At the starting throttle (1190 K), holding HP
+    1  [z  18650.. 18650]  refused: At the starting throttle (1300 K), holding HP
+    1  [z  18600.. 18600]  refused: At the starting throttle (1470 K), holding HP
+    1  [z  19450.. 19450]  refused: At the starting throttle (1570 K), holding HP
+    1  [z  21900.. 21900]  refused: At the starting throttle (1690 K), holding HP
+    1  [z   8200..  8200]  refused: At the starting throttle (600 K), holding HP 
+    1  [z   7750..  7750]  refused: At the starting throttle (630 K), holding HP 
+    2  [z   2750.. 18900]  refused: At the starting throttle (660 K), holding HP 
+    1  [z  16500.. 16500]  refused: At the starting throttle (930 K), holding HP 
+    7  [z   2750.. 17150]  refused: The fan-speed governor's gain must be above 0
+    4  [z  13100.. 24750]  refused: The fan-speed governor's time constant must b
+   54  [z   -650.. 24750]  refused: The governor runs with the instant limiters o
+   11  [z   4600.. 24500]  refused: The governor runs with the instant valve only
+    4  [z   3000.. 17600]  refused: The realistic release and the temperature lim
+   15  [z      0.. 14800]  refused: The speed governor's gain must be above 0 and
+    7  [z  12200.. 24350]  refused: The speed governor's time constant must be at
+  131  [z   -300.. 24900]  refused: The temperature limiter's lag delays the limi
+   16  [z   6600.. 24900]  refused: [M 0.0-0.5] With this
+   12  [z   1000.. 20900]  refused: [M 0.0-0.5] acceleration schedule
+    4  [z   -400.. 18400]  refused: [M 0.0-0.5] cooling together
+   14  [z   9000.. 23450]  refused: [M 0.0-0.5] customer bleed would take
+    4  [z   1300..  8250]  refused: [M 0.0-0.5] design altitude's air
+    2  [z   4400.. 12200]  refused: [M 0.0-0.5] design-flight table
+    5  [z  16600.. 23600]  refused: [M 0.0-0.5] does not settle
+    8  [z   3800.. 23250]  refused: [M 0.0-0.5] generator would take
+   22  [z  -1000.. 23700]  refused: [M 0.0-0.5] off the part of their maps
+    8  [z   4750.. 21500]  refused: [M 0.0-0.5] thrust asked
+    2  [z    450..  3350]  refused: [M 0.0-0.5] too little pressure
+   15  [z  11350.. 24800]  refused: [M 0.5-1.0] With this
+   16  [z    850.. 23750]  refused: [M 0.5-1.0] acceleration schedule
+    5  [z   9800.. 22550]  refused: [M 0.5-1.0] cooling together
+    7  [z   9500.. 22500]  refused: [M 0.5-1.0] customer bleed would take
+    1  [z   1300..  1300]  refused: [M 0.5-1.0] design altitude's air
+    2  [z  20850.. 23050]  refused: [M 0.5-1.0] does not settle
+    7  [z   1050.. 22600]  refused: [M 0.5-1.0] generator would take
+   27  [z    300.. 24200]  refused: [M 0.5-1.0] off the part of their maps
+    4  [z   6750.. 17450]  refused: [M 0.5-1.0] thrust asked
+   13  [z  14250.. 24650]  refused: [M 1.0-1.5] With this
+   16  [z   1850.. 24550]  refused: [M 1.0-1.5] acceleration schedule
+    5  [z   9400.. 23300]  refused: [M 1.0-1.5] cooling together
+   10  [z  10200.. 22900]  refused: [M 1.0-1.5] customer bleed would take
+    3  [z   1900..  6000]  refused: [M 1.0-1.5] design altitude's air
+    2  [z  17900.. 21600]  refused: [M 1.0-1.5] design-flight table
+    2  [z  18800.. 19300]  refused: [M 1.0-1.5] does not settle
+    4  [z   4750.. 24750]  refused: [M 1.0-1.5] generator would take
+    1  [z   1800..  1800]  refused: [M 1.0-1.5] made at the design flight
+   28  [z   -250.. 24850]  refused: [M 1.0-1.5] off the part of their maps
+    1  [z  15500.. 15500]  refused: [M 1.0-1.5] steady solve fails
+    5  [z   8500.. 21050]  refused: [M 1.0-1.5] thrust asked
+    5  [z  19350.. 22900]  refused: [M 1.5-2.0] With this
+   15  [z   -950.. 22650]  refused: [M 1.5-2.0] acceleration schedule
+    1  [z  11350.. 11350]  refused: [M 1.5-2.0] cooling together
+    7  [z  13100.. 24700]  refused: [M 1.5-2.0] customer bleed would take
+    1  [z   -900..  -900]  refused: [M 1.5-2.0] design altitude's air
+   15  [z   5050.. 24600]  refused: [M 1.5-2.0] generator would take
+    3  [z    900.. 21800]  refused: [M 1.5-2.0] made at the design flight
+   32  [z   -600.. 24600]  refused: [M 1.5-2.0] off the part of their maps
+    5  [z   5050.. 24450]  refused: [M 1.5-2.0] thrust asked
+    3  [z  21350.. 24100]  refused: [M 2.0-2.5] With this
+   19  [z   -900.. 22500]  refused: [M 2.0-2.5] acceleration schedule
+    4  [z  19400.. 24000]  refused: [M 2.0-2.5] cooling together
+    1  [z  24450.. 24450]  refused: [M 2.0-2.5] customer bleed would take
+    1  [z   1550..  1550]  refused: [M 2.0-2.5] design altitude's air
+    1  [z  22800.. 22800]  refused: [M 2.0-2.5] design-flight table
+    1  [z  15100.. 15100]  refused: [M 2.0-2.5] does not settle
+    5  [z  13150.. 22950]  refused: [M 2.0-2.5] generator would take
+    6  [z   -500.. 12650]  refused: [M 2.0-2.5] made at the design flight
+   66  [z   -250.. 24800]  refused: [M 2.0-2.5] off the part of their maps
+    4  [z  13200.. 24500]  refused: [M 2.0-2.5] thrust asked
+   17  [z   5100.. 24900]  refused: [M 2.5-3.0] acceleration schedule
+    1  [z  23050.. 23050]  refused: [M 2.5-3.0] cooling together
+    1  [z   1900..  1900]  refused: [M 2.5-3.0] design altitude's air
+    1  [z  22300.. 22300]  refused: [M 2.5-3.0] does not settle
+    4  [z  19600.. 23900]  refused: [M 2.5-3.0] generator would take
+    7  [z     50.. 19250]  refused: [M 2.5-3.0] made at the design flight
+   67  [z   -450.. 24400]  refused: [M 2.5-3.0] off the part of their maps
+    1  [z  23300.. 23300]  refused: [M 2.5-3.0] thrust asked
+   12  [z   -800.. 22000]  refused: [M 3.0-3.5] acceleration schedule
+    2  [z     50.. 20100]  refused: [M 3.0-3.5] design altitude's air
+    1  [z  24300.. 24300]  refused: [M 3.0-3.5] generator would take
+    6  [z    950.. 15150]  refused: [M 3.0-3.5] made at the design flight
+  101  [z   -850.. 24800]  refused: [M 3.0-3.5] off the part of their maps
+    1  [z  20050.. 20050]  refused: [M 3.0-3.5] thrust asked
+    1  [z  14200.. 14200]  refused: [M 3.5-4.0] made at the design flight
+stop kinds: {"customer": 1, "floor_unreachable": 38, "lean": 9, "redline_floor": 1, "rich": 6, "unknown": 4}
+0 panics; total 137.9 s, median 0.001 s, slowest 2.11 / 1.88 / 1.83 s
+slowest request: {"op":"controls","controls":{"T0":239.70478249654934,"p0":2689.5699969636576,"shape":"press/flow","lever":"both","bleed_mode":"valve","valve_speed":"instant","redline_on":1,"gov_lag_on":0,"accel_on":0,"floor_on":0,"floor_ref":"phi","floor_phi":0.68,"release_on":0,"govern":1,"hold":"speed","thrust_by":"epr","speed_law":"prop","gov_tau":0.8200000000000001,"gov_gain":50,"generator":"off","generator_power":0.005,"customer":"share","customer_share":0.16,"customer_amount":0.16,"cool_vane":0,"cool_blade":0,"metal_on":1,"from":800,"to":680,"ramp":1.74,"settle":3.8000000000000003,"rho":1.6,"M0":0.21,"table_at":"design","corr_p":1,"corr_t":1,"speed_corr":"grid"}}
+
+# The three that ran and are now refused (one.rs)
+#828: The control's acceleration schedule is made at Mach 0.3 and 0.6 in the design altitude's air (250 K, 50 kPa). At Mach 0.3 this run's throttles are 892\u20131089 K, and at 892 K the engine has no steady point there: tables made there cannot cover this flight. Make the tables at this flight instead. (The model says: rung-90 customer bleed takes 50.3 % of the compressor's air here (HPC flow 0.2386 kg/s): more than half, so the burner is starved \u2014 the aircraft is asking for more air than the engine can give at this power.)"}
+#1144: The control's acceleration schedule is made at Mach 0.3 and 0.6 in the design altitude's air (250 K, 50 kPa). At Mach 0.3 this run's throttles are 741\u20131702 K, and at 741 K the engine has no steady point there: tables made there cannot cover this flight. Make the tables at this flight instead. (The model says: rung-97: the nozzle cannot pass the LP turbine's flow against 50000 Pa even with the turbine nearly unexpanded (pi_LPT 0.9995) \u2014 the engine has no operating point at this instant)"}
+#1235: The control's acceleration schedule is made at Mach 0.6 and 0.85 in the design altitude's air (250 K, 50 kPa). At Mach 0.6 this run's throttles are 647\u20131587 K, and at 647 K the engine has no steady point there: tables made there cannot cover this flight. Make the tables at this flight instead. (The model says: rung-97: the nozzle cannot pass the LP turbine's flow against 50000 Pa even with the turbine nearly unexpanded (pi_LPT 0.9995) \u2014 the engine has no operating point at this instant)"}

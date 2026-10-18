@@ -1,0 +1,3 @@
+governed EPR    none: 0.191 s  grid: 0.195 s  formula: 0.185 s
+schedule        none: 0.061 s  grid: 0.065 s  formula: 0.061 s
+prop law        none: 0.041 s  grid: 0.045 s  formula: 0.040 s

@@ -128,6 +128,7 @@ fn every_element_the_script_looks_up_is_declared() {
                 "ctl-by-" => looked_up.extend(["true", "epr", "n1"].map(|m| format!("{id}{m}"))),
                 // Rung 98's tables made at the design flight or this one.
                 "ctl-tat-" => looked_up.extend(["design", "flight"].map(|m| format!("{id}{m}"))),
+                "ctl-spd-" => looked_up.extend(["grid", "formula", "none"].map(|m| format!("{id}{m}"))),
                 "clq-" => looked_up.extend(["air", "st", "tsfc", "tt3", "speed"].map(|m| format!("{id}{m}"))),
                 _ => {
                     assert!(!id.ends_with('-'), "{helper}: the prefix #{id} has no expansion in this census");

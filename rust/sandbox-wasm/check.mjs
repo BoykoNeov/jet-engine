@@ -48,6 +48,16 @@ import { readFileSync } from 'node:fs';
 // (`ts_burner.N.0`, `ts_reject.N.0`) -- where it can be exactly 0 (the cooling curve ends ON the
 // ambient datum), so only an absolute bar means anything.
 const ENTROPY = /\.s$|\.ts_(burner|reject)\.\d+\.0$|\.settled_(lp|hp)$/;
+// RUNG 99: the pressure-ratio gap's second part (`gap_nozzle`) is, under the thrust recomputed for the flight speed,
+// what is left after the airflow guess -- exactly 0 in algebra while the nozzle is choked, rounding (~1e-13 N per kg/s)
+// in arithmetic, so its relative change is meaningless (two noise values of opposite sign read 190 %). Compared
+// ABSOLUTELY: worst seen 8.1e-13 (measured 2026-10-18, check requests #240/#242); bar 1e-10 N per kg/s, ~1e-13 of the
+// thrust. Under rung 98's split the same column is a constant of tens of N per kg/s and passes the same bar.
+// The first part (`gap_ram`) is, under the formula, the airflow guess `V0·(ṁ̂ − ṁ_face)` -- a small difference of two
+// nearly equal flows (~0.1 N per kg/s); relative it read 8.0e-12 against the 1e-11 bar (#242), so it takes the same
+// absolute rule (worst 1.3e-12 seen on the rest; rung 98's ram part, tens of N per kg/s, differs by ~1e-12 there).
+const GAP = /\.gap_(ram|nozzle)\.\d+$/;
+const GAP_ABS = 1e-10;
 const BARS = {
   perfect: { rel: 1e-13, s_abs: 1e-10 },
   table: { rel: 1e-9, s_abs: 1e-6 },
@@ -76,10 +86,11 @@ function compare(a, b, path, fails, kind) {
   if (typeof a === 'number' && typeof b === 'number') {
     numbers++;
     if (Object.is(a, b)) { identical++; return; }
-    const isS = ENTROPY.test(path);
+    const isGap = GAP.test(path);
+    const isS = isGap || ENTROPY.test(path);
     const d = isS ? Math.abs(a - b) : Math.abs(a - b) / Math.max(Math.abs(a), Math.abs(b));
-    const bar = isS ? BARS[kind].s_abs : BARS[kind].rel;
-    const key = kind + (isS ? (kind === 'march' ? ' settled gap (abs)' : ' entropy (abs)') : ' relative');
+    const bar = isGap ? GAP_ABS : isS ? BARS[kind].s_abs : BARS[kind].rel;
+    const key = kind + (isGap ? ' thrust-gap rest (abs)' : isS ? (kind === 'march' ? ' settled gap (abs)' : ' entropy (abs)') : ' relative');
     if (!worst[key] || d > worst[key].d) worst[key] = { d, where: path };
     if (!(d <= bar)) fails.push(`${path}: browser ${a} vs native ${b} (${isS ? 'abs' : 'rel'} ${d.toExponential(2)} > ${bar})`);
     return;

@@ -709,22 +709,33 @@ footer p { max-width: 90ch; }
           <button type="button" id="ctl-tat-flight" aria-pressed="false">Made at this flight</button></div>
         <div id="ctl-corr-box">
           <label class="swrow"><input type="checkbox" id="ctl-corr_p"> Corrected for the air's pressure <small>rung 98</small></label>
-          <label class="swrow"><input type="checkbox" id="ctl-corr_t"> Corrected for the air's temperature</label></div>
+          <label class="swrow"><input type="checkbox" id="ctl-corr_t"> Corrected for the air's temperature</label>
+          <div class="toggle" role="group" aria-label="How the tables are corrected for flight speed">
+            <button type="button" id="ctl-spd-grid" aria-pressed="true">Speed: tables at eight speeds</button>
+            <button type="button" id="ctl-spd-formula" aria-pressed="false">Thrust recomputed</button>
+            <button type="button" id="ctl-spd-none" aria-pressed="false">Not corrected <small>rung 99</small></button></div></div>
         <p class="note" id="ctl-tables-note">A real control's tables (the thrust it reads from the pressure ratio or the fan
           speed, the acceleration schedule, the speed governor's fuel) are made once, at one flight, and read everywhere else
           through two corrections: thrust and fuel divided by how much denser the air at the engine is, speeds by the
           square root of how much warmer. Here the pressure one is exact. The temperature one is nearly so: in air 16 %
           warmer at the engine the pressure ratio's thrust is off by under 0.1 %, the fan speed's by about 0.2 %, because
-          the fuel's heat is fixed while the air's grows with temperature. No correction sees a change of flight speed: a
-          table made at Mach 0.85 gives about 8 % too much thrust at Mach 0.5 and 5–10 % too little at Mach 1.4 (the jet's
-          push against the outside air and the drag of the air swallowed both change; the engine's inside does not).
+          the fuel's heat is fixed while the air's grows with temperature. Neither correction sees a change of flight speed:
+          a table made at Mach 0.85 alone gives about 8 % too much thrust at Mach 0.5 and 5–10 % too little at Mach 1.4 (the
+          jet's push against the outside air and the drag of the air swallowed both change; the engine's inside does not).
+          So the tables are made at eight speeds (Mach 0.3, 0.6, 0.85, 1.2, 1.6, 2.0, 2.5, 3.0, in the design flight's air)
+          and the two around the speed flown are blended: the miss falls to a few tenths of a per cent, short where the
+          thrust-against-speed curve bends up, over where the nozzle's push bends it down; below Mach 0.3 the line through
+          the two slowest tables is carried on, and the miss grows (about 1.7 % at Mach 0.15). Or the thrust is recomputed
+          for the flight speed (the jet's push against this air, less the drag of the air the table expects): exact while
+          the nozzle is choked but for the table's guess of the air swallowed; where the nozzle is not choked it gives too
+          little thrust read from the pressure ratio and about 5 % too much read from the fan speed.
           Switch a correction off to see why it is there. Without the pressure one the thrust is off by about as much as
           the air is thinner or denser. Without the temperature one the fan-speed control misses by 22–43 % on a day 16 %
           warmer or 13 % colder at the engine, while the pressure ratio needs no temperature correction at all, and the
           schedule runs cooler in hot air and hotter in cold. The speed governor's own table, read uncorrected, runs off its
           end and holds the end's fuel, so it settles slow in hot air as well as cold. The acceleration schedule needs no
           pressure correction (fuel over compressor pressure already divides it out). Very fast flight (about Mach 2.5 and
-          above) is beyond a design-flight table's reach: make the tables at this flight there.</p>
+          above) is beyond a single design-flight table's reach; the speed grid reaches most of it.</p>
       </div>
     </fieldset>
     <fieldset id="cycle-set">
@@ -1253,6 +1264,12 @@ const CTL_SW = ["redline_on", "gov_lag_on", "accel_on", "floor_on", "release_on"
 // Rung 98: the run reads a table -- rung 96's inferred thrust, rung 48's schedule, or rung 95's proportional speed law.
 const ctlTables = c => (c.govern === 1 && c.hold === "thrust" && c.thrust_by !== "true") || c.accel_on === 1
   || (c.govern === 1 && c.hold === "speed" && c.speed_law === "prop");
+// Rung 99: how the tables were corrected for flight speed, in words.
+const speedFor = sp => !sp ? "" : sp.corr === "none" ? "not corrected for flight speed"
+  : sp.corr === "formula" ? "thrust recomputed for this flight speed"
+  : sp.slices.length === 1 ? `for flight speed: the Mach ${sp.slices[0]} table`
+  : `for flight speed: the Mach ${sp.slices[0]} and ${sp.slices[1]} tables blended (${fmt(sp.weight * 100, 3)} % of the way)${sp.extended
+      ? ", the line carried past the grid" : ""}`;
 const CTL_VIEW = ["ctl-set", "ctl-sw-set", "ctl-lever-set", "ctl-out", "ctl-card"];
 // Cool the turbine (rung 93, turbojet::sandbox_cooling): CL holds the view's knobs. The knob form runs first, then
 // the sweep streams one burner temperature at a time, both on the view's OWN worker, killed when a knob moves.
@@ -1382,6 +1399,8 @@ function showSettings() {
     // Rung 98: where the control's tables are made; the corrections apply to a design-flight table.
     press("ctl-tat-design", C.table_at === "design"); press("ctl-tat-flight", C.table_at === "flight");
     $("ctl-corr-box").hidden = C.table_at !== "design";
+    // Rung 99: how a design-flight table is corrected for flight speed.
+    for (const k of ["grid", "formula", "none"]) press("ctl-spd-" + k, C.speed_corr === k);
     press("ctl-slaw-rate", C.speed_law === "rate"); press("ctl-slaw-prop", C.speed_law === "prop");
     $("ctl-gtau-box").hidden = C.speed_law !== "rate"; $("ctl-ggain-box").hidden = C.speed_law !== "prop";
     $("ctl-cap-note").hidden = !C.hold_cap;
@@ -1938,10 +1957,16 @@ const CTL_ROWS = [
     ? (ctlTables(r.controls) ? "made at this flight" : "no table read")
     : `made at the design flight; the air at the engine ${fmt(r.tables.theta, 4)} times as warm and ${fmt(r.tables.delta, 4)} times
        the pressure; corrected for ${r.tables.corr_p && r.tables.corr_t ? "both" : r.tables.corr_p ? "pressure only"
-       : r.tables.corr_t ? "temperature only" : "neither"}`],
+       : r.tables.corr_t ? "temperature only" : "neither"}; ${speedFor(r.tables.speed)}`],
   ["That gap's two parts: air swallowed, most / least, and the jet's push against this air (% of the thrust change; rung 98)", r => {
     const k = (r.gap_nozzle || []).findIndex(v => v !== null);
-    if (k < 0) return "shown for the pressure ratio on a design-flight table, pressure corrected";
+    if (k < 0) return "shown for the pressure ratio on a design-flight table, pressure corrected, not blended between speeds";
+    if (r.tables.speed.split === "airflow_rest") {
+      const d = Math.abs(r.end.thrust - r.start.thrust) || 1, f = a => a.filter(v => v !== null).map(v => v / d * 100);
+      // The rest is exactly 0 in algebra while the nozzle is choked (rounding in arithmetic): so ask the nozzle, not the number.
+      const g = f(r.gap_ram), rest = r.gap_nozzle.map((v, i) => v === null || r.choked[i] ? 0 : Math.abs(v / d * 100));
+      return `thrust recomputed: the table's guess of the air swallowed ${fmt(Math.max(...g), 3)} / ${fmt(Math.min(...g), 3)}; the rest
+        ${r.choked.every(c => c) ? "nothing (the nozzle choked throughout)" : `up to ${fmt(Math.max(...rest), 3)} (where the nozzle is not choked)`}`; }
     const d = Math.abs(r.end.thrust - r.start.thrust) || 1, ram = r.gap_ram.filter(v => v !== null).map(v => v / d * 100);
     return `${fmt(Math.max(...ram), 3)} / ${fmt(Math.min(...ram), 3)}, and ${fmt(r.gap_nozzle[k] / d * 100, 3)} all through`; }],
   ["Time to 90 % of the LP speed change (τ)", r => to90(r, "nu_lp"), 3],
@@ -2952,6 +2977,8 @@ function wire() {
   for (const k of ["true", "epr", "n1"]) cclick("ctl-by-" + k, () => { C.thrust_by = k; if (k !== "true") C.hold_cap = 0; });
   // Rung 98: where the control's tables are made.
   for (const a of ["design", "flight"]) cclick("ctl-tat-" + a, () => { C.table_at = a; });
+  // Rung 99: how a design-flight table is corrected for flight speed.
+  for (const k of ["grid", "formula", "none"]) cclick("ctl-spd-" + k, () => { C.speed_corr = k; });
   $("ctl-metal_life").addEventListener("change", () => { C.metal_life = +$("ctl-metal_life").value; scheduleCtl(); });
   // Cool the turbine (rung 93): its knobs write CL; the knob form and the sweep follow.
   $("mode-cooling").addEventListener("click", enterCooling);

@@ -40,7 +40,8 @@ use crate::sandbox_cooling::{LIFE_MAX, LIFE_MIN, TECH_KEYS, YEAR_MAX, YEAR_MIN};
 use crate::burner_hold::{self as bh, Hold};
 use crate::governor::{self as gv, GovCall, GovMark, Governor, Law, Leg};
 use crate::inferred_thrust as inf;
-use crate::corrected_tables::{self as ct, Carry, TableAt};
+use crate::corrected_tables::{Carry, TableAt};
+use crate::mach_axis::{self as ma, SpeedCorr, Tables};
 use crate::engine::FlightCondition;
 use crate::fuel_transient::{r43_cut_below_ceiling, release_weight, AccelSchedule, AsymmetricLag, FuelInstant, FuelLimiters,
                             FuelPoint, FuelTransientCore, PointExtra, SurgeLimiter};
@@ -261,6 +262,9 @@ pub struct ControlsSettings {
     pub table_at: TableAt,
     pub corr_p: bool,
     pub corr_t: bool,
+    /// Rung 99: how a design-flight table is corrected for flight SPEED — tables at eight grid speeds blended at the one
+    /// flown (the default, the user's choice), the thrust recomputed for it, or not at all (rung 98).
+    pub speed_corr: SpeedCorr,
     /// The flight FLOWN (plan § 27): ambient static temperature, K, and pressure, Pa — the page's altitude and
     /// deviation from the standard day, linked to these through the standard atmosphere as on *Fly it*. The hardware
     /// stays captured at the DESIGN flight ([`ControlsSettings::design_flight`]). The defaults ARE the design flight,
@@ -385,7 +389,7 @@ impl ControlsSettings {
             hold: Hold::BurnerTemp, hold_cap: false,
             govern: false, speed_law: SpeedLaw::Rate, gov_tau: 0.1, gov_gain: 20.0,
             thrust_by: ThrustBy::True, table_clean: true,
-            table_at: TableAt::Design, corr_p: true, corr_t: true,
+            table_at: TableAt::Design, corr_p: true, corr_t: true, speed_corr: SpeedCorr::Grid,
             t0: fd.t0, p0: fd.p0, m0: fd.m0,
         }
     }
@@ -474,7 +478,11 @@ impl ControlsSettings {
     }
 
     /// Rung 98: the tables are made at the design flight and CARRIED to this one — otherwise rungs 48/95/96's own.
-    pub fn carried(&self) -> bool { self.table_at == TableAt::Design && self.uses_table() && !self.at_design_flight() }
+    /// Rung 99: under the speed grid, flown at a grid slice's own flight, the slice IS a table made at this flight.
+    pub fn carried(&self) -> bool {
+        self.table_at == TableAt::Design && self.uses_table() && !self.at_design_flight()
+            && !(self.speed_corr == SpeedCorr::Grid && ma::at_slice_flight(&self.design_flight(), &self.flight()))
+    }
 
     /// The flight the hardware was captured at — the *Size the blades* rig's (250 K, 50 kPa, Mach 0.85). Every
     /// CONSTRUCTOR takes this one; the flight flown is [`ControlsSettings::flight`].
@@ -528,6 +536,7 @@ impl ControlsSettings {
             "gov_gain" => self.gov_gain,
             "thrust_by" => self.thrust_by.key(), "table_clean" => b(self.table_clean),
             "table_at" => self.table_at.key(), "corr_p" => b(self.corr_p), "corr_t" => b(self.corr_t),
+            "speed_corr" => self.speed_corr.key(),
             "T0" => self.t0, "p0" => self.p0, "M0" => self.m0,
         }
     }
@@ -636,6 +645,10 @@ impl ControlsSettings {
         if let Some(t) = text("table_at")? {
             s.table_at = TableAt::ALL.into_iter().find(|a| a.key() == t)
                 .ok_or_else(|| format!("unknown table place {t:?} (\"design\" or \"flight\")"))?;
+        }
+        if let Some(t) = text("speed_corr")? {
+            s.speed_corr = SpeedCorr::ALL.into_iter().find(|a| a.key() == t)
+                .ok_or_else(|| format!("unknown speed correction {t:?} (\"grid\", \"formula\" or \"none\")"))?;
         }
         if let Some(t) = text("hold")? {
             s.hold = Hold::ALL.into_iter().find(|h| h.key() == t)
@@ -979,6 +992,8 @@ pub struct ControlsSolver {
     /// the tables are made at the design flight and flown elsewhere.
     pub carry: Option<Carry>,
     pub design_table: Option<inf::Table>,
+    /// Rung 99: where the tables came from under a carry — rung 98's, two grid slices, or the formula.
+    pub tables: Option<Tables>,
 }
 
 /// Rung 94: one end's hold — the throttle set, the target (thrust N per kg/s of design airflow, or HP speed), what
@@ -1070,8 +1085,11 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
     // steady reading equals the table's.
     // Rung 98: with the tables made at the design flight and flown elsewhere, every table is built THERE and carried
     // here (below), and an inferred thrust's ends are calibrated on the carried table instead.
+    // Rung 99: and where they come from — rung 98's one design-flight table, two grid slices blended, or the design
+    // table with its thrust recomputed for this flight speed. `carry` stays rung 98's (the air against the design's).
+    let tables = s.carried().then(|| Tables::new(&core.fuel, &fd, &fl, s.speed_corr, s.corr_p, s.corr_t));
     let carry = s.carried().then(|| Carry::new(&core.fuel, &fd, &fl, s.corr_p, s.corr_t));
-    let clean = match (s.calibrated() && carry.is_none(), unloaded.as_ref()) {
+    let clean = match (s.calibrated() && tables.is_none(), unloaded.as_ref()) {
         (true, Some(de)) => {
             let bare = match builder(de.clone(), fd, MDOT_DESIGN, Some(ml), Some(mh), s.rho, &s.lever_arm()) {
                 ScheduledStatorTransient::Full(c) => c,
@@ -1152,7 +1170,7 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
     };
     // Rung 98: with the clean table under a carry, each end's target is the generator-off engine's thrust at the set
     // throttle (rung 96's `b0`/`b1`), and rung 94's thrust-hold root is NOT run: the ends are calibrated below.
-    let carried_clean = carry.is_some() && s.inferred() && s.calibrated() && unloaded.is_some();
+    let carried_clean = tables.is_some() && s.inferred() && s.calibrated() && unloaded.is_some();
     let nominal = match carried_clean {
         true => None,
         false => Some((hold_end("starting", s.from)?, hold_end("final", s.to)?)),
@@ -1161,12 +1179,11 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
     // (the generator-off one between the set throttles, else this one between the ends just found), carried here, and
     // each end CALIBRATED on it: where this engine's steady reading equals the carried table's reading at the end's
     // target (rung 96's target, unchanged). The thrust there minus the target is the steady miss.
-    let (start, end, hold_start, hold_end_info, design_table, carried_infer) = match (carry.as_ref(), s.inferred()) {
-        (Some(c), true) => {
+    let (start, end, hold_start, hold_end_info, design_table, carried_infer) = match (tables.as_ref(), s.inferred()) {
+        (Some(tb), true) => {
             let r = s.law().reading().expect("an inferred law has a reading");
-            let made = |m: &ScheduledStatorCore, lo: f64, hi: f64| ct::try_design_table(&m.fuel, c, lo, hi)
-                .map_err(|f| DoesNotRun(ct::row_words("thrust table", c, lo, hi, &f)));
-            let (dt, targets) = match (carried_clean, unloaded.as_ref()) {
+            let made = |m: &ScheduledStatorCore, lo: f64, hi: f64| tb.thrust_table(&m.fuel, lo, hi, r).map_err(DoesNotRun);
+            let ((table, dt), targets) = match (carried_clean, unloaded.as_ref()) {
                 (true, Some(de)) => {
                     let bare = match builder(de.clone(), fd, MDOT_DESIGN, Some(ml), Some(mh), s.rho, &s.lever_arm()) {
                         ScheduledStatorTransient::Full(c) => c,
@@ -1185,7 +1202,6 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
                     (made(&core, a.tt4, b.tt4)?, (target(a, *ha), target(b, *hb)))
                 }
             };
-            let table = c.thrust_table(&dt);
             let calibrate = |which: &str, t_set: f64, target: f64| -> Result<(Instant2, Option<HoldInfo>), DoesNotRun> {
                 let want = table.reading_at(r, target);
                 let q_at = |t: f64| core.fuel.inner.try_equilibrium(&fl, t, None).map(|(i, _, _)| table.read(r, &i));
@@ -1198,7 +1214,7 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
             };
             let (s0, h0) = calibrate("starting", s.from, targets.0)?;
             let (s1, h1) = calibrate("final", s.to, targets.1)?;
-            (s0, s1, h0, h1, Some(dt), Some(table))
+            (s0, s1, h0, h1, dt, Some(table))
         }
         _ => {
             let ((a, ha), (b, hb)) = nominal.expect("the nominal ends exist unless the clean table is carried");
@@ -1210,11 +1226,10 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
         false => None,
         true => {
             let (lo, hi) = if s.from <= s.to { (s.from, s.to) } else { (s.to, s.from) };
-            match carry.as_ref() {
+            match tables.as_ref() {
                 None => Some(accel_table(&core, &fl, lo, hi, s.accel_margin)?),
-                // Rung 98: made at the design flight, carried (`Wf/pt3 × √θ`).
-                Some(c) => Some(c.accel(&ct::try_design_accel(&core.fuel, c, lo, hi, ACCEL_ROWS, s.accel_margin)
-                    .map_err(|f| DoesNotRun(ct::row_words("acceleration schedule", c, lo, hi, &f)))?)),
+                // Rung 98: made at the design flight, carried (`Wf/pt3 × √θ`); rung 99: or at two grid speeds, blended.
+                Some(tb) => Some(tb.accel(&core.fuel, lo, hi, ACCEL_ROWS, s.accel_margin).map_err(DoesNotRun)?),
             }
         }
     };
@@ -1228,13 +1243,13 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
                 _ => h.map_or_else(|| held(i), |h| h.target),
             };
             let law = s.law();
-            let table = match (law, carry.as_ref()) {
+            let table = match (law, tables.as_ref()) {
                 (Law::SpeedProp { .. }, None) => gv::try_steady_table(&core.fuel, &fl, &start, &end).map_err(|e| DoesNotRun(
                     format!("The speed governor's steady table has a throttle with no steady point between the ends: {}",
                             endpoint_words(&e.0))))?,
                 // Rung 98: made at the design flight between the ends' burner temperatures, carried.
-                (Law::SpeedProp { .. }, Some(c)) => c.steady_table(&ct::try_design_steady_table(&core.fuel, c, start.tt4, end.tt4)
-                    .map_err(|f| DoesNotRun(ct::row_words("speed governor's steady table", c, start.tt4, end.tt4, &f)))?),
+                // Rung 99: or at two grid speeds, blended.
+                (Law::SpeedProp { .. }, Some(tb)) => tb.steady_table(&core.fuel, start.tt4, end.tt4).map_err(DoesNotRun)?,
                 _ => Vec::new(),
             };
             // Rung 96: the control's table — calibrated (above), or on this machine between the run's own ends; rung 98's
@@ -1252,7 +1267,28 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
         }
     };
     Ok(ControlsSolver { settings: *s, core, flight: fl, start, end, mf_lo, mf_hi, accel, hold_start, hold_end: hold_end_info,
-                        governor, carry, design_table })
+                        governor, carry, design_table, tables })
+}
+
+/// Rung 99: how the tables were corrected for flight speed — the setting, the grid slices read (Mach), the weight on
+/// the second, whether the trend is carried past the grid, and how the pressure-ratio gap is split.
+fn speed_json(s: &ControlsSettings, t: Option<&Tables>) -> Json {
+    let split = match (t, s.corr_p && s.thrust_by == ThrustBy::Epr) {
+        (Some(Tables::Design(_)), true) => "ram_nozzle",
+        (Some(Tables::Formula { .. }), true) => "airflow_rest",
+        _ => "whole",
+    };
+    let (slices, w) = match t {
+        Some(Tables::Grid { a, b, w }) => match b {
+            Some(b) => (vec![Json::Float(ma::GRID[a.j]), Json::Float(ma::GRID[b.j])], Json::Float(*w)),
+            None => (vec![Json::Float(ma::GRID[a.j])], Json::Null),
+        },
+        Some(Tables::Design(_)) if s.speed_corr == SpeedCorr::Grid => (vec![Json::Float(ma::GRID[ma::DESIGN_SLICE])], Json::Null),
+        _ => (Vec::new(), Json::Null),
+    };
+    let extended = matches!(t, Some(Tables::Grid { b: Some(_), w, .. }) if *w < 0.0 || *w > 1.0);
+    jobj! { "corr" => s.speed_corr.key(), "slices" => Json::List(slices), "weight" => w,
+            "extended" => Json::Int(extended as i64), "split" => split }
 }
 
 /// Plain words for an endpoint's failed steady solve — the four messages the crash map found
@@ -2022,9 +2058,15 @@ impl ControlsSolver {
             }
             None => (None, None),
         };
-        let (gap_ram, gap_nozzle) = match (self.carry.as_ref(), self.design_table.as_ref(), inferred) {
-            (Some(c), Some(dt), Some(f_hat)) if s.corr_p && s.thrust_by == ThrustBy::Epr && i.branch == Branch::Choked =>
+        let (gap_ram, gap_nozzle) = match (self.tables.as_ref(), self.carry.as_ref(), self.design_table.as_ref(), inferred) {
+            (Some(Tables::Design(_)), Some(c), Some(dt), Some(f_hat))
+                if s.corr_p && s.thrust_by == ThrustBy::Epr && i.branch == Branch::Choked =>
                 (Some(c.ram_part(dt, i)), Some(c.nozzle_part(dt, i, Self::thrust(i), f_hat))),
+            // Rung 99: under the formula, the airflow guess and the rest — zero while the nozzle is choked.
+            (Some(tb @ Tables::Formula { .. }), _, _, Some(f_hat)) if s.corr_p && s.thrust_by == ThrustBy::Epr => {
+                let t = self.governor.as_ref().and_then(|g| g.infer.as_ref()).expect("an inferred run reads its table");
+                tb.formula_split(t, i, Self::thrust(i), f_hat).map_or((None, None), |(a, b)| (Some(a), Some(b)))
+            }
             _ => (None, None),
         };
         let res_redline = s.redline_on.then(|| (i.tt4 - s.redline).abs() / s.redline);
@@ -2184,7 +2226,8 @@ pub fn controls_json(sv: &ControlsSolver, o: &ControlsOutcome) -> Json {
         "tables" => match sv.carry.as_ref() {
             None => jobj! { "at" => "flight", "carried" => Json::Int(0) },
             Some(c) => jobj! { "at" => "design", "carried" => Json::Int(1), "theta" => c.theta, "delta" => c.delta,
-                               "corr_p" => Json::Int(o.settings.corr_p as i64), "corr_t" => Json::Int(o.settings.corr_t as i64) },
+                               "corr_p" => Json::Int(o.settings.corr_p as i64), "corr_t" => Json::Int(o.settings.corr_t as i64),
+                               "speed" => speed_json(&o.settings, sv.tables.as_ref()) },
         },
         "gap_ram" => rcol(&|r| r.gap_ram.unwrap_or(f64::NAN)),
         "gap_nozzle" => rcol(&|r| r.gap_nozzle.unwrap_or(f64::NAN)),
@@ -2357,11 +2400,30 @@ pub fn check_requests() -> Vec<String> {
     // in cold air, the proportional speed law uncorrected on a warm day (it reads off its table), and Mach 3 at sea level,
     // beyond the design-flight table's reach.
     for s in [
-        ControlsSettings { m0: 1.4, govern: true, hold: Hold::Thrust, thrust_by: ThrustBy::Epr, ..d },
+        // Pinned to no speed correction (rung 99 made the speed grid the default) so these keep testing rung 98.
+        ControlsSettings { m0: 1.4, govern: true, hold: Hold::Thrust, thrust_by: ThrustBy::Epr, speed_corr: SpeedCorr::None, ..d },
         ControlsSettings { m0: 1.4, govern: true, hold: Hold::Thrust, thrust_by: ThrustBy::Epr, table_at: TableAt::Flight, ..d },
         ControlsSettings { t0: 290.0, govern: true, hold: Hold::Thrust, thrust_by: ThrustBy::N1, corr_t: false, ..d },
         ControlsSettings { t0: 216.65, accel_on: true, corr_t: false, ..d },
         ControlsSettings { t0: 290.0, govern: true, hold: Hold::HpSpeed, speed_law: SpeedLaw::Prop, corr_t: false, ..d },
+        at(0.0, 0.0, ControlsSettings { m0: 3.0, govern: true, hold: Hold::Thrust, thrust_by: ThrustBy::Epr,
+                                        speed_corr: SpeedCorr::None, ..d }),
+    ] {
+        out.push(req(s));
+    }
+    // Rung 99: the speed axis -- the pressure ratio at Mach 1.4 and 0.5 on the speed grid (a few tenths of a per cent
+    // off), the same recomputed, the fan speed at Mach 0.15 (the grid's trend carried below it), the formula at Mach 0.05
+    // from 700 K (the nozzle unchoked at the start), the schedule and the proportional law at Mach 1.4 on the grid, and
+    // Mach 3 at sea level, beyond the Mach-3 table's reach.
+    for s in [
+        ControlsSettings { m0: 1.4, govern: true, hold: Hold::Thrust, thrust_by: ThrustBy::Epr, ..d },
+        ControlsSettings { m0: 0.5, govern: true, hold: Hold::Thrust, thrust_by: ThrustBy::Epr, ..d },
+        ControlsSettings { m0: 1.4, govern: true, hold: Hold::Thrust, thrust_by: ThrustBy::Epr, speed_corr: SpeedCorr::Formula, ..d },
+        ControlsSettings { m0: 0.15, govern: true, hold: Hold::Thrust, thrust_by: ThrustBy::N1, ..d },
+        ControlsSettings { m0: 0.05, from: 700.0, govern: true, hold: Hold::Thrust, thrust_by: ThrustBy::Epr,
+                           speed_corr: SpeedCorr::Formula, ..d },
+        ControlsSettings { m0: 1.4, accel_on: true, ..d },
+        ControlsSettings { m0: 1.4, govern: true, hold: Hold::HpSpeed, speed_law: SpeedLaw::Prop, ..d },
         at(0.0, 0.0, ControlsSettings { m0: 3.0, govern: true, hold: Hold::Thrust, thrust_by: ThrustBy::Epr, ..d }),
     ] {
         out.push(req(s));

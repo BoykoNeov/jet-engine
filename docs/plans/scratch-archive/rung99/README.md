@@ -15,3 +15,12 @@ Before the anchor (`docs/plans/rung99-anchor-mach-axis.md` § 0):
 - `bend.rs` → `bend.txt` — after the advisor's pre-freeze review: G5, the grid's interpolation error at a fixed
   corrected engine computed analytically from state, `a8` and the inlet; G6, the formula's unchoked nozzle term and the
   airflow-guess bound at the 700 K start. No table built or read.
+
+After the build (the SHIPPED code):
+- `score.rs` → `score.txt` — § 3 scored, H1–H6 (116 HIT, 0 MISS), and the reported quantities.
+- `cost.rs` → `cost.txt` — none / grid / formula, best of 9, Mach 1.4.
+- `census.rs` → `census.txt` — the 83 Controls check requests through this build and a worktree of `7113ed3`
+  (index, old hash, new hash): 2 moved (77, 82), the two pre-registered.
+- `crash99.rs` → `crash_compare.txt` — the crash map (seed 99, 1 500) on both builds, request by request;
+  `classify99.py` checks every differing request is in the predicted class; `one.rs` prints a request's refusal (the
+  three that ran and are now refused).

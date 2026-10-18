@@ -1,0 +1,148 @@
+# H1 sign / H2 size — grid; rung 98 (none) beside
+flow/press EPR M0.5 1000K: grid -0.538%  H1 HIT  H2 HIT   [none +8.528% / +8.658%]
+flow/press EPR M0.5 1400K: grid -0.267%  H1 HIT  H2 HIT   [none +8.528% / +8.658%]
+flow/press EPR M1.4 1000K: grid +0.316%  H1 HIT  H2 HIT   [none -4.911% / -9.585%]
+flow/press EPR M1.4 1400K: grid -0.041%  H1 (not scored)  H2 HIT   [none -4.911% / -9.585%]
+flow/press fan M0.5 1000K: grid -0.528%  H1 HIT  H2 HIT   [none +8.446% / +8.768%]
+flow/press fan M0.5 1400K: grid -0.273%  H1 HIT  H2 HIT   [none +8.446% / +8.768%]
+flow/press fan M1.4 1000K: grid +0.309%  H1 HIT  H2 HIT   [none -4.708% / -9.475%]
+flow/press fan M1.4 1400K: grid -0.044%  H1 (not scored)  H2 HIT   [none -4.708% / -9.475%]
+press/flow EPR M0.5 1000K: grid -0.537%  H1 HIT  H2 HIT   [none +8.534% / +8.658%]
+press/flow EPR M0.5 1400K: grid -0.267%  H1 HIT  H2 HIT   [none +8.534% / +8.658%]
+press/flow EPR M1.4 1000K: grid +0.312%  H1 HIT  H2 HIT   [none -5.001% / -9.594%]
+press/flow EPR M1.4 1400K: grid -0.041%  H1 (not scored)  H2 HIT   [none -5.001% / -9.594%]
+press/flow fan M0.5 1000K: grid -0.530%  H1 HIT  H2 HIT   [none +8.437% / +8.721%]
+press/flow fan M0.5 1400K: grid -0.274%  H1 HIT  H2 HIT   [none +8.437% / +8.721%]
+press/flow fan M1.4 1000K: grid +0.306%  H1 HIT  H2 HIT   [none -4.774% / -9.445%]
+press/flow fan M1.4 1400K: grid -0.044%  H1 (not scored)  H2 HIT   [none -4.774% / -9.445%]
+tilted     EPR M0.5 1000K: grid -0.539%  H1 HIT  H2 HIT   [none +8.518% / +8.658%]
+tilted     EPR M0.5 1400K: grid -0.267%  H1 HIT  H2 HIT   [none +8.518% / +8.658%]
+tilted     EPR M1.4 1000K: grid +0.318%  H1 HIT  H2 HIT   [none -4.847% / -9.571%]
+tilted     EPR M1.4 1400K: grid -0.041%  H1 (not scored)  H2 HIT   [none -4.847% / -9.571%]
+tilted     fan M0.5 1000K: grid -0.530%  H1 HIT  H2 HIT   [none +8.430% / +8.731%]
+tilted     fan M0.5 1400K: grid -0.273%  H1 HIT  H2 HIT   [none +8.430% / +8.731%]
+tilted     fan M1.4 1000K: grid +0.312%  H1 HIT  H2 HIT   [none -4.642% / -9.446%]
+tilted     fan M1.4 1400K: grid -0.043%  H1 (not scored)  H2 HIT   [none -4.642% / -9.446%]
+flat-lp    EPR M0.5 1000K: grid -0.533%  H1 HIT  H2 HIT   [none +8.588% / +8.657%]
+flat-lp    EPR M0.5 1400K: grid -0.267%  H1 HIT  H2 HIT   [none +8.588% / +8.657%]
+flat-lp    EPR M1.4 1000K: grid +0.297%  H1 HIT  H2 HIT   [none -5.389% / -9.671%]
+flat-lp    EPR M1.4 1400K: grid -0.044%  H1 (not scored)  H2 HIT   [none -5.389% / -9.671%]
+flat-lp    fan M0.5 1000K: grid -0.517%  H1 HIT  H2 HIT   [none +8.569% / +9.099%]
+flat-lp    fan M0.5 1400K: grid -0.273%  H1 HIT  H2 HIT   [none +8.569% / +9.099%]
+flat-lp    fan M1.4 1000K: grid +0.290%  H1 HIT  H2 HIT   [none -5.220% / -9.706%]
+flat-lp    fan M1.4 1400K: grid -0.044%  H1 (not scored)  H2 HIT   [none -5.220% / -9.706%]
+== H1: 24 HIT, 0 MISS, 0 VACUOUS
+== H2: 32 HIT, 0 MISS, 0 VACUOUS
+# H3 — Mach 0.15 (extended): over
+flow/press EPR 1000K: +1.706%  HIT
+flow/press EPR 1400K: +0.835%  HIT
+flow/press fan 1000K: +1.686%  HIT
+flow/press fan 1400K: +0.859%  HIT
+press/flow EPR 1000K: +1.705%  HIT
+press/flow EPR 1400K: +0.835%  HIT
+press/flow fan 1000K: +1.689%  HIT
+press/flow fan 1400K: +0.860%  HIT
+tilted     EPR 1000K: +1.708%  HIT
+tilted     EPR 1400K: +0.835%  HIT
+tilted     fan 1000K: +1.690%  HIT
+tilted     fan 1400K: +0.859%  HIT
+flat-lp    EPR 1000K: +1.693%  HIT
+flat-lp    EPR 1400K: +0.835%  HIT
+flat-lp    fan 1000K: +1.654%  HIT
+flat-lp    fan 1400K: +0.858%  HIT
+== H3: 16 HIT, 0 MISS, 0 VACUOUS
+# H4 — formula vs grid (|formula| < |grid| unless marked GRID-WINS)
+flow/press EPR M0.5 1000K: formula -0.023%  grid -0.538%  HIT
+flow/press EPR M0.5 1400K: formula -0.024%  grid -0.267%  HIT
+flow/press EPR M1.4 1000K: formula +0.185%  grid +0.316%  HIT
+flow/press EPR M1.4 1400K: formula +0.181%  grid -0.041%  GRID-WINS HIT
+flow/press fan M0.5 1000K: formula -0.070%  grid -0.528%  HIT
+flow/press fan M0.5 1400K: formula -0.129%  grid -0.273%  HIT
+flow/press fan M1.4 1000K: formula +0.259%  grid +0.309%  (not scored)
+flow/press fan M1.4 1400K: formula +0.358%  grid -0.044%  GRID-WINS (not scored)
+press/flow EPR M0.5 1000K: formula -0.023%  grid -0.537%  HIT
+press/flow EPR M0.5 1400K: formula -0.024%  grid -0.267%  HIT
+press/flow EPR M1.4 1000K: formula +0.183%  grid +0.312%  HIT
+press/flow EPR M1.4 1400K: formula +0.180%  grid -0.041%  GRID-WINS HIT
+press/flow fan M0.5 1000K: formula -0.087%  grid -0.530%  HIT
+press/flow fan M0.5 1400K: formula -0.146%  grid -0.274%  HIT
+press/flow fan M1.4 1000K: formula +0.293%  grid +0.306%  (not scored)
+press/flow fan M1.4 1400K: formula +0.396%  grid -0.044%  GRID-WINS (not scored)
+tilted     EPR M0.5 1000K: formula -0.023%  grid -0.539%  HIT
+tilted     EPR M0.5 1400K: formula -0.024%  grid -0.267%  HIT
+tilted     EPR M1.4 1000K: formula +0.186%  grid +0.318%  HIT
+tilted     EPR M1.4 1400K: formula +0.182%  grid -0.041%  GRID-WINS HIT
+tilted     fan M0.5 1000K: formula -0.077%  grid -0.530%  HIT
+tilted     fan M0.5 1400K: formula -0.138%  grid -0.273%  HIT
+tilted     fan M1.4 1000K: formula +0.269%  grid +0.312%  (not scored)
+tilted     fan M1.4 1400K: formula +0.374%  grid -0.043%  GRID-WINS (not scored)
+flat-lp    EPR M0.5 1000K: formula -0.023%  grid -0.533%  HIT
+flat-lp    EPR M0.5 1400K: formula -0.024%  grid -0.267%  HIT
+flat-lp    EPR M1.4 1000K: formula +0.181%  grid +0.297%  HIT
+flat-lp    EPR M1.4 1400K: formula +0.179%  grid -0.044%  GRID-WINS HIT
+flat-lp    fan M0.5 1000K: formula -0.008%  grid -0.517%  HIT
+flat-lp    fan M0.5 1400K: formula -0.037%  grid -0.273%  HIT
+flat-lp    fan M1.4 1000K: formula +0.153%  grid +0.290%  (not scored)
+flat-lp    fan M1.4 1400K: formula +0.204%  grid -0.044%  GRID-WINS (not scored)
+== H4: 24 HIT, 0 MISS, 0 VACUOUS
+# H5 — formula at the unchoked 700 K start, Mach 0.05: under (EPR scored, fan reported)
+flow/press EPR start 700: -1.375% (start unchoked true, end at 697.0 K) HIT; max |rest|/F over run 1.46e-2
+flow/press fan start 700: +4.961% (start unchoked true, end at 710.7 K) (reported); max |rest|/F over run 0.00e0
+press/flow EPR start 700: -1.324% (start unchoked true, end at 697.1 K) HIT; max |rest|/F over run 1.40e-2
+press/flow fan start 700: +4.537% (start unchoked true, end at 709.8 K) (reported); max |rest|/F over run 0.00e0
+tilted     EPR start 700: -1.433% (start unchoked true, end at 696.9 K) HIT; max |rest|/F over run 1.52e-2
+tilted     fan start 700: +5.053% (start unchoked true, end at 710.8 K) (reported); max |rest|/F over run 0.00e0
+flat-lp    EPR start 700: -1.031% (start unchoked true, end at 697.7 K) HIT; max |rest|/F over run 1.09e-2
+flat-lp    fan start 700: +4.410% (start unchoked true, end at 709.8 K) (reported); max |rest|/F over run 0.00e0
+== H5: 4 HIT, 0 MISS, 0 VACUOUS
+# H6 — schedule peak (10 K) and proportional law (0.1 %), grid vs none
+flow/press M0.5 schedule: peak grid 1560.07 none 1560.85 (Δ -0.780 K) held true/true HIT
+flow/press M0.5 prop law: ν_H grid 0.966955 none 0.967003 (Δ -0.0049%) HIT
+flow/press M1.4 schedule: peak grid 1521.08 none 1520.21 (Δ +0.878 K) held true/true HIT
+flow/press M1.4 prop law: ν_H grid 0.944348 none 0.944051 (Δ +0.0315%) HIT
+press/flow M0.5 schedule: peak grid 1569.19 none 1567.27 (Δ +1.918 K) held true/true HIT
+press/flow M0.5 prop law: ν_H grid 0.966652 none 0.966688 (Δ -0.0037%) HIT
+press/flow M1.4 schedule: peak grid 1526.81 none 1525.51 (Δ +1.304 K) held true/true HIT
+press/flow M1.4 prop law: ν_H grid 0.949108 none 0.948817 (Δ +0.0306%) HIT
+tilted     M0.5 schedule: peak grid 1564.73 none 1563.05 (Δ +1.685 K) held true/true HIT
+tilted     M0.5 prop law: ν_H grid 0.966815 none 0.966857 (Δ -0.0044%) HIT
+tilted     M1.4 schedule: peak grid 1522.44 none 1521.96 (Δ +0.480 K) held true/true HIT
+tilted     M1.4 prop law: ν_H grid 0.946602 none 0.946308 (Δ +0.0310%) HIT
+flat-lp    M0.5 schedule: peak grid 1549.74 none 1550.60 (Δ -0.867 K) held true/true HIT
+flat-lp    M0.5 prop law: ν_H grid 0.966792 none 0.966840 (Δ -0.0050%) HIT
+flat-lp    M1.4 schedule: peak grid 1518.21 none 1517.31 (Δ +0.897 K) held true/true HIT
+flat-lp    M1.4 prop law: ν_H grid 0.944340 none 0.944044 (Δ +0.0314%) HIT
+== H6: 16 HIT, 0 MISS, 0 VACUOUS
+== TOTAL: 116 HIT, 0 MISS, 0 VACUOUS
+# Reported: grid misses across Mach (both readings), none beside
+flow/press EPR M0.05: grid +3.390% / +1.659%   formula -0.003% / -0.003%   none +27.426% / +23.426%
+flow/press EPR M0.9: grid -0.036% / -0.068%   formula +0.008% / +0.008%   none -0.795% / -1.045%
+flow/press EPR M1.05: grid +0.044% / -0.096%   formula +0.042% / +0.042%   none -2.672% / -3.937%
+flow/press EPR M1.1: grid +0.047% / -0.078%   formula +0.056% / +0.056%   none -3.189% / -4.845%
+flow/press EPR M3.2: grid refused(0) The control's thrust table is made at Mach 2.5 and 3 in the design altitude's air (250 K,    formula refused(0) The control's thrust table is made at the design flight (250 K, 50 kPa, Mach 0.85). In the   none refused(0) The control's thrust table is made at the design flight (250 K, 50 kPa, Mach 0.85). In the
+flow/press fan M0.05: grid +3.365% / +1.712%   formula -0.078% / -0.170%   none +27.292% / +24.427%
+flow/press fan M0.9: grid -0.036% / -0.070%   formula +0.015% / +0.025%   none -0.771% / -1.040%
+flow/press fan M1.05: grid +0.042% / -0.100%   formula +0.070% / +0.109%   none -2.579% / -3.899%
+flow/press fan M1.1: grid +0.045% / -0.081%   formula +0.092% / +0.140%   none -3.074% / -4.791%
+flow/press fan M3.2: grid refused(0) The control's thrust table is made at Mach 2.5 and 3 in the design altitude's air (250 K,    formula refused(0) The control's thrust table is made at the design flight (250 K, 50 kPa, Mach 0.85). In the   none refused(0) The control's thrust table is made at the design flight (250 K, 50 kPa, Mach 0.85). In the
+flat-lp    EPR M0.05: grid +3.366% / +1.659%   formula -0.003% / -0.003%   none +27.424% / +23.441%
+flat-lp    EPR M0.9: grid -0.037% / -0.068%   formula +0.008% / +0.008%   none -0.816% / -1.046%
+flat-lp    EPR M1.05: grid +0.037% / -0.096%   formula +0.041% / +0.042%   none -2.782% / -3.945%
+flat-lp    EPR M1.1: grid +0.041% / -0.078%   formula +0.055% / +0.056%   none -3.337% / -4.858%
+flat-lp    EPR M3.2: grid refused(0) At the starting throttle (1000 K): the engine has no steady operating point: the compresso   formula refused(0) At the starting throttle (1000 K): the engine has no steady operating point: the compresso   none refused(0) At the starting throttle (1000 K): the engine has no steady operating point: the compresso
+flat-lp    fan M0.05: grid +3.307% / +1.713%   formula +0.019% / -0.023%   none +27.417% / +26.131%
+flat-lp    fan M0.9: grid -0.036% / -0.070%   formula +0.006% / +0.010%   none -0.795% / -1.064%
+flat-lp    fan M1.05: grid +0.037% / -0.098%   formula +0.031% / +0.050%   none -2.699% / -3.977%
+flat-lp    fan M1.1: grid +0.040% / -0.080%   formula +0.042% / +0.067%   none -3.234% / -4.883%
+flat-lp    fan M3.2: grid refused(0) At the starting throttle (1000 K): the engine has no steady operating point: the compresso   formula refused(0) At the starting throttle (1000 K): the engine has no steady operating point: the compresso   none refused(0) At the starting throttle (1000 K): the engine has no steady operating point: the compresso
+# Reported: schedule and prop law at Mach 0.15 from 700 K (unchoked slice rows), grid vs none
+flow/press schedule peak grid Some(1103.9128546483103) none Some(1103.494519355328); prop ν_H grid Some(0.9713977346334904) none Some(0.9714532933216417)
+press/flow schedule peak grid Some(1115.2657913845019) none Some(1114.3387114683437); prop ν_H grid Some(0.9702869042107471) none Some(0.9703190844433346)
+tilted     schedule peak grid Some(1107.7825813855372) none Some(1107.1849520832598); prop ν_H grid Some(0.9708810288953206) none Some(0.9709257250069675)
+flat-lp    schedule peak grid Some(1111.8706394660237) none Some(1111.173581238309); prop ν_H grid Some(0.9710179766228765) none Some(0.9710743393566509)
+# Reported: fixed-amount variants at Mach 0.5 / 1.4, EPR, grid (none beside)
+gen HP power M0.5: grid +0.186% / -0.058%  none +9.227% / +8.858%
+gen HP power M1.4: grid +2.301% / +0.526%  none -2.888% / -8.993%
+cust amount M0.5: grid -0.786% / -0.332%  none +8.871% / +8.992%
+cust amount M1.4: grid +0.411% / -0.032%  none -2.538% / -9.144%
+exit=0

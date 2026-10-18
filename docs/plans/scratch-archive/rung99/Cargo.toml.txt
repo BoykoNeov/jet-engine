@@ -24,3 +24,23 @@ path = "src/cells.rs"
 [[bin]]
 name = "bend"
 path = "src/bend.rs"
+
+[[bin]]
+name = "score"
+path = "src/score.rs"
+
+[[bin]]
+name = "crash99"
+path = "src/crash99.rs"
+
+[[bin]]
+name = "census"
+path = "src/census.rs"
+
+[[bin]]
+name = "one"
+path = "src/one.rs"
+
+[[bin]]
+name = "cost"
+path = "src/cost.rs"

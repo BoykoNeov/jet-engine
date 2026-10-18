@@ -1,0 +1,16 @@
+
+THE SPEED AXIS (rung 99): the control's tables made at Mach 0.3, 0.6, 0.85, 1.2, 1.6, 2.0, 2.5 and 3.0 in the
+design altitude's air and blended at the speed flown, or the thrust recomputed for it. The thrust the governor
+gives at the 1000 K / 1400 K ends over what the throttle asks, %, pressure ratio read, on the map curved along
+flow at LP, along pressure at HP, flown in 250 K, 50 kPa air:
+
+  Mach         not corrected      speed grid      recomputed
+  0.15         +22.50/+19.79     +1.71/+0.83     -0.01/-0.01
+  0.5            +8.53/+8.66     -0.54/-0.27     -0.02/-0.02
+  1.4            -4.91/-9.59     +0.32/-0.04     +0.18/+0.18
+
+  (Mach 0.15 lies below the grid: the line through the Mach 0.3 and 0.6 tables is carried on.)
+  A table made at Mach 0.85 misses by 5-23 %. The grid leaves the bend of the thrust-against-speed curve between its
+  tables: short where the curve bends up, over where the nozzle's push bends it down, and more past the grid's end.
+  Recomputing the thrust for the flight speed leaves only the table's guess of the air swallowed - while the nozzle
+  is choked.

@@ -1746,3 +1746,27 @@ correction a switch. Anchor `897001b`; spec `docs/rung98-spec.md`; scratch `scra
   temperature at 290 K; the schedule uncorrected at 216.65 K; the proportional speed law uncorrected at 290 K; Mach 3
   at sea level, out of reach); `browser.mjs` flies the pressure ratio at Mach 1.4 (both ends short of the asked thrust,
   the switches shown, the table row) and flips to this-flight tables (nothing carried, the switches hidden).
+
+## 31. The speed axis — rung 99 (2026-10-18) — not a slice
+
+Rung 98's seam, scoped by the user (memory `rung99-decisions`): the control's three tables made at Mach 0.3, 0.6,
+0.85, 1.2, 1.6, 2.0, 2.5 and 3.0 in the design flight's air and blended at the speed flown, the trend carried beyond the
+grid; or the thrust table's thrust recomputed for the flight speed; or neither (rung 98). Anchor `7113ed3`; spec
+`docs/rung99-spec.md`; scratch `scratch-archive/rung99/`.
+
+- **Built** in `sandbox_controls` on `mach_axis.rs`: `ControlsSettings` gains `speed_corr` (`"grid"` default, the
+  user's choice; `"formula"`; `"none"` = rung 98). Inert where nothing is carried; at Mach 0.85 the grid IS rung 98's
+  table, and at a grid slice's own flight (250 K, 50 kPa, a grid Mach) it is the table made there (both bit for bit,
+  gated). The Flight panel shows a three-way toggle under the tables' place; the results row names the tables blended,
+  the weight and whether the line is carried past the grid; under the formula the pressure-ratio gap splits into the
+  airflow guess and the rest (zero while the nozzle is choked). `tables.speed` in the reply carries all of it.
+- **What the new default moved:** of 83 check requests, 2 — rung 98's Mach-1.4 pressure-ratio run and its sea-level
+  Mach-3 run (still refused, now in the grid's words) — both pinned to `speed_corr: none`. The crash map (seed 99, 1 500
+  requests) against a worktree of `7113ed3`: 76 outcomes differ, every one in the predicted class; 28 refused by rung 98
+  at Mach 1.5–3.5 now run; 3 that ran are refused by a slow slice's reach (a fixed customer amount at Mach 0.3; two low
+  rows with no operating point at Mach 0.3 / 0.6). No panic.
+- `check_requests` adds 8 (grid and formula at Mach 1.4, grid at 0.5, the fan speed at 0.15, the formula at Mach 0.05
+  from 700 K, the schedule and the proportional law at 1.4, Mach 3 at sea level); `browser.mjs` flies Mach 1.4 on the
+  grid (the tables named, the low end a little over) and flips to the formula (the rest nothing). `check.mjs` and
+  `browser.mjs` compare the gap's two parts ABSOLUTELY (the rest is zero in algebra, rounding in arithmetic; worst
+  1.9e-12, bar 1e-10 N per kg/s); the page reads "nothing" off the nozzle's choke flags, not off a rounded zero.

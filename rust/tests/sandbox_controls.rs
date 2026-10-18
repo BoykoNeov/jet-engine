@@ -539,7 +539,8 @@ fn settings_round_trip_and_the_entry_point_answers() {
                                govern: true, speed_law: turbojet::sandbox_controls::SpeedLaw::Prop, gov_tau: 0.27,
                                gov_gain: 13.5, thrust_by: turbojet::sandbox_controls::ThrustBy::N1, table_clean: false,
                                t0: 231.25, p0: 30_123.5, m0: 0.62,
-                               table_at: turbojet::corrected_tables::TableAt::Flight, corr_p: false, corr_t: true };
+                               table_at: turbojet::corrected_tables::TableAt::Flight, corr_p: false, corr_t: true,
+                               speed_corr: turbojet::mach_axis::SpeedCorr::Formula };
     let back = ControlsSettings::from_json(&Json::parse(&s.to_json().dump_compact())).unwrap();
     assert_eq!(back, s);
     let d = Json::parse(&call(r#"{"op":"controls_defaults"}"#));

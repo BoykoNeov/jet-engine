@@ -78,7 +78,7 @@ pub struct Table {
 
 /// Linear in `x` between the rows, the END SEGMENTS carried on beyond (a reading outside the table — a leg cutting, a
 /// slowdown undershooting — still gets the straight-line value, which for gross thrust is exact, G3).
-fn lin(rows: &[Row], x: impl Fn(&Row) -> f64, y: impl Fn(&Row) -> f64, v: f64) -> f64 {
+pub fn lin(rows: &[Row], x: impl Fn(&Row) -> f64, y: impl Fn(&Row) -> f64, v: f64) -> f64 {
     let n = rows.len();
     let k = if v <= x(&rows[0]) { 0 } else { rows.windows(2).position(|w| v <= x(&w[1])).unwrap_or(n - 2) };
     let (a, b) = (&rows[k], &rows[k + 1]);

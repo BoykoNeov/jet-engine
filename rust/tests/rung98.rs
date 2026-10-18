@@ -9,6 +9,7 @@
 use turbojet::burner_hold::Hold;
 use turbojet::corrected_tables::TableAt;
 use turbojet::fuel_transient::FuelPoint;
+use turbojet::mach_axis::SpeedCorr;
 use turbojet::sandbox_controls::{build, controls, ControlsSettings, CustomerMode, GeneratorBy, GeneratorMode, Holder,
                                  LeverChoice, SpeedLaw, ThrustBy};
 
@@ -25,7 +26,8 @@ fn prop() -> ControlsSettings {
 fn at(s: ControlsSettings, t0: f64, p0: f64, m0: f64) -> ControlsSettings { ControlsSettings { t0, p0, m0, ..s } }
 fn hot(s: ControlsSettings) -> ControlsSettings { at(s, 290.0, 50_000.0, 0.85) }
 fn cold(s: ControlsSettings) -> ControlsSettings { at(s, 216.65, 50_000.0, 0.85) }
-fn m14(s: ControlsSettings) -> ControlsSettings { at(s, 250.0, 50_000.0, 1.4) }
+// Rung 99 made the speed grid the default; off Mach 0.85 these tests keep testing rung 98's one design-flight table.
+fn m14(s: ControlsSettings) -> ControlsSettings { at(ControlsSettings { speed_corr: SpeedCorr::None, ..s }, 250.0, 50_000.0, 1.4) }
 fn bits(p: &[FuelPoint]) -> Vec<[u64; 4]> { p.iter().map(|q| [q.nu_lp, q.nu_hp, q.mf, q.tt4].map(f64::to_bits)).collect() }
 fn run_bits(s: &ControlsSettings) -> Vec<[u64; 4]> { bits(&controls(s).unwrap_or_else(|e| panic!("{}", e.0)).1.points) }
 fn rel(a: f64, b: f64) -> f64 { ((a - b) / b).abs() }
@@ -191,7 +193,8 @@ fn with_the_clean_table_and_a_generator_the_targets_are_rung96s_and_rung94s_root
 #[test]
 fn a_flight_beyond_the_design_tables_reach_is_refused_in_words() {
     // Anchor G4: at Mach 3 at sea level the default move translates to ~360–500 K at the design flight.
-    let e = build(&at(gov(ThrustBy::Epr), 288.15, 101_325.0, 3.0)).err().expect("refused");
+    let e = build(&at(ControlsSettings { speed_corr: SpeedCorr::None, ..gov(ThrustBy::Epr) }, 288.15, 101_325.0, 3.0))
+        .err().expect("refused");
     assert!(e.0.contains("made at the design flight") && e.0.contains("Make the tables at this flight"), "{}", e.0);
 }
 
@@ -211,7 +214,7 @@ fn h1_uncorrected_for_temperature_the_fan_speed_control_overshoots_in_cold_air_a
 #[test]
 fn h2_a_design_mach_table_gives_too_much_thrust_slower_and_too_little_faster() {
     for by in [ThrustBy::Epr, ThrustBy::N1] {
-        let s = ControlsSettings { shape: FLAT_LP, ..gov(by) };
+        let s = ControlsSettings { shape: FLAT_LP, speed_corr: SpeedCorr::None, ..gov(by) };
         assert!(miss(&at(s, 250.0, 50_000.0, 0.5)).iter().all(|&x| x > 0.0));
         assert!(miss(&at(s, 250.0, 50_000.0, 1.4)).iter().all(|&x| x < 0.0));
     }
