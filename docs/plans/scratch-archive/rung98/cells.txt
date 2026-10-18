@@ -1,0 +1,24 @@
+flow/press hot 290K      θ 1.1600 δ 1.0000: 1000:ok 1400:ok
+flow/press cold 216.65K  θ 0.8666 δ 1.0000: 1000:ok 1400:ok
+flow/press thin 26.5kPa  θ 1.0000 δ 0.5300: 1000:ok 1400:ok
+flow/press dense 80kPa   θ 1.0000 δ 1.6000: 1000:ok 1400:ok
+flow/press M0.5          θ 0.9174 δ 0.7396: 1000:ok 1400:ok
+flow/press M1.4          θ 1.2163 δ 1.9410: 1000:ok 1400:ok
+press/flow hot 290K      θ 1.1600 δ 1.0000: 1000:ok 1400:ok
+press/flow cold 216.65K  θ 0.8666 δ 1.0000: 1000:ok 1400:ok
+press/flow thin 26.5kPa  θ 1.0000 δ 0.5300: 1000:ok 1400:ok
+press/flow dense 80kPa   θ 1.0000 δ 1.6000: 1000:ok 1400:ok
+press/flow M0.5          θ 0.9174 δ 0.7396: 1000:ok 1400:ok
+press/flow M1.4          θ 1.2163 δ 1.9410: 1000:ok 1400:ok
+tilted     hot 290K      θ 1.1600 δ 1.0000: 1000:ok 1400:ok
+tilted     cold 216.65K  θ 0.8666 δ 1.0000: 1000:ok 1400:ok
+tilted     thin 26.5kPa  θ 1.0000 δ 0.5300: 1000:ok 1400:ok
+tilted     dense 80kPa   θ 1.0000 δ 1.6000: 1000:ok 1400:ok
+tilted     M0.5          θ 0.9174 δ 0.7396: 1000:ok 1400:ok
+tilted     M1.4          θ 1.2163 δ 1.9410: 1000:ok 1400:ok
+flat-lp    hot 290K      θ 1.1600 δ 1.0000: 1000:ok 1400:ok
+flat-lp    cold 216.65K  θ 0.8666 δ 1.0000: 1000:ok 1400:ok
+flat-lp    thin 26.5kPa  θ 1.0000 δ 0.5300: 1000:ok 1400:ok
+flat-lp    dense 80kPa   θ 1.0000 δ 1.6000: 1000:ok 1400:ok
+flat-lp    M0.5          θ 0.9174 δ 0.7396: 1000:ok 1400:ok
+flat-lp    M1.4          θ 1.2163 δ 1.9410: 1000:ok 1400:ok

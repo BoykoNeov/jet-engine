@@ -1,0 +1,844 @@
+# G1 — pressure only: max relative error of each corrected quantity over Tt4 [800.0, 1000.0, 1200.0, 1400.0, 1600.0]
+# columns: ["thrust/δ", "EPR", "νL/√θ", "νH/√θ", "fuel/δ√θ", "face√θ/δ", "Wf/pt3/√θ", "n_hp"]
+G1 flow/press plain              p0  101325.0: 1.8e-15 1.8e-15 5.9e-16 9.3e-16 1.0e-15 1.7e-15 6.9e-16 1.1e-15  fails []
+G1 flow/press plain              p0   70108.5: 1.6e-15 1.4e-15 4.4e-16 5.8e-16 1.0e-15 1.4e-15 4.7e-16 5.7e-16  fails []
+G1 flow/press plain              p0   35000.0: 2.0e-15 2.2e-15 3.5e-16 6.3e-16 1.5e-15 2.0e-15 6.9e-16 6.7e-16  fails []
+G1 flow/press plain              p0   22632.0: 1.3e-15 9.9e-16 5.9e-16 4.6e-16 8.9e-16 9.8e-16 4.6e-16 6.9e-16  fails []
+G1 flow/press plain              p0   12000.0: 4.3e-15 3.2e-15 9.1e-16 6.4e-16 2.5e-15 3.0e-15 5.9e-16 6.5e-16  fails []
+G1 flow/press plain              p0    5474.9: 2.1e-15 1.4e-15 1.5e-16 6.3e-16 1.3e-15 1.5e-15 3.5e-16 6.7e-16  fails []
+G1 flow/press gen HP share .05   p0  101325.0: 1.6e-12 1.2e-12 1.8e-13 9.7e-13 9.8e-13 1.2e-12 2.3e-13 1.1e-12  fails []
+G1 flow/press gen HP share .05   p0   70108.5: 1.6e-12 1.2e-12 1.8e-13 9.7e-13 9.8e-13 1.2e-12 2.3e-13 1.1e-12  fails []
+G1 flow/press gen HP share .05   p0   35000.0: 1.9e-15 1.5e-15 2.4e-16 4.0e-16 1.3e-15 1.5e-15 2.8e-16 3.8e-16  fails []
+G1 flow/press gen HP share .05   p0   22632.0: 3.6e-15 3.1e-15 1.2e-15 4.9e-16 2.6e-15 3.0e-15 9.6e-16 3.6e-16  fails []
+G1 flow/press gen HP share .05   p0   12000.0: 5.4e-15 4.7e-15 7.9e-16 8.2e-16 3.9e-15 4.8e-15 7.7e-16 7.6e-16  fails []
+G1 flow/press gen HP share .05   p0    5474.9: 2.0e-15 1.5e-15 6.8e-16 5.8e-16 1.4e-15 1.4e-15 5.8e-16 6.9e-16  fails []
+G1 flow/press gen LP share .05   p0  101325.0: 1.3e-12 1.0e-12 5.4e-13 6.8e-13 7.9e-13 1.0e-12 2.0e-13 7.3e-13  fails []
+G1 flow/press gen LP share .05   p0   70108.5: 8.7e-13 7.7e-13 5.4e-13 1.3e-13 6.3e-13 7.7e-13 1.4e-13 1.7e-15  fails []
+G1 flow/press gen LP share .05   p0   35000.0: 2.7e-15 2.2e-15 1.3e-15 1.3e-15 1.7e-15 2.2e-15 3.9e-16 1.1e-15  fails []
+G1 flow/press gen LP share .05   p0   22632.0: 4.9e-15 3.6e-15 1.1e-15 1.7e-15 2.8e-15 3.5e-15 1.1e-15 1.7e-15  fails []
+G1 flow/press gen LP share .05   p0   12000.0: 2.5e-15 2.3e-15 6.5e-16 1.1e-15 1.7e-15 2.1e-15 6.2e-16 1.1e-15  fails []
+G1 flow/press gen LP share .05   p0    5474.9: 3.0e-15 2.8e-15 6.9e-16 6.3e-16 2.1e-15 2.7e-15 7.1e-16 7.3e-16  fails []
+G1 flow/press gen HP power .02   p0  101325.0: 1.2e-1 5.6e-2 7.9e-3 3.4e-2 4.0e-2 5.7e-2 1.6e-2 3.4e-2  fails []
+G1 flow/press gen HP power .02   p0   70108.5: 6.6e-2 3.2e-2 4.5e-3 2.0e-2 2.3e-2 3.3e-2 9.0e-3 2.0e-2  fails []
+G1 flow/press gen HP power .02   p0   35000.0: 1.1e-1 5.2e-2 7.1e-3 3.2e-2 3.7e-2 5.2e-2 1.5e-2 3.2e-2  fails []
+G1 flow/press gen HP power .02   p0   22632.0: 3.2e-1 1.6e-1 2.2e-2 1.0e-1 1.2e-1 1.6e-1 4.8e-2 1.0e-1  fails []
+G1 flow/press gen HP power .02   p0   12000.0: 4.8e-1 3.2e-1 5.1e-2 2.1e-1 2.7e-1 3.3e-1 8.4e-2 2.1e-1  fails ["800:f"]
+G1 flow/press gen HP power .02   p0    5474.9: 3.1e-1 2.7e-1 6.9e-2 1.6e-1 2.3e-1 2.7e-1 5.1e-2 1.6e-1  fails ["800:f", "1000:f", "1200:f", "1400:f"]
+G1 flow/press cust share .05     p0  101325.0: 1.8e-12 1.3e-12 1.8e-14 9.5e-13 1.1e-12 1.4e-12 2.6e-13 1.0e-12  fails []
+G1 flow/press cust share .05     p0   70108.5: 1.8e-12 1.3e-12 1.8e-14 9.5e-13 1.1e-12 1.4e-12 2.6e-13 1.0e-12  fails []
+G1 flow/press cust share .05     p0   35000.0: 3.8e-15 3.1e-15 5.2e-16 1.6e-15 2.9e-15 3.2e-15 3.8e-16 1.9e-15  fails []
+G1 flow/press cust share .05     p0   22632.0: 3.6e-15 3.0e-15 1.2e-15 7.8e-16 2.7e-15 3.1e-15 3.4e-16 1.0e-15  fails []
+G1 flow/press cust share .05     p0   12000.0: 3.8e-15 3.3e-15 6.9e-16 9.7e-16 2.9e-15 3.3e-15 3.4e-16 1.1e-15  fails []
+G1 flow/press cust share .05     p0    5474.9: 6.6e-15 4.5e-15 1.4e-15 2.3e-15 3.9e-15 4.7e-15 8.4e-16 2.6e-15  fails []
+G1 flow/press cust amount .05    p0  101325.0: 3.0e-1 8.7e-2 3.0e-2 2.1e-2 6.0e-2 2.9e-2 2.5e-2 1.6e-2  fails []
+G1 flow/press cust amount .05    p0   70108.5: 1.7e-1 4.9e-2 1.7e-2 1.2e-2 3.4e-2 1.6e-2 1.4e-2 9.2e-3  fails []
+G1 flow/press cust amount .05    p0   35000.0: 2.5e-1 7.2e-2 2.7e-2 1.9e-2 5.2e-2 2.5e-2 2.2e-2 1.4e-2  fails []
+G1 flow/press cust amount .05    p0   22632.0: 7.0e-1 2.0e-1 8.0e-2 5.3e-2 1.5e-1 7.1e-2 6.4e-2 4.0e-2  fails []
+G1 flow/press cust amount .05    p0   12000.0: 1.0e0 4.7e-1 2.1e-1 1.4e-1 4.0e-1 1.9e-1 1.4e-1 1.0e-1  fails ["800:f"]
+G1 flow/press cust amount .05    p0    5474.9: 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0  fails ["800:f", "1000:f", "1200:f", "1400:f", "1600:f"]
+G1 flow/press cool .05/.05       p0  101325.0: 1.1e-13 6.3e-14 1.2e-14 3.8e-14 5.3e-14 6.3e-14 1.4e-14 3.9e-14  fails []
+G1 flow/press cool .05/.05       p0   70108.5: 1.2e-13 9.8e-14 1.4e-14 6.2e-14 8.3e-14 9.8e-14 1.5e-14 6.4e-14  fails []
+G1 flow/press cool .05/.05       p0   35000.0: 1.8e-13 8.6e-14 8.8e-15 6.0e-14 6.3e-14 8.7e-14 2.3e-14 6.2e-14  fails []
+G1 flow/press cool .05/.05       p0   22632.0: 2.2e-13 1.6e-13 2.1e-14 9.9e-14 1.3e-13 1.6e-13 2.8e-14 1.0e-13  fails []
+G1 flow/press cool .05/.05       p0   12000.0: 5.7e-14 4.9e-14 1.0e-14 3.0e-14 4.1e-14 4.9e-14 7.9e-15 3.1e-14  fails []
+G1 flow/press cool .05/.05       p0    5474.9: 9.6e-12 7.1e-12 8.8e-13 5.7e-12 5.9e-12 7.2e-12 1.2e-12 6.3e-12  fails []
+G1 flow/press lever stator       p0  101325.0: 9.6e-13 7.5e-13 3.6e-13 1.9e-13 5.9e-13 7.5e-13 1.6e-13 8.7e-14  fails []
+G1 flow/press lever stator       p0   70108.5: 2.7e-15 1.8e-15 5.6e-16 8.4e-16 1.5e-15 1.9e-15 4.7e-16 8.0e-16  fails []
+G1 flow/press lever stator       p0   35000.0: 1.3e-15 1.2e-15 2.5e-16 3.5e-16 1.2e-15 1.2e-15 3.9e-16 3.4e-16  fails []
+G1 flow/press lever stator       p0   22632.0: 2.3e-15 1.9e-15 1.0e-15 1.1e-15 1.6e-15 2.0e-15 3.4e-16 9.8e-16  fails []
+G1 flow/press lever stator       p0   12000.0: 2.4e-15 2.3e-15 4.2e-16 6.4e-16 1.8e-15 2.2e-15 4.7e-16 6.5e-16  fails []
+G1 flow/press lever stator       p0    5474.9: 1.9e-15 1.2e-15 5.1e-16 6.3e-16 9.7e-16 1.2e-15 2.0e-16 5.9e-16  fails []
+G1 flow/press lever bleed        p0  101325.0: 2.2e-15 1.3e-15 6.0e-16 9.8e-16 9.3e-16 1.3e-15 4.5e-16 1.1e-15  fails []
+G1 flow/press lever bleed        p0   70108.5: 3.4e-15 2.3e-15 7.5e-16 1.1e-15 1.9e-15 2.0e-15 9.1e-16 1.2e-15  fails []
+G1 flow/press lever bleed        p0   35000.0: 1.3e-15 1.2e-15 6.0e-16 8.4e-16 1.2e-15 1.2e-15 4.5e-16 7.9e-16  fails []
+G1 flow/press lever bleed        p0   22632.0: 6.2e-12 4.6e-12 1.2e-12 2.4e-12 3.7e-12 4.2e-12 9.6e-13 2.4e-12  fails []
+G1 flow/press lever bleed        p0   12000.0: 6.2e-12 4.6e-12 1.2e-12 2.4e-12 3.7e-12 4.2e-12 9.6e-13 2.4e-12  fails []
+G1 flow/press lever bleed        p0    5474.9: 6.2e-12 4.6e-12 1.2e-12 2.4e-12 3.7e-12 4.2e-12 9.6e-13 2.4e-12  fails []
+G1 flow/press lever both         p0  101325.0: 2.2e-15 1.6e-15 4.8e-16 6.3e-16 1.0e-15 1.5e-15 5.7e-16 4.9e-16  fails []
+G1 flow/press lever both         p0   70108.5: 3.2e-15 1.8e-15 6.4e-16 1.0e-15 1.5e-15 1.5e-15 4.7e-16 8.6e-16  fails []
+G1 flow/press lever both         p0   35000.0: 2.4e-15 1.7e-15 5.1e-16 7.0e-16 1.7e-15 1.6e-15 4.2e-16 6.6e-16  fails []
+G1 flow/press lever both         p0   22632.0: 2.3e-15 1.5e-15 4.8e-16 5.1e-16 9.3e-16 1.5e-15 5.8e-16 4.9e-16  fails []
+G1 flow/press lever both         p0   12000.0: 1.0e-11 6.3e-12 2.8e-12 2.1e-12 4.8e-12 5.4e-12 1.6e-12 1.5e-12  fails []
+G1 flow/press lever both         p0    5474.9: 1.0e-11 6.3e-12 2.8e-12 2.1e-12 4.8e-12 5.4e-12 1.6e-12 1.5e-12  fails []
+G1 press/flow plain              p0  101325.0: 2.1e-15 1.2e-15 4.5e-16 5.1e-16 1.0e-15 1.3e-15 5.2e-16 4.3e-16  fails []
+G1 press/flow plain              p0   70108.5: 1.9e-15 1.2e-15 5.9e-16 4.6e-16 9.0e-16 1.2e-15 4.3e-16 2.3e-16  fails []
+G1 press/flow plain              p0   35000.0: 3.2e-15 2.4e-15 7.9e-16 7.6e-16 1.9e-15 2.6e-15 5.9e-16 6.1e-16  fails []
+G1 press/flow plain              p0   22632.0: 2.8e-15 1.8e-15 1.1e-15 6.4e-16 1.3e-15 1.9e-15 5.7e-16 4.3e-16  fails []
+G1 press/flow plain              p0   12000.0: 2.1e-15 1.5e-15 6.6e-16 2.3e-16 1.1e-15 1.4e-15 3.5e-16 2.3e-16  fails []
+G1 press/flow plain              p0    5474.9: 2.2e-15 1.8e-15 3.0e-16 2.1e-16 1.8e-15 2.2e-15 5.2e-16 2.2e-16  fails []
+G1 press/flow gen HP share .05   p0  101325.0: 1.4e-13 7.4e-14 8.8e-13 4.8e-13 4.7e-14 7.5e-14 2.8e-14 6.7e-13  fails []
+G1 press/flow gen HP share .05   p0   70108.5: 1.4e-13 7.4e-14 8.8e-13 4.8e-13 4.6e-14 7.4e-14 2.8e-14 6.7e-13  fails []
+G1 press/flow gen HP share .05   p0   35000.0: 1.2e-12 9.5e-13 9.1e-13 7.8e-16 7.6e-13 9.6e-13 2.0e-13 2.2e-13  fails []
+G1 press/flow gen HP share .05   p0   22632.0: 1.2e-12 9.5e-13 9.1e-13 1.4e-15 7.6e-13 9.6e-13 2.0e-13 2.2e-13  fails []
+G1 press/flow gen HP share .05   p0   12000.0: 1.2e-12 9.5e-13 9.1e-13 1.8e-15 7.6e-13 9.6e-13 2.0e-13 2.2e-13  fails []
+G1 press/flow gen HP share .05   p0    5474.9: 1.2e-12 9.5e-13 9.1e-13 1.3e-15 7.6e-13 9.6e-13 2.0e-13 2.2e-13  fails []
+G1 press/flow gen LP share .05   p0  101325.0: 4.6e-13 3.6e-13 8.3e-13 5.7e-13 2.8e-13 3.6e-13 7.5e-14 7.6e-13  fails []
+G1 press/flow gen LP share .05   p0   70108.5: 4.6e-13 3.6e-13 8.3e-13 5.7e-13 2.8e-13 3.6e-13 7.5e-14 7.6e-13  fails []
+G1 press/flow gen LP share .05   p0   35000.0: 2.1e-12 1.8e-12 1.0e-12 6.3e-13 1.5e-12 1.8e-12 3.3e-13 4.7e-13  fails []
+G1 press/flow gen LP share .05   p0   22632.0: 2.1e-12 1.8e-12 1.0e-12 6.3e-13 1.5e-12 1.8e-12 3.3e-13 4.7e-13  fails []
+G1 press/flow gen LP share .05   p0   12000.0: 2.1e-12 1.8e-12 1.0e-12 6.3e-13 1.5e-12 1.8e-12 3.3e-13 4.7e-13  fails []
+G1 press/flow gen LP share .05   p0    5474.9: 2.1e-12 1.8e-12 1.0e-12 6.3e-13 1.5e-12 1.8e-12 3.3e-13 4.7e-13  fails []
+G1 press/flow gen HP power .02   p0  101325.0: 1.1e-1 5.3e-2 1.0e-2 3.2e-2 3.7e-2 5.3e-2 1.5e-2 3.2e-2  fails []
+G1 press/flow gen HP power .02   p0   70108.5: 6.2e-2 3.1e-2 5.8e-3 1.8e-2 2.1e-2 3.1e-2 8.9e-3 1.8e-2  fails []
+G1 press/flow gen HP power .02   p0   35000.0: 9.8e-2 4.8e-2 9.1e-3 3.0e-2 3.5e-2 4.9e-2 1.5e-2 3.0e-2  fails []
+G1 press/flow gen HP power .02   p0   22632.0: 3.0e-1 1.5e-1 2.8e-2 9.6e-2 1.1e-1 1.5e-1 4.6e-2 9.6e-2  fails []
+G1 press/flow gen HP power .02   p0   12000.0: 4.4e-1 3.0e-1 6.3e-2 1.9e-1 2.4e-1 3.0e-1 7.9e-2 1.9e-1  fails ["800:f"]
+G1 press/flow gen HP power .02   p0    5474.9: 3.0e-1 2.6e-1 8.7e-2 1.5e-1 2.3e-1 2.7e-1 5.0e-2 1.5e-1  fails ["800:f", "1000:f", "1200:f", "1400:f"]
+G1 press/flow cust share .05     p0  101325.0: 1.1e-13 5.4e-14 8.2e-13 4.5e-13 3.4e-14 5.4e-14 2.0e-14 6.2e-13  fails []
+G1 press/flow cust share .05     p0   70108.5: 1.1e-13 5.5e-14 8.2e-13 4.5e-13 3.5e-14 5.6e-14 2.0e-14 6.2e-13  fails []
+G1 press/flow cust share .05     p0   35000.0: 9.2e-13 7.0e-13 7.8e-13 6.8e-14 5.6e-13 7.1e-13 1.4e-13 2.6e-13  fails []
+G1 press/flow cust share .05     p0   22632.0: 9.2e-13 7.0e-13 7.8e-13 6.8e-14 5.6e-13 7.1e-13 1.4e-13 2.6e-13  fails []
+G1 press/flow cust share .05     p0   12000.0: 9.3e-13 7.0e-13 7.8e-13 6.7e-14 5.6e-13 7.1e-13 1.4e-13 2.6e-13  fails []
+G1 press/flow cust share .05     p0    5474.9: 9.3e-13 7.0e-13 7.8e-13 6.7e-14 5.6e-13 7.1e-13 1.4e-13 2.6e-13  fails []
+G1 press/flow cust amount .05    p0  101325.0: 3.1e-1 8.8e-2 3.0e-2 2.4e-2 6.1e-2 2.9e-2 2.5e-2 1.8e-2  fails []
+G1 press/flow cust amount .05    p0   70108.5: 1.7e-1 5.0e-2 1.7e-2 1.3e-2 3.5e-2 1.6e-2 1.4e-2 1.0e-2  fails []
+G1 press/flow cust amount .05    p0   35000.0: 2.5e-1 7.3e-2 2.6e-2 2.1e-2 5.3e-2 2.5e-2 2.2e-2 1.6e-2  fails []
+G1 press/flow cust amount .05    p0   22632.0: 7.1e-1 2.0e-1 7.8e-2 6.0e-2 1.5e-1 7.2e-2 6.4e-2 4.8e-2  fails []
+G1 press/flow cust amount .05    p0   12000.0: 1.0e0 4.8e-1 2.1e-1 1.6e-1 4.1e-1 2.0e-1 1.4e-1 1.2e-1  fails ["800:f"]
+G1 press/flow cust amount .05    p0    5474.9: 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0  fails ["800:f", "1000:f", "1200:f", "1400:f", "1600:f"]
+G1 press/flow cool .05/.05       p0  101325.0: 1.2e-13 1.0e-13 2.3e-14 5.7e-14 8.3e-14 1.0e-13 1.7e-14 5.9e-14  fails []
+G1 press/flow cool .05/.05       p0   70108.5: 1.3e-13 1.0e-13 2.4e-14 5.9e-14 8.6e-14 1.0e-13 1.7e-14 6.0e-14  fails []
+G1 press/flow cool .05/.05       p0   35000.0: 1.2e-13 9.8e-14 2.2e-14 5.7e-14 8.2e-14 9.8e-14 1.6e-14 5.9e-14  fails []
+G1 press/flow cool .05/.05       p0   22632.0: 2.4e-12 1.2e-12 2.1e-12 4.8e-13 7.9e-13 1.1e-12 3.2e-13 8.7e-13  fails []
+G1 press/flow cool .05/.05       p0   12000.0: 8.0e-12 5.9e-12 3.6e-12 2.5e-12 4.8e-12 5.9e-12 1.1e-12 2.5e-12  fails []
+G1 press/flow cool .05/.05       p0    5474.9: 8.1e-12 6.0e-12 3.7e-12 2.5e-12 4.9e-12 6.0e-12 1.1e-12 2.5e-12  fails []
+G1 press/flow lever stator       p0  101325.0: 1.2e-15 1.2e-15 8.2e-16 8.1e-16 1.0e-15 1.2e-15 3.9e-16 5.7e-16  fails []
+G1 press/flow lever stator       p0   70108.5: 1.5e-15 9.9e-16 4.8e-16 6.9e-16 6.4e-16 1.1e-15 6.9e-16 6.9e-16  fails []
+G1 press/flow lever stator       p0   35000.0: 3.6e-12 2.8e-12 1.1e-12 9.7e-13 2.2e-12 2.8e-12 6.0e-13 7.4e-13  fails []
+G1 press/flow lever stator       p0   22632.0: 3.6e-12 2.8e-12 1.1e-12 9.7e-13 2.2e-12 2.8e-12 6.0e-13 7.4e-13  fails []
+G1 press/flow lever stator       p0   12000.0: 3.6e-12 2.8e-12 1.1e-12 9.8e-13 2.2e-12 2.8e-12 6.0e-13 7.4e-13  fails []
+G1 press/flow lever stator       p0    5474.9: 3.6e-12 2.8e-12 1.1e-12 9.8e-13 2.2e-12 2.8e-12 6.0e-13 7.4e-13  fails []
+G1 press/flow lever bleed        p0  101325.0: 2.5e-15 1.5e-15 5.3e-16 5.6e-16 1.1e-15 1.6e-15 6.8e-16 5.2e-16  fails []
+G1 press/flow lever bleed        p0   70108.5: 3.7e-15 2.8e-15 7.1e-16 5.6e-16 2.4e-15 2.8e-15 6.9e-16 5.2e-16  fails []
+G1 press/flow lever bleed        p0   35000.0: 1.5e-15 1.5e-15 3.1e-16 3.5e-16 1.2e-15 1.6e-15 3.1e-16 3.4e-16  fails []
+G1 press/flow lever bleed        p0   22632.0: 1.0e-12 8.7e-13 5.1e-13 1.1e-12 6.9e-13 1.1e-12 1.8e-13 1.4e-12  fails []
+G1 press/flow lever bleed        p0   12000.0: 1.0e-12 8.7e-13 5.1e-13 1.1e-12 6.9e-13 1.1e-12 1.8e-13 1.4e-12  fails []
+G1 press/flow lever bleed        p0    5474.9: 1.0e-12 8.7e-13 5.1e-13 1.1e-12 6.9e-13 1.1e-12 1.8e-13 1.4e-12  fails []
+G1 press/flow lever both         p0  101325.0: 1.6e-15 1.2e-15 4.2e-16 4.3e-16 1.0e-15 1.2e-15 8.0e-16 4.3e-16  fails []
+G1 press/flow lever both         p0   70108.5: 2.5e-15 1.2e-15 6.4e-16 3.1e-16 1.2e-15 1.2e-15 5.7e-16 2.9e-16  fails []
+G1 press/flow lever both         p0   35000.0: 4.0e-12 3.0e-12 1.2e-12 9.1e-13 2.3e-12 2.6e-12 6.3e-13 6.2e-13  fails []
+G1 press/flow lever both         p0   22632.0: 4.0e-12 3.0e-12 1.2e-12 9.1e-13 2.3e-12 2.6e-12 6.3e-13 6.2e-13  fails []
+G1 press/flow lever both         p0   12000.0: 4.0e-12 3.0e-12 1.2e-12 9.1e-13 2.3e-12 2.6e-12 6.3e-13 6.2e-13  fails []
+G1 press/flow lever both         p0    5474.9: 4.0e-12 3.0e-12 1.2e-12 9.1e-13 2.3e-12 2.6e-12 6.3e-13 6.2e-13  fails []
+G1 tilted     plain              p0  101325.0: 5.2e-15 4.1e-15 8.9e-16 5.6e-16 4.1e-15 4.4e-15 5.7e-16 5.9e-16  fails []
+G1 tilted     plain              p0   70108.5: 5.5e-15 4.6e-15 5.3e-16 6.4e-16 4.3e-15 4.8e-15 5.7e-16 4.6e-16  fails []
+G1 tilted     plain              p0   35000.0: 6.1e-15 5.3e-15 6.3e-16 8.5e-16 4.5e-15 5.4e-15 7.8e-16 6.5e-16  fails []
+G1 tilted     plain              p0   22632.0: 4.5e-15 3.0e-15 5.1e-16 6.3e-16 2.7e-15 3.0e-15 7.2e-16 7.3e-16  fails []
+G1 tilted     plain              p0   12000.0: 5.0e-15 4.0e-15 4.2e-16 4.3e-16 3.9e-15 4.4e-15 4.6e-16 4.6e-16  fails []
+G1 tilted     plain              p0    5474.9: 4.8e-15 4.1e-15 8.5e-16 6.3e-16 3.7e-15 4.2e-15 5.9e-16 7.3e-16  fails []
+G1 tilted     gen HP share .05   p0  101325.0: 2.3e-15 1.8e-15 6.5e-16 5.6e-16 1.5e-15 2.0e-15 6.8e-16 5.1e-16  fails []
+G1 tilted     gen HP share .05   p0   70108.5: 3.1e-15 2.4e-15 4.3e-16 5.8e-16 2.3e-15 2.6e-15 5.6e-16 5.5e-16  fails []
+G1 tilted     gen HP share .05   p0   35000.0: 5.8e-13 4.5e-13 7.7e-13 2.4e-13 3.5e-13 4.5e-13 1.0e-13 4.6e-13  fails []
+G1 tilted     gen HP share .05   p0   22632.0: 5.7e-13 4.4e-13 7.7e-13 2.5e-13 3.4e-13 4.4e-13 9.9e-14 4.6e-13  fails []
+G1 tilted     gen HP share .05   p0   12000.0: 5.8e-13 4.5e-13 7.7e-13 2.5e-13 3.5e-13 4.5e-13 1.0e-13 4.6e-13  fails []
+G1 tilted     gen HP share .05   p0    5474.9: 5.8e-13 4.5e-13 7.7e-13 2.5e-13 3.5e-13 4.5e-13 1.0e-13 4.6e-13  fails []
+G1 tilted     gen LP share .05   p0  101325.0: 2.4e-14 1.8e-14 3.9e-13 2.9e-13 2.0e-14 1.9e-14 1.7e-15 4.1e-13  fails []
+G1 tilted     gen LP share .05   p0   70108.5: 3.6e-15 3.1e-15 7.0e-16 4.2e-16 2.4e-15 3.0e-15 6.9e-16 4.4e-16  fails []
+G1 tilted     gen LP share .05   p0   35000.0: 1.5e-12 1.3e-12 7.5e-13 4.1e-13 1.1e-12 1.3e-12 2.3e-13 2.6e-13  fails []
+G1 tilted     gen LP share .05   p0   22632.0: 1.5e-12 1.3e-12 7.5e-13 4.1e-13 1.1e-12 1.3e-12 2.3e-13 2.6e-13  fails []
+G1 tilted     gen LP share .05   p0   12000.0: 1.5e-12 1.3e-12 7.5e-13 4.1e-13 1.1e-12 1.3e-12 2.3e-13 2.6e-13  fails []
+G1 tilted     gen LP share .05   p0    5474.9: 1.5e-12 1.3e-12 7.5e-13 4.1e-13 1.1e-12 1.3e-12 2.3e-13 2.6e-13  fails []
+G1 tilted     gen HP power .02   p0  101325.0: 1.2e-1 5.6e-2 8.6e-3 3.3e-2 4.0e-2 5.6e-2 1.6e-2 3.3e-2  fails []
+G1 tilted     gen HP power .02   p0   70108.5: 6.6e-2 3.2e-2 5.0e-3 1.9e-2 2.3e-2 3.2e-2 9.1e-3 1.9e-2  fails []
+G1 tilted     gen HP power .02   p0   35000.0: 1.1e-1 5.1e-2 7.7e-3 3.2e-2 3.7e-2 5.1e-2 1.5e-2 3.2e-2  fails []
+G1 tilted     gen HP power .02   p0   22632.0: 3.2e-1 1.6e-1 2.3e-2 1.0e-1 1.2e-1 1.6e-1 4.8e-2 1.0e-1  fails []
+G1 tilted     gen HP power .02   p0   12000.0: 4.8e-1 3.2e-1 5.5e-2 2.0e-1 2.7e-1 3.2e-1 8.3e-2 2.0e-1  fails ["800:f"]
+G1 tilted     gen HP power .02   p0    5474.9: 3.1e-1 2.7e-1 7.8e-2 1.5e-1 2.3e-1 2.7e-1 5.1e-2 1.5e-1  fails ["800:f", "1000:f", "1200:f", "1400:f"]
+G1 tilted     cust share .05     p0  101325.0: 2.6e-13 2.0e-13 5.9e-13 2.9e-13 1.5e-13 2.0e-13 4.7e-14 4.6e-13  fails []
+G1 tilted     cust share .05     p0   70108.5: 2.6e-13 2.0e-13 5.9e-13 2.9e-13 1.5e-13 2.0e-13 4.7e-14 4.6e-13  fails []
+G1 tilted     cust share .05     p0   35000.0: 3.8e-15 1.8e-15 8.7e-16 8.7e-16 1.4e-15 1.8e-15 4.6e-16 8.8e-16  fails []
+G1 tilted     cust share .05     p0   22632.0: 9.1e-16 4.4e-16 5.2e-16 4.8e-16 4.8e-16 3.8e-16 1.9e-16 5.9e-16  fails []
+G1 tilted     cust share .05     p0   12000.0: 6.5e-15 3.1e-15 1.4e-15 4.8e-16 2.5e-15 3.2e-15 5.6e-16 3.5e-16  fails []
+G1 tilted     cust share .05     p0    5474.9: 1.8e-15 2.0e-15 7.0e-16 4.3e-16 1.3e-15 1.9e-15 7.7e-16 4.0e-16  fails []
+G1 tilted     cust amount .05    p0  101325.0: 3.1e-1 8.7e-2 3.0e-2 2.2e-2 6.0e-2 2.9e-2 2.5e-2 1.7e-2  fails []
+G1 tilted     cust amount .05    p0   70108.5: 1.7e-1 4.9e-2 1.7e-2 1.3e-2 3.4e-2 1.6e-2 1.4e-2 9.8e-3  fails []
+G1 tilted     cust amount .05    p0   35000.0: 2.5e-1 7.2e-2 2.7e-2 2.0e-2 5.2e-2 2.5e-2 2.2e-2 1.5e-2  fails []
+G1 tilted     cust amount .05    p0   22632.0: 7.0e-1 2.0e-1 7.9e-2 5.6e-2 1.5e-1 7.1e-2 6.4e-2 4.3e-2  fails []
+G1 tilted     cust amount .05    p0   12000.0: 1.0e0 4.7e-1 2.1e-1 1.5e-1 4.0e-1 1.9e-1 1.4e-1 1.1e-1  fails ["800:f"]
+G1 tilted     cust amount .05    p0    5474.9: 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0  fails ["800:f", "1000:f", "1200:f", "1400:f", "1600:f"]
+G1 tilted     cool .05/.05       p0  101325.0: 1.9e-12 1.4e-12 5.9e-13 1.0e-12 1.2e-12 1.4e-12 2.3e-13 1.1e-12  fails []
+G1 tilted     cool .05/.05       p0   70108.5: 1.7e-12 1.4e-12 4.4e-13 7.3e-13 1.2e-12 1.4e-12 2.2e-13 7.1e-13  fails []
+G1 tilted     cool .05/.05       p0   35000.0: 2.3e-14 1.1e-14 1.4e-15 7.4e-15 7.9e-15 1.1e-14 3.4e-15 7.6e-15  fails []
+G1 tilted     cool .05/.05       p0   22632.0: 1.1e-13 9.1e-14 1.6e-14 5.4e-14 7.7e-14 9.2e-14 1.5e-14 5.6e-14  fails []
+G1 tilted     cool .05/.05       p0   12000.0: 4.9e-14 3.1e-14 3.1e-15 2.2e-14 2.5e-14 3.1e-14 6.5e-15 2.2e-14  fails []
+G1 tilted     cool .05/.05       p0    5474.9: 6.2e-12 4.6e-12 4.1e-12 3.0e-13 3.7e-12 4.6e-12 8.8e-13 6.3e-13  fails []
+G1 tilted     lever stator       p0  101325.0: 5.2e-15 4.1e-15 4.2e-16 4.7e-16 4.1e-15 4.4e-15 4.6e-16 5.3e-16  fails []
+G1 tilted     lever stator       p0   70108.5: 5.5e-15 4.6e-15 5.1e-16 6.4e-16 4.3e-15 4.8e-15 3.9e-16 4.3e-16  fails []
+G1 tilted     lever stator       p0   35000.0: 2.3e-12 1.8e-12 7.5e-13 5.6e-13 1.4e-12 1.8e-12 3.9e-13 3.8e-13  fails []
+G1 tilted     lever stator       p0   22632.0: 2.3e-12 1.8e-12 7.5e-13 5.6e-13 1.4e-12 1.8e-12 3.9e-13 3.8e-13  fails []
+G1 tilted     lever stator       p0   12000.0: 2.3e-12 1.8e-12 7.5e-13 5.6e-13 1.4e-12 1.8e-12 3.9e-13 3.8e-13  fails []
+G1 tilted     lever stator       p0    5474.9: 2.3e-12 1.8e-12 7.5e-13 5.6e-13 1.4e-12 1.8e-12 3.9e-13 3.8e-13  fails []
+G1 tilted     lever bleed        p0  101325.0: 5.2e-15 4.1e-15 8.8e-16 7.6e-16 4.1e-15 4.4e-15 7.9e-16 6.1e-16  fails []
+G1 tilted     lever bleed        p0   70108.5: 5.5e-15 4.6e-15 7.6e-16 6.4e-16 4.3e-15 4.8e-15 7.9e-16 4.3e-16  fails []
+G1 tilted     lever bleed        p0   35000.0: 2.6e-12 2.0e-12 6.3e-16 1.5e-12 1.6e-12 2.0e-12 4.1e-13 1.6e-12  fails []
+G1 tilted     lever bleed        p0   22632.0: 2.6e-12 2.0e-12 2.3e-15 1.5e-12 1.6e-12 2.0e-12 4.1e-13 1.6e-12  fails []
+G1 tilted     lever bleed        p0   12000.0: 2.6e-12 2.0e-12 1.9e-15 1.5e-12 1.6e-12 2.0e-12 4.1e-13 1.6e-12  fails []
+G1 tilted     lever bleed        p0    5474.9: 2.6e-12 2.0e-12 5.3e-16 1.5e-12 1.6e-12 2.0e-12 4.1e-13 1.6e-12  fails []
+G1 tilted     lever both         p0  101325.0: 1.5e-12 1.1e-12 4.8e-13 3.0e-13 8.9e-13 9.6e-13 2.4e-13 1.7e-13  fails []
+G1 tilted     lever both         p0   70108.5: 5.5e-15 4.6e-15 7.7e-16 2.3e-15 4.3e-15 4.8e-15 9.1e-16 2.2e-15  fails []
+G1 tilted     lever both         p0   35000.0: 6.1e-15 5.3e-15 6.3e-16 8.9e-16 4.5e-15 5.4e-15 7.8e-16 8.6e-16  fails []
+G1 tilted     lever both         p0   22632.0: 3.4e-15 3.0e-15 6.4e-16 1.3e-15 2.7e-15 3.0e-15 4.7e-16 1.2e-15  fails []
+G1 tilted     lever both         p0   12000.0: 5.7e-15 4.5e-15 1.1e-15 1.6e-15 4.0e-15 4.5e-15 3.9e-16 1.3e-15  fails []
+G1 tilted     lever both         p0    5474.9: 6.0e-15 4.6e-15 1.3e-15 2.4e-15 3.9e-15 4.5e-15 8.0e-16 2.1e-15  fails []
+G1 flat-lp    plain              p0  101325.0: 1.1e-15 1.2e-15 2.7e-16 4.3e-16 1.0e-15 1.0e-15 1.7e-16 4.3e-16  fails []
+G1 flat-lp    plain              p0   70108.5: 1.8e-15 1.2e-15 3.1e-16 4.3e-16 1.5e-15 1.5e-15 3.1e-16 4.3e-16  fails []
+G1 flat-lp    plain              p0   35000.0: 2.2e-15 1.8e-15 3.5e-16 2.5e-16 1.8e-15 1.8e-15 2.9e-16 2.9e-16  fails []
+G1 flat-lp    plain              p0   22632.0: 9.6e-16 1.2e-15 3.1e-16 6.4e-16 8.2e-16 8.1e-16 3.1e-16 6.5e-16  fails []
+G1 flat-lp    plain              p0   12000.0: 3.3e-15 2.2e-15 2.7e-16 7.0e-16 1.8e-15 2.3e-15 4.6e-16 8.0e-16  fails []
+G1 flat-lp    plain              p0    5474.9: 3.6e-11 2.0e-11 1.1e-11 6.8e-12 1.3e-11 2.0e-11 6.3e-12 4.8e-12  fails []
+G1 flat-lp    gen HP share .05   p0  101325.0: 5.1e-13 4.5e-13 3.6e-13 2.4e-15 3.7e-13 4.5e-13 7.7e-14 1.1e-13  fails []
+G1 flat-lp    gen HP share .05   p0   70108.5: 5.1e-13 4.5e-13 3.6e-13 3.1e-15 3.7e-13 4.5e-13 7.7e-14 1.1e-13  fails []
+G1 flat-lp    gen HP share .05   p0   35000.0: 1.2e-15 9.9e-16 6.1e-16 2.6e-16 9.4e-16 9.7e-16 2.8e-16 5.1e-16  fails []
+G1 flat-lp    gen HP share .05   p0   22632.0: 7.2e-16 6.5e-16 7.7e-16 4.4e-16 6.5e-16 6.5e-16 3.9e-16 6.7e-16  fails []
+G1 flat-lp    gen HP share .05   p0   12000.0: 2.7e-15 2.0e-15 4.3e-16 7.9e-16 1.7e-15 1.9e-15 3.9e-16 7.7e-16  fails []
+G1 flat-lp    gen HP share .05   p0    5474.9: 3.3e-15 2.9e-15 2.7e-16 8.9e-16 2.6e-15 3.0e-15 6.2e-16 6.7e-16  fails []
+G1 flat-lp    gen LP share .05   p0  101325.0: 3.8e-15 3.1e-15 4.7e-16 6.4e-16 3.4e-15 3.5e-15 1.7e-16 6.4e-16  fails []
+G1 flat-lp    gen LP share .05   p0   70108.5: 3.3e-15 2.8e-15 6.6e-16 6.3e-16 2.7e-15 2.9e-15 3.4e-16 6.1e-16  fails []
+G1 flat-lp    gen LP share .05   p0   35000.0: 1.9e-15 1.9e-15 4.4e-16 7.6e-16 1.5e-15 1.9e-15 3.4e-16 7.3e-16  fails []
+G1 flat-lp    gen LP share .05   p0   22632.0: 1.8e-15 1.7e-15 7.9e-16 8.5e-16 1.5e-15 1.9e-15 1.9e-16 8.5e-16  fails []
+G1 flat-lp    gen LP share .05   p0   12000.0: 3.0e-15 2.5e-15 6.6e-16 4.3e-16 2.1e-15 2.5e-15 3.9e-16 2.9e-16  fails []
+G1 flat-lp    gen LP share .05   p0    5474.9: 2.3e-15 1.9e-15 3.5e-16 4.2e-16 1.7e-15 2.1e-15 1.9e-16 4.0e-16  fails []
+G1 flat-lp    gen HP power .02   p0  101325.0: 1.0e-1 5.2e-2 9.1e-5 3.3e-2 3.6e-2 5.2e-2 1.5e-2 3.3e-2  fails []
+G1 flat-lp    gen HP power .02   p0   70108.5: 6.0e-2 3.0e-2 5.3e-5 1.9e-2 2.1e-2 3.0e-2 8.8e-3 1.9e-2  fails []
+G1 flat-lp    gen HP power .02   p0   35000.0: 4.6e-2 3.1e-2 6.3e-5 1.9e-2 2.4e-2 3.1e-2 7.6e-3 1.9e-2  fails ["800:f"]
+G1 flat-lp    gen HP power .02   p0   22632.0: 1.4e-1 9.2e-2 1.9e-4 5.7e-2 7.1e-2 9.2e-2 2.3e-2 5.7e-2  fails ["800:f"]
+G1 flat-lp    gen HP power .02   p0   12000.0: 4.2e-1 2.9e-1 6.4e-4 1.9e-1 2.3e-1 2.9e-1 7.7e-2 1.9e-1  fails ["800:f"]
+G1 flat-lp    gen HP power .02   p0    5474.9: 5.1e-1 4.3e-1 1.3e-3 2.8e-1 3.8e-1 4.3e-1 9.7e-2 2.8e-1  fails ["800:f", "1000:f", "1200:f"]
+G1 flat-lp    cust share .05     p0  101325.0: 1.1e-12 9.2e-13 3.7e-13 2.7e-13 7.6e-13 9.2e-13 1.6e-13 1.6e-13  fails []
+G1 flat-lp    cust share .05     p0   70108.5: 1.1e-12 9.2e-13 3.7e-13 2.7e-13 7.6e-13 9.2e-13 1.6e-13 1.6e-13  fails []
+G1 flat-lp    cust share .05     p0   35000.0: 1.4e-15 8.3e-16 3.5e-16 4.7e-16 8.4e-16 1.1e-15 5.1e-16 5.0e-16  fails []
+G1 flat-lp    cust share .05     p0   22632.0: 2.1e-15 1.7e-15 7.1e-16 4.8e-16 1.3e-15 1.8e-15 5.1e-16 5.0e-16  fails []
+G1 flat-lp    cust share .05     p0   12000.0: 2.7e-15 1.8e-15 3.5e-16 6.5e-16 1.6e-15 1.9e-15 3.4e-16 6.6e-16  fails []
+G1 flat-lp    cust share .05     p0    5474.9: 1.3e-15 7.3e-16 2.2e-16 4.4e-16 7.2e-16 9.0e-16 3.4e-16 4.4e-16  fails []
+G1 flat-lp    cust amount .05    p0  101325.0: 1.7e-1 7.9e-2 2.5e-2 1.9e-2 5.9e-2 2.8e-2 1.8e-2 1.4e-2  fails ["800:d"]
+G1 flat-lp    cust amount .05    p0   70108.5: 9.4e-2 4.5e-2 1.4e-2 1.1e-2 3.4e-2 1.6e-2 1.0e-2 7.8e-3  fails ["800:d"]
+G1 flat-lp    cust amount .05    p0   35000.0: 1.4e-1 6.7e-2 2.3e-2 1.7e-2 5.2e-2 2.4e-2 1.6e-2 1.2e-2  fails ["800:df"]
+G1 flat-lp    cust amount .05    p0   22632.0: 3.9e-1 1.9e-1 6.9e-2 4.9e-2 1.5e-1 7.0e-2 4.8e-2 3.6e-2  fails ["800:df"]
+G1 flat-lp    cust amount .05    p0   12000.0: 7.3e-1 4.4e-1 1.7e-1 1.3e-1 3.8e-1 1.9e-1 1.1e-1 9.3e-2  fails ["800:df", "1000:f"]
+G1 flat-lp    cust amount .05    p0    5474.9: 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0  fails ["800:df", "1000:f", "1200:f", "1400:f", "1600:f"]
+G1 flat-lp    cool .05/.05       p0  101325.0: 1.3e-13 9.9e-14 8.0e-15 6.5e-14 8.0e-14 9.9e-14 1.8e-14 6.7e-14  fails ["800:df"]
+G1 flat-lp    cool .05/.05       p0   70108.5: 1.3e-13 8.4e-14 6.3e-15 5.6e-14 6.6e-14 8.5e-14 1.8e-14 5.7e-14  fails ["800:df"]
+G1 flat-lp    cool .05/.05       p0   35000.0: 1.5e-13 9.8e-14 8.2e-15 6.6e-14 7.7e-14 9.9e-14 2.1e-14 6.8e-14  fails ["800:df"]
+G1 flat-lp    cool .05/.05       p0   22632.0: 2.8e-12 2.3e-12 9.9e-13 7.0e-13 1.9e-12 2.3e-12 3.9e-13 4.3e-13  fails ["800:df"]
+G1 flat-lp    cool .05/.05       p0   12000.0: 6.3e-12 5.5e-12 2.2e-12 1.5e-12 4.5e-12 5.4e-12 8.4e-13 8.8e-13  fails ["800:df"]
+G1 flat-lp    cool .05/.05       p0    5474.9: 6.5e-12 5.6e-12 2.2e-12 1.6e-12 4.6e-12 5.5e-12 8.6e-13 9.5e-13  fails ["800:df"]
+G1 flat-lp    lever stator       p0  101325.0: 1.1e-15 1.2e-15 2.6e-16 8.1e-16 1.0e-15 1.0e-15 3.5e-16 1.0e-15  fails ["800:df"]
+G1 flat-lp    lever stator       p0   70108.5: 1.5e-15 1.1e-15 2.6e-16 4.3e-16 1.0e-15 1.2e-15 3.1e-16 4.3e-16  fails ["800:df"]
+G1 flat-lp    lever stator       p0   35000.0: 3.4e-15 2.4e-15 2.1e-16 8.9e-16 1.8e-15 2.6e-15 5.9e-16 8.6e-16  fails ["800:df"]
+G1 flat-lp    lever stator       p0   22632.0: 1.4e-15 1.2e-15 4.0e-16 6.4e-16 9.0e-16 1.2e-15 3.1e-16 6.9e-16  fails ["800:df"]
+G1 flat-lp    lever stator       p0   12000.0: 1.6e-15 1.1e-15 4.0e-16 3.8e-16 1.1e-15 1.5e-15 3.4e-16 3.7e-16  fails ["800:df"]
+G1 flat-lp    lever stator       p0    5474.9: 1.4e-11 1.1e-11 4.2e-12 3.2e-12 8.5e-12 1.1e-11 2.4e-12 1.9e-12  fails ["800:df"]
+G1 flat-lp    lever bleed        p0  101325.0: 1.4e-15 1.2e-15 6.3e-16 5.6e-16 1.0e-15 1.0e-15 4.5e-16 6.6e-16  fails []
+G1 flat-lp    lever bleed        p0   70108.5: 1.7e-15 1.1e-15 2.1e-16 4.3e-16 1.0e-15 1.0e-15 4.2e-16 5.3e-16  fails []
+G1 flat-lp    lever bleed        p0   35000.0: 1.8e-15 1.3e-15 2.8e-16 2.1e-16 9.2e-16 1.1e-15 5.7e-16 2.2e-16  fails []
+G1 flat-lp    lever bleed        p0   22632.0: 9.2e-16 1.2e-15 6.3e-16 6.4e-16 8.2e-16 8.1e-16 3.9e-16 6.5e-16  fails []
+G1 flat-lp    lever bleed        p0   12000.0: 1.8e-11 8.9e-12 2.2e-12 4.6e-12 6.1e-12 8.7e-12 2.8e-12 4.3e-12  fails []
+G1 flat-lp    lever bleed        p0    5474.9: 1.8e-11 8.9e-12 2.2e-12 4.6e-12 6.1e-12 8.7e-12 2.8e-12 4.3e-12  fails []
+G1 flat-lp    lever both         p0  101325.0: 2.6e-15 1.5e-15 2.5e-16 5.6e-16 2.0e-15 2.0e-15 3.9e-16 5.3e-16  fails ["800:df"]
+G1 flat-lp    lever both         p0   70108.5: 2.2e-15 1.6e-15 2.5e-16 6.3e-16 1.8e-15 1.8e-15 5.8e-16 5.7e-16  fails ["800:df"]
+G1 flat-lp    lever both         p0   35000.0: 2.6e-15 1.7e-15 2.1e-16 7.0e-16 2.0e-15 2.0e-15 3.5e-16 6.6e-16  fails ["800:df"]
+G1 flat-lp    lever both         p0   22632.0: 1.7e-15 1.2e-15 2.1e-16 1.5e-15 1.2e-15 1.3e-15 3.1e-16 1.6e-15  fails ["800:df"]
+G1 flat-lp    lever both         p0   12000.0: 2.6e-15 1.7e-15 3.7e-16 1.0e-15 1.8e-15 1.8e-15 3.9e-16 7.4e-16  fails ["800:df"]
+G1 flat-lp    lever both         p0    5474.9: 1.1e-15 7.4e-16 4.6e-16 4.2e-16 4.4e-16 4.0e-16 3.4e-16 5.7e-16  fails ["800:df"]
+# G2 — temperature (p0 50 kPa, M 0.85): flight point at Tt4·θ against the design point at Tt4
+G2 flow/press plain              T0 216.65 θ 0.8666 Tt4 1000: -6.41e-3 -3.50e-3 -1.13e-3 -8.43e-4 -4.40e-3 -1.31e-3 -9.10e-4 -6.11e-4
+G2 flow/press plain              T0 216.65 θ 0.8666 Tt4 1400: -9.10e-3 -6.52e-3 -2.06e-3 -1.46e-3 -7.43e-3 -3.07e-3 -9.10e-4 -9.86e-4
+G2 flow/press plain              T0 230.00 θ 0.9200 Tt4 1000: -3.85e-3 -2.10e-3 -6.80e-4 -5.06e-4 -2.65e-3 -7.90e-4 -5.46e-4 -3.67e-4
+G2 flow/press plain              T0 230.00 θ 0.9200 Tt4 1400: -5.47e-3 -3.92e-3 -1.23e-3 -8.79e-4 -4.47e-3 -1.85e-3 -5.46e-4 -5.92e-4
+G2 flow/press plain              T0 270.00 θ 1.0800 Tt4 1000: +3.87e-3 +2.11e-3 +6.83e-4 +5.08e-4 +2.66e-3 +7.94e-4 +5.46e-4 +3.68e-4
+G2 flow/press plain              T0 270.00 θ 1.0800 Tt4 1400: +5.51e-3 +3.95e-3 +1.24e-3 +8.83e-4 +4.50e-3 +1.86e-3 +5.46e-4 +5.94e-4
+G2 flow/press plain              T0 288.15 θ 1.1526 Tt4 1000: +7.40e-3 +4.04e-3 +1.30e-3 +9.71e-4 +5.09e-3 +1.52e-3 +1.04e-3 +7.03e-4
+G2 flow/press plain              T0 288.15 θ 1.1526 Tt4 1400: +1.06e-2 +7.57e-3 +2.37e-3 +1.69e-3 +8.62e-3 +3.56e-3 +1.04e-3 +1.14e-3
+G2 flow/press plain              T0 320.00 θ 1.2800 Tt4 1000: +1.36e-2 +7.44e-3 +2.40e-3 +1.79e-3 +9.37e-3 +2.80e-3 +1.91e-3 +1.29e-3
+G2 flow/press plain              T0 320.00 θ 1.2800 Tt4 1400: +1.95e-2 +1.40e-2 +4.37e-3 +3.11e-3 +1.59e-2 +6.57e-3 +1.91e-3 +2.09e-3
+G2 flow/press gen HP share .05   T0 216.65 θ 0.8666 Tt4 1000: -6.58e-3 -3.47e-3 -1.13e-3 -8.43e-4 -4.38e-3 -1.26e-3 -9.10e-4 -6.08e-4
+G2 flow/press gen HP share .05   T0 216.65 θ 0.8666 Tt4 1400: -9.24e-3 -6.53e-3 -2.04e-3 -1.46e-3 -7.43e-3 -3.03e-3 -9.10e-4 -9.79e-4
+G2 flow/press gen HP share .05   T0 230.00 θ 0.9200 Tt4 1000: -3.95e-3 -2.09e-3 -6.81e-4 -5.06e-4 -2.63e-3 -7.54e-4 -5.46e-4 -3.65e-4
+G2 flow/press gen HP share .05   T0 230.00 θ 0.9200 Tt4 1400: -5.56e-3 -3.92e-3 -1.23e-3 -8.79e-4 -4.47e-3 -1.82e-3 -5.46e-4 -5.88e-4
+G2 flow/press gen HP share .05   T0 270.00 θ 1.0800 Tt4 1000: +3.97e-3 +2.10e-3 +6.83e-4 +5.08e-4 +2.64e-3 +7.58e-4 +5.46e-4 +3.66e-4
+G2 flow/press gen HP share .05   T0 270.00 θ 1.0800 Tt4 1400: +5.60e-3 +3.96e-3 +1.23e-3 +8.83e-4 +4.51e-3 +1.84e-3 +5.46e-4 +5.90e-4
+G2 flow/press gen HP share .05   T0 288.15 θ 1.1526 Tt4 1000: +7.60e-3 +4.01e-3 +1.31e-3 +9.71e-4 +5.05e-3 +1.45e-3 +1.04e-3 +6.99e-4
+G2 flow/press gen HP share .05   T0 288.15 θ 1.1526 Tt4 1400: +1.07e-2 +7.57e-3 +2.36e-3 +1.69e-3 +8.63e-3 +3.51e-3 +1.04e-3 +1.13e-3
+G2 flow/press gen HP share .05   T0 320.00 θ 1.2800 Tt4 1000: +1.40e-2 +7.38e-3 +2.40e-3 +1.79e-3 +9.31e-3 +2.67e-3 +1.91e-3 +1.29e-3
+G2 flow/press gen HP share .05   T0 320.00 θ 1.2800 Tt4 1400: +1.98e-2 +1.40e-2 +4.34e-3 +3.11e-3 +1.59e-2 +6.48e-3 +1.91e-3 +2.08e-3
+G2 flow/press gen LP share .05   T0 216.65 θ 0.8666 Tt4 1000: -6.47e-3 -3.49e-3 -1.14e-3 -8.53e-4 -4.40e-3 -1.30e-3 -9.10e-4 -6.29e-4
+G2 flow/press gen LP share .05   T0 216.65 θ 0.8666 Tt4 1400: -9.14e-3 -6.52e-3 -2.06e-3 -1.48e-3 -7.42e-3 -3.05e-3 -9.10e-4 -1.02e-3
+G2 flow/press gen LP share .05   T0 230.00 θ 0.9200 Tt4 1000: -3.89e-3 -2.10e-3 -6.82e-4 -5.12e-4 -2.64e-3 -7.79e-4 -5.46e-4 -3.78e-4
+G2 flow/press gen LP share .05   T0 230.00 θ 0.9200 Tt4 1400: -5.50e-3 -3.92e-3 -1.24e-3 -8.90e-4 -4.46e-3 -1.83e-3 -5.46e-4 -6.12e-4
+G2 flow/press gen LP share .05   T0 270.00 θ 1.0800 Tt4 1000: +3.91e-3 +2.11e-3 +6.84e-4 +5.14e-4 +2.66e-3 +7.83e-4 +5.46e-4 +3.79e-4
+G2 flow/press gen LP share .05   T0 270.00 θ 1.0800 Tt4 1400: +5.54e-3 +3.95e-3 +1.24e-3 +8.94e-4 +4.50e-3 +1.85e-3 +5.46e-4 +6.15e-4
+G2 flow/press gen LP share .05   T0 288.15 θ 1.1526 Tt4 1000: +7.47e-3 +4.03e-3 +1.31e-3 +9.82e-4 +5.08e-3 +1.50e-3 +1.04e-3 +7.24e-4
+G2 flow/press gen LP share .05   T0 288.15 θ 1.1526 Tt4 1400: +1.06e-2 +7.56e-3 +2.37e-3 +1.71e-3 +8.61e-3 +3.53e-3 +1.04e-3 +1.18e-3
+G2 flow/press gen LP share .05   T0 320.00 θ 1.2800 Tt4 1000: +1.38e-2 +7.43e-3 +2.40e-3 +1.81e-3 +9.36e-3 +2.76e-3 +1.91e-3 +1.33e-3
+G2 flow/press gen LP share .05   T0 320.00 θ 1.2800 Tt4 1400: +1.96e-2 +1.40e-2 +4.38e-3 +3.15e-3 +1.59e-2 +6.52e-3 +1.91e-3 +2.16e-3
+G2 flow/press gen HP power .02   T0 216.65 θ 0.8666 Tt4 1000: -1.55e-2 -9.44e-3 -2.12e-3 -4.28e-3 -8.99e-3 -7.25e-3 +4.55e-4 -4.04e-3
+G2 flow/press gen HP power .02   T0 216.65 θ 0.8666 Tt4 1400: -1.26e-2 -9.43e-3 -2.72e-3 -3.10e-3 -9.80e-3 -5.99e-3 -3.68e-4 -2.63e-3
+G2 flow/press gen HP power .02   T0 230.00 θ 0.9200 Tt4 1000: -9.08e-3 -5.51e-3 -1.25e-3 -2.47e-3 -5.28e-3 -4.19e-3 +2.36e-4 -2.33e-3
+G2 flow/press gen HP power .02   T0 230.00 θ 0.9200 Tt4 1400: -7.50e-3 -5.60e-3 -1.62e-3 -1.82e-3 -5.83e-3 -3.52e-3 -2.35e-4 -1.53e-3
+G2 flow/press gen HP power .02   T0 270.00 θ 1.0800 Tt4 1000: +8.54e-3 +5.14e-3 +1.19e-3 +2.25e-3 +4.99e-3 +3.81e-3 -1.44e-4 +2.10e-3
+G2 flow/press gen HP power .02   T0 270.00 θ 1.0800 Tt4 1400: +7.34e-3 +5.45e-3 +1.58e-3 +1.72e-3 +5.72e-3 +3.35e-3 +2.70e-4 +1.43e-3
+G2 flow/press gen HP power .02   T0 288.15 θ 1.1526 Tt4 1000: +1.59e-2 +9.54e-3 +2.22e-3 +4.12e-3 +9.33e-3 +6.99e-3 -2.10e-4 +3.85e-3
+G2 flow/press gen HP power .02   T0 288.15 θ 1.1526 Tt4 1400: +1.39e-2 +1.03e-2 +2.99e-3 +3.21e-3 +1.08e-2 +6.27e-3 +5.41e-4 +2.65e-3
+G2 flow/press gen HP power .02   T0 320.00 θ 1.2800 Tt4 1000: +2.81e-2 +1.68e-2 +3.95e-3 +7.12e-3 +1.66e-2 +1.21e-2 -2.03e-4 +6.62e-3
+G2 flow/press gen HP power .02   T0 320.00 θ 1.2800 Tt4 1400: +2.52e-2 +1.86e-2 +5.43e-3 +5.69e-3 +1.97e-2 +1.12e-2 +1.06e-3 +4.67e-3
+G2 flow/press cust share .05     T0 216.65 θ 0.8666 Tt4 1000: -6.83e-3 -3.47e-3 -1.14e-3 -8.40e-4 -4.38e-3 -1.24e-3 -9.10e-4 -6.12e-4
+G2 flow/press cust share .05     T0 216.65 θ 0.8666 Tt4 1400: -9.41e-3 -6.51e-3 -2.05e-3 -1.47e-3 -7.41e-3 -2.99e-3 -9.10e-4 -9.98e-4
+G2 flow/press cust share .05     T0 230.00 θ 0.9200 Tt4 1000: -4.11e-3 -2.09e-3 -6.84e-4 -5.04e-4 -2.63e-3 -7.46e-4 -5.46e-4 -3.67e-4
+G2 flow/press cust share .05     T0 230.00 θ 0.9200 Tt4 1400: -5.66e-3 -3.91e-3 -1.23e-3 -8.81e-4 -4.46e-3 -1.80e-3 -5.46e-4 -5.99e-4
+G2 flow/press cust share .05     T0 270.00 θ 1.0800 Tt4 1000: +4.13e-3 +2.10e-3 +6.86e-4 +5.06e-4 +2.64e-3 +7.50e-4 +5.46e-4 +3.69e-4
+G2 flow/press cust share .05     T0 270.00 θ 1.0800 Tt4 1400: +5.70e-3 +3.94e-3 +1.24e-3 +8.85e-4 +4.49e-3 +1.81e-3 +5.46e-4 +6.02e-4
+G2 flow/press cust share .05     T0 288.15 θ 1.1526 Tt4 1000: +7.89e-3 +4.01e-3 +1.31e-3 +9.67e-4 +5.05e-3 +1.43e-3 +1.04e-3 +7.04e-4
+G2 flow/press cust share .05     T0 288.15 θ 1.1526 Tt4 1400: +1.09e-2 +7.55e-3 +2.37e-3 +1.69e-3 +8.60e-3 +3.47e-3 +1.04e-3 +1.15e-3
+G2 flow/press cust share .05     T0 320.00 θ 1.2800 Tt4 1000: +1.45e-2 +7.39e-3 +2.41e-3 +1.78e-3 +9.31e-3 +2.64e-3 +1.91e-3 +1.30e-3
+G2 flow/press cust share .05     T0 320.00 θ 1.2800 Tt4 1400: +2.02e-2 +1.39e-2 +4.37e-3 +3.12e-3 +1.59e-2 +6.40e-3 +1.91e-3 +2.12e-3
+G2 flow/press cust amount .05    T0 216.65 θ 0.8666 Tt4 1000: +1.53e-2 +7.25e-3 +2.40e-3 +1.75e-3 +3.79e-3 +2.48e-3 -3.44e-3 +1.28e-3
+G2 flow/press cust amount .05    T0 216.65 θ 0.8666 Tt4 1400: +1.94e-3 +1.33e-3 +4.19e-4 +2.99e-4 -1.03e-3 +6.08e-4 -2.35e-3 +2.04e-4
+G2 flow/press cust amount .05    T0 230.00 θ 0.9200 Tt4 1000: +8.98e-3 +4.26e-3 +1.41e-3 +1.03e-3 +2.21e-3 +1.46e-3 -2.04e-3 +7.53e-4
+G2 flow/press cust amount .05    T0 230.00 θ 0.9200 Tt4 1400: +1.06e-3 +7.25e-4 +2.28e-4 +1.63e-4 -6.75e-4 +3.32e-4 -1.40e-3 +1.11e-4
+G2 flow/press cust amount .05    T0 270.00 θ 1.0800 Tt4 1000: -8.47e-3 -4.01e-3 -1.33e-3 -9.73e-4 -2.03e-3 -1.37e-3 +1.99e-3 -7.12e-4
+G2 flow/press cust amount .05    T0 270.00 θ 1.0800 Tt4 1400: -7.68e-4 -5.28e-4 -1.66e-4 -1.19e-4 +8.37e-4 -2.42e-4 +1.37e-3 -8.09e-5
+G2 flow/press cust amount .05    T0 288.15 θ 1.1526 Tt4 1000: -1.58e-2 -7.47e-3 -2.48e-3 -1.81e-3 -3.74e-3 -2.56e-3 +3.76e-3 -1.33e-3
+G2 flow/press cust amount .05    T0 288.15 θ 1.1526 Tt4 1400: -1.24e-3 -8.52e-4 -2.69e-4 -1.92e-4 +1.72e-3 -3.90e-4 +2.58e-3 -1.31e-4
+G2 flow/press cust amount .05    T0 320.00 θ 1.2800 Tt4 1000: -2.77e-2 -1.31e-2 -4.38e-3 -3.20e-3 -6.46e-3 -4.50e-3 +6.77e-3 -2.34e-3
+G2 flow/press cust amount .05    T0 320.00 θ 1.2800 Tt4 1400: -1.60e-3 -1.10e-3 -3.47e-4 -2.48e-4 +3.55e-3 -5.04e-4 +4.65e-3 -1.69e-4
+G2 flow/press cool .05/.05       T0 216.65 θ 0.8666 Tt4 1000: -6.70e-3 -3.38e-3 -1.13e-3 -9.27e-4 -4.41e-3 -1.24e-3 -8.81e-4 -6.99e-4
+G2 flow/press cool .05/.05       T0 216.65 θ 0.8666 Tt4 1400: -9.42e-3 -6.49e-3 -2.04e-3 -1.63e-3 -7.58e-3 -3.10e-3 -8.67e-4 -1.16e-3
+G2 flow/press cool .05/.05       T0 230.00 θ 0.9200 Tt4 1000: -4.03e-3 -2.03e-3 -6.77e-4 -5.57e-4 -2.65e-3 -7.43e-4 -5.28e-4 -4.20e-4
+G2 flow/press cool .05/.05       T0 230.00 θ 0.9200 Tt4 1400: -5.67e-3 -3.90e-3 -1.23e-3 -9.77e-4 -4.56e-3 -1.87e-3 -5.20e-4 -6.95e-4
+G2 flow/press cool .05/.05       T0 270.00 θ 1.0800 Tt4 1000: +4.05e-3 +2.04e-3 +6.79e-4 +5.59e-4 +2.67e-3 +7.47e-4 +5.29e-4 +4.21e-4
+G2 flow/press cool .05/.05       T0 270.00 θ 1.0800 Tt4 1400: +5.71e-3 +3.93e-3 +1.23e-3 +9.82e-4 +4.60e-3 +1.88e-3 +5.21e-4 +6.98e-4
+G2 flow/press cool .05/.05       T0 288.15 θ 1.1526 Tt4 1000: +7.74e-3 +3.90e-3 +1.30e-3 +1.07e-3 +5.10e-3 +1.43e-3 +1.01e-3 +8.04e-4
+G2 flow/press cool .05/.05       T0 288.15 θ 1.1526 Tt4 1400: +1.09e-2 +7.53e-3 +2.35e-3 +1.88e-3 +8.80e-3 +3.60e-3 +9.94e-4 +1.33e-3
+G2 flow/press cool .05/.05       T0 320.00 θ 1.2800 Tt4 1000: +1.43e-2 +7.19e-3 +2.39e-3 +1.96e-3 +9.39e-3 +2.63e-3 +1.85e-3 +1.48e-3
+G2 flow/press cool .05/.05       T0 320.00 θ 1.2800 Tt4 1400: +2.02e-2 +1.39e-2 +4.34e-3 +3.46e-3 +1.63e-2 +6.64e-3 +1.83e-3 +2.46e-3
+G2 flow/press lever stator       T0 216.65 θ 0.8666 Tt4 1000: -6.43e-3 -3.50e-3 -8.76e-4 -8.43e-4 -4.41e-3 -1.32e-3 -9.10e-4 -6.11e-4
+G2 flow/press lever stator       T0 216.65 θ 0.8666 Tt4 1400: -9.10e-3 -6.53e-3 -1.69e-3 -1.46e-3 -7.43e-3 -3.08e-3 -9.10e-4 -9.86e-4
+G2 flow/press lever stator       T0 230.00 θ 0.9200 Tt4 1000: -3.86e-3 -2.11e-3 -5.26e-4 -5.06e-4 -2.65e-3 -7.94e-4 -5.46e-4 -3.67e-4
+G2 flow/press lever stator       T0 230.00 θ 0.9200 Tt4 1400: -5.47e-3 -3.93e-3 -1.02e-3 -8.79e-4 -4.47e-3 -1.85e-3 -5.46e-4 -5.92e-4
+G2 flow/press lever stator       T0 270.00 θ 1.0800 Tt4 1000: +3.88e-3 +2.12e-3 +5.27e-4 +5.08e-4 +2.66e-3 +7.98e-4 +5.46e-4 +3.68e-4
+G2 flow/press lever stator       T0 270.00 θ 1.0800 Tt4 1400: +5.52e-3 +3.96e-3 +1.02e-3 +8.83e-4 +4.51e-3 +1.86e-3 +5.46e-4 +5.94e-4
+G2 flow/press lever stator       T0 288.15 θ 1.1526 Tt4 1000: +7.42e-3 +4.05e-3 +1.01e-3 +9.71e-4 +5.09e-3 +1.53e-3 +1.04e-3 +7.03e-4
+G2 flow/press lever stator       T0 288.15 θ 1.1526 Tt4 1400: +1.06e-2 +7.58e-3 +1.96e-3 +1.69e-3 +8.63e-3 +3.57e-3 +1.04e-3 +1.14e-3
+G2 flow/press lever stator       T0 320.00 θ 1.2800 Tt4 1000: +1.37e-2 +7.46e-3 +1.85e-3 +1.79e-3 +9.39e-3 +2.81e-3 +1.91e-3 +1.29e-3
+G2 flow/press lever stator       T0 320.00 θ 1.2800 Tt4 1400: +1.95e-2 +1.40e-2 +3.62e-3 +3.11e-3 +1.59e-2 +6.58e-3 +1.91e-3 +2.09e-3
+G2 flow/press lever bleed        T0 216.65 θ 0.8666 Tt4 1000: -7.23e-3 -3.61e-3 -1.23e-3 -8.56e-4 -4.48e-3 -1.09e-3 -8.78e-4 -6.07e-4
+G2 flow/press lever bleed        T0 216.65 θ 0.8666 Tt4 1400: -9.56e-3 -6.75e-3 -2.17e-3 -1.45e-3 -7.60e-3 -2.84e-3 -8.64e-4 -9.12e-4
+G2 flow/press lever bleed        T0 230.00 θ 0.9200 Tt4 1000: -4.34e-3 -2.17e-3 -7.36e-4 -5.14e-4 -2.69e-3 -6.53e-4 -5.26e-4 -3.64e-4
+G2 flow/press lever bleed        T0 230.00 θ 0.9200 Tt4 1400: -5.75e-3 -4.06e-3 -1.31e-3 -8.71e-4 -4.57e-3 -1.71e-3 -5.19e-4 -5.48e-4
+G2 flow/press lever bleed        T0 270.00 θ 1.0800 Tt4 1000: +4.37e-3 +2.18e-3 +7.39e-4 +5.16e-4 +2.71e-3 +6.56e-4 +5.27e-4 +3.65e-4
+G2 flow/press lever bleed        T0 270.00 θ 1.0800 Tt4 1400: +5.79e-3 +4.09e-3 +1.31e-3 +8.75e-4 +4.61e-3 +1.72e-3 +5.20e-4 +5.50e-4
+G2 flow/press lever bleed        T0 288.15 θ 1.1526 Tt4 1000: +8.35e-3 +4.17e-3 +1.41e-3 +9.86e-4 +5.17e-3 +1.25e-3 +1.01e-3 +6.97e-4
+G2 flow/press lever bleed        T0 288.15 θ 1.1526 Tt4 1400: +1.11e-2 +7.82e-3 +2.51e-3 +1.67e-3 +8.82e-3 +3.30e-3 +9.92e-4 +1.05e-3
+G2 flow/press lever bleed        T0 320.00 θ 1.2800 Tt4 1000: +1.54e-2 +7.68e-3 +2.60e-3 +1.81e-3 +9.54e-3 +2.31e-3 +1.85e-3 +1.28e-3
+G2 flow/press lever bleed        T0 320.00 θ 1.2800 Tt4 1400: +2.05e-2 +1.44e-2 +4.61e-3 +3.08e-3 +1.63e-2 +6.10e-3 +1.82e-3 +1.94e-3
+G2 flow/press lever both         T0 216.65 θ 0.8666 Tt4 1000: -7.13e-3 -3.61e-3 -9.23e-4 -8.52e-4 -4.49e-3 -1.10e-3 -8.76e-4 -5.98e-4
+G2 flow/press lever both         T0 216.65 θ 0.8666 Tt4 1400: -9.45e-3 -6.69e-3 -1.75e-3 -1.45e-3 -7.56e-3 -2.91e-3 -8.76e-4 -9.31e-4
+G2 flow/press lever both         T0 230.00 θ 0.9200 Tt4 1000: -4.28e-3 -2.17e-3 -5.54e-4 -5.12e-4 -2.70e-3 -6.58e-4 -5.26e-4 -3.59e-4
+G2 flow/press lever both         T0 230.00 θ 0.9200 Tt4 1400: -5.68e-3 -4.02e-3 -1.05e-3 -8.73e-4 -4.55e-3 -1.75e-3 -5.26e-4 -5.59e-4
+G2 flow/press lever both         T0 270.00 θ 1.0800 Tt4 1000: +4.31e-3 +2.18e-3 +5.56e-4 +5.13e-4 +2.71e-3 +6.62e-4 +5.26e-4 +3.60e-4
+G2 flow/press lever both         T0 270.00 θ 1.0800 Tt4 1400: +5.72e-3 +4.05e-3 +1.06e-3 +8.77e-4 +4.58e-3 +1.76e-3 +5.27e-4 +5.62e-4
+G2 flow/press lever both         T0 288.15 θ 1.1526 Tt4 1000: +8.24e-3 +4.17e-3 +1.06e-3 +9.81e-4 +5.18e-3 +1.27e-3 +1.00e-3 +6.88e-4
+G2 flow/press lever both         T0 288.15 θ 1.1526 Tt4 1400: +1.10e-2 +7.76e-3 +2.03e-3 +1.68e-3 +8.77e-3 +3.37e-3 +1.01e-3 +1.07e-3
+G2 flow/press lever both         T0 320.00 θ 1.2800 Tt4 1000: +1.52e-2 +7.69e-3 +1.95e-3 +1.80e-3 +9.55e-3 +2.33e-3 +1.84e-3 +1.27e-3
+G2 flow/press lever both         T0 320.00 θ 1.2800 Tt4 1400: +2.02e-2 +1.43e-2 +3.75e-3 +3.09e-3 +1.62e-2 +6.23e-3 +1.85e-3 +1.98e-3
+G2 press/flow plain              T0 216.65 θ 0.8666 Tt4 1000: -6.42e-3 -3.51e-3 -1.15e-3 -8.93e-4 -4.41e-3 -1.32e-3 -9.10e-4 -6.61e-4
+G2 press/flow plain              T0 216.65 θ 0.8666 Tt4 1400: -9.11e-3 -6.53e-3 -2.15e-3 -1.52e-3 -7.43e-3 -3.08e-3 -9.10e-4 -1.04e-3
+G2 press/flow plain              T0 230.00 θ 0.9200 Tt4 1000: -3.86e-3 -2.11e-3 -6.90e-4 -5.36e-4 -2.65e-3 -7.96e-4 -5.46e-4 -3.97e-4
+G2 press/flow plain              T0 230.00 θ 0.9200 Tt4 1400: -5.48e-3 -3.93e-3 -1.29e-3 -9.13e-4 -4.47e-3 -1.85e-3 -5.46e-4 -6.26e-4
+G2 press/flow plain              T0 270.00 θ 1.0800 Tt4 1000: +3.88e-3 +2.12e-3 +6.92e-4 +5.38e-4 +2.67e-3 +8.00e-4 +5.46e-4 +3.98e-4
+G2 press/flow plain              T0 270.00 θ 1.0800 Tt4 1400: +5.52e-3 +3.96e-3 +1.30e-3 +9.17e-4 +4.51e-3 +1.86e-3 +5.46e-4 +6.28e-4
+G2 press/flow plain              T0 288.15 θ 1.1526 Tt4 1000: +7.41e-3 +4.05e-3 +1.32e-3 +1.03e-3 +5.10e-3 +1.53e-3 +1.04e-3 +7.60e-4
+G2 press/flow plain              T0 288.15 θ 1.1526 Tt4 1400: +1.06e-2 +7.58e-3 +2.49e-3 +1.75e-3 +8.63e-3 +3.57e-3 +1.04e-3 +1.20e-3
+G2 press/flow plain              T0 320.00 θ 1.2800 Tt4 1000: +1.37e-2 +7.46e-3 +2.43e-3 +1.89e-3 +9.39e-3 +2.82e-3 +1.91e-3 +1.40e-3
+G2 press/flow plain              T0 320.00 θ 1.2800 Tt4 1400: +1.95e-2 +1.40e-2 +4.58e-3 +3.23e-3 +1.59e-2 +6.58e-3 +1.91e-3 +2.21e-3
+G2 press/flow gen HP share .05   T0 216.65 θ 0.8666 Tt4 1000: -6.58e-3 -3.48e-3 -1.14e-3 -8.96e-4 -4.39e-3 -1.26e-3 -9.10e-4 -6.60e-4
+G2 press/flow gen HP share .05   T0 216.65 θ 0.8666 Tt4 1400: -9.23e-3 -6.52e-3 -2.12e-3 -1.52e-3 -7.42e-3 -3.02e-3 -9.10e-4 -1.04e-3
+G2 press/flow gen HP share .05   T0 230.00 θ 0.9200 Tt4 1000: -3.95e-3 -2.09e-3 -6.87e-4 -5.38e-4 -2.63e-3 -7.59e-4 -5.46e-4 -3.96e-4
+G2 press/flow gen HP share .05   T0 230.00 θ 0.9200 Tt4 1400: -5.55e-3 -3.92e-3 -1.28e-3 -9.14e-4 -4.46e-3 -1.82e-3 -5.46e-4 -6.23e-4
+G2 press/flow gen HP share .05   T0 270.00 θ 1.0800 Tt4 1000: +3.97e-3 +2.10e-3 +6.90e-4 +5.40e-4 +2.65e-3 +7.63e-4 +5.46e-4 +3.97e-4
+G2 press/flow gen HP share .05   T0 270.00 θ 1.0800 Tt4 1400: +5.59e-3 +3.95e-3 +1.28e-3 +9.18e-4 +4.50e-3 +1.83e-3 +5.46e-4 +6.26e-4
+G2 press/flow gen HP share .05   T0 288.15 θ 1.1526 Tt4 1000: +7.60e-3 +4.02e-3 +1.32e-3 +1.03e-3 +5.06e-3 +1.46e-3 +1.04e-3 +7.59e-4
+G2 press/flow gen HP share .05   T0 288.15 θ 1.1526 Tt4 1400: +1.07e-2 +7.56e-3 +2.45e-3 +1.76e-3 +8.61e-3 +3.50e-3 +1.04e-3 +1.20e-3
+G2 press/flow gen HP share .05   T0 320.00 θ 1.2800 Tt4 1000: +1.40e-2 +7.40e-3 +2.42e-3 +1.90e-3 +9.33e-3 +2.69e-3 +1.91e-3 +1.40e-3
+G2 press/flow gen HP share .05   T0 320.00 θ 1.2800 Tt4 1400: +1.98e-2 +1.40e-2 +4.52e-3 +3.23e-3 +1.59e-2 +6.45e-3 +1.91e-3 +2.20e-3
+G2 press/flow gen LP share .05   T0 216.65 θ 0.8666 Tt4 1000: -6.48e-3 -3.50e-3 -1.15e-3 -9.02e-4 -4.41e-3 -1.31e-3 -9.10e-4 -6.77e-4
+G2 press/flow gen LP share .05   T0 216.65 θ 0.8666 Tt4 1400: -9.17e-3 -6.54e-3 -2.16e-3 -1.54e-3 -7.44e-3 -3.07e-3 -9.10e-4 -1.08e-3
+G2 press/flow gen LP share .05   T0 230.00 θ 0.9200 Tt4 1000: -3.89e-3 -2.10e-3 -6.90e-4 -5.41e-4 -2.65e-3 -7.84e-4 -5.46e-4 -4.07e-4
+G2 press/flow gen LP share .05   T0 230.00 θ 0.9200 Tt4 1400: -5.51e-3 -3.93e-3 -1.30e-3 -9.23e-4 -4.48e-3 -1.85e-3 -5.46e-4 -6.46e-4
+G2 press/flow gen LP share .05   T0 270.00 θ 1.0800 Tt4 1000: +3.92e-3 +2.11e-3 +6.92e-4 +5.43e-4 +2.66e-3 +7.88e-4 +5.46e-4 +4.08e-4
+G2 press/flow gen LP share .05   T0 270.00 θ 1.0800 Tt4 1400: +5.56e-3 +3.96e-3 +1.30e-3 +9.28e-4 +4.51e-3 +1.86e-3 +5.46e-4 +6.48e-4
+G2 press/flow gen LP share .05   T0 288.15 θ 1.1526 Tt4 1000: +7.49e-3 +4.04e-3 +1.32e-3 +1.04e-3 +5.09e-3 +1.51e-3 +1.04e-3 +7.79e-4
+G2 press/flow gen LP share .05   T0 288.15 θ 1.1526 Tt4 1400: +1.06e-2 +7.59e-3 +2.49e-3 +1.77e-3 +8.64e-3 +3.56e-3 +1.04e-3 +1.24e-3
+G2 press/flow gen LP share .05   T0 320.00 θ 1.2800 Tt4 1000: +1.38e-2 +7.45e-3 +2.43e-3 +1.91e-3 +9.38e-3 +2.78e-3 +1.91e-3 +1.43e-3
+G2 press/flow gen LP share .05   T0 320.00 θ 1.2800 Tt4 1400: +1.96e-2 +1.40e-2 +4.59e-3 +3.27e-3 +1.60e-2 +6.56e-3 +1.91e-3 +2.28e-3
+G2 press/flow gen HP power .02   T0 216.65 θ 0.8666 Tt4 1000: -1.51e-2 -9.16e-3 -2.41e-3 -4.07e-3 -8.72e-3 -6.97e-3 +4.44e-4 -3.84e-3
+G2 press/flow gen HP power .02   T0 216.65 θ 0.8666 Tt4 1400: -1.26e-2 -9.39e-3 -3.01e-3 -3.03e-3 -9.75e-3 -5.94e-3 -3.68e-4 -2.55e-3
+G2 press/flow gen HP power .02   T0 230.00 θ 0.9200 Tt4 1000: -8.82e-3 -5.35e-3 -1.41e-3 -2.36e-3 -5.12e-3 -4.03e-3 +2.30e-4 -2.22e-3
+G2 press/flow gen HP power .02   T0 230.00 θ 0.9200 Tt4 1400: -7.47e-3 -5.57e-3 -1.78e-3 -1.78e-3 -5.81e-3 -3.49e-3 -2.35e-4 -1.49e-3
+G2 press/flow gen HP power .02   T0 270.00 θ 1.0800 Tt4 1000: +8.31e-3 +5.00e-3 +1.33e-3 +2.15e-3 +4.86e-3 +3.67e-3 -1.39e-4 +2.00e-3
+G2 press/flow gen HP power .02   T0 270.00 θ 1.0800 Tt4 1400: +7.31e-3 +5.43e-3 +1.74e-3 +1.69e-3 +5.70e-3 +3.33e-3 +2.70e-4 +1.40e-3
+G2 press/flow gen HP power .02   T0 288.15 θ 1.1526 Tt4 1000: +1.55e-2 +9.29e-3 +2.49e-3 +3.94e-3 +9.08e-3 +6.73e-3 -2.01e-4 +3.67e-3
+G2 press/flow gen HP power .02   T0 288.15 θ 1.1526 Tt4 1400: +1.38e-2 +1.03e-2 +3.28e-3 +3.15e-3 +1.08e-2 +6.23e-3 +5.41e-4 +2.60e-3
+G2 press/flow gen HP power .02   T0 320.00 θ 1.2800 Tt4 1000: +2.74e-2 +1.64e-2 +4.41e-3 +6.83e-3 +1.62e-2 +1.16e-2 -1.89e-4 +6.33e-3
+G2 press/flow gen HP power .02   T0 320.00 θ 1.2800 Tt4 1400: +2.51e-2 +1.86e-2 +5.93e-3 +5.60e-3 +1.97e-2 +1.11e-2 +1.06e-3 +4.58e-3
+G2 press/flow cust share .05     T0 216.65 θ 0.8666 Tt4 1000: -6.85e-3 -3.49e-3 -1.15e-3 -8.95e-4 -4.39e-3 -1.26e-3 -9.10e-4 -6.67e-4
+G2 press/flow cust share .05     T0 216.65 θ 0.8666 Tt4 1400: -9.43e-3 -6.53e-3 -2.15e-3 -1.53e-3 -7.43e-3 -3.01e-3 -9.10e-4 -1.06e-3
+G2 press/flow cust share .05     T0 230.00 θ 0.9200 Tt4 1000: -4.12e-3 -2.09e-3 -6.90e-4 -5.37e-4 -2.64e-3 -7.55e-4 -5.46e-4 -4.01e-4
+G2 press/flow cust share .05     T0 230.00 θ 0.9200 Tt4 1400: -5.67e-3 -3.92e-3 -1.29e-3 -9.18e-4 -4.47e-3 -1.81e-3 -5.46e-4 -6.37e-4
+G2 press/flow cust share .05     T0 270.00 θ 1.0800 Tt4 1000: +4.14e-3 +2.11e-3 +6.93e-4 +5.39e-4 +2.65e-3 +7.59e-4 +5.46e-4 +4.02e-4
+G2 press/flow cust share .05     T0 270.00 θ 1.0800 Tt4 1400: +5.72e-3 +3.96e-3 +1.30e-3 +9.23e-4 +4.50e-3 +1.82e-3 +5.46e-4 +6.39e-4
+G2 press/flow cust share .05     T0 288.15 θ 1.1526 Tt4 1000: +7.91e-3 +4.02e-3 +1.32e-3 +1.03e-3 +5.07e-3 +1.45e-3 +1.04e-3 +7.68e-4
+G2 press/flow cust share .05     T0 288.15 θ 1.1526 Tt4 1400: +1.09e-2 +7.57e-3 +2.48e-3 +1.76e-3 +8.62e-3 +3.49e-3 +1.04e-3 +1.22e-3
+G2 press/flow cust share .05     T0 320.00 θ 1.2800 Tt4 1000: +1.46e-2 +7.42e-3 +2.44e-3 +1.90e-3 +9.35e-3 +2.67e-3 +1.91e-3 +1.41e-3
+G2 press/flow cust share .05     T0 320.00 θ 1.2800 Tt4 1400: +2.02e-2 +1.40e-2 +4.57e-3 +3.25e-3 +1.59e-2 +6.44e-3 +1.91e-3 +2.25e-3
+G2 press/flow cust amount .05    T0 216.65 θ 0.8666 Tt4 1000: +1.53e-2 +7.29e-3 +2.41e-3 +1.88e-3 +3.82e-3 +2.52e-3 -3.44e-3 +1.41e-3
+G2 press/flow cust amount .05    T0 216.65 θ 0.8666 Tt4 1400: +1.94e-3 +1.34e-3 +4.38e-4 +3.12e-4 -1.02e-3 +6.14e-4 -2.35e-3 +2.17e-4
+G2 press/flow cust amount .05    T0 230.00 θ 0.9200 Tt4 1000: +9.01e-3 +4.28e-3 +1.42e-3 +1.10e-3 +2.23e-3 +1.48e-3 -2.04e-3 +8.27e-4
+G2 press/flow cust amount .05    T0 230.00 θ 0.9200 Tt4 1400: +1.06e-3 +7.29e-4 +2.39e-4 +1.70e-4 -6.71e-4 +3.35e-4 -1.40e-3 +1.18e-4
+G2 press/flow cust amount .05    T0 270.00 θ 1.0800 Tt4 1000: -8.50e-3 -4.03e-3 -1.34e-3 -1.04e-3 -2.05e-3 -1.40e-3 +1.99e-3 -7.83e-4
+G2 press/flow cust amount .05    T0 270.00 θ 1.0800 Tt4 1400: -7.72e-4 -5.31e-4 -1.74e-4 -1.24e-4 +8.34e-4 -2.44e-4 +1.37e-3 -8.63e-5
+G2 press/flow cust amount .05    T0 288.15 θ 1.1526 Tt4 1000: -1.58e-2 -7.51e-3 -2.50e-3 -1.94e-3 -3.78e-3 -2.60e-3 +3.75e-3 -1.46e-3
+G2 press/flow cust amount .05    T0 288.15 θ 1.1526 Tt4 1400: -1.25e-3 -8.57e-4 -2.81e-4 -2.01e-4 +1.72e-3 -3.94e-4 +2.58e-3 -1.39e-4
+G2 press/flow cust amount .05    T0 320.00 θ 1.2800 Tt4 1000: -2.78e-2 -1.32e-2 -4.40e-3 -3.43e-3 -6.54e-3 -4.57e-3 +6.77e-3 -2.58e-3
+G2 press/flow cust amount .05    T0 320.00 θ 1.2800 Tt4 1400: -1.61e-3 -1.11e-3 -3.64e-4 -2.60e-4 +3.54e-3 -5.10e-4 +4.66e-3 -1.80e-4
+G2 press/flow cool .05/.05       T0 216.65 θ 0.8666 Tt4 1000: -6.70e-3 -3.39e-3 -1.14e-3 -9.88e-4 -4.43e-3 -1.25e-3 -8.81e-4 -7.60e-4
+G2 press/flow cool .05/.05       T0 216.65 θ 0.8666 Tt4 1400: -9.40e-3 -6.47e-3 -2.12e-3 -1.69e-3 -7.57e-3 -3.09e-3 -8.67e-4 -1.22e-3
+G2 press/flow cool .05/.05       T0 230.00 θ 0.9200 Tt4 1000: -4.03e-3 -2.04e-3 -6.83e-4 -5.93e-4 -2.66e-3 -7.51e-4 -5.28e-4 -4.56e-4
+G2 press/flow cool .05/.05       T0 230.00 θ 0.9200 Tt4 1400: -5.65e-3 -3.89e-3 -1.28e-3 -1.01e-3 -4.55e-3 -1.86e-3 -5.20e-4 -7.32e-4
+G2 press/flow cool .05/.05       T0 270.00 θ 1.0800 Tt4 1000: +4.05e-3 +2.05e-3 +6.86e-4 +5.95e-4 +2.67e-3 +7.55e-4 +5.29e-4 +4.58e-4
+G2 press/flow cool .05/.05       T0 270.00 θ 1.0800 Tt4 1400: +5.70e-3 +3.92e-3 +1.28e-3 +1.02e-3 +4.59e-3 +1.87e-3 +5.21e-4 +7.35e-4
+G2 press/flow cool .05/.05       T0 288.15 θ 1.1526 Tt4 1000: +7.74e-3 +3.92e-3 +1.31e-3 +1.14e-3 +5.11e-3 +1.44e-3 +1.01e-3 +8.74e-4
+G2 press/flow cool .05/.05       T0 288.15 θ 1.1526 Tt4 1400: +1.09e-2 +7.51e-3 +2.45e-3 +1.95e-3 +8.78e-3 +3.58e-3 +9.94e-4 +1.40e-3
+G2 press/flow cool .05/.05       T0 320.00 θ 1.2800 Tt4 1000: +1.43e-2 +7.22e-3 +2.41e-3 +2.09e-3 +9.42e-3 +2.66e-3 +1.85e-3 +1.61e-3
+G2 press/flow cool .05/.05       T0 320.00 θ 1.2800 Tt4 1400: +2.02e-2 +1.39e-2 +4.52e-3 +3.58e-3 +1.62e-2 +6.60e-3 +1.83e-3 +2.58e-3
+G2 press/flow lever stator       T0 216.65 θ 0.8666 Tt4 1000: -6.39e-3 -3.49e-3 -8.78e-4 -8.93e-4 -4.40e-3 -1.31e-3 -9.10e-4 -6.61e-4
+G2 press/flow lever stator       T0 216.65 θ 0.8666 Tt4 1400: -9.09e-3 -6.52e-3 -1.73e-3 -1.52e-3 -7.42e-3 -3.07e-3 -9.10e-4 -1.04e-3
+G2 press/flow lever stator       T0 230.00 θ 0.9200 Tt4 1000: -3.84e-3 -2.10e-3 -5.27e-4 -5.36e-4 -2.64e-3 -7.87e-4 -5.46e-4 -3.97e-4
+G2 press/flow lever stator       T0 230.00 θ 0.9200 Tt4 1400: -5.47e-3 -3.92e-3 -1.04e-3 -9.13e-4 -4.46e-3 -1.85e-3 -5.46e-4 -6.26e-4
+G2 press/flow lever stator       T0 270.00 θ 1.0800 Tt4 1000: +3.86e-3 +2.11e-3 +5.29e-4 +5.38e-4 +2.66e-3 +7.91e-4 +5.46e-4 +3.98e-4
+G2 press/flow lever stator       T0 270.00 θ 1.0800 Tt4 1400: +5.51e-3 +3.95e-3 +1.05e-3 +9.17e-4 +4.50e-3 +1.86e-3 +5.46e-4 +6.28e-4
+G2 press/flow lever stator       T0 288.15 θ 1.1526 Tt4 1000: +7.38e-3 +4.03e-3 +1.01e-3 +1.03e-3 +5.08e-3 +1.51e-3 +1.04e-3 +7.60e-4
+G2 press/flow lever stator       T0 288.15 θ 1.1526 Tt4 1400: +1.06e-2 +7.57e-3 +2.01e-3 +1.75e-3 +8.62e-3 +3.56e-3 +1.04e-3 +1.20e-3
+G2 press/flow lever stator       T0 320.00 θ 1.2800 Tt4 1000: +1.36e-2 +7.43e-3 +1.86e-3 +1.89e-3 +9.36e-3 +2.79e-3 +1.91e-3 +1.40e-3
+G2 press/flow lever stator       T0 320.00 θ 1.2800 Tt4 1400: +1.95e-2 +1.40e-2 +3.71e-3 +3.23e-3 +1.59e-2 +6.56e-3 +1.91e-3 +2.21e-3
+G2 press/flow lever bleed        T0 216.65 θ 0.8666 Tt4 1000: -7.23e-3 -3.60e-3 -1.21e-3 -9.06e-4 -4.48e-3 -1.13e-3 -8.82e-4 -6.61e-4
+G2 press/flow lever bleed        T0 216.65 θ 0.8666 Tt4 1400: -9.63e-3 -6.78e-3 -2.25e-3 -1.51e-3 -7.64e-3 -2.84e-3 -8.60e-4 -9.65e-4
+G2 press/flow lever bleed        T0 230.00 θ 0.9200 Tt4 1000: -4.35e-3 -2.17e-3 -7.27e-4 -5.44e-4 -2.69e-3 -6.76e-4 -5.29e-4 -3.97e-4
+G2 press/flow lever bleed        T0 230.00 θ 0.9200 Tt4 1400: -5.79e-3 -4.08e-3 -1.35e-3 -9.06e-4 -4.59e-3 -1.71e-3 -5.16e-4 -5.80e-4
+G2 press/flow lever bleed        T0 270.00 θ 1.0800 Tt4 1000: +4.37e-3 +2.18e-3 +7.30e-4 +5.46e-4 +2.71e-3 +6.79e-4 +5.29e-4 +3.98e-4
+G2 press/flow lever bleed        T0 270.00 θ 1.0800 Tt4 1400: +5.83e-3 +4.11e-3 +1.36e-3 +9.10e-4 +4.63e-3 +1.72e-3 +5.17e-4 +5.83e-4
+G2 press/flow lever bleed        T0 288.15 θ 1.1526 Tt4 1000: +8.36e-3 +4.16e-3 +1.39e-3 +1.04e-3 +5.18e-3 +1.30e-3 +1.01e-3 +7.60e-4
+G2 press/flow lever bleed        T0 288.15 θ 1.1526 Tt4 1400: +1.12e-2 +7.86e-3 +2.60e-3 +1.74e-3 +8.86e-3 +3.29e-3 +9.87e-4 +1.11e-3
+G2 press/flow lever bleed        T0 320.00 θ 1.2800 Tt4 1000: +1.54e-2 +7.67e-3 +2.57e-3 +1.92e-3 +9.54e-3 +2.39e-3 +1.85e-3 +1.40e-3
+G2 press/flow lever bleed        T0 320.00 θ 1.2800 Tt4 1400: +2.06e-2 +1.45e-2 +4.78e-3 +3.20e-3 +1.64e-2 +6.08e-3 +1.81e-3 +2.05e-3
+G2 press/flow lever both         T0 216.65 θ 0.8666 Tt4 1000: -7.11e-3 -3.61e-3 -9.04e-4 -9.02e-4 -4.48e-3 -1.10e-3 -8.78e-4 -6.50e-4
+G2 press/flow lever both         T0 216.65 θ 0.8666 Tt4 1400: -9.47e-3 -6.70e-3 -1.78e-3 -1.51e-3 -7.57e-3 -2.90e-3 -8.74e-4 -9.88e-4
+G2 press/flow lever both         T0 230.00 θ 0.9200 Tt4 1000: -4.27e-3 -2.17e-3 -5.43e-4 -5.42e-4 -2.69e-3 -6.62e-4 -5.27e-4 -3.90e-4
+G2 press/flow lever both         T0 230.00 θ 0.9200 Tt4 1400: -5.69e-3 -4.03e-3 -1.07e-3 -9.08e-4 -4.55e-3 -1.74e-3 -5.24e-4 -5.93e-4
+G2 press/flow lever both         T0 270.00 θ 1.0800 Tt4 1000: +4.30e-3 +2.18e-3 +5.45e-4 +5.44e-4 +2.71e-3 +6.65e-4 +5.27e-4 +3.91e-4
+G2 press/flow lever both         T0 270.00 θ 1.0800 Tt4 1400: +5.74e-3 +4.06e-3 +1.08e-3 +9.12e-4 +4.59e-3 +1.75e-3 +5.25e-4 +5.96e-4
+G2 press/flow lever both         T0 288.15 θ 1.1526 Tt4 1000: +8.22e-3 +4.17e-3 +1.04e-3 +1.04e-3 +5.18e-3 +1.27e-3 +1.01e-3 +7.48e-4
+G2 press/flow lever both         T0 288.15 θ 1.1526 Tt4 1400: +1.10e-2 +7.77e-3 +2.06e-3 +1.74e-3 +8.78e-3 +3.36e-3 +1.00e-3 +1.14e-3
+G2 press/flow lever both         T0 320.00 θ 1.2800 Tt4 1000: +1.51e-2 +7.68e-3 +1.91e-3 +1.91e-3 +9.54e-3 +2.34e-3 +1.85e-3 +1.37e-3
+G2 press/flow lever both         T0 320.00 θ 1.2800 Tt4 1400: +2.03e-2 +1.43e-2 +3.81e-3 +3.21e-3 +1.62e-2 +6.20e-3 +1.84e-3 +2.10e-3
+G2 tilted     plain              T0 216.65 θ 0.8666 Tt4 1000: -6.41e-3 -3.50e-3 -1.14e-3 -8.67e-4 -4.40e-3 -1.31e-3 -9.10e-4 -6.35e-4
+G2 tilted     plain              T0 216.65 θ 0.8666 Tt4 1400: -9.10e-3 -6.53e-3 -2.10e-3 -1.49e-3 -7.43e-3 -3.08e-3 -9.10e-4 -1.01e-3
+G2 tilted     plain              T0 230.00 θ 0.9200 Tt4 1000: -3.85e-3 -2.10e-3 -6.83e-4 -5.21e-4 -2.64e-3 -7.89e-4 -5.46e-4 -3.81e-4
+G2 tilted     plain              T0 230.00 θ 0.9200 Tt4 1400: -5.47e-3 -3.93e-3 -1.26e-3 -8.95e-4 -4.47e-3 -1.85e-3 -5.46e-4 -6.08e-4
+G2 tilted     plain              T0 270.00 θ 1.0800 Tt4 1000: +3.87e-3 +2.11e-3 +6.86e-4 +5.22e-4 +2.66e-3 +7.93e-4 +5.46e-4 +3.82e-4
+G2 tilted     plain              T0 270.00 θ 1.0800 Tt4 1400: +5.52e-3 +3.96e-3 +1.27e-3 +8.99e-4 +4.51e-3 +1.86e-3 +5.46e-4 +6.10e-4
+G2 tilted     plain              T0 288.15 θ 1.1526 Tt4 1000: +7.40e-3 +4.04e-3 +1.31e-3 +9.98e-4 +5.08e-3 +1.52e-3 +1.04e-3 +7.30e-4
+G2 tilted     plain              T0 288.15 θ 1.1526 Tt4 1400: +1.06e-2 +7.58e-3 +2.43e-3 +1.72e-3 +8.63e-3 +3.57e-3 +1.04e-3 +1.17e-3
+G2 tilted     plain              T0 320.00 θ 1.2800 Tt4 1000: +1.36e-2 +7.44e-3 +2.41e-3 +1.84e-3 +9.37e-3 +2.79e-3 +1.91e-3 +1.34e-3
+G2 tilted     plain              T0 320.00 θ 1.2800 Tt4 1400: +1.95e-2 +1.40e-2 +4.48e-3 +3.16e-3 +1.59e-2 +6.58e-3 +1.91e-3 +2.15e-3
+G2 tilted     gen HP share .05   T0 216.65 θ 0.8666 Tt4 1000: -6.58e-3 -3.47e-3 -1.14e-3 -8.69e-4 -4.37e-3 -1.25e-3 -9.10e-4 -6.34e-4
+G2 tilted     gen HP share .05   T0 216.65 θ 0.8666 Tt4 1400: -9.25e-3 -6.53e-3 -2.08e-3 -1.49e-3 -7.43e-3 -3.03e-3 -9.10e-4 -1.01e-3
+G2 tilted     gen HP share .05   T0 230.00 θ 0.9200 Tt4 1000: -3.95e-3 -2.08e-3 -6.82e-4 -5.22e-4 -2.63e-3 -7.52e-4 -5.46e-4 -3.80e-4
+G2 tilted     gen HP share .05   T0 230.00 θ 0.9200 Tt4 1400: -5.56e-3 -3.93e-3 -1.25e-3 -8.96e-4 -4.47e-3 -1.82e-3 -5.46e-4 -6.05e-4
+G2 tilted     gen HP share .05   T0 270.00 θ 1.0800 Tt4 1000: +3.97e-3 +2.09e-3 +6.85e-4 +5.24e-4 +2.64e-3 +7.56e-4 +5.46e-4 +3.82e-4
+G2 tilted     gen HP share .05   T0 270.00 θ 1.0800 Tt4 1400: +5.61e-3 +3.96e-3 +1.26e-3 +9.00e-4 +4.51e-3 +1.84e-3 +5.46e-4 +6.08e-4
+G2 tilted     gen HP share .05   T0 288.15 θ 1.1526 Tt4 1000: +7.60e-3 +4.00e-3 +1.31e-3 +1.00e-3 +5.05e-3 +1.44e-3 +1.04e-3 +7.29e-4
+G2 tilted     gen HP share .05   T0 288.15 θ 1.1526 Tt4 1400: +1.07e-2 +7.58e-3 +2.40e-3 +1.72e-3 +8.63e-3 +3.51e-3 +1.04e-3 +1.16e-3
+G2 tilted     gen HP share .05   T0 320.00 θ 1.2800 Tt4 1000: +1.40e-2 +7.38e-3 +2.41e-3 +1.84e-3 +9.31e-3 +2.66e-3 +1.91e-3 +1.34e-3
+G2 tilted     gen HP share .05   T0 320.00 θ 1.2800 Tt4 1400: +1.98e-2 +1.40e-2 +4.43e-3 +3.17e-3 +1.59e-2 +6.48e-3 +1.91e-3 +2.14e-3
+G2 tilted     gen LP share .05   T0 216.65 θ 0.8666 Tt4 1000: -6.47e-3 -3.49e-3 -1.14e-3 -8.76e-4 -4.40e-3 -1.29e-3 -9.10e-4 -6.52e-4
+G2 tilted     gen LP share .05   T0 216.65 θ 0.8666 Tt4 1400: -9.16e-3 -6.53e-3 -2.11e-3 -1.51e-3 -7.43e-3 -3.06e-3 -9.10e-4 -1.05e-3
+G2 tilted     gen LP share .05   T0 230.00 θ 0.9200 Tt4 1000: -3.89e-3 -2.10e-3 -6.84e-4 -5.26e-4 -2.64e-3 -7.78e-4 -5.46e-4 -3.92e-4
+G2 tilted     gen LP share .05   T0 230.00 θ 0.9200 Tt4 1400: -5.51e-3 -3.93e-3 -1.27e-3 -9.06e-4 -4.47e-3 -1.84e-3 -5.46e-4 -6.28e-4
+G2 tilted     gen LP share .05   T0 270.00 θ 1.0800 Tt4 1000: +3.91e-3 +2.11e-3 +6.86e-4 +5.28e-4 +2.66e-3 +7.82e-4 +5.46e-4 +3.93e-4
+G2 tilted     gen LP share .05   T0 270.00 θ 1.0800 Tt4 1400: +5.55e-3 +3.96e-3 +1.27e-3 +9.10e-4 +4.51e-3 +1.85e-3 +5.46e-4 +6.31e-4
+G2 tilted     gen LP share .05   T0 288.15 θ 1.1526 Tt4 1000: +7.48e-3 +4.03e-3 +1.31e-3 +1.01e-3 +5.08e-3 +1.49e-3 +1.04e-3 +7.50e-4
+G2 tilted     gen LP share .05   T0 288.15 θ 1.1526 Tt4 1400: +1.06e-2 +7.58e-3 +2.43e-3 +1.74e-3 +8.63e-3 +3.55e-3 +1.04e-3 +1.21e-3
+G2 tilted     gen LP share .05   T0 320.00 θ 1.2800 Tt4 1000: +1.38e-2 +7.43e-3 +2.41e-3 +1.86e-3 +9.35e-3 +2.75e-3 +1.91e-3 +1.38e-3
+G2 tilted     gen LP share .05   T0 320.00 θ 1.2800 Tt4 1400: +1.96e-2 +1.40e-2 +4.48e-3 +3.20e-3 +1.59e-2 +6.54e-3 +1.91e-3 +2.22e-3
+G2 tilted     gen HP power .02   T0 216.65 θ 0.8666 Tt4 1000: -1.55e-2 -9.42e-3 -2.23e-3 -4.19e-3 -8.97e-3 -7.24e-3 +4.57e-4 -3.96e-3
+G2 tilted     gen HP power .02   T0 216.65 θ 0.8666 Tt4 1400: -1.26e-2 -9.44e-3 -2.87e-3 -3.07e-3 -9.80e-3 -5.99e-3 -3.68e-4 -2.59e-3
+G2 tilted     gen HP power .02   T0 230.00 θ 0.9200 Tt4 1000: -9.07e-3 -5.50e-3 -1.31e-3 -2.42e-3 -5.27e-3 -4.18e-3 +2.37e-4 -2.28e-3
+G2 tilted     gen HP power .02   T0 230.00 θ 0.9200 Tt4 1400: -7.51e-3 -5.60e-3 -1.70e-3 -1.80e-3 -5.83e-3 -3.52e-3 -2.35e-4 -1.51e-3
+G2 tilted     gen HP power .02   T0 270.00 θ 1.0800 Tt4 1000: +8.53e-3 +5.13e-3 +1.24e-3 +2.21e-3 +4.99e-3 +3.80e-3 -1.45e-4 +2.06e-3
+G2 tilted     gen HP power .02   T0 270.00 θ 1.0800 Tt4 1400: +7.34e-3 +5.45e-3 +1.66e-3 +1.70e-3 +5.73e-3 +3.35e-3 +2.70e-4 +1.41e-3
+G2 tilted     gen HP power .02   T0 288.15 θ 1.1526 Tt4 1000: +1.59e-2 +9.53e-3 +2.32e-3 +4.05e-3 +9.31e-3 +6.97e-3 -2.11e-4 +3.78e-3
+G2 tilted     gen HP power .02   T0 288.15 θ 1.1526 Tt4 1400: +1.39e-2 +1.03e-2 +3.14e-3 +3.18e-3 +1.09e-2 +6.27e-3 +5.41e-4 +2.63e-3
+G2 tilted     gen HP power .02   T0 320.00 θ 1.2800 Tt4 1000: +2.81e-2 +1.68e-2 +4.13e-3 +7.00e-3 +1.65e-2 +1.20e-2 -2.06e-4 +6.50e-3
+G2 tilted     gen HP power .02   T0 320.00 θ 1.2800 Tt4 1400: +2.52e-2 +1.86e-2 +5.68e-3 +5.65e-3 +1.97e-2 +1.12e-2 +1.06e-3 +4.63e-3
+G2 tilted     cust share .05     T0 216.65 θ 0.8666 Tt4 1000: -6.84e-3 -3.47e-3 -1.14e-3 -8.65e-4 -4.38e-3 -1.24e-3 -9.10e-4 -6.38e-4
+G2 tilted     cust share .05     T0 216.65 θ 0.8666 Tt4 1400: -9.42e-3 -6.52e-3 -2.10e-3 -1.50e-3 -7.42e-3 -3.00e-3 -9.10e-4 -1.03e-3
+G2 tilted     cust share .05     T0 230.00 θ 0.9200 Tt4 1000: -4.11e-3 -2.08e-3 -6.85e-4 -5.20e-4 -2.63e-3 -7.45e-4 -5.46e-4 -3.83e-4
+G2 tilted     cust share .05     T0 230.00 θ 0.9200 Tt4 1400: -5.66e-3 -3.92e-3 -1.26e-3 -8.98e-4 -4.46e-3 -1.81e-3 -5.46e-4 -6.17e-4
+G2 tilted     cust share .05     T0 270.00 θ 1.0800 Tt4 1000: +4.13e-3 +2.10e-3 +6.88e-4 +5.21e-4 +2.64e-3 +7.49e-4 +5.46e-4 +3.84e-4
+G2 tilted     cust share .05     T0 270.00 θ 1.0800 Tt4 1400: +5.71e-3 +3.95e-3 +1.27e-3 +9.03e-4 +4.50e-3 +1.82e-3 +5.46e-4 +6.19e-4
+G2 tilted     cust share .05     T0 288.15 θ 1.1526 Tt4 1000: +7.90e-3 +4.01e-3 +1.31e-3 +9.96e-4 +5.05e-3 +1.43e-3 +1.04e-3 +7.34e-4
+G2 tilted     cust share .05     T0 288.15 θ 1.1526 Tt4 1400: +1.09e-2 +7.56e-3 +2.42e-3 +1.73e-3 +8.61e-3 +3.48e-3 +1.04e-3 +1.18e-3
+G2 tilted     cust share .05     T0 320.00 θ 1.2800 Tt4 1000: +1.45e-2 +7.38e-3 +2.42e-3 +1.83e-3 +9.31e-3 +2.64e-3 +1.91e-3 +1.35e-3
+G2 tilted     cust share .05     T0 320.00 θ 1.2800 Tt4 1400: +2.02e-2 +1.40e-2 +4.47e-3 +3.18e-3 +1.59e-2 +6.42e-3 +1.91e-3 +2.18e-3
+G2 tilted     cust amount .05    T0 216.65 θ 0.8666 Tt4 1000: +1.53e-2 +7.27e-3 +2.40e-3 +1.81e-3 +3.80e-3 +2.48e-3 -3.45e-3 +1.34e-3
+G2 tilted     cust amount .05    T0 216.65 θ 0.8666 Tt4 1400: +1.94e-3 +1.33e-3 +4.29e-4 +3.05e-4 -1.02e-3 +6.11e-4 -2.35e-3 +2.10e-4
+G2 tilted     cust amount .05    T0 230.00 θ 0.9200 Tt4 1000: +9.01e-3 +4.27e-3 +1.41e-3 +1.07e-3 +2.21e-3 +1.46e-3 -2.05e-3 +7.88e-4
+G2 tilted     cust amount .05    T0 230.00 θ 0.9200 Tt4 1400: +1.06e-3 +7.27e-4 +2.34e-4 +1.67e-4 -6.72e-4 +3.33e-4 -1.40e-3 +1.15e-4
+G2 tilted     cust amount .05    T0 270.00 θ 1.0800 Tt4 1000: -8.49e-3 -4.02e-3 -1.34e-3 -1.01e-3 -2.04e-3 -1.37e-3 +1.99e-3 -7.46e-4
+G2 tilted     cust amount .05    T0 270.00 θ 1.0800 Tt4 1400: -7.71e-4 -5.30e-4 -1.70e-4 -1.21e-4 +8.35e-4 -2.43e-4 +1.37e-3 -8.35e-5
+G2 tilted     cust amount .05    T0 288.15 θ 1.1526 Tt4 1000: -1.58e-2 -7.48e-3 -2.49e-3 -1.88e-3 -3.75e-3 -2.56e-3 +3.76e-3 -1.39e-3
+G2 tilted     cust amount .05    T0 288.15 θ 1.1526 Tt4 1400: -1.25e-3 -8.56e-4 -2.75e-4 -1.96e-4 +1.72e-3 -3.92e-4 +2.58e-3 -1.35e-4
+G2 tilted     cust amount .05    T0 320.00 θ 1.2800 Tt4 1000: -2.78e-2 -1.32e-2 -4.39e-3 -3.31e-3 -6.48e-3 -4.50e-3 +6.78e-3 -2.45e-3
+G2 tilted     cust amount .05    T0 320.00 θ 1.2800 Tt4 1400: -1.61e-3 -1.11e-3 -3.56e-4 -2.54e-4 +3.54e-3 -5.08e-4 +4.66e-3 -1.74e-4
+G2 tilted     cool .05/.05       T0 216.65 θ 0.8666 Tt4 1000: -6.70e-3 -3.37e-3 -1.13e-3 -9.56e-4 -4.41e-3 -1.23e-3 -8.81e-4 -7.28e-4
+G2 tilted     cool .05/.05       T0 216.65 θ 0.8666 Tt4 1400: -9.42e-3 -6.48e-3 -2.08e-3 -1.66e-3 -7.58e-3 -3.10e-3 -8.67e-4 -1.19e-3
+G2 tilted     cool .05/.05       T0 230.00 θ 0.9200 Tt4 1000: -4.02e-3 -2.03e-3 -6.78e-4 -5.74e-4 -2.65e-3 -7.40e-4 -5.28e-4 -4.37e-4
+G2 tilted     cool .05/.05       T0 230.00 θ 0.9200 Tt4 1400: -5.67e-3 -3.90e-3 -1.25e-3 -9.94e-4 -4.56e-3 -1.86e-3 -5.20e-4 -7.12e-4
+G2 tilted     cool .05/.05       T0 270.00 θ 1.0800 Tt4 1000: +4.04e-3 +2.04e-3 +6.80e-4 +5.76e-4 +2.66e-3 +7.44e-4 +5.29e-4 +4.38e-4
+G2 tilted     cool .05/.05       T0 270.00 θ 1.0800 Tt4 1400: +5.71e-3 +3.93e-3 +1.25e-3 +9.99e-4 +4.60e-3 +1.88e-3 +5.21e-4 +7.15e-4
+G2 tilted     cool .05/.05       T0 288.15 θ 1.1526 Tt4 1000: +7.73e-3 +3.89e-3 +1.30e-3 +1.10e-3 +5.09e-3 +1.42e-3 +1.01e-3 +8.37e-4
+G2 tilted     cool .05/.05       T0 288.15 θ 1.1526 Tt4 1400: +1.09e-2 +7.53e-3 +2.40e-3 +1.91e-3 +8.80e-3 +3.59e-3 +9.94e-4 +1.37e-3
+G2 tilted     cool .05/.05       T0 320.00 θ 1.2800 Tt4 1000: +1.42e-2 +7.18e-3 +2.39e-3 +2.02e-3 +9.38e-3 +2.62e-3 +1.85e-3 +1.54e-3
+G2 tilted     cool .05/.05       T0 320.00 θ 1.2800 Tt4 1400: +2.02e-2 +1.39e-2 +4.42e-3 +3.52e-3 +1.63e-2 +6.63e-3 +1.83e-3 +2.52e-3
+G2 tilted     lever stator       T0 216.65 θ 0.8666 Tt4 1000: -6.41e-3 -3.50e-3 -8.71e-4 -8.67e-4 -4.40e-3 -1.31e-3 -9.10e-4 -6.35e-4
+G2 tilted     lever stator       T0 216.65 θ 0.8666 Tt4 1400: -9.11e-3 -6.53e-3 -1.71e-3 -1.49e-3 -7.43e-3 -3.08e-3 -9.10e-4 -1.01e-3
+G2 tilted     lever stator       T0 230.00 θ 0.9200 Tt4 1000: -3.85e-3 -2.10e-3 -5.23e-4 -5.21e-4 -2.65e-3 -7.90e-4 -5.46e-4 -3.81e-4
+G2 tilted     lever stator       T0 230.00 θ 0.9200 Tt4 1400: -5.47e-3 -3.93e-3 -1.03e-3 -8.95e-4 -4.47e-3 -1.85e-3 -5.46e-4 -6.08e-4
+G2 tilted     lever stator       T0 270.00 θ 1.0800 Tt4 1000: +3.87e-3 +2.11e-3 +5.25e-4 +5.22e-4 +2.66e-3 +7.94e-4 +5.46e-4 +3.82e-4
+G2 tilted     lever stator       T0 270.00 θ 1.0800 Tt4 1400: +5.52e-3 +3.96e-3 +1.04e-3 +8.99e-4 +4.51e-3 +1.86e-3 +5.46e-4 +6.10e-4
+G2 tilted     lever stator       T0 288.15 θ 1.1526 Tt4 1000: +7.41e-3 +4.04e-3 +1.00e-3 +9.98e-4 +5.09e-3 +1.52e-3 +1.04e-3 +7.30e-4
+G2 tilted     lever stator       T0 288.15 θ 1.1526 Tt4 1400: +1.06e-2 +7.58e-3 +1.98e-3 +1.72e-3 +8.63e-3 +3.57e-3 +1.04e-3 +1.17e-3
+G2 tilted     lever stator       T0 320.00 θ 1.2800 Tt4 1000: +1.36e-2 +7.44e-3 +1.84e-3 +1.84e-3 +9.37e-3 +2.80e-3 +1.91e-3 +1.34e-3
+G2 tilted     lever stator       T0 320.00 θ 1.2800 Tt4 1400: +1.95e-2 +1.40e-2 +3.66e-3 +3.16e-3 +1.59e-2 +6.58e-3 +1.91e-3 +2.15e-3
+G2 tilted     lever bleed        T0 216.65 θ 0.8666 Tt4 1000: -7.22e-3 -3.60e-3 -1.22e-3 -8.80e-4 -4.47e-3 -1.10e-3 -8.80e-4 -6.33e-4
+G2 tilted     lever bleed        T0 216.65 θ 0.8666 Tt4 1400: -9.60e-3 -6.77e-3 -2.21e-3 -1.48e-3 -7.62e-3 -2.84e-3 -8.62e-4 -9.37e-4
+G2 tilted     lever bleed        T0 230.00 θ 0.9200 Tt4 1000: -4.34e-3 -2.16e-3 -7.30e-4 -5.29e-4 -2.69e-3 -6.59e-4 -5.28e-4 -3.80e-4
+G2 tilted     lever bleed        T0 230.00 θ 0.9200 Tt4 1400: -5.77e-3 -4.07e-3 -1.33e-3 -8.88e-4 -4.58e-3 -1.71e-3 -5.17e-4 -5.63e-4
+G2 tilted     lever bleed        T0 270.00 θ 1.0800 Tt4 1000: +4.36e-3 +2.17e-3 +7.33e-4 +5.30e-4 +2.70e-3 +6.62e-4 +5.28e-4 +3.81e-4
+G2 tilted     lever bleed        T0 270.00 θ 1.0800 Tt4 1400: +5.81e-3 +4.10e-3 +1.34e-3 +8.92e-4 +4.62e-3 +1.72e-3 +5.18e-4 +5.65e-4
+G2 tilted     lever bleed        T0 288.15 θ 1.1526 Tt4 1000: +8.34e-3 +4.15e-3 +1.40e-3 +1.01e-3 +5.17e-3 +1.26e-3 +1.01e-3 +7.28e-4
+G2 tilted     lever bleed        T0 288.15 θ 1.1526 Tt4 1400: +1.11e-2 +7.84e-3 +2.55e-3 +1.70e-3 +8.84e-3 +3.30e-3 +9.89e-4 +1.08e-3
+G2 tilted     lever bleed        T0 320.00 θ 1.2800 Tt4 1000: +1.54e-2 +7.65e-3 +2.58e-3 +1.86e-3 +9.52e-3 +2.33e-3 +1.85e-3 +1.34e-3
+G2 tilted     lever bleed        T0 320.00 θ 1.2800 Tt4 1400: +2.05e-2 +1.45e-2 +4.70e-3 +3.14e-3 +1.63e-2 +6.09e-3 +1.82e-3 +1.99e-3
+G2 tilted     lever both         T0 216.65 θ 0.8666 Tt4 1000: -7.12e-3 -3.61e-3 -9.10e-4 -8.76e-4 -4.48e-3 -1.09e-3 -8.77e-4 -6.23e-4
+G2 tilted     lever both         T0 216.65 θ 0.8666 Tt4 1400: -9.46e-3 -6.70e-3 -1.76e-3 -1.48e-3 -7.57e-3 -2.91e-3 -8.75e-4 -9.58e-4
+G2 tilted     lever both         T0 230.00 θ 0.9200 Tt4 1000: -4.28e-3 -2.17e-3 -5.46e-4 -5.26e-4 -2.69e-3 -6.57e-4 -5.26e-4 -3.74e-4
+G2 tilted     lever both         T0 230.00 θ 0.9200 Tt4 1400: -5.69e-3 -4.03e-3 -1.06e-3 -8.90e-4 -4.55e-3 -1.75e-3 -5.25e-4 -5.75e-4
+G2 tilted     lever both         T0 270.00 θ 1.0800 Tt4 1000: +4.30e-3 +2.18e-3 +5.48e-4 +5.28e-4 +2.71e-3 +6.61e-4 +5.27e-4 +3.75e-4
+G2 tilted     lever both         T0 270.00 θ 1.0800 Tt4 1400: +5.73e-3 +4.06e-3 +1.07e-3 +8.94e-4 +4.59e-3 +1.76e-3 +5.26e-4 +5.78e-4
+G2 tilted     lever both         T0 288.15 θ 1.1526 Tt4 1000: +8.23e-3 +4.16e-3 +1.05e-3 +1.01e-3 +5.17e-3 +1.26e-3 +1.00e-3 +7.17e-4
+G2 tilted     lever both         T0 288.15 θ 1.1526 Tt4 1400: +1.10e-2 +7.77e-3 +2.05e-3 +1.71e-3 +8.78e-3 +3.37e-3 +1.00e-3 +1.10e-3
+G2 tilted     lever both         T0 320.00 θ 1.2800 Tt4 1000: +1.52e-2 +7.67e-3 +1.93e-3 +1.86e-3 +9.53e-3 +2.33e-3 +1.85e-3 +1.32e-3
+G2 tilted     lever both         T0 320.00 θ 1.2800 Tt4 1400: +2.03e-2 +1.43e-2 +3.78e-3 +3.15e-3 +1.62e-2 +6.22e-3 +1.84e-3 +2.03e-3
+G2 flat-lp    plain              T0 216.65 θ 0.8666 Tt4 1000: -6.37e-3 -3.49e-3 -1.09e-3 -8.43e-4 -4.40e-3 -1.31e-3 -9.10e-4 -6.11e-4
+G2 flat-lp    plain              T0 216.65 θ 0.8666 Tt4 1400: -9.06e-3 -6.50e-3 -1.73e-3 -1.46e-3 -7.40e-3 -3.05e-3 -9.10e-4 -9.86e-4
+G2 flat-lp    plain              T0 230.00 θ 0.9200 Tt4 1000: -3.83e-3 -2.10e-3 -6.56e-4 -5.06e-4 -2.64e-3 -7.85e-4 -5.46e-4 -3.67e-4
+G2 flat-lp    plain              T0 230.00 θ 0.9200 Tt4 1400: -5.45e-3 -3.91e-3 -1.04e-3 -8.79e-4 -4.45e-3 -1.83e-3 -5.46e-4 -5.92e-4
+G2 flat-lp    plain              T0 270.00 θ 1.0800 Tt4 1000: +3.85e-3 +2.11e-3 +6.58e-4 +5.08e-4 +2.65e-3 +7.89e-4 +5.46e-4 +3.68e-4
+G2 flat-lp    plain              T0 270.00 θ 1.0800 Tt4 1400: +5.49e-3 +3.94e-3 +1.04e-3 +8.83e-4 +4.49e-3 +1.84e-3 +5.46e-4 +5.94e-4
+G2 flat-lp    plain              T0 288.15 θ 1.1526 Tt4 1000: +7.35e-3 +4.03e-3 +1.26e-3 +9.71e-4 +5.08e-3 +1.51e-3 +1.04e-3 +7.03e-4
+G2 flat-lp    plain              T0 288.15 θ 1.1526 Tt4 1400: +1.05e-2 +7.54e-3 +2.00e-3 +1.69e-3 +8.59e-3 +3.53e-3 +1.04e-3 +1.14e-3
+G2 flat-lp    plain              T0 320.00 θ 1.2800 Tt4 1000: +1.35e-2 +7.42e-3 +2.31e-3 +1.79e-3 +9.35e-3 +2.78e-3 +1.91e-3 +1.29e-3
+G2 flat-lp    plain              T0 320.00 θ 1.2800 Tt4 1400: +1.94e-2 +1.39e-2 +3.67e-3 +3.11e-3 +1.59e-2 +6.51e-3 +1.91e-3 +2.09e-3
+G2 flat-lp    gen HP share .05   T0 216.65 θ 0.8666 Tt4 1000: -6.54e-3 -3.47e-3 -1.11e-3 -8.43e-4 -4.38e-3 -1.26e-3 -9.10e-4 -6.08e-4
+G2 flat-lp    gen HP share .05   T0 216.65 θ 0.8666 Tt4 1400: -9.19e-3 -6.49e-3 -1.75e-3 -1.46e-3 -7.39e-3 -2.99e-3 -9.10e-4 -9.79e-4
+G2 flat-lp    gen HP share .05   T0 230.00 θ 0.9200 Tt4 1000: -3.93e-3 -2.09e-3 -6.66e-4 -5.06e-4 -2.63e-3 -7.54e-4 -5.46e-4 -3.65e-4
+G2 flat-lp    gen HP share .05   T0 230.00 θ 0.9200 Tt4 1400: -5.53e-3 -3.90e-3 -1.05e-3 -8.79e-4 -4.44e-3 -1.80e-3 -5.46e-4 -5.88e-4
+G2 flat-lp    gen HP share .05   T0 270.00 θ 1.0800 Tt4 1000: +3.95e-3 +2.10e-3 +6.68e-4 +5.08e-4 +2.64e-3 +7.58e-4 +5.46e-4 +3.66e-4
+G2 flat-lp    gen HP share .05   T0 270.00 θ 1.0800 Tt4 1400: +5.57e-3 +3.93e-3 +1.06e-3 +8.83e-4 +4.48e-3 +1.81e-3 +5.46e-4 +5.90e-4
+G2 flat-lp    gen HP share .05   T0 288.15 θ 1.1526 Tt4 1000: +7.55e-3 +4.01e-3 +1.28e-3 +9.71e-4 +5.05e-3 +1.45e-3 +1.04e-3 +6.99e-4
+G2 flat-lp    gen HP share .05   T0 288.15 θ 1.1526 Tt4 1400: +1.07e-2 +7.53e-3 +2.02e-3 +1.69e-3 +8.58e-3 +3.46e-3 +1.04e-3 +1.13e-3
+G2 flat-lp    gen HP share .05   T0 320.00 θ 1.2800 Tt4 1000: +1.39e-2 +7.38e-3 +2.35e-3 +1.79e-3 +9.31e-3 +2.67e-3 +1.91e-3 +1.29e-3
+G2 flat-lp    gen HP share .05   T0 320.00 θ 1.2800 Tt4 1400: +1.97e-2 +1.39e-2 +3.72e-3 +3.11e-3 +1.58e-2 +6.39e-3 +1.91e-3 +2.08e-3
+G2 flat-lp    gen LP share .05   T0 216.65 θ 0.8666 Tt4 1000: -6.43e-3 -3.49e-3 -1.10e-3 -8.53e-4 -4.39e-3 -1.29e-3 -9.10e-4 -6.29e-4
+G2 flat-lp    gen LP share .05   T0 216.65 θ 0.8666 Tt4 1400: -9.10e-3 -6.49e-3 -1.74e-3 -1.48e-3 -7.39e-3 -3.02e-3 -9.10e-4 -1.02e-3
+G2 flat-lp    gen LP share .05   T0 230.00 θ 0.9200 Tt4 1000: -3.86e-3 -2.09e-3 -6.60e-4 -5.12e-4 -2.64e-3 -7.75e-4 -5.46e-4 -3.78e-4
+G2 flat-lp    gen LP share .05   T0 230.00 θ 0.9200 Tt4 1400: -5.47e-3 -3.90e-3 -1.05e-3 -8.90e-4 -4.44e-3 -1.82e-3 -5.46e-4 -6.12e-4
+G2 flat-lp    gen LP share .05   T0 270.00 θ 1.0800 Tt4 1000: +3.88e-3 +2.10e-3 +6.62e-4 +5.14e-4 +2.65e-3 +7.79e-4 +5.46e-4 +3.79e-4
+G2 flat-lp    gen LP share .05   T0 270.00 θ 1.0800 Tt4 1400: +5.52e-3 +3.93e-3 +1.05e-3 +8.94e-4 +4.48e-3 +1.83e-3 +5.46e-4 +6.15e-4
+G2 flat-lp    gen LP share .05   T0 288.15 θ 1.1526 Tt4 1000: +7.43e-3 +4.02e-3 +1.26e-3 +9.82e-4 +5.07e-3 +1.49e-3 +1.04e-3 +7.24e-4
+G2 flat-lp    gen LP share .05   T0 288.15 θ 1.1526 Tt4 1400: +1.06e-2 +7.53e-3 +2.01e-3 +1.71e-3 +8.58e-3 +3.50e-3 +1.04e-3 +1.18e-3
+G2 flat-lp    gen LP share .05   T0 320.00 θ 1.2800 Tt4 1000: +1.37e-2 +7.41e-3 +2.33e-3 +1.81e-3 +9.34e-3 +2.74e-3 +1.91e-3 +1.33e-3
+G2 flat-lp    gen LP share .05   T0 320.00 θ 1.2800 Tt4 1400: +1.95e-2 +1.39e-2 +3.69e-3 +3.15e-3 +1.58e-2 +6.46e-3 +1.91e-3 +2.16e-3
+G2 flat-lp    gen HP power .02   T0 216.65 θ 0.8666 Tt4 1000: -1.48e-2 -9.01e-3 -1.10e-3 -4.21e-3 -8.59e-3 -6.82e-3 +4.28e-4 -3.97e-3
+G2 flat-lp    gen HP power .02   T0 216.65 θ 0.8666 Tt4 1400: -1.25e-2 -9.33e-3 -1.74e-3 -3.10e-3 -9.69e-3 -5.88e-3 -3.69e-4 -2.62e-3
+G2 flat-lp    gen HP power .02   T0 230.00 θ 0.9200 Tt4 1000: -8.65e-3 -5.27e-3 -6.61e-4 -2.43e-3 -5.05e-3 -3.95e-3 +2.21e-4 -2.29e-3
+G2 flat-lp    gen HP power .02   T0 230.00 θ 0.9200 Tt4 1400: -7.43e-3 -5.54e-3 -1.04e-3 -1.82e-3 -5.77e-3 -3.46e-3 -2.36e-4 -1.53e-3
+G2 flat-lp    gen HP power .02   T0 270.00 θ 1.0800 Tt4 1000: +8.15e-3 +4.92e-3 +6.63e-4 +2.21e-3 +4.79e-3 +3.59e-3 -1.31e-4 +2.07e-3
+G2 flat-lp    gen HP power .02   T0 270.00 θ 1.0800 Tt4 1400: +7.27e-3 +5.40e-3 +1.05e-3 +1.72e-3 +5.67e-3 +3.29e-3 +2.71e-4 +1.43e-3
+G2 flat-lp    gen HP power .02   T0 288.15 θ 1.1526 Tt4 1000: +1.52e-2 +9.15e-3 +1.27e-3 +4.06e-3 +8.96e-3 +6.60e-3 -1.86e-4 +3.79e-3
+G2 flat-lp    gen HP power .02   T0 288.15 θ 1.1526 Tt4 1400: +1.38e-2 +1.02e-2 +2.00e-3 +3.21e-3 +1.07e-2 +6.17e-3 +5.42e-4 +2.65e-3
+G2 flat-lp    gen HP power .02   T0 320.00 θ 1.2800 Tt4 1000: +2.69e-2 +1.61e-2 +2.33e-3 +7.02e-3 +1.59e-2 +1.14e-2 -1.64e-4 +6.52e-3
+G2 flat-lp    gen HP power .02   T0 320.00 θ 1.2800 Tt4 1400: +2.50e-2 +1.85e-2 +3.68e-3 +5.69e-3 +1.95e-2 +1.10e-2 +1.07e-3 +4.66e-3
+G2 flat-lp    cust share .05     T0 216.65 θ 0.8666 Tt4 1000: -6.79e-3 -3.47e-3 -1.12e-3 -8.40e-4 -4.37e-3 -1.24e-3 -9.10e-4 -6.12e-4
+G2 flat-lp    cust share .05     T0 216.65 θ 0.8666 Tt4 1400: -9.37e-3 -6.47e-3 -1.76e-3 -1.47e-3 -7.38e-3 -2.96e-3 -9.10e-4 -9.98e-4
+G2 flat-lp    cust share .05     T0 230.00 θ 0.9200 Tt4 1000: -4.08e-3 -2.08e-3 -6.70e-4 -5.04e-4 -2.63e-3 -7.45e-4 -5.46e-4 -3.67e-4
+G2 flat-lp    cust share .05     T0 230.00 θ 0.9200 Tt4 1400: -5.63e-3 -3.89e-3 -1.06e-3 -8.81e-4 -4.44e-3 -1.78e-3 -5.46e-4 -5.99e-4
+G2 flat-lp    cust share .05     T0 270.00 θ 1.0800 Tt4 1000: +4.10e-3 +2.09e-3 +6.72e-4 +5.06e-4 +2.64e-3 +7.49e-4 +5.46e-4 +3.69e-4
+G2 flat-lp    cust share .05     T0 270.00 θ 1.0800 Tt4 1400: +5.68e-3 +3.92e-3 +1.06e-3 +8.85e-4 +4.47e-3 +1.79e-3 +5.46e-4 +6.02e-4
+G2 flat-lp    cust share .05     T0 288.15 θ 1.1526 Tt4 1000: +7.85e-3 +4.00e-3 +1.28e-3 +9.67e-4 +5.05e-3 +1.43e-3 +1.04e-3 +7.04e-4
+G2 flat-lp    cust share .05     T0 288.15 θ 1.1526 Tt4 1400: +1.09e-2 +7.51e-3 +2.03e-3 +1.69e-3 +8.56e-3 +3.43e-3 +1.04e-3 +1.15e-3
+G2 flat-lp    cust share .05     T0 320.00 θ 1.2800 Tt4 1000: +1.45e-2 +7.38e-3 +2.36e-3 +1.78e-3 +9.31e-3 +2.64e-3 +1.91e-3 +1.30e-3
+G2 flat-lp    cust share .05     T0 320.00 θ 1.2800 Tt4 1400: +2.01e-2 +1.39e-2 +3.74e-3 +3.12e-3 +1.58e-2 +6.33e-3 +1.91e-3 +2.12e-3
+G2 flat-lp    cust amount .05    T0 216.65 θ 0.8666 Tt4 1000: +1.49e-2 +7.13e-3 +2.33e-3 +1.72e-3 +3.69e-3 +2.44e-3 -3.41e-3 +1.26e-3
+G2 flat-lp    cust amount .05    T0 216.65 θ 0.8666 Tt4 1400: +1.91e-3 +1.31e-3 +3.57e-4 +2.97e-4 -1.04e-3 +5.97e-4 -2.35e-3 +2.02e-4
+G2 flat-lp    cust amount .05    T0 230.00 θ 0.9200 Tt4 1000: +8.76e-3 +4.18e-3 +1.37e-3 +1.01e-3 +2.15e-3 +1.43e-3 -2.03e-3 +7.39e-4
+G2 flat-lp    cust amount .05    T0 230.00 θ 0.9200 Tt4 1400: +1.04e-3 +7.15e-4 +1.95e-4 +1.62e-4 -6.83e-4 +3.25e-4 -1.40e-3 +1.10e-4
+G2 flat-lp    cust amount .05    T0 270.00 θ 1.0800 Tt4 1000: -8.25e-3 -3.94e-3 -1.30e-3 -9.55e-4 -1.98e-3 -1.35e-3 +1.97e-3 -6.99e-4
+G2 flat-lp    cust amount .05    T0 270.00 θ 1.0800 Tt4 1400: -7.56e-4 -5.19e-4 -1.42e-4 -1.17e-4 +8.44e-4 -2.36e-4 +1.36e-3 -8.00e-5
+G2 flat-lp    cust amount .05    T0 288.15 θ 1.1526 Tt4 1000: -1.54e-2 -7.33e-3 -2.42e-3 -1.78e-3 -3.64e-3 -2.51e-3 +3.73e-3 -1.30e-3
+G2 flat-lp    cust amount .05    T0 288.15 θ 1.1526 Tt4 1400: -1.22e-3 -8.37e-4 -2.28e-4 -1.89e-4 +1.74e-3 -3.81e-4 +2.58e-3 -1.29e-4
+G2 flat-lp    cust amount .05    T0 320.00 θ 1.2800 Tt4 1000: -2.70e-2 -1.29e-2 -4.27e-3 -3.14e-3 -6.28e-3 -4.42e-3 +6.72e-3 -2.30e-3
+G2 flat-lp    cust amount .05    T0 320.00 θ 1.2800 Tt4 1400: -1.57e-3 -1.08e-3 -2.93e-4 -2.43e-4 +3.57e-3 -4.90e-4 +4.65e-3 -1.66e-4
+G2 flat-lp    cool .05/.05       T0 216.65 θ 0.8666 Tt4 1000: -6.65e-3 -3.38e-3 -1.11e-3 -9.27e-4 -4.42e-3 -1.24e-3 -8.81e-4 -6.99e-4
+G2 flat-lp    cool .05/.05       T0 216.65 θ 0.8666 Tt4 1400: -9.35e-3 -6.43e-3 -1.76e-3 -1.63e-3 -7.52e-3 -3.05e-3 -8.67e-4 -1.16e-3
+G2 flat-lp    cool .05/.05       T0 230.00 θ 0.9200 Tt4 1000: -4.00e-3 -2.03e-3 -6.64e-4 -5.57e-4 -2.65e-3 -7.45e-4 -5.28e-4 -4.20e-4
+G2 flat-lp    cool .05/.05       T0 230.00 θ 0.9200 Tt4 1400: -5.62e-3 -3.87e-3 -1.06e-3 -9.77e-4 -4.52e-3 -1.83e-3 -5.20e-4 -6.95e-4
+G2 flat-lp    cool .05/.05       T0 270.00 θ 1.0800 Tt4 1000: +4.02e-3 +2.04e-3 +6.66e-4 +5.59e-4 +2.67e-3 +7.49e-4 +5.29e-4 +4.21e-4
+G2 flat-lp    cool .05/.05       T0 270.00 θ 1.0800 Tt4 1400: +5.67e-3 +3.90e-3 +1.06e-3 +9.82e-4 +4.56e-3 +1.85e-3 +5.21e-4 +6.98e-4
+G2 flat-lp    cool .05/.05       T0 288.15 θ 1.1526 Tt4 1000: +7.68e-3 +3.90e-3 +1.27e-3 +1.07e-3 +5.10e-3 +1.43e-3 +1.01e-3 +8.04e-4
+G2 flat-lp    cool .05/.05       T0 288.15 θ 1.1526 Tt4 1400: +1.09e-2 +7.46e-3 +2.03e-3 +1.88e-3 +8.74e-3 +3.53e-3 +9.94e-4 +1.33e-3
+G2 flat-lp    cool .05/.05       T0 320.00 θ 1.2800 Tt4 1000: +1.42e-2 +7.20e-3 +2.34e-3 +1.96e-3 +9.40e-3 +2.64e-3 +1.85e-3 +1.48e-3
+G2 flat-lp    cool .05/.05       T0 320.00 θ 1.2800 Tt4 1400: +2.00e-2 +1.38e-2 +3.73e-3 +3.46e-3 +1.61e-2 +6.52e-3 +1.83e-3 +2.46e-3
+G2 flat-lp    lever stator       T0 216.65 θ 0.8666 Tt4 1000: -6.37e-3 -3.49e-3 -8.74e-4 -8.43e-4 -4.40e-3 -1.31e-3 -9.10e-4 -6.11e-4
+G2 flat-lp    lever stator       T0 216.65 θ 0.8666 Tt4 1400: -9.06e-3 -6.50e-3 -1.53e-3 -1.46e-3 -7.40e-3 -3.05e-3 -9.10e-4 -9.86e-4
+G2 flat-lp    lever stator       T0 230.00 θ 0.9200 Tt4 1000: -3.83e-3 -2.10e-3 -5.24e-4 -5.06e-4 -2.64e-3 -7.85e-4 -5.46e-4 -3.67e-4
+G2 flat-lp    lever stator       T0 230.00 θ 0.9200 Tt4 1400: -5.45e-3 -3.91e-3 -9.19e-4 -8.79e-4 -4.45e-3 -1.83e-3 -5.46e-4 -5.92e-4
+G2 flat-lp    lever stator       T0 270.00 θ 1.0800 Tt4 1000: +3.85e-3 +2.11e-3 +5.26e-4 +5.08e-4 +2.65e-3 +7.89e-4 +5.46e-4 +3.68e-4
+G2 flat-lp    lever stator       T0 270.00 θ 1.0800 Tt4 1400: +5.49e-3 +3.94e-3 +9.25e-4 +8.83e-4 +4.49e-3 +1.84e-3 +5.46e-4 +5.94e-4
+G2 flat-lp    lever stator       T0 288.15 θ 1.1526 Tt4 1000: +7.35e-3 +4.03e-3 +1.00e-3 +9.71e-4 +5.08e-3 +1.51e-3 +1.04e-3 +7.03e-4
+G2 flat-lp    lever stator       T0 288.15 θ 1.1526 Tt4 1400: +1.05e-2 +7.54e-3 +1.77e-3 +1.69e-3 +8.59e-3 +3.53e-3 +1.04e-3 +1.14e-3
+G2 flat-lp    lever stator       T0 320.00 θ 1.2800 Tt4 1000: +1.35e-2 +7.42e-3 +1.85e-3 +1.79e-3 +9.35e-3 +2.78e-3 +1.91e-3 +1.29e-3
+G2 flat-lp    lever stator       T0 320.00 θ 1.2800 Tt4 1400: +1.94e-2 +1.39e-2 +3.26e-3 +3.11e-3 +1.59e-2 +6.51e-3 +1.91e-3 +2.09e-3
+G2 flat-lp    lever bleed        T0 216.65 θ 0.8666 Tt4 1000: -7.28e-3 -3.67e-3 -1.33e-3 -8.51e-4 -4.53e-3 -1.02e-3 -8.63e-4 -5.85e-4
+G2 flat-lp    lever bleed        T0 216.65 θ 0.8666 Tt4 1400: -9.37e-3 -6.65e-3 -1.88e-3 -1.45e-3 -7.52e-3 -2.90e-3 -8.80e-4 -9.37e-4
+G2 flat-lp    lever bleed        T0 230.00 θ 0.9200 Tt4 1000: -4.37e-3 -2.20e-3 -7.97e-4 -5.11e-4 -2.72e-3 -6.11e-4 -5.17e-4 -3.51e-4
+G2 flat-lp    lever bleed        T0 230.00 θ 0.9200 Tt4 1400: -5.63e-3 -4.00e-3 -1.13e-3 -8.73e-4 -4.52e-3 -1.74e-3 -5.28e-4 -5.63e-4
+G2 flat-lp    lever bleed        T0 270.00 θ 1.0800 Tt4 1000: +4.40e-3 +2.21e-3 +8.00e-4 +5.13e-4 +2.73e-3 +6.14e-4 +5.18e-4 +3.52e-4
+G2 flat-lp    lever bleed        T0 270.00 θ 1.0800 Tt4 1400: +5.67e-3 +4.03e-3 +1.13e-3 +8.77e-4 +4.56e-3 +1.76e-3 +5.29e-4 +5.66e-4
+G2 flat-lp    lever bleed        T0 288.15 θ 1.1526 Tt4 1000: +8.41e-3 +4.23e-3 +1.53e-3 +9.80e-4 +5.23e-3 +1.17e-3 +9.88e-4 +6.72e-4
+G2 flat-lp    lever bleed        T0 288.15 θ 1.1526 Tt4 1400: +1.09e-2 +7.71e-3 +2.16e-3 +1.68e-3 +8.72e-3 +3.37e-3 +1.01e-3 +1.08e-3
+G2 flat-lp    lever bleed        T0 320.00 θ 1.2800 Tt4 1000: +1.55e-2 +7.80e-3 +2.81e-3 +1.80e-3 +9.63e-3 +2.16e-3 +1.81e-3 +1.24e-3
+G2 flat-lp    lever bleed        T0 320.00 θ 1.2800 Tt4 1400: +2.00e-2 +1.42e-2 +3.97e-3 +3.09e-3 +1.61e-2 +6.22e-3 +1.86e-3 +1.99e-3
+G2 flat-lp    lever both         T0 216.65 θ 0.8666 Tt4 1000: -7.09e-3 -3.64e-3 -1.01e-3 -8.49e-4 -4.51e-3 -1.07e-3 -8.70e-4 -5.87e-4
+G2 flat-lp    lever both         T0 216.65 θ 0.8666 Tt4 1400: -9.31e-3 -6.62e-3 -1.63e-3 -1.46e-3 -7.50e-3 -2.93e-3 -8.86e-4 -9.46e-4
+G2 flat-lp    lever both         T0 230.00 θ 0.9200 Tt4 1000: -4.26e-3 -2.19e-3 -6.04e-4 -5.10e-4 -2.71e-3 -6.43e-4 -5.22e-4 -3.52e-4
+G2 flat-lp    lever both         T0 230.00 θ 0.9200 Tt4 1400: -5.60e-3 -3.98e-3 -9.78e-4 -8.74e-4 -4.51e-3 -1.76e-3 -5.31e-4 -5.68e-4
+G2 flat-lp    lever both         T0 270.00 θ 1.0800 Tt4 1000: +4.28e-3 +2.20e-3 +6.05e-4 +5.11e-4 +2.72e-3 +6.47e-4 +5.22e-4 +3.53e-4
+G2 flat-lp    lever both         T0 270.00 θ 1.0800 Tt4 1400: +5.64e-3 +4.01e-3 +9.84e-4 +8.78e-4 +4.54e-3 +1.77e-3 +5.32e-4 +5.71e-4
+G2 flat-lp    lever both         T0 288.15 θ 1.1526 Tt4 1000: +8.19e-3 +4.20e-3 +1.16e-3 +9.77e-4 +5.20e-3 +1.24e-3 +9.97e-4 +6.75e-4
+G2 flat-lp    lever both         T0 288.15 θ 1.1526 Tt4 1400: +1.08e-2 +7.67e-3 +1.88e-3 +1.68e-3 +8.70e-3 +3.40e-3 +1.02e-3 +1.09e-3
+G2 flat-lp    lever both         T0 320.00 θ 1.2800 Tt4 1000: +1.51e-2 +7.74e-3 +2.13e-3 +1.80e-3 +9.59e-3 +2.28e-3 +1.83e-3 +1.24e-3
+G2 flat-lp    lever both         T0 320.00 θ 1.2800 Tt4 1400: +1.99e-2 +1.42e-2 +3.47e-3 +3.09e-3 +1.61e-2 +6.27e-3 +1.87e-3 +2.01e-3
+# G4 — Mach at FIXED station 2 (Tt2, pt2 = the design's): CORE quantities [EPR νL νH fuel face Wf/pt3 n_hp] and the branch
+G4 flow/press plain              M 0.3 (T0 281.07 p0 75337; Tt2 off 0e0 pt2 off 0e0): 1.6e-4 3.9e-3 2.1e-5 2.0e-3 3.0e-3 1.0e-3 7.4e-4 ["800:unchoked d=false f=true"]
+G4 flow/press plain              M 0.6 (T0 266.91 p0 62870; Tt2 off 0e0 pt2 off 2e-16): 1.2e-15 8.8e-16 8.1e-16 8.9e-16 1.1e-15 3.4e-16 8.0e-16 []
+G4 flow/press plain              M 1.2 (T0 222.15 p0 33354; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 flow/press plain              M 1.6 (T0 189.24 p0 19604; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 flow/press plain              M 2.0 (T0 158.96 p0 11080; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 flow/press gen HP share .05   M 0.3 (T0 281.07 p0 75337; Tt2 off 0e0 pt2 off 0e0): 4.5e-4 1.5e-2 1.9e-5 7.7e-3 1.2e-2 3.9e-3 2.8e-3 ["800:unchoked d=false f=true"]
+G4 flow/press gen HP share .05   M 0.6 (T0 266.91 p0 62870; Tt2 off 0e0 pt2 off 2e-16): 1.8e-15 8.6e-16 1.1e-15 1.3e-15 1.6e-15 6.2e-16 1.0e-15 []
+G4 flow/press gen HP share .05   M 1.2 (T0 222.15 p0 33354; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 flow/press gen HP share .05   M 1.6 (T0 189.24 p0 19604; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 flow/press gen HP share .05   M 2.0 (T0 158.96 p0 11080; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 flow/press gen LP share .05   M 0.3 (T0 281.07 p0 75337; Tt2 off 0e0 pt2 off 0e0): 5.1e-4 6.6e-3 3.9e-5 3.2e-3 4.9e-3 1.7e-3 1.2e-3 ["800:unchoked d=false f=true"]
+G4 flow/press gen LP share .05   M 0.6 (T0 266.91 p0 62870; Tt2 off 0e0 pt2 off 2e-16): 2.6e-15 6.7e-16 1.9e-15 2.1e-15 2.5e-15 6.8e-16 2.0e-15 []
+G4 flow/press gen LP share .05   M 1.2 (T0 222.15 p0 33354; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 flow/press gen LP share .05   M 1.6 (T0 189.24 p0 19604; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 flow/press gen LP share .05   M 2.0 (T0 158.96 p0 11080; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 flow/press gen HP power .02   M 0.3 (T0 281.07 p0 75337; Tt2 off 0e0 pt2 off 0e0): 2.4e-3 3.3e-2 1.9e-3 1.9e-2 2.8e-2 9.1e-3 4.0e-3 ["800:unchoked d=false f=true"]
+G4 flow/press gen HP power .02   M 0.6 (T0 266.91 p0 62870; Tt2 off 0e0 pt2 off 2e-16): 1.0e-15 4.5e-16 6.5e-16 8.4e-16 1.2e-15 2.8e-16 7.6e-16 []
+G4 flow/press gen HP power .02   M 1.2 (T0 222.15 p0 33354; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 flow/press gen HP power .02   M 1.6 (T0 189.24 p0 19604; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 flow/press gen HP power .02   M 2.0 (T0 158.96 p0 11080; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 flow/press cust share .05     M 0.3 (T0 281.07 p0 75337; Tt2 off 0e0 pt2 off 0e0): 1.2e-3 1.9e-2 3.7e-5 9.6e-3 1.4e-2 4.6e-3 3.4e-3 ["800:unchoked d=false f=true"]
+G4 flow/press cust share .05     M 0.6 (T0 266.91 p0 62870; Tt2 off 0e0 pt2 off 2e-16): 3.6e-15 1.5e-15 1.8e-15 2.8e-15 3.5e-15 1.1e-15 2.1e-15 []
+G4 flow/press cust share .05     M 1.2 (T0 222.15 p0 33354; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 flow/press cust share .05     M 1.6 (T0 189.24 p0 19604; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 flow/press cust share .05     M 2.0 (T0 158.96 p0 11080; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 flow/press cust amount .05    M 0.3 (T0 281.07 p0 75337; Tt2 off 0e0 pt2 off 0e0): 2.5e-3 6.8e-2 2.2e-3 3.7e-2 4.7e-2 1.7e-2 9.1e-3 ["800:unchoked d=false f=true"]
+G4 flow/press cust amount .05    M 0.6 (T0 266.91 p0 62870; Tt2 off 0e0 pt2 off 2e-16): 5.3e-5 1.8e-3 5.8e-5 1.0e-3 1.3e-3 4.5e-4 2.4e-4 ["800:unchoked d=false f=true"]
+G4 flow/press cust amount .05    M 1.2 (T0 222.15 p0 33354; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 flow/press cust amount .05    M 1.6 (T0 189.24 p0 19604; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 flow/press cust amount .05    M 2.0 (T0 158.96 p0 11080; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 flow/press cool .05/.05       M 0.3 (T0 281.07 p0 75337; Tt2 off 0e0 pt2 off 0e0): 1.7e-4 3.1e-2 2.0e-4 1.7e-2 2.4e-2 7.4e-3 5.4e-3 ["800:unchoked d=false f=true"]
+G4 flow/press cool .05/.05       M 0.6 (T0 266.91 p0 62870; Tt2 off 0e0 pt2 off 2e-16): 1.6e-13 2.2e-14 9.8e-14 1.3e-13 1.6e-13 2.9e-14 1.0e-13 []
+G4 flow/press cool .05/.05       M 1.2 (T0 222.15 p0 33354; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 flow/press cool .05/.05       M 1.6 (T0 189.24 p0 19604; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 flow/press cool .05/.05       M 2.0 (T0 158.96 p0 11080; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 flow/press lever stator       M 0.3 (T0 281.07 p0 75337; Tt2 off 0e0 pt2 off 0e0): 1.8e-4 3.7e-3 2.3e-5 2.2e-3 3.4e-3 1.1e-3 8.2e-4 ["800:unchoked d=false f=true"]
+G4 flow/press lever stator       M 0.6 (T0 266.91 p0 62870; Tt2 off 0e0 pt2 off 2e-16): 2.9e-15 7.6e-16 1.3e-15 2.6e-15 3.0e-15 2.3e-16 1.2e-15 []
+G4 flow/press lever stator       M 1.2 (T0 222.15 p0 33354; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 flow/press lever stator       M 1.6 (T0 189.24 p0 19604; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 flow/press lever stator       M 2.0 (T0 158.96 p0 11080; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 flow/press lever bleed        M 0.3 (T0 281.07 p0 75337; Tt2 off 0e0 pt2 off 0e0): 9.6e-4 9.2e-3 5.9e-5 4.4e-3 6.6e-3 2.2e-3 1.6e-3 ["800:unchoked d=false f=true"]
+G4 flow/press lever bleed        M 0.6 (T0 266.91 p0 62870; Tt2 off 0e0 pt2 off 2e-16): 1.9e-15 8.2e-16 1.4e-15 1.5e-15 1.9e-15 5.8e-16 1.4e-15 []
+G4 flow/press lever bleed        M 1.2 (T0 222.15 p0 33354; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 flow/press lever bleed        M 1.6 (T0 189.24 p0 19604; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 flow/press lever bleed        M 2.0 (T0 158.96 p0 11080; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 flow/press lever both         M 0.3 (T0 281.07 p0 75337; Tt2 off 0e0 pt2 off 0e0): 6.2e-4 8.4e-3 6.4e-5 4.8e-3 5.9e-3 2.4e-3 1.8e-3 ["800:unchoked d=false f=true"]
+G4 flow/press lever both         M 0.6 (T0 266.91 p0 62870; Tt2 off 0e0 pt2 off 2e-16): 3.0e-15 3.8e-16 1.1e-15 2.2e-15 3.0e-15 7.8e-16 9.8e-16 []
+G4 flow/press lever both         M 1.2 (T0 222.15 p0 33354; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 flow/press lever both         M 1.6 (T0 189.24 p0 19604; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 flow/press lever both         M 2.0 (T0 158.96 p0 11080; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 press/flow plain              M 0.3 (T0 281.07 p0 75337; Tt2 off 0e0 pt2 off 0e0): 4.7e-5 3.6e-3 1.1e-5 2.0e-3 3.0e-3 9.4e-4 6.7e-4 ["800:unchoked d=false f=true"]
+G4 press/flow plain              M 0.6 (T0 266.91 p0 62870; Tt2 off 0e0 pt2 off 2e-16): 3.3e-15 4.2e-16 4.3e-16 3.1e-15 3.6e-15 3.5e-16 4.3e-16 []
+G4 press/flow plain              M 1.2 (T0 222.15 p0 33354; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 press/flow plain              M 1.6 (T0 189.24 p0 19604; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 press/flow plain              M 2.0 (T0 158.96 p0 11080; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 press/flow gen HP share .05   M 0.3 (T0 281.07 p0 75337; Tt2 off 0e0 pt2 off 0e0): 3.7e-4 1.4e-2 2.4e-6 7.9e-3 1.1e-2 3.5e-3 2.5e-3 ["800:unchoked d=false f=true"]
+G4 press/flow gen HP share .05   M 0.6 (T0 266.91 p0 62870; Tt2 off 0e0 pt2 off 2e-16): 1.7e-15 8.4e-16 9.2e-16 1.7e-15 1.7e-15 7.7e-16 8.9e-16 []
+G4 press/flow gen HP share .05   M 1.2 (T0 222.15 p0 33354; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 press/flow gen HP share .05   M 1.6 (T0 189.24 p0 19604; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 press/flow gen HP share .05   M 2.0 (T0 158.96 p0 11080; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 press/flow gen LP share .05   M 0.3 (T0 281.07 p0 75337; Tt2 off 0e0 pt2 off 0e0): 1.7e-4 6.4e-3 2.2e-5 3.5e-3 5.1e-3 1.6e-3 1.2e-3 ["800:unchoked d=false f=true"]
+G4 press/flow gen LP share .05   M 0.6 (T0 266.91 p0 62870; Tt2 off 0e0 pt2 off 2e-16): 2.6e-15 5.3e-16 1.0e-15 2.2e-15 2.6e-15 5.8e-16 1.3e-15 []
+G4 press/flow gen LP share .05   M 1.2 (T0 222.15 p0 33354; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 press/flow gen LP share .05   M 1.6 (T0 189.24 p0 19604; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 press/flow gen LP share .05   M 2.0 (T0 158.96 p0 11080; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 press/flow gen HP power .02   M 0.3 (T0 281.07 p0 75337; Tt2 off 0e0 pt2 off 0e0): 4.0e-3 3.0e-2 1.8e-3 1.9e-2 2.8e-2 8.3e-3 3.7e-3 ["800:unchoked d=false f=true"]
+G4 press/flow gen HP power .02   M 0.6 (T0 266.91 p0 62870; Tt2 off 0e0 pt2 off 2e-16): 1.7e-15 1.8e-16 1.0e-15 1.7e-15 1.9e-15 5.8e-16 1.1e-15 []
+G4 press/flow gen HP power .02   M 1.2 (T0 222.15 p0 33354; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 press/flow gen HP power .02   M 1.6 (T0 189.24 p0 19604; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 press/flow gen HP power .02   M 2.0 (T0 158.96 p0 11080; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 press/flow cust share .05     M 0.3 (T0 281.07 p0 75337; Tt2 off 0e0 pt2 off 0e0): 2.1e-4 1.8e-2 7.7e-6 1.0e-2 1.5e-2 4.5e-3 3.3e-3 ["800:unchoked d=false f=true"]
+G4 press/flow cust share .05     M 0.6 (T0 266.91 p0 62870; Tt2 off 0e0 pt2 off 2e-16): 1.9e-15 4.3e-16 3.9e-16 1.4e-15 1.6e-15 5.7e-16 4.4e-16 []
+G4 press/flow cust share .05     M 1.2 (T0 222.15 p0 33354; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 press/flow cust share .05     M 1.6 (T0 189.24 p0 19604; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 press/flow cust share .05     M 2.0 (T0 158.96 p0 11080; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 press/flow cust amount .05    M 0.3 (T0 281.07 p0 75337; Tt2 off 0e0 pt2 off 0e0): 5.9e-3 6.9e-2 2.6e-3 4.1e-2 5.1e-2 1.7e-2 8.9e-3 ["800:unchoked d=false f=true"]
+G4 press/flow cust amount .05    M 0.6 (T0 266.91 p0 62870; Tt2 off 0e0 pt2 off 2e-16): 1.3e-4 1.6e-3 6.2e-5 1.0e-3 1.3e-3 4.1e-4 2.1e-4 ["800:unchoked d=false f=true"]
+G4 press/flow cust amount .05    M 1.2 (T0 222.15 p0 33354; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 press/flow cust amount .05    M 1.6 (T0 189.24 p0 19604; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 press/flow cust amount .05    M 2.0 (T0 158.96 p0 11080; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 press/flow cool .05/.05       M 0.3 (T0 281.07 p0 75337; Tt2 off 0e0 pt2 off 0e0): 1.4e-3 2.9e-2 1.7e-4 1.7e-2 2.4e-2 6.8e-3 5.0e-3 ["800:unchoked d=false f=true"]
+G4 press/flow cool .05/.05       M 0.6 (T0 266.91 p0 62870; Tt2 off 0e0 pt2 off 2e-16): 8.6e-15 1.8e-15 7.2e-15 6.6e-15 8.7e-15 1.7e-15 7.5e-15 []
+G4 press/flow cool .05/.05       M 1.2 (T0 222.15 p0 33354; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 press/flow cool .05/.05       M 1.6 (T0 189.24 p0 19604; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 press/flow cool .05/.05       M 2.0 (T0 158.96 p0 11080; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 press/flow lever stator       M 0.3 (T0 281.07 p0 75337; Tt2 off 0e0 pt2 off 0e0): 2.9e-5 2.7e-3 9.3e-6 1.7e-3 2.6e-3 8.2e-4 5.9e-4 ["800:unchoked d=false f=true"]
+G4 press/flow lever stator       M 0.6 (T0 266.91 p0 62870; Tt2 off 0e0 pt2 off 2e-16): 3.3e-15 7.0e-16 9.2e-16 3.1e-15 3.6e-15 6.9e-16 9.2e-16 []
+G4 press/flow lever stator       M 1.2 (T0 222.15 p0 33354; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 press/flow lever stator       M 1.6 (T0 189.24 p0 19604; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 press/flow lever stator       M 2.0 (T0 158.96 p0 11080; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 press/flow lever bleed        M 0.3 (T0 281.07 p0 75337; Tt2 off 0e0 pt2 off 0e0): 6.2e-4 9.5e-3 3.7e-5 5.0e-3 7.3e-3 2.3e-3 1.7e-3 ["800:unchoked d=false f=true"]
+G4 press/flow lever bleed        M 0.6 (T0 266.91 p0 62870; Tt2 off 0e0 pt2 off 2e-16): 3.3e-15 6.7e-16 7.6e-16 3.1e-15 3.6e-15 6.8e-16 7.3e-16 []
+G4 press/flow lever bleed        M 1.2 (T0 222.15 p0 33354; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 press/flow lever bleed        M 1.6 (T0 189.24 p0 19604; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 press/flow lever bleed        M 2.0 (T0 158.96 p0 11080; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 press/flow lever both         M 0.3 (T0 281.07 p0 75337; Tt2 off 0e0 pt2 off 0e0): 2.3e-4 7.5e-3 3.5e-5 4.7e-3 5.9e-3 2.2e-3 1.6e-3 ["800:unchoked d=false f=true"]
+G4 press/flow lever both         M 0.6 (T0 266.91 p0 62870; Tt2 off 0e0 pt2 off 2e-16): 3.3e-15 4.3e-16 4.3e-16 3.1e-15 3.6e-15 4.2e-16 4.3e-16 []
+G4 press/flow lever both         M 1.2 (T0 222.15 p0 33354; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 press/flow lever both         M 1.6 (T0 189.24 p0 19604; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 press/flow lever both         M 2.0 (T0 158.96 p0 11080; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 tilted     plain              M 0.3 (T0 281.07 p0 75337; Tt2 off 0e0 pt2 off 0e0): 8.6e-5 4.2e-3 1.7e-5 2.2e-3 3.3e-3 1.1e-3 7.9e-4 ["800:unchoked d=false f=true"]
+G4 tilted     plain              M 0.6 (T0 266.91 p0 62870; Tt2 off 0e0 pt2 off 2e-16): 5.5e-15 6.3e-16 7.9e-16 4.9e-15 5.9e-15 1.0e-15 8.8e-16 []
+G4 tilted     plain              M 1.2 (T0 222.15 p0 33354; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 tilted     plain              M 1.6 (T0 189.24 p0 19604; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 tilted     plain              M 2.0 (T0 158.96 p0 11080; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 tilted     gen HP share .05   M 0.3 (T0 281.07 p0 75337; Tt2 off 0e0 pt2 off 0e0): 1.3e-4 1.6e-2 8.4e-6 8.4e-3 1.2e-2 4.0e-3 2.9e-3 ["800:unchoked d=false f=true"]
+G4 tilted     gen HP share .05   M 0.6 (T0 266.91 p0 62870; Tt2 off 0e0 pt2 off 2e-16): 1.3e-15 7.2e-16 6.6e-16 1.3e-15 1.3e-15 3.1e-16 6.4e-16 []
+G4 tilted     gen HP share .05   M 1.2 (T0 222.15 p0 33354; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 tilted     gen HP share .05   M 1.6 (T0 189.24 p0 19604; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 tilted     gen HP share .05   M 2.0 (T0 158.96 p0 11080; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 tilted     gen LP share .05   M 0.3 (T0 281.07 p0 75337; Tt2 off 0e0 pt2 off 0e0): 4.2e-4 7.1e-3 3.3e-5 3.6e-3 5.3e-3 1.8e-3 1.3e-3 ["800:unchoked d=false f=true"]
+G4 tilted     gen LP share .05   M 0.6 (T0 266.91 p0 62870; Tt2 off 0e0 pt2 off 2e-16): 3.1e-15 4.0e-16 5.6e-16 2.7e-15 3.1e-15 5.2e-16 5.3e-16 []
+G4 tilted     gen LP share .05   M 1.2 (T0 222.15 p0 33354; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 tilted     gen LP share .05   M 1.6 (T0 189.24 p0 19604; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 tilted     gen LP share .05   M 2.0 (T0 158.96 p0 11080; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 tilted     gen HP power .02   M 0.3 (T0 281.07 p0 75337; Tt2 off 0e0 pt2 off 0e0): 3.3e-3 3.4e-2 2.0e-3 2.1e-2 3.0e-2 9.4e-3 4.2e-3 ["800:unchoked d=false f=true"]
+G4 tilted     gen HP power .02   M 0.6 (T0 266.91 p0 62870; Tt2 off 0e0 pt2 off 2e-16): 8.2e-16 4.7e-16 2.4e-16 7.7e-16 7.6e-16 2.3e-16 2.3e-16 []
+G4 tilted     gen HP power .02   M 1.2 (T0 222.15 p0 33354; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 tilted     gen HP power .02   M 1.6 (T0 189.24 p0 19604; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 tilted     gen HP power .02   M 2.0 (T0 158.96 p0 11080; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 tilted     cust share .05     M 0.3 (T0 281.07 p0 75337; Tt2 off 0e0 pt2 off 0e0): 8.5e-4 2.0e-2 2.3e-5 1.0e-2 1.5e-2 4.8e-3 3.5e-3 ["800:unchoked d=false f=true"]
+G4 tilted     cust share .05     M 0.6 (T0 266.91 p0 62870; Tt2 off 0e0 pt2 off 2e-16): 1.7e-15 7.0e-16 6.5e-16 1.5e-15 2.0e-15 1.9e-16 6.2e-16 []
+G4 tilted     cust share .05     M 1.2 (T0 222.15 p0 33354; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 tilted     cust share .05     M 1.6 (T0 189.24 p0 19604; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 tilted     cust share .05     M 2.0 (T0 158.96 p0 11080; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 tilted     cust amount .05    M 0.3 (T0 281.07 p0 75337; Tt2 off 0e0 pt2 off 0e0): 3.6e-3 7.0e-2 2.4e-3 3.9e-2 4.9e-2 1.7e-2 9.2e-3 ["800:unchoked d=false f=true"]
+G4 tilted     cust amount .05    M 0.6 (T0 266.91 p0 62870; Tt2 off 0e0 pt2 off 2e-16): 9.1e-5 1.9e-3 6.8e-5 1.1e-3 1.4e-3 4.8e-4 2.6e-4 ["800:unchoked d=false f=true"]
+G4 tilted     cust amount .05    M 1.2 (T0 222.15 p0 33354; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 tilted     cust amount .05    M 1.6 (T0 189.24 p0 19604; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 tilted     cust amount .05    M 2.0 (T0 158.96 p0 11080; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 tilted     cool .05/.05       M 0.3 (T0 281.07 p0 75337; Tt2 off 0e0 pt2 off 0e0): 4.7e-4 3.2e-2 2.0e-4 1.8e-2 2.5e-2 7.5e-3 5.4e-3 ["800:unchoked d=false f=true"]
+G4 tilted     cool .05/.05       M 0.6 (T0 266.91 p0 62870; Tt2 off 0e0 pt2 off 2e-16): 6.4e-14 1.5e-14 3.7e-14 5.4e-14 6.4e-14 1.3e-14 3.8e-14 []
+G4 tilted     cool .05/.05       M 1.2 (T0 222.15 p0 33354; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 tilted     cool .05/.05       M 1.6 (T0 189.24 p0 19604; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 tilted     cool .05/.05       M 2.0 (T0 158.96 p0 11080; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 tilted     lever stator       M 0.3 (T0 281.07 p0 75337; Tt2 off 0e0 pt2 off 0e0): 9.2e-5 3.7e-3 1.8e-5 2.3e-3 3.4e-3 1.1e-3 8.1e-4 ["800:unchoked d=false f=true"]
+G4 tilted     lever stator       M 0.6 (T0 266.91 p0 62870; Tt2 off 0e0 pt2 off 2e-16): 5.5e-15 6.3e-16 6.4e-16 4.9e-15 5.9e-15 6.2e-16 4.3e-16 []
+G4 tilted     lever stator       M 1.2 (T0 222.15 p0 33354; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 tilted     lever stator       M 1.6 (T0 189.24 p0 19604; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 tilted     lever stator       M 2.0 (T0 158.96 p0 11080; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 tilted     lever bleed        M 0.3 (T0 281.07 p0 75337; Tt2 off 0e0 pt2 off 0e0): 9.0e-4 9.7e-3 5.1e-5 4.8e-3 7.2e-3 2.3e-3 1.7e-3 ["800:unchoked d=false f=true"]
+G4 tilted     lever bleed        M 0.6 (T0 266.91 p0 62870; Tt2 off 0e0 pt2 off 2e-16): 5.5e-15 6.3e-16 7.6e-16 4.9e-15 5.9e-15 6.2e-16 8.5e-16 []
+G4 tilted     lever bleed        M 1.2 (T0 222.15 p0 33354; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 tilted     lever bleed        M 1.6 (T0 189.24 p0 19604; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 tilted     lever bleed        M 2.0 (T0 158.96 p0 11080; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 tilted     lever both         M 0.3 (T0 281.07 p0 75337; Tt2 off 0e0 pt2 off 0e0): 5.0e-4 8.5e-3 5.3e-5 5.0e-3 6.3e-3 2.4e-3 1.8e-3 ["800:unchoked d=false f=true"]
+G4 tilted     lever both         M 0.6 (T0 266.91 p0 62870; Tt2 off 0e0 pt2 off 2e-16): 5.5e-15 1.3e-15 2.3e-15 4.9e-15 5.9e-15 8.6e-16 2.0e-15 []
+G4 tilted     lever both         M 1.2 (T0 222.15 p0 33354; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 tilted     lever both         M 1.6 (T0 189.24 p0 19604; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 tilted     lever both         M 2.0 (T0 158.96 p0 11080; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 flat-lp    plain              M 0.3 (T0 281.07 p0 75337; Tt2 off 0e0 pt2 off 0e0): 3.7e-5 2.3e-3 1.2e-5 1.2e-3 1.8e-3 5.8e-4 4.2e-4 ["800:unchoked d=false f=true"]
+G4 flat-lp    plain              M 0.6 (T0 266.91 p0 62870; Tt2 off 0e0 pt2 off 2e-16): 6.0e-16 1.5e-16 4.3e-16 6.4e-16 5.9e-16 2.0e-16 4.3e-16 []
+G4 flat-lp    plain              M 1.2 (T0 222.15 p0 33354; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 flat-lp    plain              M 1.6 (T0 189.24 p0 19604; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 flat-lp    plain              M 2.0 (T0 158.96 p0 11080; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 flat-lp    gen HP share .05   M 0.3 (T0 281.07 p0 75337; Tt2 off 0e0 pt2 off 0e0): 1.1e-5 1.1e-2 1.3e-5 5.8e-3 8.6e-3 2.7e-3 2.0e-3 ["800:unchoked d=false f=true"]
+G4 flat-lp    gen HP share .05   M 0.6 (T0 266.91 p0 62870; Tt2 off 0e0 pt2 off 2e-16): 2.5e-15 2.1e-16 1.0e-15 2.0e-15 2.4e-15 6.2e-16 7.9e-16 []
+G4 flat-lp    gen HP share .05   M 1.2 (T0 222.15 p0 33354; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 flat-lp    gen HP share .05   M 1.6 (T0 189.24 p0 19604; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 flat-lp    gen HP share .05   M 2.0 (T0 158.96 p0 11080; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 flat-lp    gen LP share .05   M 0.3 (T0 281.07 p0 75337; Tt2 off 0e0 pt2 off 0e0): 2.3e-4 4.6e-3 2.6e-5 2.3e-3 3.4e-3 1.1e-3 8.1e-4 ["800:unchoked d=false f=true"]
+G4 flat-lp    gen LP share .05   M 0.6 (T0 266.91 p0 62870; Tt2 off 0e0 pt2 off 2e-16): 1.9e-15 4.2e-16 3.8e-16 1.5e-15 1.9e-15 1.7e-16 3.7e-16 []
+G4 flat-lp    gen LP share .05   M 1.2 (T0 222.15 p0 33354; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 flat-lp    gen LP share .05   M 1.6 (T0 189.24 p0 19604; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 flat-lp    gen LP share .05   M 2.0 (T0 158.96 p0 11080; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 flat-lp    gen HP power .02   M 0.3 (T0 281.07 p0 75337; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 ["800:fails d=false f=true"]
+G4 flat-lp    gen HP power .02   M 0.6 (T0 266.91 p0 62870; Tt2 off 0e0 pt2 off 2e-16): 8.3e-16 4.6e-16 6.5e-16 8.1e-16 9.5e-16 3.1e-16 6.6e-16 []
+G4 flat-lp    gen HP power .02   M 1.2 (T0 222.15 p0 33354; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 flat-lp    gen HP power .02   M 1.6 (T0 189.24 p0 19604; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 flat-lp    gen HP power .02   M 2.0 (T0 158.96 p0 11080; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 flat-lp    cust share .05     M 0.3 (T0 281.07 p0 75337; Tt2 off 0e0 pt2 off 0e0): 5.6e-4 1.6e-2 2.8e-5 7.9e-3 1.2e-2 3.6e-3 2.7e-3 ["800:unchoked d=false f=true"]
+G4 flat-lp    cust share .05     M 0.6 (T0 266.91 p0 62870; Tt2 off 0e0 pt2 off 2e-16): 1.1e-15 3.8e-16 5.2e-16 6.7e-16 1.0e-15 5.1e-16 6.2e-16 []
+G4 flat-lp    cust share .05     M 1.2 (T0 222.15 p0 33354; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 flat-lp    cust share .05     M 1.6 (T0 189.24 p0 19604; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 flat-lp    cust share .05     M 2.0 (T0 158.96 p0 11080; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 flat-lp    cust amount .05    M 0.3 (T0 281.07 p0 75337; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 ["800:fails d=true f=true"]
+G4 flat-lp    cust amount .05    M 0.6 (T0 266.91 p0 62870; Tt2 off 0e0 pt2 off 2e-16): 6.3e-16 1.0e-15 4.4e-16 1.0e-15 7.9e-16 4.4e-16 6.8e-16 ["800:fails d=true f=true"]
+G4 flat-lp    cust amount .05    M 1.2 (T0 222.15 p0 33354; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 ["800:fails d=true f=true"]
+G4 flat-lp    cust amount .05    M 1.6 (T0 189.24 p0 19604; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 ["800:fails d=true f=true"]
+G4 flat-lp    cust amount .05    M 2.0 (T0 158.96 p0 11080; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 ["800:fails d=true f=true"]
+G4 flat-lp    cool .05/.05       M 0.3 (T0 281.07 p0 75337; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 ["800:fails d=true f=true"]
+G4 flat-lp    cool .05/.05       M 0.6 (T0 266.91 p0 62870; Tt2 off 0e0 pt2 off 2e-16): 1.2e-13 1.0e-14 8.3e-14 9.5e-14 1.2e-13 2.7e-14 8.5e-14 ["800:fails d=true f=true"]
+G4 flat-lp    cool .05/.05       M 1.2 (T0 222.15 p0 33354; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 ["800:fails d=true f=true"]
+G4 flat-lp    cool .05/.05       M 1.6 (T0 189.24 p0 19604; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 ["800:fails d=true f=true"]
+G4 flat-lp    cool .05/.05       M 2.0 (T0 158.96 p0 11080; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 ["800:fails d=true f=true"]
+G4 flat-lp    lever stator       M 0.3 (T0 281.07 p0 75337; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 ["800:fails d=true f=true"]
+G4 flat-lp    lever stator       M 0.6 (T0 266.91 p0 62870; Tt2 off 0e0 pt2 off 2e-16): 4.0e-16 4.0e-16 4.3e-16 3.0e-16 3.7e-16 2.0e-16 5.3e-16 ["800:fails d=true f=true"]
+G4 flat-lp    lever stator       M 1.2 (T0 222.15 p0 33354; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 ["800:fails d=true f=true"]
+G4 flat-lp    lever stator       M 1.6 (T0 189.24 p0 19604; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 ["800:fails d=true f=true"]
+G4 flat-lp    lever stator       M 2.0 (T0 158.96 p0 11080; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 ["800:fails d=true f=true"]
+G4 flat-lp    lever bleed        M 0.3 (T0 281.07 p0 75337; Tt2 off 0e0 pt2 off 0e0): 3.0e-4 8.1e-3 4.9e-5 3.8e-3 4.7e-3 1.8e-3 1.4e-3 ["800:unchoked d=false f=true"]
+G4 flat-lp    lever bleed        M 0.6 (T0 266.91 p0 62870; Tt2 off 0e0 pt2 off 2e-16): 2.0e-15 2.8e-16 4.6e-16 1.8e-15 2.1e-15 1.9e-16 4.6e-16 []
+G4 flat-lp    lever bleed        M 1.2 (T0 222.15 p0 33354; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 flat-lp    lever bleed        M 1.6 (T0 189.24 p0 19604; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 flat-lp    lever bleed        M 2.0 (T0 158.96 p0 11080; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 []
+G4 flat-lp    lever both         M 0.3 (T0 281.07 p0 75337; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 ["800:fails d=true f=true"]
+G4 flat-lp    lever both         M 0.6 (T0 266.91 p0 62870; Tt2 off 0e0 pt2 off 2e-16): 1.1e-15 4.6e-16 5.6e-16 1.5e-15 1.3e-15 6.8e-16 5.3e-16 ["800:fails d=true f=true"]
+G4 flat-lp    lever both         M 1.2 (T0 222.15 p0 33354; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 ["800:fails d=true f=true"]
+G4 flat-lp    lever both         M 1.6 (T0 189.24 p0 19604; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 ["800:fails d=true f=true"]
+G4 flat-lp    lever both         M 2.0 (T0 158.96 p0 11080; Tt2 off 0e0 pt2 off 0e0): 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 0.0e0 ["800:fails d=true f=true"]
