@@ -1,0 +1,26 @@
+[package]
+name = "rung99-probe"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+turbojet = { path = "W:/Claude_projects/jet engine/rust" }
+
+[profile.release]
+opt-level = 3
+
+[[bin]]
+name = "reach"
+path = "src/reach.rs"
+
+[[bin]]
+name = "sim"
+path = "src/sim.rs"
+
+[[bin]]
+name = "cells"
+path = "src/cells.rs"
+
+[[bin]]
+name = "bend"
+path = "src/bend.rs"

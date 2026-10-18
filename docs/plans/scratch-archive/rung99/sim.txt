@@ -1,0 +1,242 @@
+# (a) worst |rel diff| vs the M0.85 slice at equal corrected throttle; columns ["EPR", "νL/√θ", "νH/√θ", "fuel/δ√θ", "face√θ/δ", "Wf/pt3/√θ", "n_hp"]
+(a) flow/press plain              M0.3  θ0.889: choked 6 [5.4e-3 1.7e-3 1.2e-3 6.2e-3 2.5e-3 7.5e-4 8.2e-4] | unchoked 2 [6.2e-3 8.0e-2 5.7e-4 3.4e-2 5.4e-2 2.1e-2 1.2e-2] | failed 0
+(a) flow/press plain              M0.6  θ0.937: choked 7 [3.1e-3 9.8e-4 7.0e-4 3.5e-3 1.5e-3 4.3e-4 4.7e-4] | unchoked 1 [2.5e-4 5.0e-3 2.1e-4 3.2e-3 3.5e-3 9.4e-4 6.2e-4] | failed 0
+(a) flow/press plain              M1.2  θ1.125: choked 8 [6.2e-3 1.9e-3 1.4e-3 7.1e-3 2.9e-3 8.6e-4 9.3e-4] | unchoked 0 [-] | failed 0
+(a) flow/press plain              M1.6  θ1.321: choked 8 [1.6e-2 5.0e-3 3.6e-3 1.8e-2 7.5e-3 2.2e-3 2.4e-3] | unchoked 0 [-] | failed 0
+(a) flow/press plain              M2    θ1.573: choked 8 [2.9e-2 9.0e-3 6.4e-3 3.3e-2 1.4e-2 3.9e-3 4.3e-3] | unchoked 0 [-] | failed 0
+(a) flow/press gen HP share .05   M0.3  θ0.889: choked 6 [5.4e-3 1.7e-3 1.2e-3 6.2e-3 2.5e-3 7.5e-4 8.1e-4] | unchoked 2 [9.0e-3 1.3e-1 1.1e-3 5.4e-2 8.4e-2 3.3e-2 2.0e-2] | failed 0
+(a) flow/press gen HP share .05   M0.6  θ0.937: choked 7 [3.1e-3 9.7e-4 7.0e-4 3.5e-3 1.4e-3 4.3e-4 4.7e-4] | unchoked 1 [7.2e-4 1.5e-2 3.0e-4 7.7e-3 1.1e-2 3.9e-3 2.2e-3] | failed 0
+(a) flow/press gen HP share .05   M1.2  θ1.125: choked 8 [6.2e-3 1.9e-3 1.4e-3 7.1e-3 2.9e-3 8.6e-4 9.3e-4] | unchoked 0 [-] | failed 0
+(a) flow/press gen HP share .05   M1.6  θ1.321: choked 8 [1.6e-2 5.0e-3 3.6e-3 1.8e-2 7.4e-3 2.2e-3 2.4e-3] | unchoked 0 [-] | failed 0
+(a) flow/press gen HP share .05   M2    θ1.573: choked 8 [2.9e-2 9.0e-3 6.4e-3 3.3e-2 1.3e-2 3.9e-3 4.3e-3] | unchoked 0 [-] | failed 0
+(a) flow/press gen LP share .05   M0.3  θ0.889: choked 6 [5.4e-3 1.7e-3 1.2e-3 6.2e-3 2.5e-3 7.5e-4 8.5e-4] | unchoked 2 [1.0e-2 9.1e-2 5.4e-4 3.7e-2 5.8e-2 2.3e-2 1.4e-2] | failed 0
+(a) flow/press gen LP share .05   M0.6  θ0.937: choked 7 [3.1e-3 9.8e-4 7.1e-4 3.5e-3 1.5e-3 4.3e-4 4.9e-4] | unchoked 1 [2.9e-4 7.7e-3 2.2e-4 4.2e-3 5.2e-3 1.6e-3 1.0e-3] | failed 0
+(a) flow/press gen LP share .05   M1.2  θ1.125: choked 8 [6.2e-3 1.9e-3 1.4e-3 7.1e-3 2.9e-3 8.6e-4 9.6e-4] | unchoked 0 [-] | failed 0
+(a) flow/press gen LP share .05   M1.6  θ1.321: choked 8 [1.6e-2 5.0e-3 3.6e-3 1.8e-2 7.5e-3 2.2e-3 2.5e-3] | unchoked 0 [-] | failed 0
+(a) flow/press gen LP share .05   M2    θ1.573: choked 8 [2.9e-2 9.0e-3 6.5e-3 3.3e-2 1.4e-2 3.9e-3 4.5e-3] | unchoked 0 [-] | failed 0
+(a) flow/press gen HP power .02   M0.3  θ0.889: choked 5 [5.1e-2 8.8e-3 2.8e-2 4.1e-2 4.9e-2 1.0e-2 2.8e-2] | unchoked 2 [9.1e-2 1.1e-1 5.8e-2 1.1e-1 1.6e-1 4.9e-2 4.2e-2] | failed 1
+(a) flow/press gen HP power .02   M0.6  θ0.937: choked 6 [3.0e-2 4.8e-3 1.7e-2 2.3e-2 2.9e-2 6.8e-3 1.7e-2] | unchoked 2 [5.2e-2 8.9e-2 4.0e-2 7.5e-2 1.1e-1 4.1e-2 2.7e-2] | failed 0
+(a) flow/press gen HP power .02   M1.2  θ1.125: choked 8 [5.3e-2 7.2e-3 3.4e-2 3.6e-2 5.2e-2 1.6e-2 3.4e-2] | unchoked 0 [-] | failed 0
+(a) flow/press gen HP power .02   M1.6  θ1.321: choked 8 [9.3e-2 1.3e-2 5.8e-2 6.4e-2 9.0e-2 2.6e-2 5.8e-2] | unchoked 0 [-] | failed 0
+(a) flow/press gen HP power .02   M2    θ1.573: choked 8 [1.2e-1 1.7e-2 7.2e-2 8.3e-2 1.1e-1 3.1e-2 7.1e-2] | unchoked 0 [-] | failed 0
+(a) flow/press cust share .05     M0.3  θ0.889: choked 6 [5.4e-3 1.7e-3 1.2e-3 6.1e-3 2.5e-3 7.5e-4 8.3e-4] | unchoked 2 [1.4e-2 1.4e-1 1.0e-3 5.6e-2 8.7e-2 3.4e-2 2.0e-2] | failed 0
+(a) flow/press cust share .05     M0.6  θ0.937: choked 7 [3.1e-3 9.8e-4 7.0e-4 3.5e-3 1.4e-3 4.3e-4 4.7e-4] | unchoked 1 [1.6e-3 1.9e-2 3.2e-4 9.0e-3 1.3e-2 4.6e-3 2.7e-3] | failed 0
+(a) flow/press cust share .05     M1.2  θ1.125: choked 8 [6.2e-3 1.9e-3 1.4e-3 7.1e-3 2.8e-3 8.6e-4 9.4e-4] | unchoked 0 [-] | failed 0
+(a) flow/press cust share .05     M1.6  θ1.321: choked 8 [1.6e-2 5.0e-3 3.6e-3 1.8e-2 7.4e-3 2.2e-3 2.4e-3] | unchoked 0 [-] | failed 0
+(a) flow/press cust share .05     M2    θ1.573: choked 8 [2.9e-2 9.0e-3 6.4e-3 3.3e-2 1.3e-2 3.9e-3 4.4e-3] | unchoked 0 [-] | failed 0
+(a) flow/press cust amount .05    M0.3  θ0.889: choked 5 [6.9e-2 2.4e-2 1.7e-2 5.5e-2 2.6e-2 1.5e-2 1.3e-2] | unchoked 2 [8.3e-2 1.8e-1 2.6e-2 1.3e-1 1.1e-1 5.8e-2 1.2e-2] | failed 1
+(a) flow/press cust amount .05    M0.6  θ0.937: choked 6 [3.7e-2 1.3e-2 9.3e-3 2.8e-2 1.4e-2 9.1e-3 6.9e-3] | unchoked 2 [3.8e-2 1.2e-1 1.4e-2 7.3e-2 6.7e-2 4.0e-2 6.4e-3] | failed 0
+(a) flow/press cust amount .05    M1.2  θ1.125: choked 8 [5.2e-2 2.0e-2 1.3e-2 3.9e-2 1.9e-2 1.7e-2 1.0e-2] | unchoked 0 [-] | failed 0
+(a) flow/press cust amount .05    M1.6  θ1.321: choked 8 [1.0e-1 3.7e-2 2.5e-2 7.7e-2 3.7e-2 3.1e-2 1.9e-2] | unchoked 0 [-] | failed 0
+(a) flow/press cust amount .05    M2    θ1.573: choked 8 [1.4e-1 4.9e-2 3.3e-2 1.1e-1 5.3e-2 3.9e-2 2.5e-2] | unchoked 0 [-] | failed 0
+(a) flow/press cool .05/.05       M0.3  θ0.889: choked 5 [5.4e-3 1.7e-3 1.3e-3 6.3e-3 2.6e-3 7.3e-4 9.6e-4] | unchoked 3 [8.0e-3 1.7e-1 2.4e-3 7.4e-2 1.1e-1 4.1e-2 2.4e-2] | failed 0
+(a) flow/press cool .05/.05       M0.6  θ0.937: choked 7 [3.1e-3 9.7e-4 7.7e-4 3.6e-3 1.5e-3 4.2e-4 5.5e-4] | unchoked 1 [1.1e-3 2.5e-2 5.7e-4 1.3e-2 1.8e-2 6.1e-3 3.5e-3] | failed 0
+(a) flow/press cool .05/.05       M1.2  θ1.125: choked 8 [6.2e-3 1.9e-3 1.5e-3 7.2e-3 3.0e-3 8.4e-4 1.1e-3] | unchoked 0 [-] | failed 0
+(a) flow/press cool .05/.05       M1.6  θ1.321: choked 8 [1.6e-2 5.0e-3 4.0e-3 1.9e-2 7.6e-3 2.1e-3 2.8e-3] | unchoked 0 [-] | failed 0
+(a) flow/press cool .05/.05       M2    θ1.573: choked 8 [2.9e-2 9.0e-3 7.1e-3 3.4e-2 1.4e-2 3.8e-3 5.1e-3] | unchoked 0 [-] | failed 0
+(a) flow/press lever stator       M0.3  θ0.889: choked 6 [5.4e-3 1.4e-3 1.2e-3 6.2e-3 2.6e-3 7.5e-4 8.2e-4] | unchoked 2 [7.0e-3 7.9e-2 5.7e-4 3.5e-2 5.4e-2 2.2e-2 1.3e-2] | failed 0
+(a) flow/press lever stator       M0.6  θ0.937: choked 7 [3.1e-3 8.0e-4 7.0e-4 3.5e-3 1.5e-3 4.3e-4 4.7e-4] | unchoked 1 [1.7e-4 5.2e-3 2.2e-4 3.3e-3 3.8e-3 1.1e-3 6.9e-4] | failed 0
+(a) flow/press lever stator       M1.2  θ1.125: choked 8 [6.2e-3 1.6e-3 1.4e-3 7.1e-3 2.9e-3 8.6e-4 9.3e-4] | unchoked 0 [-] | failed 0
+(a) flow/press lever stator       M1.6  θ1.321: choked 8 [1.6e-2 4.2e-3 3.6e-3 1.8e-2 7.6e-3 2.2e-3 2.4e-3] | unchoked 0 [-] | failed 0
+(a) flow/press lever stator       M2    θ1.573: choked 8 [2.9e-2 7.5e-3 6.4e-3 3.3e-2 1.4e-2 3.9e-3 4.3e-3] | unchoked 0 [-] | failed 0
+(a) flow/press lever bleed        M0.3  θ0.889: choked 6 [5.6e-3 1.8e-3 1.2e-3 6.3e-3 2.4e-3 7.4e-4 7.6e-4] | unchoked 2 [1.3e-2 9.8e-2 4.9e-4 4.0e-2 6.1e-2 2.4e-2 1.4e-2] | failed 0
+(a) flow/press lever bleed        M0.6  θ0.937: choked 7 [3.2e-3 1.0e-3 6.9e-4 3.6e-3 1.4e-3 4.3e-4 4.3e-4] | unchoked 1 [8.7e-4 1.0e-2 2.2e-4 5.1e-3 6.6e-3 2.1e-3 1.3e-3] | failed 0
+(a) flow/press lever bleed        M1.2  θ1.125: choked 8 [6.4e-3 2.1e-3 1.4e-3 7.2e-3 2.7e-3 8.6e-4 8.6e-4] | unchoked 0 [-] | failed 0
+(a) flow/press lever bleed        M1.6  θ1.321: choked 8 [1.7e-2 5.3e-3 3.5e-3 1.9e-2 7.0e-3 2.2e-3 2.2e-3] | unchoked 0 [-] | failed 0
+(a) flow/press lever bleed        M2    θ1.573: choked 8 [3.0e-2 9.5e-3 6.4e-3 3.4e-2 1.3e-2 3.9e-3 4.0e-3] | unchoked 0 [-] | failed 0
+(a) flow/press lever both         M0.3  θ0.889: choked 6 [5.6e-3 1.5e-3 1.2e-3 6.3e-3 2.4e-3 7.3e-4 7.7e-4] | unchoked 2 [1.4e-2 9.6e-2 4.9e-4 4.0e-2 6.2e-2 2.4e-2 1.5e-2] | failed 0
+(a) flow/press lever both         M0.6  θ0.937: choked 7 [3.2e-3 8.3e-4 6.9e-4 3.6e-3 1.4e-3 4.3e-4 4.4e-4] | unchoked 1 [1.0e-3 1.0e-2 2.3e-4 5.3e-3 6.9e-3 2.3e-3 1.4e-3] | failed 0
+(a) flow/press lever both         M1.2  θ1.125: choked 8 [6.4e-3 1.7e-3 1.4e-3 7.2e-3 2.8e-3 8.6e-4 8.8e-4] | unchoked 0 [-] | failed 0
+(a) flow/press lever both         M1.6  θ1.321: choked 8 [1.6e-2 4.3e-3 3.5e-3 1.9e-2 7.2e-3 2.2e-3 2.3e-3] | unchoked 0 [-] | failed 0
+(a) flow/press lever both         M2    θ1.573: choked 8 [3.0e-2 7.8e-3 6.4e-3 3.4e-2 1.3e-2 3.9e-3 4.1e-3] | unchoked 0 [-] | failed 0
+(a) press/flow plain              M0.3  θ0.889: choked 6 [5.4e-3 1.8e-3 1.3e-3 6.2e-3 2.6e-3 7.5e-4 8.6e-4] | unchoked 2 [2.6e-3 7.9e-2 6.3e-4 3.8e-2 5.7e-2 2.1e-2 1.2e-2] | failed 0
+(a) press/flow plain              M0.6  θ0.937: choked 7 [3.1e-3 1.0e-3 7.2e-4 3.5e-3 1.5e-3 4.3e-4 5.0e-4] | unchoked 1 [5.1e-4 4.5e-3 2.3e-4 3.2e-3 3.4e-3 8.1e-4 5.2e-4] | failed 0
+(a) press/flow plain              M1.2  θ1.125: choked 8 [6.2e-3 2.0e-3 1.4e-3 7.1e-3 2.9e-3 8.6e-4 9.9e-4] | unchoked 0 [-] | failed 0
+(a) press/flow plain              M1.6  θ1.321: choked 8 [1.6e-2 5.3e-3 3.7e-3 1.8e-2 7.6e-3 2.2e-3 2.5e-3] | unchoked 0 [-] | failed 0
+(a) press/flow plain              M2    θ1.573: choked 8 [2.9e-2 9.5e-3 6.7e-3 3.3e-2 1.4e-2 3.9e-3 4.6e-3] | unchoked 0 [-] | failed 0
+(a) press/flow gen HP share .05   M0.3  θ0.889: choked 6 [5.4e-3 1.8e-3 1.3e-3 6.2e-3 2.5e-3 7.5e-4 8.6e-4] | unchoked 2 [3.2e-3 1.3e-1 1.1e-3 5.9e-2 8.9e-2 3.3e-2 2.0e-2] | failed 0
+(a) press/flow gen HP share .05   M0.6  θ0.937: choked 7 [3.1e-3 1.0e-3 7.2e-4 3.5e-3 1.4e-3 4.3e-4 4.9e-4] | unchoked 1 [1.2e-4 1.4e-2 3.1e-4 7.9e-3 1.1e-2 3.5e-3 2.0e-3] | failed 0
+(a) press/flow gen HP share .05   M1.2  θ1.125: choked 8 [6.2e-3 2.0e-3 1.4e-3 7.1e-3 2.9e-3 8.6e-4 9.8e-4] | unchoked 0 [-] | failed 0
+(a) press/flow gen HP share .05   M1.6  θ1.321: choked 8 [1.6e-2 5.2e-3 3.7e-3 1.8e-2 7.4e-3 2.2e-3 2.5e-3] | unchoked 0 [-] | failed 0
+(a) press/flow gen HP share .05   M2    θ1.573: choked 8 [2.9e-2 9.3e-3 6.7e-3 3.3e-2 1.3e-2 3.9e-3 4.5e-3] | unchoked 0 [-] | failed 0
+(a) press/flow gen LP share .05   M0.3  θ0.889: choked 6 [5.4e-3 1.8e-3 1.3e-3 6.2e-3 2.5e-3 7.5e-4 8.9e-4] | unchoked 2 [6.5e-3 9.0e-2 6.2e-4 4.1e-2 6.2e-2 2.3e-2 1.4e-2] | failed 0
+(a) press/flow gen LP share .05   M0.6  θ0.937: choked 7 [3.1e-3 1.0e-3 7.3e-4 3.5e-3 1.5e-3 4.3e-4 5.1e-4] | unchoked 1 [8.8e-5 7.2e-3 2.4e-4 4.4e-3 5.3e-3 1.5e-3 9.2e-4] | failed 0
+(a) press/flow gen LP share .05   M1.2  θ1.125: choked 8 [6.2e-3 2.0e-3 1.5e-3 7.1e-3 2.9e-3 8.6e-4 1.0e-3] | unchoked 0 [-] | failed 0
+(a) press/flow gen LP share .05   M1.6  θ1.321: choked 8 [1.6e-2 5.3e-3 3.7e-3 1.8e-2 7.5e-3 2.2e-3 2.6e-3] | unchoked 0 [-] | failed 0
+(a) press/flow gen LP share .05   M2    θ1.573: choked 8 [2.9e-2 9.5e-3 6.7e-3 3.3e-2 1.4e-2 3.9e-3 4.7e-3] | unchoked 0 [-] | failed 0
+(a) press/flow gen HP power .02   M0.3  θ0.889: choked 5 [4.8e-2 1.1e-2 2.6e-2 3.8e-2 4.7e-2 1.0e-2 2.6e-2] | unchoked 2 [9.0e-2 1.0e-1 5.4e-2 1.1e-1 1.5e-1 4.6e-2 3.9e-2] | failed 1
+(a) press/flow gen HP power .02   M0.6  θ0.937: choked 6 [2.9e-2 6.0e-3 1.6e-2 2.2e-2 2.8e-2 6.8e-3 1.6e-2] | unchoked 2 [5.3e-2 8.3e-2 3.7e-2 7.2e-2 1.1e-1 3.8e-2 2.5e-2] | failed 0
+(a) press/flow gen HP power .02   M1.2  θ1.125: choked 8 [5.0e-2 9.2e-3 3.2e-2 3.4e-2 4.9e-2 1.6e-2 3.2e-2] | unchoked 0 [-] | failed 0
+(a) press/flow gen HP power .02   M1.6  θ1.321: choked 8 [8.8e-2 1.6e-2 5.5e-2 6.0e-2 8.5e-2 2.6e-2 5.4e-2] | unchoked 0 [-] | failed 0
+(a) press/flow gen HP power .02   M2    θ1.573: choked 8 [1.1e-1 2.1e-2 6.8e-2 7.7e-2 1.1e-1 3.1e-2 6.7e-2] | unchoked 0 [-] | failed 0
+(a) press/flow cust share .05     M0.3  θ0.889: choked 6 [5.4e-3 1.8e-3 1.3e-3 6.2e-3 2.5e-3 7.5e-4 8.8e-4] | unchoked 2 [8.4e-3 1.4e-1 1.1e-3 6.2e-2 9.3e-2 3.5e-2 2.1e-2] | failed 0
+(a) press/flow cust share .05     M0.6  θ0.937: choked 7 [3.1e-3 1.0e-3 7.3e-4 3.5e-3 1.4e-3 4.3e-4 5.0e-4] | unchoked 1 [7.3e-4 1.8e-2 3.3e-4 9.6e-3 1.3e-2 4.4e-3 2.6e-3] | failed 0
+(a) press/flow cust share .05     M1.2  θ1.125: choked 8 [6.2e-3 2.0e-3 1.4e-3 7.1e-3 2.9e-3 8.6e-4 1.0e-3] | unchoked 0 [-] | failed 0
+(a) press/flow cust share .05     M1.6  θ1.321: choked 8 [1.6e-2 5.2e-3 3.7e-3 1.8e-2 7.4e-3 2.2e-3 2.6e-3] | unchoked 0 [-] | failed 0
+(a) press/flow cust share .05     M2    θ1.573: choked 8 [2.9e-2 9.4e-3 6.7e-3 3.3e-2 1.3e-2 3.9e-3 4.6e-3] | unchoked 0 [-] | failed 0
+(a) press/flow cust amount .05    M0.3  θ0.889: choked 5 [7.0e-2 2.4e-2 1.9e-2 5.5e-2 2.6e-2 1.5e-2 1.4e-2] | unchoked 2 [9.0e-2 1.9e-1 3.0e-2 1.4e-1 1.2e-1 6.0e-2 1.3e-2] | failed 1
+(a) press/flow cust amount .05    M0.6  θ0.937: choked 6 [3.7e-2 1.3e-2 1.0e-2 2.9e-2 1.4e-2 9.1e-3 7.8e-3] | unchoked 2 [3.9e-2 1.2e-1 1.6e-2 7.8e-2 7.2e-2 4.0e-2 7.6e-3] | failed 0
+(a) press/flow cust amount .05    M1.2  θ1.125: choked 8 [5.3e-2 1.9e-2 1.5e-2 4.0e-2 1.9e-2 1.7e-2 1.2e-2] | unchoked 0 [-] | failed 0
+(a) press/flow cust amount .05    M1.6  θ1.321: choked 8 [1.0e-1 3.6e-2 2.8e-2 7.7e-2 3.7e-2 3.1e-2 2.2e-2] | unchoked 0 [-] | failed 0
+(a) press/flow cust amount .05    M2    θ1.573: choked 8 [1.4e-1 4.7e-2 3.7e-2 1.1e-1 5.3e-2 3.9e-2 2.9e-2] | unchoked 0 [-] | failed 0
+(a) press/flow cool .05/.05       M0.3  θ0.889: choked 6 [5.4e-3 1.8e-3 1.4e-3 6.3e-3 2.6e-3 7.3e-4 1.0e-3] | unchoked 2 [3.2e-3 1.7e-1 2.1e-3 8.1e-2 1.2e-1 4.1e-2 2.4e-2] | failed 0
+(a) press/flow cool .05/.05       M0.6  θ0.937: choked 7 [3.1e-3 1.0e-3 8.0e-4 3.6e-3 1.5e-3 4.2e-4 5.8e-4] | unchoked 1 [1.8e-4 2.3e-2 5.0e-4 1.3e-2 1.8e-2 5.5e-3 3.2e-3] | failed 0
+(a) press/flow cool .05/.05       M1.2  θ1.125: choked 8 [6.2e-3 2.0e-3 1.6e-3 7.2e-3 2.9e-3 8.4e-4 1.2e-3] | unchoked 0 [-] | failed 0
+(a) press/flow cool .05/.05       M1.6  θ1.321: choked 8 [1.6e-2 5.2e-3 4.1e-3 1.9e-2 7.6e-3 2.1e-3 3.0e-3] | unchoked 0 [-] | failed 0
+(a) press/flow cool .05/.05       M2    θ1.573: choked 8 [2.9e-2 9.3e-3 7.4e-3 3.4e-2 1.4e-2 3.8e-3 5.3e-3] | unchoked 0 [-] | failed 0
+(a) press/flow lever stator       M0.3  θ0.889: choked 6 [5.4e-3 1.4e-3 1.3e-3 6.2e-3 2.5e-3 7.5e-4 8.6e-4] | unchoked 2 [2.3e-3 7.4e-2 6.2e-4 3.7e-2 5.6e-2 2.1e-2 1.2e-2] | failed 0
+(a) press/flow lever stator       M0.6  θ0.937: choked 7 [3.1e-3 8.2e-4 7.2e-4 3.5e-3 1.5e-3 4.3e-4 5.0e-4] | unchoked 1 [5.5e-4 4.0e-3 2.3e-4 3.0e-3 3.1e-3 6.7e-4 4.5e-4] | failed 0
+(a) press/flow lever stator       M1.2  θ1.125: choked 8 [6.2e-3 1.6e-3 1.4e-3 7.1e-3 2.9e-3 8.6e-4 9.9e-4] | unchoked 0 [-] | failed 0
+(a) press/flow lever stator       M1.6  θ1.321: choked 8 [1.6e-2 4.3e-3 3.7e-3 1.8e-2 7.5e-3 2.2e-3 2.5e-3] | unchoked 0 [-] | failed 0
+(a) press/flow lever stator       M2    θ1.573: choked 8 [2.9e-2 7.7e-3 6.7e-3 3.3e-2 1.4e-2 3.9e-3 4.6e-3] | unchoked 0 [-] | failed 0
+(a) press/flow lever bleed        M0.3  θ0.889: choked 6 [5.6e-3 1.9e-3 1.3e-3 6.3e-3 2.4e-3 7.5e-4 8.0e-4] | unchoked 2 [1.1e-2 1.0e-1 5.9e-4 4.4e-2 6.6e-2 2.5e-2 1.5e-2] | failed 0
+(a) press/flow lever bleed        M0.6  θ0.937: choked 7 [3.2e-3 1.1e-3 7.2e-4 3.6e-3 1.4e-3 4.3e-4 4.6e-4] | unchoked 1 [5.5e-4 1.0e-2 2.5e-4 5.5e-3 7.1e-3 2.2e-3 1.3e-3] | failed 0
+(a) press/flow lever bleed        M1.2  θ1.125: choked 8 [6.5e-3 2.1e-3 1.4e-3 7.3e-3 2.7e-3 8.6e-4 9.1e-4] | unchoked 0 [-] | failed 0
+(a) press/flow lever bleed        M1.6  θ1.321: choked 8 [1.7e-2 5.5e-3 3.7e-3 1.9e-2 7.0e-3 2.2e-3 2.4e-3] | unchoked 0 [-] | failed 0
+(a) press/flow lever bleed        M2    θ1.573: choked 8 [3.0e-2 9.9e-3 6.6e-3 3.4e-2 1.3e-2 3.9e-3 4.2e-3] | unchoked 0 [-] | failed 0
+(a) press/flow lever both         M0.3  θ0.889: choked 6 [5.6e-3 1.5e-3 1.3e-3 6.3e-3 2.4e-3 7.4e-4 8.2e-4] | unchoked 2 [1.0e-2 9.3e-2 5.9e-4 4.3e-2 6.5e-2 2.4e-2 1.4e-2] | failed 0
+(a) press/flow lever both         M0.6  θ0.937: choked 7 [3.2e-3 8.5e-4 7.2e-4 3.6e-3 1.4e-3 4.3e-4 4.7e-4] | unchoked 1 [4.2e-4 9.0e-3 2.5e-4 5.2e-3 6.6e-3 2.0e-3 1.2e-3] | failed 0
+(a) press/flow lever both         M1.2  θ1.125: choked 8 [6.4e-3 1.7e-3 1.4e-3 7.2e-3 2.8e-3 8.6e-4 9.3e-4] | unchoked 0 [-] | failed 0
+(a) press/flow lever both         M1.6  θ1.321: choked 8 [1.6e-2 4.4e-3 3.7e-3 1.9e-2 7.1e-3 2.2e-3 2.4e-3] | unchoked 0 [-] | failed 0
+(a) press/flow lever both         M2    θ1.573: choked 8 [3.0e-2 7.9e-3 6.6e-3 3.4e-2 1.3e-2 3.9e-3 4.3e-3] | unchoked 0 [-] | failed 0
+(a) tilted     plain              M0.3  θ0.889: choked 6 [5.4e-3 1.7e-3 1.2e-3 6.2e-3 2.6e-3 7.5e-4 8.4e-4] | unchoked 2 [5.3e-3 8.2e-2 6.1e-4 3.6e-2 5.6e-2 2.2e-2 1.3e-2] | failed 0
+(a) tilted     plain              M0.6  θ0.937: choked 7 [3.1e-3 1.0e-3 7.1e-4 3.5e-3 1.5e-3 4.3e-4 4.8e-4] | unchoked 1 [3.0e-4 5.3e-3 2.3e-4 3.4e-3 3.8e-3 1.0e-3 6.5e-4] | failed 0
+(a) tilted     plain              M1.2  θ1.125: choked 8 [6.2e-3 2.0e-3 1.4e-3 7.1e-3 2.9e-3 8.6e-4 9.6e-4] | unchoked 0 [-] | failed 0
+(a) tilted     plain              M1.6  θ1.321: choked 8 [1.6e-2 5.1e-3 3.6e-3 1.8e-2 7.6e-3 2.2e-3 2.5e-3] | unchoked 0 [-] | failed 0
+(a) tilted     plain              M2    θ1.573: choked 8 [2.9e-2 9.3e-3 6.5e-3 3.3e-2 1.4e-2 3.9e-3 4.4e-3] | unchoked 0 [-] | failed 0
+(a) tilted     gen HP share .05   M0.3  θ0.889: choked 6 [5.4e-3 1.7e-3 1.2e-3 6.2e-3 2.5e-3 7.5e-4 8.4e-4] | unchoked 2 [7.5e-3 1.3e-1 1.1e-3 5.7e-2 8.8e-2 3.4e-2 2.0e-2] | failed 0
+(a) tilted     gen HP share .05   M0.6  θ0.937: choked 7 [3.1e-3 9.9e-4 7.1e-4 3.5e-3 1.4e-3 4.3e-4 4.8e-4] | unchoked 1 [5.0e-4 1.6e-2 3.1e-4 8.2e-3 1.2e-2 4.0e-3 2.3e-3] | failed 0
+(a) tilted     gen HP share .05   M1.2  θ1.125: choked 8 [6.2e-3 2.0e-3 1.4e-3 7.1e-3 2.9e-3 8.6e-4 9.5e-4] | unchoked 0 [-] | failed 0
+(a) tilted     gen HP share .05   M1.6  θ1.321: choked 8 [1.6e-2 5.1e-3 3.6e-3 1.8e-2 7.4e-3 2.2e-3 2.5e-3] | unchoked 0 [-] | failed 0
+(a) tilted     gen HP share .05   M2    θ1.573: choked 8 [2.9e-2 9.1e-3 6.5e-3 3.3e-2 1.3e-2 3.9e-3 4.4e-3] | unchoked 0 [-] | failed 0
+(a) tilted     gen LP share .05   M0.3  θ0.889: choked 6 [5.4e-3 1.7e-3 1.3e-3 6.2e-3 2.5e-3 7.5e-4 8.7e-4] | unchoked 2 [9.4e-3 9.3e-2 5.8e-4 3.9e-2 6.1e-2 2.4e-2 1.4e-2] | failed 0
+(a) tilted     gen LP share .05   M0.6  θ0.937: choked 7 [3.1e-3 1.0e-3 7.2e-4 3.5e-3 1.5e-3 4.3e-4 5.0e-4] | unchoked 1 [2.4e-4 8.1e-3 2.3e-4 4.5e-3 5.6e-3 1.7e-3 1.1e-3] | failed 0
+(a) tilted     gen LP share .05   M1.2  θ1.125: choked 8 [6.2e-3 2.0e-3 1.4e-3 7.1e-3 2.9e-3 8.6e-4 9.9e-4] | unchoked 0 [-] | failed 0
+(a) tilted     gen LP share .05   M1.6  θ1.321: choked 8 [1.6e-2 5.1e-3 3.7e-3 1.8e-2 7.5e-3 2.2e-3 2.5e-3] | unchoked 0 [-] | failed 0
+(a) tilted     gen LP share .05   M2    θ1.573: choked 8 [2.9e-2 9.3e-3 6.6e-3 3.3e-2 1.4e-2 3.9e-3 4.6e-3] | unchoked 0 [-] | failed 0
+(a) tilted     gen HP power .02   M0.3  θ0.889: choked 5 [5.0e-2 9.6e-3 2.8e-2 4.1e-2 4.9e-2 1.0e-2 2.7e-2] | unchoked 2 [9.5e-2 1.1e-1 5.8e-2 1.2e-1 1.6e-1 5.0e-2 4.0e-2] | failed 1
+(a) tilted     gen HP power .02   M0.6  θ0.937: choked 6 [3.0e-2 5.2e-3 1.7e-2 2.3e-2 2.9e-2 6.9e-3 1.7e-2] | unchoked 2 [5.4e-2 9.3e-2 3.9e-2 7.8e-2 1.1e-1 4.2e-2 2.6e-2] | failed 0
+(a) tilted     gen HP power .02   M1.2  θ1.125: choked 8 [5.3e-2 7.8e-3 3.3e-2 3.6e-2 5.2e-2 1.6e-2 3.3e-2] | unchoked 0 [-] | failed 0
+(a) tilted     gen HP power .02   M1.6  θ1.321: choked 8 [9.3e-2 1.4e-2 5.7e-2 6.4e-2 9.0e-2 2.6e-2 5.7e-2] | unchoked 0 [-] | failed 0
+(a) tilted     gen HP power .02   M2    θ1.573: choked 8 [1.2e-1 1.8e-2 7.0e-2 8.2e-2 1.1e-1 3.1e-2 7.0e-2] | unchoked 0 [-] | failed 0
+(a) tilted     cust share .05     M0.3  θ0.889: choked 6 [5.4e-3 1.7e-3 1.2e-3 6.2e-3 2.5e-3 7.5e-4 8.5e-4] | unchoked 2 [1.2e-2 1.4e-1 1.1e-3 5.9e-2 9.0e-2 3.5e-2 2.1e-2] | failed 0
+(a) tilted     cust share .05     M0.6  θ0.937: choked 7 [3.1e-3 1.0e-3 7.1e-4 3.5e-3 1.4e-3 4.3e-4 4.9e-4] | unchoked 1 [1.4e-3 2.0e-2 3.3e-4 9.5e-3 1.4e-2 4.7e-3 2.8e-3] | failed 0
+(a) tilted     cust share .05     M1.2  θ1.125: choked 8 [6.2e-3 2.0e-3 1.4e-3 7.1e-3 2.9e-3 8.6e-4 9.7e-4] | unchoked 0 [-] | failed 0
+(a) tilted     cust share .05     M1.6  θ1.321: choked 8 [1.6e-2 5.1e-3 3.6e-3 1.8e-2 7.4e-3 2.2e-3 2.5e-3] | unchoked 0 [-] | failed 0
+(a) tilted     cust share .05     M2    θ1.573: choked 8 [2.9e-2 9.2e-3 6.6e-3 3.3e-2 1.3e-2 3.9e-3 4.5e-3] | unchoked 0 [-] | failed 0
+(a) tilted     cust amount .05    M0.3  θ0.889: choked 5 [6.9e-2 2.4e-2 1.8e-2 5.5e-2 2.6e-2 1.5e-2 1.3e-2] | unchoked 2 [8.4e-2 1.8e-1 2.8e-2 1.4e-1 1.2e-1 5.9e-2 1.2e-2] | failed 1
+(a) tilted     cust amount .05    M0.6  θ0.937: choked 6 [3.7e-2 1.3e-2 9.7e-3 2.8e-2 1.4e-2 9.1e-3 7.3e-3] | unchoked 2 [3.8e-2 1.2e-1 1.5e-2 7.4e-2 6.9e-2 4.0e-2 6.9e-3] | failed 0
+(a) tilted     cust amount .05    M1.2  θ1.125: choked 8 [5.2e-2 1.9e-2 1.4e-2 3.9e-2 1.9e-2 1.7e-2 1.1e-2] | unchoked 0 [-] | failed 0
+(a) tilted     cust amount .05    M1.6  θ1.321: choked 8 [1.0e-1 3.6e-2 2.6e-2 7.7e-2 3.7e-2 3.1e-2 2.0e-2] | unchoked 0 [-] | failed 0
+(a) tilted     cust amount .05    M2    θ1.573: choked 8 [1.4e-1 4.8e-2 3.5e-2 1.1e-1 5.3e-2 3.9e-2 2.7e-2] | unchoked 0 [-] | failed 0
+(a) tilted     cool .05/.05       M0.3  θ0.889: choked 5 [5.4e-3 1.7e-3 1.4e-3 6.3e-3 2.6e-3 7.3e-4 9.8e-4] | unchoked 3 [6.1e-3 1.7e-1 2.3e-3 7.7e-2 1.1e-1 4.2e-2 2.5e-2] | failed 0
+(a) tilted     cool .05/.05       M0.6  θ0.937: choked 7 [3.1e-3 9.9e-4 7.9e-4 3.6e-3 1.5e-3 4.2e-4 5.6e-4] | unchoked 1 [6.7e-4 2.5e-2 5.5e-4 1.3e-2 1.9e-2 6.1e-3 3.5e-3] | failed 0
+(a) tilted     cool .05/.05       M1.2  θ1.125: choked 8 [6.2e-3 2.0e-3 1.6e-3 7.2e-3 2.9e-3 8.4e-4 1.1e-3] | unchoked 0 [-] | failed 0
+(a) tilted     cool .05/.05       M1.6  θ1.321: choked 8 [1.6e-2 5.1e-3 4.0e-3 1.9e-2 7.6e-3 2.1e-3 2.9e-3] | unchoked 0 [-] | failed 0
+(a) tilted     cool .05/.05       M2    θ1.573: choked 8 [2.9e-2 9.1e-3 7.3e-3 3.4e-2 1.4e-2 3.8e-3 5.2e-3] | unchoked 0 [-] | failed 0
+(a) tilted     lever stator       M0.3  θ0.889: choked 6 [5.4e-3 1.4e-3 1.2e-3 6.2e-3 2.6e-3 7.5e-4 8.4e-4] | unchoked 2 [5.4e-3 8.0e-2 6.1e-4 3.6e-2 5.7e-2 2.2e-2 1.3e-2] | failed 0
+(a) tilted     lever stator       M0.6  θ0.937: choked 7 [3.1e-3 8.1e-4 7.1e-4 3.5e-3 1.5e-3 4.3e-4 4.8e-4] | unchoked 1 [2.8e-4 5.2e-3 2.3e-4 3.4e-3 3.9e-3 1.1e-3 6.7e-4] | failed 0
+(a) tilted     lever stator       M1.2  θ1.125: choked 8 [6.2e-3 1.6e-3 1.4e-3 7.1e-3 2.9e-3 8.6e-4 9.6e-4] | unchoked 0 [-] | failed 0
+(a) tilted     lever stator       M1.6  θ1.321: choked 8 [1.6e-2 4.2e-3 3.6e-3 1.8e-2 7.6e-3 2.2e-3 2.5e-3] | unchoked 0 [-] | failed 0
+(a) tilted     lever stator       M2    θ1.573: choked 8 [2.9e-2 7.6e-3 6.5e-3 3.3e-2 1.4e-2 3.9e-3 4.4e-3] | unchoked 0 [-] | failed 0
+(a) tilted     lever bleed        M0.3  θ0.889: choked 6 [5.6e-3 1.8e-3 1.2e-3 6.3e-3 2.4e-3 7.5e-4 7.8e-4] | unchoked 2 [1.3e-2 1.0e-1 5.5e-4 4.1e-2 6.4e-2 2.4e-2 1.5e-2] | failed 0
+(a) tilted     lever bleed        M0.6  θ0.937: choked 7 [3.2e-3 1.1e-3 7.0e-4 3.6e-3 1.4e-3 4.3e-4 4.5e-4] | unchoked 1 [8.6e-4 1.1e-2 2.4e-4 5.4e-3 7.1e-3 2.3e-3 1.4e-3] | failed 0
+(a) tilted     lever bleed        M1.2  θ1.125: choked 8 [6.4e-3 2.1e-3 1.4e-3 7.3e-3 2.7e-3 8.6e-4 8.9e-4] | unchoked 0 [-] | failed 0
+(a) tilted     lever bleed        M1.6  θ1.321: choked 8 [1.7e-2 5.4e-3 3.6e-3 1.9e-2 7.0e-3 2.2e-3 2.3e-3] | unchoked 0 [-] | failed 0
+(a) tilted     lever bleed        M2    θ1.573: choked 8 [3.0e-2 9.7e-3 6.5e-3 3.4e-2 1.3e-2 3.9e-3 4.1e-3] | unchoked 0 [-] | failed 0
+(a) tilted     lever both         M0.3  θ0.889: choked 6 [5.6e-3 1.5e-3 1.2e-3 6.3e-3 2.4e-3 7.4e-4 7.9e-4] | unchoked 2 [1.3e-2 9.7e-2 5.5e-4 4.2e-2 6.4e-2 2.5e-2 1.5e-2] | failed 0
+(a) tilted     lever both         M0.6  θ0.937: choked 7 [3.2e-3 8.4e-4 7.0e-4 3.6e-3 1.4e-3 4.3e-4 4.6e-4] | unchoked 1 [9.0e-4 1.0e-2 2.4e-4 5.5e-3 7.2e-3 2.3e-3 1.4e-3] | failed 0
+(a) tilted     lever both         M1.2  θ1.125: choked 8 [6.4e-3 1.7e-3 1.4e-3 7.2e-3 2.8e-3 8.6e-4 9.1e-4] | unchoked 0 [-] | failed 0
+(a) tilted     lever both         M1.6  θ1.321: choked 8 [1.6e-2 4.3e-3 3.6e-3 1.9e-2 7.1e-3 2.2e-3 2.3e-3] | unchoked 0 [-] | failed 0
+(a) tilted     lever both         M2    θ1.573: choked 8 [3.0e-2 7.8e-3 6.5e-3 3.4e-2 1.3e-2 3.9e-3 4.2e-3] | unchoked 0 [-] | failed 0
+(a) flat-lp    plain              M0.3  θ0.889: choked 6 [5.4e-3 1.4e-3 1.2e-3 6.1e-3 2.5e-3 7.5e-4 8.2e-4] | unchoked 1 [1.8e-3 3.1e-3 4.5e-4 3.8e-3 2.4e-3 1.2e-4 1.1e-4] | failed 1
+(a) flat-lp    plain              M0.6  θ0.937: choked 7 [3.1e-3 8.2e-4 7.0e-4 3.5e-3 1.5e-3 4.3e-4 4.7e-4] | unchoked 0 [-] | failed 1
+(a) flat-lp    plain              M1.2  θ1.125: choked 7 [6.2e-3 1.6e-3 1.4e-3 7.0e-3 2.9e-3 8.6e-4 9.3e-4] | unchoked 0 [-] | failed 1
+(a) flat-lp    plain              M1.6  θ1.321: choked 7 [1.6e-2 4.2e-3 3.6e-3 1.8e-2 7.5e-3 2.2e-3 2.4e-3] | unchoked 0 [-] | failed 1
+(a) flat-lp    plain              M2    θ1.573: choked 7 [2.9e-2 7.6e-3 6.4e-3 3.3e-2 1.3e-2 3.9e-3 4.3e-3] | unchoked 0 [-] | failed 1
+(a) flat-lp    gen HP share .05   M0.3  θ0.889: choked 6 [5.4e-3 1.5e-3 1.2e-3 6.1e-3 2.5e-3 7.5e-4 8.1e-4] | unchoked 1 [1.8e-3 1.2e-2 4.5e-4 8.6e-3 9.4e-3 2.1e-3 1.7e-3] | failed 1
+(a) flat-lp    gen HP share .05   M0.6  θ0.937: choked 7 [3.1e-3 8.3e-4 7.0e-4 3.5e-3 1.4e-3 4.3e-4 4.7e-4] | unchoked 0 [-] | failed 1
+(a) flat-lp    gen HP share .05   M1.2  θ1.125: choked 7 [6.2e-3 1.7e-3 1.4e-3 7.0e-3 2.8e-3 8.6e-4 9.3e-4] | unchoked 0 [-] | failed 1
+(a) flat-lp    gen HP share .05   M1.6  θ1.321: choked 7 [1.6e-2 4.3e-3 3.6e-3 1.8e-2 7.3e-3 2.2e-3 2.4e-3] | unchoked 0 [-] | failed 1
+(a) flat-lp    gen HP share .05   M2    θ1.573: choked 7 [2.9e-2 7.7e-3 6.4e-3 3.3e-2 1.3e-2 3.9e-3 4.3e-3] | unchoked 0 [-] | failed 1
+(a) flat-lp    gen LP share .05   M0.3  θ0.889: choked 6 [5.4e-3 1.4e-3 1.2e-3 6.1e-3 2.5e-3 7.5e-4 8.5e-4] | unchoked 1 [1.6e-3 5.5e-3 4.4e-4 5.0e-3 4.1e-3 4.1e-4 5.0e-4] | failed 1
+(a) flat-lp    gen LP share .05   M0.6  θ0.937: choked 7 [3.1e-3 8.3e-4 7.1e-4 3.5e-3 1.4e-3 4.3e-4 4.9e-4] | unchoked 0 [-] | failed 1
+(a) flat-lp    gen LP share .05   M1.2  θ1.125: choked 7 [6.2e-3 1.6e-3 1.4e-3 7.0e-3 2.9e-3 8.6e-4 9.6e-4] | unchoked 0 [-] | failed 1
+(a) flat-lp    gen LP share .05   M1.6  θ1.321: choked 7 [1.6e-2 4.2e-3 3.6e-3 1.8e-2 7.4e-3 2.2e-3 2.5e-3] | unchoked 0 [-] | failed 1
+(a) flat-lp    gen LP share .05   M2    θ1.573: choked 7 [2.9e-2 7.6e-3 6.5e-3 3.3e-2 1.3e-2 3.9e-3 4.5e-3] | unchoked 0 [-] | failed 1
+(a) flat-lp    gen HP power .02   M0.3  θ0.889: choked 5 [4.7e-2 1.4e-3 2.8e-2 3.7e-2 4.5e-2 1.0e-2 2.8e-2] | unchoked 1 [5.6e-2 7.5e-4 3.5e-2 4.3e-2 5.5e-2 1.4e-2 3.5e-2] | failed 2
+(a) flat-lp    gen HP power .02   M0.6  θ0.937: choked 6 [2.8e-2 8.0e-4 1.7e-2 2.1e-2 2.7e-2 6.6e-3 1.7e-2] | unchoked 0 [-] | failed 2
+(a) flat-lp    gen HP power .02   M1.2  θ1.125: choked 7 [4.1e-2 1.6e-3 2.5e-2 3.0e-2 3.9e-2 1.0e-2 2.5e-2] | unchoked 0 [-] | failed 1
+(a) flat-lp    gen HP power .02   M1.6  θ1.321: choked 7 [7.3e-2 4.2e-3 4.4e-2 5.4e-2 6.9e-2 1.7e-2 4.4e-2] | unchoked 0 [-] | failed 1
+(a) flat-lp    gen HP power .02   M2    θ1.573: choked 7 [9.3e-2 7.5e-3 5.5e-2 7.1e-2 8.6e-2 2.0e-2 5.4e-2] | unchoked 0 [-] | failed 1
+(a) flat-lp    cust share .05     M0.3  θ0.889: choked 6 [5.4e-3 1.5e-3 1.2e-3 6.1e-3 2.5e-3 7.5e-4 8.3e-4] | unchoked 1 [1.2e-3 1.7e-2 4.3e-4 1.1e-2 1.2e-2 3.0e-3 2.4e-3] | failed 1
+(a) flat-lp    cust share .05     M0.6  θ0.937: choked 7 [3.1e-3 8.4e-4 7.0e-4 3.5e-3 1.4e-3 4.3e-4 4.7e-4] | unchoked 0 [-] | failed 1
+(a) flat-lp    cust share .05     M1.2  θ1.125: choked 7 [6.2e-3 1.7e-3 1.4e-3 7.0e-3 2.8e-3 8.6e-4 9.4e-4] | unchoked 0 [-] | failed 1
+(a) flat-lp    cust share .05     M1.6  θ1.321: choked 7 [1.6e-2 4.3e-3 3.6e-3 1.8e-2 7.3e-3 2.2e-3 2.4e-3] | unchoked 0 [-] | failed 1
+(a) flat-lp    cust share .05     M2    θ1.573: choked 7 [2.9e-2 7.7e-3 6.4e-3 3.3e-2 1.3e-2 3.9e-3 4.4e-3] | unchoked 0 [-] | failed 1
+(a) flat-lp    cust amount .05    M0.3  θ0.889: choked 5 [6.9e-2 2.3e-2 1.7e-2 5.4e-2 2.6e-2 1.5e-2 1.3e-2] | unchoked 1 [7.3e-2 3.7e-2 1.8e-2 6.2e-2 2.9e-2 2.0e-2 1.2e-2] | failed 2
+(a) flat-lp    cust amount .05    M0.6  θ0.937: choked 6 [3.7e-2 1.3e-2 9.2e-3 2.8e-2 1.3e-2 9.0e-3 6.8e-3] | unchoked 0 [-] | failed 2
+(a) flat-lp    cust amount .05    M1.2  θ1.125: choked 6 [5.1e-2 1.7e-2 1.2e-2 3.9e-2 1.9e-2 1.2e-2 9.1e-3] | unchoked 0 [-] | failed 2
+(a) flat-lp    cust amount .05    M1.6  θ1.321: choked 6 [9.8e-2 3.3e-2 2.3e-2 7.6e-2 3.7e-2 2.1e-2 1.7e-2] | unchoked 0 [-] | failed 2
+(a) flat-lp    cust amount .05    M2    θ1.573: choked 6 [1.3e-1 4.4e-2 3.1e-2 1.1e-1 5.2e-2 2.6e-2 2.3e-2] | unchoked 0 [-] | failed 2
+(a) flat-lp    cool .05/.05       M0.3  θ0.889: choked 6 [5.3e-3 1.5e-3 1.3e-3 6.2e-3 2.5e-3 7.3e-4 9.6e-4] | unchoked 0 [-] | failed 2
+(a) flat-lp    cool .05/.05       M0.6  θ0.937: choked 6 [3.1e-3 8.4e-4 7.7e-4 3.6e-3 1.5e-3 4.2e-4 5.5e-4] | unchoked 0 [-] | failed 2
+(a) flat-lp    cool .05/.05       M1.2  θ1.125: choked 6 [6.1e-3 1.7e-3 1.5e-3 7.2e-3 2.9e-3 8.3e-4 1.1e-3] | unchoked 0 [-] | failed 2
+(a) flat-lp    cool .05/.05       M1.6  θ1.321: choked 6 [1.6e-2 4.3e-3 4.0e-3 1.9e-2 7.5e-3 2.1e-3 2.8e-3] | unchoked 0 [-] | failed 2
+(a) flat-lp    cool .05/.05       M2    θ1.573: choked 6 [2.9e-2 7.7e-3 7.1e-3 3.4e-2 1.4e-2 3.8e-3 5.1e-3] | unchoked 0 [-] | failed 2
+(a) flat-lp    lever stator       M0.3  θ0.889: choked 6 [5.4e-3 1.3e-3 1.2e-3 6.1e-3 2.5e-3 7.5e-4 8.2e-4] | unchoked 0 [-] | failed 2
+(a) flat-lp    lever stator       M0.6  θ0.937: choked 6 [3.1e-3 7.3e-4 7.0e-4 3.5e-3 1.5e-3 4.3e-4 4.7e-4] | unchoked 0 [-] | failed 2
+(a) flat-lp    lever stator       M1.2  θ1.125: choked 6 [6.2e-3 1.5e-3 1.4e-3 7.0e-3 2.9e-3 8.6e-4 9.3e-4] | unchoked 0 [-] | failed 2
+(a) flat-lp    lever stator       M1.6  θ1.321: choked 6 [1.6e-2 3.8e-3 3.6e-3 1.8e-2 7.5e-3 2.2e-3 2.4e-3] | unchoked 0 [-] | failed 2
+(a) flat-lp    lever stator       M2    θ1.573: choked 6 [2.9e-2 6.8e-3 6.4e-3 3.3e-2 1.3e-2 3.9e-3 4.3e-3] | unchoked 0 [-] | failed 2
+(a) flat-lp    lever bleed        M0.3  θ0.889: choked 6 [5.5e-3 1.6e-3 1.2e-3 6.2e-3 2.4e-3 7.3e-4 7.8e-4] | unchoked 1 [1.5e-3 9.2e-3 4.2e-4 6.6e-3 5.3e-3 1.2e-3 1.1e-3] | failed 1
+(a) flat-lp    lever bleed        M0.6  θ0.937: choked 7 [3.2e-3 8.9e-4 6.9e-4 3.6e-3 1.4e-3 4.3e-4 4.5e-4] | unchoked 1 [3.6e-4 8.5e-3 2.2e-4 4.4e-3 5.4e-3 1.6e-3 1.0e-3] | failed 0
+(a) flat-lp    lever bleed        M1.2  θ1.125: choked 8 [6.3e-3 1.8e-3 1.4e-3 7.2e-3 2.8e-3 8.6e-4 8.9e-4] | unchoked 0 [-] | failed 0
+(a) flat-lp    lever bleed        M1.6  θ1.321: choked 8 [1.6e-2 4.6e-3 3.5e-3 1.9e-2 7.2e-3 2.2e-3 2.3e-3] | unchoked 0 [-] | failed 0
+(a) flat-lp    lever bleed        M2    θ1.573: choked 8 [2.9e-2 8.1e-3 6.4e-3 3.3e-2 1.3e-2 3.9e-3 4.1e-3] | unchoked 0 [-] | failed 0
+(a) flat-lp    lever both         M0.3  θ0.889: choked 6 [5.5e-3 1.4e-3 1.2e-3 6.2e-3 2.4e-3 7.3e-4 7.8e-4] | unchoked 0 [-] | failed 2
+(a) flat-lp    lever both         M0.6  θ0.937: choked 6 [3.2e-3 7.8e-4 6.9e-4 3.6e-3 1.4e-3 4.2e-4 4.5e-4] | unchoked 0 [-] | failed 2
+(a) flat-lp    lever both         M1.2  θ1.125: choked 6 [6.3e-3 1.5e-3 1.4e-3 7.1e-3 2.8e-3 8.3e-4 9.0e-4] | unchoked 0 [-] | failed 2
+(a) flat-lp    lever both         M1.6  θ1.321: choked 6 [1.6e-2 4.0e-3 3.6e-3 1.8e-2 7.2e-3 2.1e-3 2.3e-3] | unchoked 0 [-] | failed 2
+(a) flat-lp    lever both         M2    θ1.573: choked 6 [2.9e-2 7.2e-3 6.4e-3 3.3e-2 1.3e-2 3.8e-3 4.1e-3] | unchoked 0 [-] | failed 2
+# (b) G6 split with a Mach-0.85 (design) table: unchoked points failing the choked constant by > 1e−9·F
+(b) flow/press M0.05: choked 13 (spread 4.9e-16), unchoked 2 of which fail 2, no point 0
+(b) flow/press M0.15: choked 13 (spread 2.0e-16), unchoked 2 of which fail 2, no point 0
+(b) flow/press M0.3 : choked 14 (spread 4.9e-16), unchoked 1 of which fail 1, no point 0
+(b) flow/press M0.5 : choked 14 (spread 4.8e-16), unchoked 1 of which fail 1, no point 0
+(b) flow/press M0.6 : choked 15 (spread 6.6e-16), unchoked 0 of which fail 0, no point 0
+(b) flow/press M1.2 : choked 15 (spread 1.1e-15), unchoked 0 of which fail 0, no point 0
+(b) flow/press M1.4 : choked 15 (spread 1.8e-3), unchoked 0 of which fail 0, no point 0
+(b) flow/press M1.6 : choked 15 (spread 9.7e-3), unchoked 0 of which fail 0, no point 0
+(b) flow/press M2: no design table
+(b) flow/press M2.5: no design table
+(b) press/flow M0.05: choked 13 (spread 4.7e-16), unchoked 2 of which fail 2, no point 0
+(b) press/flow M0.15: choked 13 (spread 5.4e-16), unchoked 2 of which fail 2, no point 0
+(b) press/flow M0.3 : choked 14 (spread 4.0e-16), unchoked 1 of which fail 1, no point 0
+(b) press/flow M0.5 : choked 14 (spread 9.7e-16), unchoked 1 of which fail 1, no point 0
+(b) press/flow M0.6 : choked 15 (spread 5.4e-16), unchoked 0 of which fail 0, no point 0
+(b) press/flow M1.2 : choked 15 (spread 3.7e-16), unchoked 0 of which fail 0, no point 0
+(b) press/flow M1.4 : choked 15 (spread 1.6e-3), unchoked 0 of which fail 0, no point 0
+(b) press/flow M1.6 : choked 15 (spread 9.3e-3), unchoked 0 of which fail 0, no point 0
+(b) press/flow M2: no design table
+(b) press/flow M2.5: no design table
+(b) tilted     M0.05: choked 13 (spread 4.9e-16), unchoked 2 of which fail 2, no point 0
+(b) tilted     M0.15: choked 13 (spread 3.5e-16), unchoked 2 of which fail 2, no point 0
+(b) tilted     M0.3 : choked 14 (spread 4.4e-16), unchoked 1 of which fail 1, no point 0
+(b) tilted     M0.5 : choked 14 (spread 1.1e-15), unchoked 1 of which fail 1, no point 0
+(b) tilted     M0.6 : choked 15 (spread 4.0e-16), unchoked 0 of which fail 0, no point 0
+(b) tilted     M1.2 : choked 15 (spread 8.2e-16), unchoked 0 of which fail 0, no point 0
+(b) tilted     M1.4 : choked 15 (spread 1.9e-3), unchoked 0 of which fail 0, no point 0
+(b) tilted     M1.6 : choked 15 (spread 9.8e-3), unchoked 0 of which fail 0, no point 0
+(b) tilted     M2: no design table
+(b) tilted     M2.5: no design table
+(b) flat-lp    M0.05: choked 13 (spread 3.5e-16), unchoked 2 of which fail 2, no point 0
+(b) flat-lp    M0.15: choked 14 (spread 3.9e-16), unchoked 1 of which fail 1, no point 0
+(b) flat-lp    M0.3 : choked 14 (spread 3.0e-16), unchoked 1 of which fail 1, no point 0
+(b) flat-lp    M0.5 : choked 14 (spread 8.9e-16), unchoked 1 of which fail 1, no point 0
+(b) flat-lp    M0.6 : choked 15 (spread 4.0e-16), unchoked 0 of which fail 0, no point 0
+(b) flat-lp    M1.2: no design table
+(b) flat-lp    M1.4: no design table
+(b) flat-lp    M1.6: no design table
+(b) flat-lp    M2: no design table
+(b) flat-lp    M2.5: no design table
