@@ -1,0 +1,128 @@
+z 5579.3 dT -1.92 M 0.05 shape 0 1000->1400: start Choked end Choked  unchoked points 0/126
+z 5579.3 dT -1.92 M 0.05 shape 0 700->1400: start Subsonic end Choked  unchoked points 5/126
+z 5579.3 dT -1.92 M 0.05 shape 3 1000->1400: start Choked end Choked  unchoked points 0/126
+z 5579.3 dT -1.92 M 0.05 shape 3 700->1400: start Subsonic end Choked  unchoked points 5/126
+z 5579.3 dT -1.92 M  0.2 shape 0 1000->1400: start Choked end Choked  unchoked points 0/126
+z 5579.3 dT -1.92 M  0.2 shape 0 700->1400: start Subsonic end Choked  unchoked points 4/126
+z 5579.3 dT -1.92 M  0.2 shape 3 1000->1400: start Choked end Choked  unchoked points 0/126
+z 5579.3 dT -1.92 M  0.2 shape 3 700->1400: start Subsonic end Choked  unchoked points 4/126
+z 5579.3 dT -1.92 M  0.3 shape 0 1000->1400: start Choked end Choked  unchoked points 0/126
+z 5579.3 dT -1.92 M  0.3 shape 0 700->1400: start Subsonic end Choked  unchoked points 4/126
+z 5579.3 dT -1.92 M  0.3 shape 3 1000->1400: start Choked end Choked  unchoked points 0/126
+z 5579.3 dT -1.92 M  0.3 shape 3 700->1400: start Subsonic end Choked  unchoked points 3/126
+z 5579.3 dT -1.92 M  0.4 shape 0 1000->1400: start Choked end Choked  unchoked points 0/126
+z 5579.3 dT -1.92 M  0.4 shape 0 700->1400: start Subsonic end Choked  unchoked points 3/126
+z 5579.3 dT -1.92 M  0.4 shape 3 1000->1400: start Choked end Choked  unchoked points 0/126
+z 5579.3 dT -1.92 M  0.4 shape 3 700->1400: start Subsonic end Choked  unchoked points 2/126
+z 5579.3 dT -1.92 M  0.5 shape 0 1000->1400: start Choked end Choked  unchoked points 0/126
+z 5579.3 dT -1.92 M  0.5 shape 0 700->1400: start Subsonic end Choked  unchoked points 1/126
+z 5579.3 dT -1.92 M  0.5 shape 3 1000->1400: start Choked end Choked  unchoked points 0/126
+z 5579.3 dT -1.92 M  0.5 shape 3 700->1400: start Subsonic end Choked  unchoked points 1/126
+z 5579.3 dT -1.92 M  0.6 shape 0 1000->1400: start Choked end Choked  unchoked points 0/126
+z 5579.3 dT -1.92 M  0.6 shape 0 700->1400: start Choked end Choked  unchoked points 0/126
+z 5579.3 dT -1.92 M  0.6 shape 3 1000->1400: start Choked end Choked  unchoked points 0/126
+z 5579.3 dT -1.92 M  0.6 shape 3 700->1400: start Choked end Choked  unchoked points 0/126
+z 5579.3 dT -1.92 M  0.7 shape 0 1000->1400: start Choked end Choked  unchoked points 0/126
+z 5579.3 dT -1.92 M  0.7 shape 0 700->1400: start Choked end Choked  unchoked points 0/126
+z 5579.3 dT -1.92 M  0.7 shape 3 1000->1400: start Choked end Choked  unchoked points 0/126
+z 5579.3 dT -1.92 M  0.7 shape 3 700->1400: REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressors would have to run off the pa
+z 5579.3 dT -1.92 M 0.85 shape 0 1000->1400: start Choked end Choked  unchoked points 0/126
+z 5579.3 dT -1.92 M 0.85 shape 0 700->1400: start Choked end Choked  unchoked points 0/126
+z 5579.3 dT -1.92 M 0.85 shape 3 1000->1400: start Choked end Choked  unchoked points 0/126
+z 5579.3 dT -1.92 M 0.85 shape 3 700->1400: REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressors would have to run off the pa
+z      0 dT +0 M 0.05 shape 0 1000->1400: start Choked end Choked  unchoked points 0/126
+z      0 dT +0 M 0.05 shape 0 700->1400: start Subsonic end Choked  unchoked points 12/126
+z      0 dT +0 M 0.05 shape 3 1000->1400: start Choked end Choked  unchoked points 0/126
+z      0 dT +0 M 0.05 shape 3 700->1400: REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressors would have to run off the pa
+z      0 dT +0 M  0.2 shape 0 1000->1400: start Choked end Choked  unchoked points 0/126
+z      0 dT +0 M  0.2 shape 0 700->1400: start Subsonic end Choked  unchoked points 12/126
+z      0 dT +0 M  0.2 shape 3 1000->1400: start Choked end Choked  unchoked points 0/126
+z      0 dT +0 M  0.2 shape 3 700->1400: REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressors would have to run off the pa
+z      0 dT +0 M  0.3 shape 0 1000->1400: start Choked end Choked  unchoked points 0/126
+z      0 dT +0 M  0.3 shape 0 700->1400: start Subsonic end Choked  unchoked points 11/126
+z      0 dT +0 M  0.3 shape 3 1000->1400: start Choked end Choked  unchoked points 0/126
+z      0 dT +0 M  0.3 shape 3 700->1400: REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressors would have to run off the pa
+z      0 dT +0 M  0.4 shape 0 1000->1400: start Choked end Choked  unchoked points 0/126
+z      0 dT +0 M  0.4 shape 0 700->1400: start Subsonic end Choked  unchoked points 10/126
+z      0 dT +0 M  0.4 shape 3 1000->1400: start Choked end Choked  unchoked points 0/126
+z      0 dT +0 M  0.4 shape 3 700->1400: REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressors would have to run off the pa
+z      0 dT +0 M  0.5 shape 0 1000->1400: start Choked end Choked  unchoked points 0/126
+z      0 dT +0 M  0.5 shape 0 700->1400: start Subsonic end Choked  unchoked points 9/126
+z      0 dT +0 M  0.5 shape 3 1000->1400: start Choked end Choked  unchoked points 0/126
+z      0 dT +0 M  0.5 shape 3 700->1400: REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressors would have to run off the pa
+z      0 dT +0 M  0.6 shape 0 1000->1400: start Choked end Choked  unchoked points 0/126
+z      0 dT +0 M  0.6 shape 0 700->1400: start Subsonic end Choked  unchoked points 7/126
+z      0 dT +0 M  0.6 shape 3 1000->1400: start Choked end Choked  unchoked points 0/126
+z      0 dT +0 M  0.6 shape 3 700->1400: REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressors would have to run off the pa
+z      0 dT +0 M  0.7 shape 0 1000->1400: start Choked end Choked  unchoked points 0/126
+z      0 dT +0 M  0.7 shape 0 700->1400: start Subsonic end Choked  unchoked points 5/126
+z      0 dT +0 M  0.7 shape 3 1000->1400: start Choked end Choked  unchoked points 0/126
+z      0 dT +0 M  0.7 shape 3 700->1400: REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressors would have to run off the pa
+z      0 dT +0 M 0.85 shape 0 1000->1400: start Choked end Choked  unchoked points 0/126
+z      0 dT +0 M 0.85 shape 0 700->1400: start Subsonic end Choked  unchoked points 1/126
+z      0 dT +0 M 0.85 shape 3 1000->1400: start Choked end Choked  unchoked points 0/126
+z      0 dT +0 M 0.85 shape 3 700->1400: REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressors would have to run off the pa
+z      0 dT +40 M 0.05 shape 0 1000->1400: start Choked end Choked  unchoked points 0/126
+z      0 dT +40 M 0.05 shape 0 700->1400: start Subsonic end Choked  unchoked points 20/126
+z      0 dT +40 M 0.05 shape 3 1000->1400: start Choked end Choked  unchoked points 0/126
+z      0 dT +40 M 0.05 shape 3 700->1400: REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressors would have to run off the pa
+z      0 dT +40 M  0.2 shape 0 1000->1400: start Choked end Choked  unchoked points 0/126
+z      0 dT +40 M  0.2 shape 0 700->1400: start Subsonic end Choked  unchoked points 20/126
+z      0 dT +40 M  0.2 shape 3 1000->1400: start Choked end Choked  unchoked points 0/126
+z      0 dT +40 M  0.2 shape 3 700->1400: REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressors would have to run off the pa
+z      0 dT +40 M  0.3 shape 0 1000->1400: start Choked end Choked  unchoked points 0/126
+z      0 dT +40 M  0.3 shape 0 700->1400: start Subsonic end Choked  unchoked points 19/126
+z      0 dT +40 M  0.3 shape 3 1000->1400: start Choked end Choked  unchoked points 0/126
+z      0 dT +40 M  0.3 shape 3 700->1400: REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressors would have to run off the pa
+z      0 dT +40 M  0.4 shape 0 1000->1400: start Choked end Choked  unchoked points 0/126
+z      0 dT +40 M  0.4 shape 0 700->1400: start Subsonic end Choked  unchoked points 18/126
+z      0 dT +40 M  0.4 shape 3 1000->1400: start Choked end Choked  unchoked points 0/126
+z      0 dT +40 M  0.4 shape 3 700->1400: REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressors would have to run off the pa
+z      0 dT +40 M  0.5 shape 0 1000->1400: start Choked end Choked  unchoked points 0/126
+z      0 dT +40 M  0.5 shape 0 700->1400: start Subsonic end Choked  unchoked points 16/126
+z      0 dT +40 M  0.5 shape 3 1000->1400: start Choked end Choked  unchoked points 0/126
+z      0 dT +40 M  0.5 shape 3 700->1400: REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressors would have to run off the pa
+z      0 dT +40 M  0.6 shape 0 1000->1400: start Choked end Choked  unchoked points 0/126
+z      0 dT +40 M  0.6 shape 0 700->1400: start Subsonic end Choked  unchoked points 15/126
+z      0 dT +40 M  0.6 shape 3 1000->1400: start Choked end Choked  unchoked points 0/126
+z      0 dT +40 M  0.6 shape 3 700->1400: REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressors would have to run off the pa
+z      0 dT +40 M  0.7 shape 0 1000->1400: start Choked end Choked  unchoked points 0/126
+z      0 dT +40 M  0.7 shape 0 700->1400: start Subsonic end Choked  unchoked points 13/126
+z      0 dT +40 M  0.7 shape 3 1000->1400: start Choked end Choked  unchoked points 0/126
+z      0 dT +40 M  0.7 shape 3 700->1400: REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressors would have to run off the pa
+z      0 dT +40 M 0.85 shape 0 1000->1400: start Choked end Choked  unchoked points 0/126
+z      0 dT +40 M 0.85 shape 0 700->1400: start Subsonic end Choked  unchoked points 9/126
+z      0 dT +40 M 0.85 shape 3 1000->1400: start Choked end Choked  unchoked points 0/126
+z      0 dT +40 M 0.85 shape 3 700->1400: REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressors would have to run off the pa
+z  11000 dT +0 M 0.05 shape 0 1000->1400: start Choked end Choked  unchoked points 0/126
+z  11000 dT +0 M 0.05 shape 0 700->1400: start Choked end Choked  unchoked points 0/18
+z  11000 dT +0 M 0.05 shape 3 1000->1400: start Choked end Choked  unchoked points 0/126
+z  11000 dT +0 M 0.05 shape 3 700->1400: start Choked end Choked  unchoked points 0/18
+z  11000 dT +0 M  0.2 shape 0 1000->1400: start Choked end Choked  unchoked points 0/126
+z  11000 dT +0 M  0.2 shape 0 700->1400: start Choked end Choked  unchoked points 0/19
+z  11000 dT +0 M  0.2 shape 3 1000->1400: start Choked end Choked  unchoked points 0/126
+z  11000 dT +0 M  0.2 shape 3 700->1400: start Choked end Choked  unchoked points 0/18
+z  11000 dT +0 M  0.3 shape 0 1000->1400: start Choked end Choked  unchoked points 0/126
+z  11000 dT +0 M  0.3 shape 0 700->1400: start Choked end Choked  unchoked points 0/19
+z  11000 dT +0 M  0.3 shape 3 1000->1400: start Choked end Choked  unchoked points 0/126
+z  11000 dT +0 M  0.3 shape 3 700->1400: start Choked end Choked  unchoked points 0/18
+z  11000 dT +0 M  0.4 shape 0 1000->1400: start Choked end Choked  unchoked points 0/126
+z  11000 dT +0 M  0.4 shape 0 700->1400: start Choked end Choked  unchoked points 0/19
+z  11000 dT +0 M  0.4 shape 3 1000->1400: start Choked end Choked  unchoked points 0/126
+z  11000 dT +0 M  0.4 shape 3 700->1400: start Choked end Choked  unchoked points 0/19
+z  11000 dT +0 M  0.5 shape 0 1000->1400: start Choked end Choked  unchoked points 0/126
+z  11000 dT +0 M  0.5 shape 0 700->1400: start Choked end Choked  unchoked points 0/20
+z  11000 dT +0 M  0.5 shape 3 1000->1400: start Choked end Choked  unchoked points 0/126
+z  11000 dT +0 M  0.5 shape 3 700->1400: start Choked end Choked  unchoked points 0/19
+z  11000 dT +0 M  0.6 shape 0 1000->1400: start Choked end Choked  unchoked points 0/126
+z  11000 dT +0 M  0.6 shape 0 700->1400: start Choked end Choked  unchoked points 0/20
+z  11000 dT +0 M  0.6 shape 3 1000->1400: start Choked end Choked  unchoked points 0/126
+z  11000 dT +0 M  0.6 shape 3 700->1400: start Choked end Choked  unchoked points 0/20
+z  11000 dT +0 M  0.7 shape 0 1000->1400: start Choked end Choked  unchoked points 0/126
+z  11000 dT +0 M  0.7 shape 0 700->1400: start Choked end Choked  unchoked points 0/21
+z  11000 dT +0 M  0.7 shape 3 1000->1400: start Choked end Choked  unchoked points 0/126
+z  11000 dT +0 M  0.7 shape 3 700->1400: start Choked end Choked  unchoked points 0/21
+z  11000 dT +0 M 0.85 shape 0 1000->1400: start Choked end Choked  unchoked points 0/126
+z  11000 dT +0 M 0.85 shape 0 700->1400: start Choked end Choked  unchoked points 0/23
+z  11000 dT +0 M 0.85 shape 3 1000->1400: start Choked end Choked  unchoked points 0/126
+z  11000 dT +0 M 0.85 shape 3 700->1400: start Choked end Choked  unchoked points 0/23

@@ -1,0 +1,16 @@
+z     0 dT +40 shape 0: start end Subsonic, pin-to-root pi gap 2.02e-2
+z     0 dT +40 shape 1: start end Subsonic, pin-to-root pi gap 1.92e-2
+z     0 dT +40 shape 2: start end Subsonic, pin-to-root pi gap 2.04e-2
+z 0 dT +40 shape 3: REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+z     0 dT +0 shape 0: start end Subsonic, pin-to-root pi gap 2.66e-4
+z     0 dT +0 shape 1: start end Subsonic, pin-to-root pi gap 1.64e-4
+z     0 dT +0 shape 2: start end Subsonic, pin-to-root pi gap 3.09e-4
+z 0 dT +0 shape 3: REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+z     0 dT +20 shape 0: start end Subsonic, pin-to-root pi gap 6.97e-3
+z     0 dT +20 shape 1: start end Subsonic, pin-to-root pi gap 6.39e-3
+z     0 dT +20 shape 2: start end Subsonic, pin-to-root pi gap 7.14e-3
+z 0 dT +20 shape 3: REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor
+z  2000 dT +40 shape 0: start end Subsonic, pin-to-root pi gap 1.10e-2
+z  2000 dT +40 shape 1: start end Subsonic, pin-to-root pi gap 1.03e-2
+z  2000 dT +40 shape 2: start end Subsonic, pin-to-root pi gap 1.12e-2
+z 2000 dT +40 shape 3: REFUSED At the starting throttle (700 K): the engine has no steady operating point: the compressor

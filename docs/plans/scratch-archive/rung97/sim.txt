@@ -1,0 +1,160 @@
+shape 0 plain            kT 0.8 kp 1: rel err thrust 1.4e-2 epr 9.7e-3 nuL 3.1e-3 nuH 2.2e-3 fuel 1.1e-2
+shape 0 plain            kT 1.2 kp 1: rel err thrust 1.4e-2 epr 9.9e-3 nuL 3.1e-3 nuH 2.2e-3 fuel 1.1e-2
+shape 0 plain            kT 1 kp 0.5: rel err thrust 0.0e0 epr 0.0e0 nuL 0.0e0 nuH 0.0e0 fuel 0.0e0
+shape 0 plain            kT 1.2 kp 0.5: rel err thrust 1.4e-2 epr 9.9e-3 nuL 3.1e-3 nuH 2.2e-3 fuel 1.1e-2
+shape 0 plain            kT 0.9 kp 2: rel err thrust 6.8e-3 epr 4.9e-3 nuL 1.5e-3 nuH 1.1e-3 fuel 5.6e-3
+shape 0 gen HP pow .02   kT 0.8 kp 1: rel err thrust 2.4e-2 epr 1.5e-2 nuL 4.1e-3 nuH 6.7e-3 fuel 1.5e-2
+shape 0 gen HP pow .02   kT 1.2 kp 1: rel err thrust 2.1e-2 epr 1.3e-2 nuL 3.9e-3 nuH 5.3e-3 fuel 1.4e-2
+shape 0 gen HP pow .02   kT 1 kp 0.5: rel err thrust 1.2e-1 epr 8.2e-2 nuL 1.3e-2 nuH 4.8e-2 fuel 6.4e-2
+shape 0 gen HP pow .02   kT 1.2 kp 0.5: rel err thrust 8.9e-2 epr 6.1e-2 nuL 9.1e-3 nuH 3.7e-2 fuel 4.5e-2
+shape 0 gen HP pow .02   kT 0.9 kp 2: rel err thrust 4.7e-2 epr 3.2e-2 nuL 5.0e-3 nuH 1.9e-2 fuel 2.4e-2
+shape 0 gen LP pow .02   kT 0.8 kp 1: rel err thrust 2.2e-2 epr 1.4e-2 nuL 1.2e-2 nuH 1.9e-3 fuel 1.5e-2
+shape 0 gen LP pow .02   kT 1.2 kp 1: rel err thrust 1.9e-2 epr 1.3e-2 nuL 9.5e-3 nuH 2.0e-3 fuel 1.4e-2
+shape 0 gen LP pow .02   kT 1 kp 0.5: rel err thrust 1.0e-1 epr 6.9e-2 nuL 9.6e-2 nuH 2.6e-3 fuel 5.2e-2
+shape 0 gen LP pow .02   kT 1.2 kp 0.5: rel err thrust 7.4e-2 epr 5.1e-2 nuL 7.5e-2 nuH 4.3e-3 fuel 3.6e-2
+shape 0 gen LP pow .02   kT 0.9 kp 2: rel err thrust 4.1e-2 epr 2.8e-2 nuL 3.8e-2 nuH 2.2e-3 fuel 1.9e-2
+shape 0 cust share .05   kT 0.8 kp 1: rel err thrust 1.4e-2 epr 9.7e-3 nuL 3.1e-3 nuH 2.2e-3 fuel 1.1e-2
+shape 0 cust share .05   kT 1.2 kp 1: rel err thrust 1.4e-2 epr 9.9e-3 nuL 3.1e-3 nuH 2.2e-3 fuel 1.1e-2
+shape 0 cust share .05   kT 1 kp 0.5: rel err thrust 0.0e0 epr 0.0e0 nuL 0.0e0 nuH 0.0e0 fuel 0.0e0
+shape 0 cust share .05   kT 1.2 kp 0.5: rel err thrust 1.4e-2 epr 9.9e-3 nuL 3.1e-3 nuH 2.2e-3 fuel 1.1e-2
+shape 0 cust share .05   kT 0.9 kp 2: rel err thrust 7.1e-3 epr 4.9e-3 nuL 1.5e-3 nuH 1.1e-3 fuel 5.6e-3
+shape 0 cust amount .05  kT 0.8 kp 1: rel err thrust 2.4e-2 epr 1.1e-2 nuL 3.7e-3 nuH 2.7e-3 fuel 5.9e-3
+shape 0 cust amount .05  kT 1.2 kp 1: rel err thrust 2.0e-2 epr 9.6e-3 nuL 3.2e-3 nuH 2.3e-3 fuel 4.8e-3
+shape 0 cust amount .05  kT 1 kp 0.5: rel err thrust 3.3e-1 epr 1.6e-1 nuL 5.6e-2 nuH 4.0e-2 fuel 1.2e-1
+shape 0 cust amount .05  kT 1.2 kp 0.5: rel err thrust 3.8e-1 epr 1.8e-1 nuL 6.6e-2 nuH 4.7e-2 fuel 1.4e-1
+shape 0 cust amount .05  kT 0.9 kp 2: rel err thrust 1.7e-1 epr 8.0e-2 nuL 2.6e-2 nuH 1.9e-2 fuel 5.9e-2
+shape 0 cool .05/.05     kT 0.8 kp 1: rel err thrust 1.4e-2 epr 9.7e-3 nuL 3.1e-3 nuH 2.4e-3 fuel 1.1e-2
+shape 0 cool .05/.05     kT 1.2 kp 1: rel err thrust 1.4e-2 epr 9.9e-3 nuL 3.1e-3 nuH 2.5e-3 fuel 1.2e-2
+shape 0 cool .05/.05     kT 1 kp 0.5: rel err thrust 0.0e0 epr 0.0e0 nuL 0.0e0 nuH 0.0e0 fuel 0.0e0
+shape 0 cool .05/.05     kT 1.2 kp 0.5: rel err thrust 1.4e-2 epr 9.9e-3 nuL 3.1e-3 nuH 2.5e-3 fuel 1.2e-2
+shape 0 cool .05/.05     kT 0.9 kp 2: rel err thrust 7.1e-3 epr 4.9e-3 nuL 1.5e-3 nuH 1.2e-3 fuel 5.7e-3
+shape 0 lever stator     kT 0.8 kp 1: rel err thrust 1.4e-2 epr 9.8e-3 nuL 2.5e-3 nuH 2.2e-3 fuel 1.1e-2
+shape 0 lever stator     kT 1.2 kp 1: rel err thrust 1.4e-2 epr 1.0e-2 nuL 2.6e-3 nuH 2.2e-3 fuel 1.1e-2
+shape 0 lever stator     kT 1 kp 0.5: rel err thrust 0.0e0 epr 0.0e0 nuL 0.0e0 nuH 0.0e0 fuel 0.0e0
+shape 0 lever stator     kT 1.2 kp 0.5: rel err thrust 1.4e-2 epr 1.0e-2 nuL 2.6e-3 nuH 2.2e-3 fuel 1.1e-2
+shape 0 lever stator     kT 0.9 kp 2: rel err thrust 6.8e-3 epr 4.9e-3 nuL 1.3e-3 nuH 1.1e-3 fuel 5.6e-3
+shape 0 lever bleed      kT 0.8 kp 1: rel err thrust 1.4e-2 epr 1.0e-2 nuL 3.3e-3 nuH 2.2e-3 fuel 1.1e-2
+shape 0 lever bleed      kT 1.2 kp 1: rel err thrust 1.5e-2 epr 1.0e-2 nuL 3.3e-3 nuH 2.2e-3 fuel 1.2e-2
+shape 0 lever bleed      kT 1 kp 0.5: rel err thrust 0.0e0 epr 0.0e0 nuL 0.0e0 nuH 0.0e0 fuel 0.0e0
+shape 0 lever bleed      kT 1.2 kp 0.5: rel err thrust 1.5e-2 epr 1.0e-2 nuL 3.3e-3 nuH 2.2e-3 fuel 1.2e-2
+shape 0 lever bleed      kT 0.9 kp 2: rel err thrust 7.2e-3 epr 5.1e-3 nuL 1.6e-3 nuH 1.1e-3 fuel 5.7e-3
+shape 1 plain            kT 0.8 kp 1: rel err thrust 1.4e-2 epr 9.8e-3 nuL 3.2e-3 nuH 2.3e-3 fuel 1.1e-2
+shape 1 plain            kT 1.2 kp 1: rel err thrust 1.4e-2 epr 1.0e-2 nuL 3.3e-3 nuH 2.3e-3 fuel 1.1e-2
+shape 1 plain            kT 1 kp 0.5: rel err thrust 0.0e0 epr 0.0e0 nuL 0.0e0 nuH 0.0e0 fuel 0.0e0
+shape 1 plain            kT 1.2 kp 0.5: rel err thrust 1.4e-2 epr 1.0e-2 nuL 3.3e-3 nuH 2.3e-3 fuel 1.1e-2
+shape 1 plain            kT 0.9 kp 2: rel err thrust 6.8e-3 epr 4.9e-3 nuL 1.6e-3 nuH 1.1e-3 fuel 5.6e-3
+shape 1 gen HP pow .02   kT 0.8 kp 1: rel err thrust 2.3e-2 epr 1.4e-2 nuL 4.6e-3 nuH 6.4e-3 fuel 1.5e-2
+shape 1 gen HP pow .02   kT 1.2 kp 1: rel err thrust 2.0e-2 epr 1.3e-2 nuL 4.3e-3 nuH 5.1e-3 fuel 1.4e-2
+shape 1 gen HP pow .02   kT 1 kp 0.5: rel err thrust 1.2e-1 epr 7.7e-2 nuL 1.7e-2 nuH 4.4e-2 fuel 6.0e-2
+shape 1 gen HP pow .02   kT 1.2 kp 0.5: rel err thrust 8.4e-2 epr 5.7e-2 nuL 1.2e-2 nuH 3.4e-2 fuel 4.2e-2
+shape 1 gen HP pow .02   kT 0.9 kp 2: rel err thrust 4.5e-2 epr 3.1e-2 nuL 6.6e-3 nuH 1.8e-2 fuel 2.2e-2
+shape 1 gen LP pow .02   kT 0.8 kp 1: rel err thrust 2.3e-2 epr 1.4e-2 nuL 1.2e-2 nuH 2.1e-3 fuel 1.5e-2
+shape 1 gen LP pow .02   kT 1.2 kp 1: rel err thrust 2.0e-2 epr 1.3e-2 nuL 9.6e-3 nuH 2.2e-3 fuel 1.4e-2
+shape 1 gen LP pow .02   kT 1 kp 0.5: rel err thrust 1.1e-1 epr 7.4e-2 nuL 9.7e-2 nuH 2.0e-3 fuel 5.7e-2
+shape 1 gen LP pow .02   kT 1.2 kp 0.5: rel err thrust 8.0e-2 epr 5.5e-2 nuL 7.5e-2 nuH 4.0e-3 fuel 4.0e-2
+shape 1 gen LP pow .02   kT 0.9 kp 2: rel err thrust 4.4e-2 epr 3.0e-2 nuL 3.8e-2 nuH 2.0e-3 fuel 2.1e-2
+shape 1 cust share .05   kT 0.8 kp 1: rel err thrust 1.4e-2 epr 9.8e-3 nuL 3.2e-3 nuH 2.3e-3 fuel 1.1e-2
+shape 1 cust share .05   kT 1.2 kp 1: rel err thrust 1.4e-2 epr 9.9e-3 nuL 3.3e-3 nuH 2.3e-3 fuel 1.1e-2
+shape 1 cust share .05   kT 1 kp 0.5: rel err thrust 0.0e0 epr 0.0e0 nuL 0.0e0 nuH 0.0e0 fuel 0.0e0
+shape 1 cust share .05   kT 1.2 kp 0.5: rel err thrust 1.4e-2 epr 9.9e-3 nuL 3.3e-3 nuH 2.3e-3 fuel 1.1e-2
+shape 1 cust share .05   kT 0.9 kp 2: rel err thrust 7.1e-3 epr 4.9e-3 nuL 1.6e-3 nuH 1.1e-3 fuel 5.6e-3
+shape 1 cust amount .05  kT 0.8 kp 1: rel err thrust 2.4e-2 epr 1.1e-2 nuL 3.7e-3 nuH 2.9e-3 fuel 5.9e-3
+shape 1 cust amount .05  kT 1.2 kp 1: rel err thrust 2.0e-2 epr 9.7e-3 nuL 3.2e-3 nuH 2.5e-3 fuel 4.8e-3
+shape 1 cust amount .05  kT 1 kp 0.5: rel err thrust 3.3e-1 epr 1.6e-1 nuL 5.6e-2 nuH 4.4e-2 fuel 1.3e-1
+shape 1 cust amount .05  kT 1.2 kp 0.5: rel err thrust 3.9e-1 epr 1.8e-1 nuL 6.6e-2 nuH 5.1e-2 fuel 1.4e-1
+shape 1 cust amount .05  kT 0.9 kp 2: rel err thrust 1.7e-1 epr 8.1e-2 nuL 2.6e-2 nuH 2.0e-2 fuel 5.9e-2
+shape 1 cool .05/.05     kT 0.8 kp 1: rel err thrust 1.4e-2 epr 9.7e-3 nuL 3.2e-3 nuH 2.5e-3 fuel 1.1e-2
+shape 1 cool .05/.05     kT 1.2 kp 1: rel err thrust 1.4e-2 epr 9.9e-3 nuL 3.2e-3 nuH 2.6e-3 fuel 1.2e-2
+shape 1 cool .05/.05     kT 1 kp 0.5: rel err thrust 0.0e0 epr 0.0e0 nuL 0.0e0 nuH 0.0e0 fuel 0.0e0
+shape 1 cool .05/.05     kT 1.2 kp 0.5: rel err thrust 1.4e-2 epr 9.9e-3 nuL 3.2e-3 nuH 2.6e-3 fuel 1.2e-2
+shape 1 cool .05/.05     kT 0.9 kp 2: rel err thrust 7.1e-3 epr 4.9e-3 nuL 1.6e-3 nuH 1.3e-3 fuel 5.7e-3
+shape 1 lever stator     kT 0.8 kp 1: rel err thrust 1.4e-2 epr 9.7e-3 nuL 2.6e-3 nuH 2.3e-3 fuel 1.1e-2
+shape 1 lever stator     kT 1.2 kp 1: rel err thrust 1.4e-2 epr 9.9e-3 nuL 2.6e-3 nuH 2.3e-3 fuel 1.1e-2
+shape 1 lever stator     kT 1 kp 0.5: rel err thrust 0.0e0 epr 0.0e0 nuL 0.0e0 nuH 0.0e0 fuel 0.0e0
+shape 1 lever stator     kT 1.2 kp 0.5: rel err thrust 1.4e-2 epr 9.9e-3 nuL 2.6e-3 nuH 2.3e-3 fuel 1.1e-2
+shape 1 lever stator     kT 0.9 kp 2: rel err thrust 6.8e-3 epr 4.9e-3 nuL 1.3e-3 nuH 1.1e-3 fuel 5.6e-3
+shape 1 lever bleed      kT 0.8 kp 1: rel err thrust 1.4e-2 epr 1.0e-2 nuL 3.4e-3 nuH 2.3e-3 fuel 1.1e-2
+shape 1 lever bleed      kT 1.2 kp 1: rel err thrust 1.5e-2 epr 1.0e-2 nuL 3.4e-3 nuH 2.3e-3 fuel 1.2e-2
+shape 1 lever bleed      kT 1 kp 0.5: rel err thrust 0.0e0 epr 0.0e0 nuL 0.0e0 nuH 0.0e0 fuel 0.0e0
+shape 1 lever bleed      kT 1.2 kp 0.5: rel err thrust 1.5e-2 epr 1.0e-2 nuL 3.4e-3 nuH 2.3e-3 fuel 1.2e-2
+shape 1 lever bleed      kT 0.9 kp 2: rel err thrust 7.2e-3 epr 5.1e-3 nuL 1.7e-3 nuH 1.1e-3 fuel 5.7e-3
+shape 2 plain            kT 0.8 kp 1: rel err thrust 1.4e-2 epr 9.8e-3 nuL 3.1e-3 nuH 2.2e-3 fuel 1.1e-2
+shape 2 plain            kT 1.2 kp 1: rel err thrust 1.4e-2 epr 1.0e-2 nuL 3.2e-3 nuH 2.3e-3 fuel 1.1e-2
+shape 2 plain            kT 1 kp 0.5: rel err thrust 0.0e0 epr 0.0e0 nuL 0.0e0 nuH 0.0e0 fuel 0.0e0
+shape 2 plain            kT 1.2 kp 0.5: rel err thrust 1.4e-2 epr 1.0e-2 nuL 3.2e-3 nuH 2.3e-3 fuel 1.1e-2
+shape 2 plain            kT 0.9 kp 2: rel err thrust 6.8e-3 epr 4.9e-3 nuL 1.6e-3 nuH 1.1e-3 fuel 5.6e-3
+shape 2 gen HP pow .02   kT 0.8 kp 1: rel err thrust 2.4e-2 epr 1.5e-2 nuL 4.4e-3 nuH 6.6e-3 fuel 1.5e-2
+shape 2 gen HP pow .02   kT 1.2 kp 1: rel err thrust 2.1e-2 epr 1.3e-2 nuL 4.1e-3 nuH 5.2e-3 fuel 1.4e-2
+shape 2 gen HP pow .02   kT 1 kp 0.5: rel err thrust 1.2e-1 epr 8.1e-2 nuL 1.5e-2 nuH 4.6e-2 fuel 6.4e-2
+shape 2 gen HP pow .02   kT 1.2 kp 0.5: rel err thrust 8.9e-2 epr 6.1e-2 nuL 1.0e-2 nuH 3.6e-2 fuel 4.5e-2
+shape 2 gen HP pow .02   kT 0.9 kp 2: rel err thrust 4.7e-2 epr 3.2e-2 nuL 5.7e-3 nuH 1.9e-2 fuel 2.4e-2
+shape 2 gen LP pow .02   kT 0.8 kp 1: rel err thrust 2.2e-2 epr 1.4e-2 nuL 1.2e-2 nuH 2.0e-3 fuel 1.5e-2
+shape 2 gen LP pow .02   kT 1.2 kp 1: rel err thrust 1.9e-2 epr 1.3e-2 nuL 9.6e-3 nuH 2.1e-3 fuel 1.4e-2
+shape 2 gen LP pow .02   kT 1 kp 0.5: rel err thrust 1.1e-1 epr 7.1e-2 nuL 9.6e-2 nuH 2.3e-3 fuel 5.4e-2
+shape 2 gen LP pow .02   kT 1.2 kp 0.5: rel err thrust 7.6e-2 epr 5.3e-2 nuL 7.5e-2 nuH 4.2e-3 fuel 3.7e-2
+shape 2 gen LP pow .02   kT 0.9 kp 2: rel err thrust 4.2e-2 epr 2.9e-2 nuL 3.8e-2 nuH 2.1e-3 fuel 2.0e-2
+shape 2 cust share .05   kT 0.8 kp 1: rel err thrust 1.4e-2 epr 9.7e-3 nuL 3.1e-3 nuH 2.2e-3 fuel 1.1e-2
+shape 2 cust share .05   kT 1.2 kp 1: rel err thrust 1.4e-2 epr 9.9e-3 nuL 3.2e-3 nuH 2.3e-3 fuel 1.1e-2
+shape 2 cust share .05   kT 1 kp 0.5: rel err thrust 0.0e0 epr 0.0e0 nuL 0.0e0 nuH 0.0e0 fuel 0.0e0
+shape 2 cust share .05   kT 1.2 kp 0.5: rel err thrust 1.4e-2 epr 9.9e-3 nuL 3.2e-3 nuH 2.3e-3 fuel 1.1e-2
+shape 2 cust share .05   kT 0.9 kp 2: rel err thrust 7.1e-3 epr 4.9e-3 nuL 1.6e-3 nuH 1.1e-3 fuel 5.6e-3
+shape 2 cust amount .05  kT 0.8 kp 1: rel err thrust 2.4e-2 epr 1.1e-2 nuL 3.7e-3 nuH 2.8e-3 fuel 5.9e-3
+shape 2 cust amount .05  kT 1.2 kp 1: rel err thrust 2.0e-2 epr 9.7e-3 nuL 3.2e-3 nuH 2.4e-3 fuel 4.8e-3
+shape 2 cust amount .05  kT 1 kp 0.5: rel err thrust 3.3e-1 epr 1.6e-1 nuL 5.6e-2 nuH 4.2e-2 fuel 1.2e-1
+shape 2 cust amount .05  kT 1.2 kp 0.5: rel err thrust 3.9e-1 epr 1.8e-1 nuL 6.6e-2 nuH 4.9e-2 fuel 1.4e-1
+shape 2 cust amount .05  kT 0.9 kp 2: rel err thrust 1.7e-1 epr 8.0e-2 nuL 2.6e-2 nuH 1.9e-2 fuel 5.9e-2
+shape 2 cool .05/.05     kT 0.8 kp 1: rel err thrust 1.4e-2 epr 9.7e-3 nuL 3.1e-3 nuH 2.5e-3 fuel 1.1e-2
+shape 2 cool .05/.05     kT 1.2 kp 1: rel err thrust 1.4e-2 epr 9.9e-3 nuL 3.1e-3 nuH 2.5e-3 fuel 1.2e-2
+shape 2 cool .05/.05     kT 1 kp 0.5: rel err thrust 0.0e0 epr 0.0e0 nuL 0.0e0 nuH 0.0e0 fuel 0.0e0
+shape 2 cool .05/.05     kT 1.2 kp 0.5: rel err thrust 1.4e-2 epr 9.9e-3 nuL 3.1e-3 nuH 2.5e-3 fuel 1.2e-2
+shape 2 cool .05/.05     kT 0.9 kp 2: rel err thrust 7.1e-3 epr 4.9e-3 nuL 1.6e-3 nuH 1.2e-3 fuel 5.7e-3
+shape 2 lever stator     kT 0.8 kp 1: rel err thrust 1.4e-2 epr 9.8e-3 nuL 2.6e-3 nuH 2.2e-3 fuel 1.1e-2
+shape 2 lever stator     kT 1.2 kp 1: rel err thrust 1.4e-2 epr 1.0e-2 nuL 2.6e-3 nuH 2.3e-3 fuel 1.1e-2
+shape 2 lever stator     kT 1 kp 0.5: rel err thrust 0.0e0 epr 0.0e0 nuL 0.0e0 nuH 0.0e0 fuel 0.0e0
+shape 2 lever stator     kT 1.2 kp 0.5: rel err thrust 1.4e-2 epr 1.0e-2 nuL 2.6e-3 nuH 2.3e-3 fuel 1.1e-2
+shape 2 lever stator     kT 0.9 kp 2: rel err thrust 6.8e-3 epr 4.9e-3 nuL 1.3e-3 nuH 1.1e-3 fuel 5.6e-3
+shape 2 lever bleed      kT 0.8 kp 1: rel err thrust 1.4e-2 epr 1.0e-2 nuL 3.3e-3 nuH 2.2e-3 fuel 1.1e-2
+shape 2 lever bleed      kT 1.2 kp 1: rel err thrust 1.5e-2 epr 1.0e-2 nuL 3.3e-3 nuH 2.2e-3 fuel 1.2e-2
+shape 2 lever bleed      kT 1 kp 0.5: rel err thrust 0.0e0 epr 0.0e0 nuL 0.0e0 nuH 0.0e0 fuel 0.0e0
+shape 2 lever bleed      kT 1.2 kp 0.5: rel err thrust 1.5e-2 epr 1.0e-2 nuL 3.3e-3 nuH 2.2e-3 fuel 1.2e-2
+shape 2 lever bleed      kT 0.9 kp 2: rel err thrust 7.2e-3 epr 5.1e-3 nuL 1.7e-3 nuH 1.1e-3 fuel 5.7e-3
+shape 3 plain            kT 0.8 kp 1: rel err thrust 1.4e-2 epr 9.7e-3 nuL 2.6e-3 nuH 2.2e-3 fuel 1.1e-2
+shape 3 plain            kT 1.2 kp 1: rel err thrust 1.4e-2 epr 9.9e-3 nuL 2.6e-3 nuH 2.2e-3 fuel 1.1e-2
+shape 3 plain            kT 1 kp 0.5: rel err thrust 0.0e0 epr 0.0e0 nuL 0.0e0 nuH 0.0e0 fuel 0.0e0
+shape 3 plain            kT 1.2 kp 0.5: rel err thrust 1.4e-2 epr 9.9e-3 nuL 2.6e-3 nuH 2.2e-3 fuel 1.1e-2
+shape 3 plain            kT 0.9 kp 2: rel err thrust 6.8e-3 epr 4.9e-3 nuL 1.3e-3 nuH 1.1e-3 fuel 5.6e-3
+shape 3 gen HP pow .02   kT 0.8 kp 1: rel err thrust 2.3e-2 epr 1.4e-2 nuL 2.6e-3 nuH 6.6e-3 fuel 1.5e-2
+shape 3 gen HP pow .02   kT 1.2 kp 1: rel err thrust 2.0e-2 epr 1.3e-2 nuL 2.6e-3 nuH 5.2e-3 fuel 1.4e-2
+shape 3 gen HP pow .02   kT 1 kp 0.5: rel err thrust 1.1e-1 epr 7.5e-2 nuL 1.5e-4 nuH 4.6e-2 fuel 5.8e-2
+shape 3 gen HP pow .02   kT 1.2 kp 0.5: rel err thrust 8.1e-2 epr 5.6e-2 nuL 2.7e-3 nuH 3.6e-2 fuel 4.0e-2
+shape 3 gen HP pow .02   kT 0.9 kp 2: rel err thrust 4.3e-2 epr 3.0e-2 nuL 1.3e-3 nuH 1.9e-2 fuel 2.1e-2
+shape 3 gen LP pow .02   kT 0.8 kp 1: rel err thrust 2.2e-2 epr 1.4e-2 nuL 1.3e-2 nuH 1.9e-3 fuel 1.5e-2
+shape 3 gen LP pow .02   kT 1.2 kp 1: rel err thrust 1.9e-2 epr 1.3e-2 nuL 9.8e-3 nuH 2.0e-3 fuel 1.4e-2
+shape 3 gen LP pow .02   kT 1 kp 0.5: rel err thrust 1.0e-1 epr 7.0e-2 nuL 1.0e-1 nuH 2.6e-3 fuel 5.3e-2
+shape 3 gen LP pow .02   kT 1.2 kp 0.5: rel err thrust 7.5e-2 epr 5.2e-2 nuL 7.9e-2 nuH 4.3e-3 fuel 3.6e-2
+shape 3 gen LP pow .02   kT 0.9 kp 2: rel err thrust 4.1e-2 epr 2.8e-2 nuL 3.9e-2 nuH 2.2e-3 fuel 2.0e-2
+shape 3 cust share .05   kT 0.8 kp 1: rel err thrust 1.4e-2 epr 9.7e-3 nuL 2.6e-3 nuH 2.2e-3 fuel 1.1e-2
+shape 3 cust share .05   kT 1.2 kp 1: rel err thrust 1.4e-2 epr 9.9e-3 nuL 2.7e-3 nuH 2.2e-3 fuel 1.1e-2
+shape 3 cust share .05   kT 1 kp 0.5: rel err thrust 0.0e0 epr 0.0e0 nuL 0.0e0 nuH 0.0e0 fuel 0.0e0
+shape 3 cust share .05   kT 1.2 kp 0.5: rel err thrust 1.4e-2 epr 9.9e-3 nuL 2.7e-3 nuH 2.2e-3 fuel 1.1e-2
+shape 3 cust share .05   kT 0.9 kp 2: rel err thrust 7.0e-3 epr 4.9e-3 nuL 1.3e-3 nuH 1.1e-3 fuel 5.5e-3
+shape 3 cust amount .05  kT 0.8 kp 1: rel err thrust 2.3e-2 epr 1.1e-2 nuL 3.6e-3 nuH 2.6e-3 fuel 5.7e-3
+shape 3 cust amount .05  kT 1.2 kp 1: rel err thrust 2.0e-2 epr 9.5e-3 nuL 3.1e-3 nuH 2.3e-3 fuel 4.7e-3
+shape 3 cust amount .05  kT 1 kp 0.5: rel err thrust 3.3e-1 epr 1.6e-1 nuL 5.6e-2 nuH 4.0e-2 fuel 1.2e-1
+shape 3 cust amount .05  kT 1.2 kp 0.5: rel err thrust 3.8e-1 epr 1.8e-1 nuL 6.6e-2 nuH 4.7e-2 fuel 1.4e-1
+shape 3 cust amount .05  kT 0.9 kp 2: rel err thrust 1.7e-1 epr 7.9e-2 nuL 2.5e-2 nuH 1.9e-2 fuel 5.8e-2
+shape 3 cool .05/.05     kT 0.8 kp 1: rel err thrust 1.4e-2 epr 9.6e-3 nuL 2.6e-3 nuH 2.4e-3 fuel 1.1e-2
+shape 3 cool .05/.05     kT 1.2 kp 1: rel err thrust 1.4e-2 epr 9.8e-3 nuL 2.7e-3 nuH 2.5e-3 fuel 1.1e-2
+shape 3 cool .05/.05     kT 1 kp 0.5: rel err thrust 2.8e-12 epr 2.3e-12 nuL 9.9e-13 nuH 6.8e-13 fuel 1.9e-12
+shape 3 cool .05/.05     kT 1.2 kp 0.5: rel err thrust 1.4e-2 epr 9.8e-3 nuL 2.7e-3 nuH 2.5e-3 fuel 1.1e-2
+shape 3 cool .05/.05     kT 0.9 kp 2: rel err thrust 7.0e-3 epr 4.8e-3 nuL 1.3e-3 nuH 1.2e-3 fuel 5.7e-3
+shape 3 lever stator     kT 0.8 kp 1: rel err thrust 1.4e-2 epr 9.7e-3 nuL 2.3e-3 nuH 2.2e-3 fuel 1.1e-2
+shape 3 lever stator     kT 1.2 kp 1: rel err thrust 1.4e-2 epr 9.9e-3 nuL 2.3e-3 nuH 2.2e-3 fuel 1.1e-2
+shape 3 lever stator     kT 1 kp 0.5: rel err thrust 0.0e0 epr 0.0e0 nuL 0.0e0 nuH 0.0e0 fuel 0.0e0
+shape 3 lever stator     kT 1.2 kp 0.5: rel err thrust 1.4e-2 epr 9.9e-3 nuL 2.3e-3 nuH 2.2e-3 fuel 1.1e-2
+shape 3 lever stator     kT 0.9 kp 2: rel err thrust 6.8e-3 epr 4.9e-3 nuL 1.1e-3 nuH 1.1e-3 fuel 5.6e-3
+shape 3 lever bleed      kT 0.8 kp 1: rel err thrust 1.4e-2 epr 9.9e-3 nuL 2.8e-3 nuH 2.2e-3 fuel 1.1e-2
+shape 3 lever bleed      kT 1.2 kp 1: rel err thrust 1.4e-2 epr 1.0e-2 nuL 2.8e-3 nuH 2.2e-3 fuel 1.1e-2
+shape 3 lever bleed      kT 1 kp 0.5: rel err thrust 0.0e0 epr 0.0e0 nuL 0.0e0 nuH 0.0e0 fuel 0.0e0
+shape 3 lever bleed      kT 1.2 kp 0.5: rel err thrust 1.4e-2 epr 1.0e-2 nuL 2.8e-3 nuH 2.2e-3 fuel 1.1e-2
+shape 3 lever bleed      kT 0.9 kp 2: rel err thrust 7.0e-3 epr 5.0e-3 nuL 1.4e-3 nuH 1.1e-3 fuel 5.6e-3

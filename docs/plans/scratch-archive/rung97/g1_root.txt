@@ -1,0 +1,2 @@
+unchoked instants 1667; residual not monotone on [pi_pin, 0.9995]: 0; no root in it: 0
+LPT expansion ratio 1/pi at the root: 1.3585 .. 1.4525 (pin's pi below the root by 1.48e-9 .. 6.93e-2 relative)
