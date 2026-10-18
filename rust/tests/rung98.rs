@@ -171,6 +171,24 @@ fn the_pressure_ratio_gap_splits_into_ram_drag_and_a_constant_nozzle_term() {
 }
 
 #[test]
+fn with_the_clean_table_and_a_generator_the_targets_are_rung96s_and_rung94s_root_is_not_run() {
+    // Anchor § 1: the target is the generator-off engine's thrust at the set throttle (rung 96's `b0`/`b1`), whether the
+    // table is made here or at the design flight. The final review found the first build running rung 94's thrust-hold
+    // root there as well, refusing ends the design-flight table could reach (crash map #26, #141). Its targets were the
+    // same values, so the equality below confirms only; the call to #26 at the end is what failed on that build.
+    for gen in [GeneratorMode::Hp, GeneratorMode::Lp] {
+        let s = hot(ControlsSettings { generator: gen, ..gov(ThrustBy::Epr) });
+        let (d, f) = (build(&s).unwrap(), build(&ControlsSettings { table_at: TableAt::Flight, ..s }).unwrap());
+        assert!(d.carry.is_some());
+        assert_eq!(d.hold_start.unwrap().target.to_bits(), f.hold_start.unwrap().target.to_bits());
+        assert_eq!(d.hold_end.unwrap().target.to_bits(), f.hold_end.unwrap().target.to_bits());
+    }
+    // Crash map #26 (seed 98, `scratch-archive/rung98/crash98.rs`): it ran before rung 98, and runs again.
+    let r = r#"{"op":"controls","controls":{"T0":223.64999999999998,"p0":8989.634480886729,"shape":"flat-lp","lever":"none","bleed_mode":"valve","valve_speed":"instant","redline_on":0,"gov_lag_on":0,"accel_on":0,"floor_on":1,"floor_ref":"phi","floor_phi":0.68,"release_on":0,"govern":1,"hold":"thrust","thrust_by":"n1","speed_law":"prop","gov_tau":0.43,"gov_gain":24,"generator":"lp","generator_power":0.075,"customer":"off","customer_share":0.18,"customer_amount":0.18,"cool_vane":0,"cool_blade":0,"metal_on":0,"from":950,"to":1060,"ramp":1.6600000000000001,"settle":0.8,"rho":3.3000000000000003,"M0":1.62,"table_at":"design","corr_p":1,"corr_t":1}}"#;
+    assert!(turbojet::sandbox::call(r).starts_with(r#"{"ok":1"#), "crash map #26 runs");
+}
+
+#[test]
 fn a_flight_beyond_the_design_tables_reach_is_refused_in_words() {
     // Anchor G4: at Mach 3 at sea level the default move translates to ~360–500 K at the design flight.
     let e = build(&at(gov(ThrustBy::Epr), 288.15, 101_325.0, 3.0)).err().expect("refused");

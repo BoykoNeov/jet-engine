@@ -1,0 +1,16 @@
+flow/press hot  θ-corr false: rows n_H 0.7798–0.9054; points above 0, below 0; held by the schedule while outside 0
+flow/press hot  θ-corr true : rows n_H 0.7798–0.9054; points above 0, below 0; held by the schedule while outside 0
+flow/press cold θ-corr false: rows n_H 0.8872–1.0347; points above 0, below 4; held by the schedule while outside 0
+flow/press cold θ-corr true : rows n_H 0.8872–1.0347; points above 0, below 4; held by the schedule while outside 0
+press/flow hot  θ-corr false: rows n_H 0.7864–0.9091; points above 0, below 0; held by the schedule while outside 0
+press/flow hot  θ-corr true : rows n_H 0.7864–0.9091; points above 0, below 0; held by the schedule while outside 0
+press/flow cold θ-corr false: rows n_H 0.8915–1.0331; points above 52, below 5; held by the schedule while outside 0
+press/flow cold θ-corr true : rows n_H 0.8915–1.0331; points above 49, below 5; held by the schedule while outside 0
+tilted     hot  θ-corr false: rows n_H 0.7829–0.9071; points above 0, below 0; held by the schedule while outside 0
+tilted     hot  θ-corr true : rows n_H 0.7829–0.9071; points above 0, below 0; held by the schedule while outside 0
+tilted     cold θ-corr false: rows n_H 0.8892–1.0340; points above 0, below 4; held by the schedule while outside 0
+tilted     cold θ-corr true : rows n_H 0.8892–1.0340; points above 0, below 4; held by the schedule while outside 0
+flat-lp    hot  θ-corr false: rows n_H 0.7798–0.9054; points above 0, below 0; held by the schedule while outside 0
+flat-lp    hot  θ-corr true : rows n_H 0.7798–0.9054; points above 0, below 0; held by the schedule while outside 0
+flat-lp    cold θ-corr false: rows n_H 0.8872–1.0347; points above 0, below 3; held by the schedule while outside 0
+flat-lp    cold θ-corr true : rows n_H 0.8872–1.0347; points above 0, below 3; held by the schedule while outside 0

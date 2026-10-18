@@ -1150,8 +1150,13 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
         let achieved = held(&i);
         Ok((i, Some(HoldInfo { set: t_set, target, achieved, capped })))
     };
-    let (start, hold_start) = hold_end("starting", s.from)?;
-    let (end, hold_end_info) = hold_end("final", s.to)?;
+    // Rung 98: with the clean table under a carry, each end's target is the generator-off engine's thrust at the set
+    // throttle (rung 96's `b0`/`b1`), and rung 94's thrust-hold root is NOT run: the ends are calibrated below.
+    let carried_clean = carry.is_some() && s.inferred() && s.calibrated() && unloaded.is_some();
+    let nominal = match carried_clean {
+        true => None,
+        false => Some((hold_end("starting", s.from)?, hold_end("final", s.to)?)),
+    };
     // Rung 98: an inferred thrust under a carried table — rung 96's table made at the DESIGN flight on its own machine
     // (the generator-off one between the set throttles, else this one between the ends just found), carried here, and
     // each end CALIBRATED on it: where this engine's steady reading equals the carried table's reading at the end's
@@ -1161,20 +1166,27 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
             let r = s.law().reading().expect("an inferred law has a reading");
             let made = |m: &ScheduledStatorCore, lo: f64, hi: f64| ct::try_design_table(&m.fuel, c, lo, hi)
                 .map_err(|f| DoesNotRun(ct::row_words("thrust table", c, lo, hi, &f)));
-            let dt = match (s.calibrated(), unloaded.as_ref()) {
+            let (dt, targets) = match (carried_clean, unloaded.as_ref()) {
                 (true, Some(de)) => {
                     let bare = match builder(de.clone(), fd, MDOT_DESIGN, Some(ml), Some(mh), s.rho, &s.lever_arm()) {
                         ScheduledStatorTransient::Full(c) => c,
                         ScheduledStatorTransient::Degenerate(_) => unreachable!("the Controls engine has both shafts"),
                     };
-                    made(&bare, s.from, s.to)?
+                    let target_of = |which: &str, t: f64| bare.fuel.inner.try_equilibrium(&fl, t, None)
+                        .map(|(i, _, _)| ControlsSolver::thrust(&i)).map_err(|e| DoesNotRun(format!(
+                            "At the {which} throttle ({t:.0} K): with the generator off this throttle has no steady point, so \
+                             the control has no table to be calibrated on ({}).", endpoint_words(&e.0))));
+                    let targets = (target_of("starting", s.from)?, target_of("final", s.to)?);
+                    (made(&bare, s.from, s.to)?, targets)
                 }
-                _ => made(&core, start.tt4, end.tt4)?,
+                _ => {
+                    let ((a, ha), (b, hb)) = nominal.as_ref().expect("the nominal ends exist unless the clean table is carried");
+                    let target = |i: &Instant2, h: Option<HoldInfo>| h.map_or_else(|| held(i), |h| h.target);
+                    (made(&core, a.tt4, b.tt4)?, (target(a, *ha), target(b, *hb)))
+                }
             };
             let table = c.thrust_table(&dt);
-            let calibrate = |which: &str, t_set: f64, i: &Instant2, h: Option<HoldInfo>|
-                                -> Result<(Instant2, Option<HoldInfo>), DoesNotRun> {
-                let target = h.map_or_else(|| held(i), |h| h.target);
+            let calibrate = |which: &str, t_set: f64, target: f64| -> Result<(Instant2, Option<HoldInfo>), DoesNotRun> {
                 let want = table.reading_at(r, target);
                 let q_at = |t: f64| core.fuel.inner.try_equilibrium(&fl, t, None).map(|(i, _, _)| table.read(r, &i));
                 let root = bh::try_hold_root(&q_at, want, HOLD_LO, HOLD_HI).map_err(|e| DoesNotRun(format!(
@@ -1184,11 +1196,14 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
                 let achieved = held(&i);
                 Ok((i, Some(HoldInfo { set: t_set, target, achieved, capped: false })))
             };
-            let (s0, h0) = calibrate("starting", s.from, &start, hold_start)?;
-            let (s1, h1) = calibrate("final", s.to, &end, hold_end_info)?;
+            let (s0, h0) = calibrate("starting", s.from, targets.0)?;
+            let (s1, h1) = calibrate("final", s.to, targets.1)?;
             (s0, s1, h0, h1, Some(dt), Some(table))
         }
-        _ => (start, end, hold_start, hold_end_info, None, None),
+        _ => {
+            let ((a, ha), (b, hb)) = nominal.expect("the nominal ends exist unless the clean table is carried");
+            (a, b, ha, hb, None, None)
+        }
     };
     let (mf_lo, mf_hi) = (start.close.f * start.close.mdot_air, end.close.f * end.close.mdot_air);
     let accel = match s.accel_on {

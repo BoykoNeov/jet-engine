@@ -23,3 +23,7 @@ After the build (the SHIPPED code):
 - `crash98.rs` → `crash_compare.txt` — the crash map (seed 98, 1 500) on this tree and a worktree of `897001b`, request
   by request; `classify.py` checks every differing request reads a table off the design flight with tables made there.
 - `census.rs` → `census.txt` — the Controls check requests through both builds (one moved: index 69).
+- Final review: `review_eight_requests.txt` — the 8 crash requests (clean table + generator) the first build refused
+  through rung 94's thrust-hold root; after the fix 1 runs, 1 is out of reach, 6 refuse in the calibrated-end words.
+  `crash_compare.txt` was regenerated after the fix. `capcheck.rs` → `capcheck.txt` — rung 48's schedule in H3's runs
+  held the fuel only inside its rows (the clamp never mattered there).

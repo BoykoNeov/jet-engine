@@ -1739,9 +1739,9 @@ correction a switch. Anchor `897001b`; spec `docs/rung98-spec.md`; scratch `scra
   the constant jet-pressure part. The ends' achieved / asked thrust row shows the steady miss.
 - **What the new default moved:** of the 77 check requests (before this section's additions) one — rung 97's +40 K
   pressure-ratio run from 700 K — now pinned to `table_at: flight` so it keeps testing rung 97; no Rust test changed
-  value (the full gate). The crash map (seed 98, 1 500 requests) against a worktree of `897001b`: 129 outcomes differ,
-  every one reading a table off the design flight with the tables made there; 52 now refused because the design-flight
-  table cannot reach (46 at Mach 1.5 and above), in words that say to make the tables at this flight. No panic.
+  value (the full gate). The crash map (seed 98, 1 500 requests) against a worktree of `897001b`: 122 outcomes differ
+  (after the final review's fix to the clean-table ends, rung 98 spec), every one reading a table off the design flight
+  with the tables made there; 53 now refused because the design-flight table cannot reach (47 at Mach 1.5 and above), in words that say to make the tables at this flight. No panic.
 - `check_requests` adds 6 (Mach 1.4 on the pressure ratio, design and this-flight tables; the fan speed uncorrected for
   temperature at 290 K; the schedule uncorrected at 216.65 K; the proportional speed law uncorrected at 290 K; Mach 3
   at sea level, out of reach); `browser.mjs` flies the pressure ratio at Mach 1.4 (both ends short of the asked thrust,

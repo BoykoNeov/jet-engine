@@ -75,13 +75,17 @@ this flight" kept as the setting that reproduces rungs 96/97.
   (0.786–0.948 physical, against a table of 0.729–0.879 uncarried) runs past the top row at 111 of 126 points, where rung
   95's steady table HOLDS its end value — too little fuel, not too much. The derivation's own assumption held (steady
   fuel ∝ HP speed^4.5–4.8); what it missed is that a table read outside its rows is a clamp. In cold air the reading
-  stays inside the table (9 of 126 beyond), so the cold HITs are the derivation's mechanism, not the clamp's.
+  stays inside the table (9 of 126 beyond), so the cold HITs are the derivation's mechanism, not the clamp's. The
+  CORRECTED baseline clamps too, barely: the hot engine's corrected state sits slightly above the design's (G2), so its
+  demand ends just past the carried top row (101 of 126 points, by under 0.2 % in speed) and reads a fuel close to right.
+  Rung 48's schedule does not: in every H3 run it held the fuel only inside its rows (`capcheck.txt`).
 
 ## Reported, not scored
 
 * **The temperature residual, both corrections on** (both ends): `EPR` +0.08 % hot, −0.07 % cold; fan speed
   +0.06…+0.25 % hot, −0.04…−0.28 % cold. The fuel's fixed heating value (anchor G2).
-* **The proportional law's droop on the carried table**, both on: −0.03…−0.04 % HP speed hot, +0.006 % cold.
+* **The proportional law's droop on the carried table**, both on: −0.03…−0.04 % HP speed hot, +0.006 % cold — the hot
+  figure partly the top-row clamp above.
 * **Fixed amounts** (pressure similarity broken, anchor G1), `EPR`, ends start / final: a generator by POWER +1.1 % /
   +0.3 % thin, −0.5 % / −0.1 % dense; customer air by AMOUNT −4.6 % / −1.4 % thin, +1.2 % / +0.5 % dense.
 * **The thrust gap through the move** (`F_true − F̂` over the thrust change, ramp points; design-flight tables against
@@ -92,12 +96,16 @@ this flight" kept as the setting that reproduces rungs 96/97.
 ## Crash map, compared request by request (`crash_compare.txt`)
 
 1 500 random Controls requests (seed 98: rung 97 § 29's map plus the tables' place and switches at random), through this
-code and through a worktree of `897001b`, which ignores the new keys. **No panic on either.** 129 outcomes differ —
-**every one** reads a table, flies off the design flight, and has its tables made there (0 outside that class): 58 run
-with different numbers; 52 now end in the refusal that the design-flight table cannot reach (46 at Mach 1.5 and above,
-the rest low throttles in hot or fast air; a few were refused before for another reason); 4 in a calibrated end out of
-reach; the other 15 are refusals whose words changed. The
-four pre-existing odd stops are the same requests in both. The Controls check requests: 1 of 77 moved (rung 97's +40 K
+code and through a worktree of `897001b`, which ignores the new keys. **No panic on either.** 122 outcomes differ —
+**every one** reads a table, flies off the design flight, and has its tables made there (0 outside that class): 59 run
+with different numbers; 53 now end in the refusal that the design-flight table cannot reach (47 at Mach 1.5 and above,
+the rest low throttles in hot or fast air; 5 were refused before, by the run's own schedule rows or an end); 4 that ran
+now have a calibrated end out of the 600–2000 K search; 6 were rung 96's calibrated-end refusals and are the same
+refusal on the design-flight table. **The final review caught a deviation here:** the first build, with the clean table
+and a generator, ran rung 94's thrust-hold root to find the ends' targets — which rung 96 never runs there — so 2 runs
+that had run were refused and 6 refusals used the wrong words (thrust-hold words for a control holding a reading).
+Fixed (the targets come from the generator-off engine at the set throttle, as anchor § 1 says; gated, and crash
+request #26 runs again); the counts here are after the fix. The four pre-existing odd stops are the same requests in both. The Controls check requests: 1 of 77 moved (rung 97's +40 K
 `EPR` run from 700 K), now pinned to tables made at this flight; six rung-98 requests added.
 
 **Cost** (`cost.txt`, best of 9): the governed `EPR` run 0.155 → 0.194 s (the calibrated ends' root solves); the

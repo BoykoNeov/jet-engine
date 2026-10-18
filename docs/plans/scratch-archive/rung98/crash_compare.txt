@@ -1,7 +1,7 @@
-# Rung 98 crash map, seed 98, 1500 requests: this tree vs a worktree of 897001b. Columns: index, old key, new key (key = hash of the points/stop/refusal words; see crash98.rs key_hash).
+# Rung 98 crash map, seed 98, 1500 requests: this tree (after the final review's clean-table fix) vs a worktree of 897001b. Columns: index, old key, new key (key = hash of the points/stop/refusal words; see crash98.rs key_hash).
 10	ran to the end	ran to the end
 16	ran to the end	ran to the end
-26	ran to the end	refused: [M 1.5-2.0] thrust asked
+26	ran to the end	ran to the end
 35	ran to the end	refused: [M 2.5-3.0] made at the design flight
 49	ran to the end	refused: [M 3.0-3.5] made at the design flight
 50	ran to the end	ran to the end
@@ -11,9 +11,8 @@
 97	ran to the end	refused: [M 1.0-1.5] made at the design flight
 103	refused: [M 1.0-1.5] acceleration schedule	refused: [M 1.0-1.5] made at the design flight
 105	ran to the end	ran to the end
-109	refused: [M 0.0-0.5] cooling together	refused: [M 0.0-0.5] cooling together
 133	ran to the end	ran to the end
-141	ran to the end	refused: [M 2.0-2.5] thrust asked
+141	ran to the end	refused: [M 2.0-2.5] made at the design flight
 147	ran to the end	refused: [M 1.5-2.0] made at the design flight
 148	ran to the end	ran to the end
 170	ran to the end	refused: [M 2.5-3.0] made at the design flight
@@ -31,7 +30,6 @@
 287	ran to the end	refused: [M 2.0-2.5] made at the design flight
 290	ran to the end	refused: [M 2.0-2.5] made at the design flight
 302	ran to the end	refused: [M 1.5-2.0] made at the design flight
-303	refused: [M 1.5-2.0] off the part of their maps	refused: [M 1.5-2.0] off the part of their maps
 329	ran to the end	ran to the end
 349	ran to the end	ran to the end
 378	ran to the end	ran to the end
@@ -47,17 +45,15 @@
 535	ran to the end	refused: [M 2.5-3.0] made at the design flight
 546	ran to the end	ran to the end
 557	ran to the end	ran to the end
-602	refused: [M 2.0-2.5] off the part of their maps	refused: [M 2.0-2.5] off the part of their maps
 607	ran to the end	refused: [M 3.0-3.5] made at the design flight
 622	ran to the end	refused: [M 3.0-3.5] made at the design flight
 635	ran to the end	refused: [M 3.0-3.5] made at the design flight
 640	ran, stopped early	refused: [M 3.0-3.5] made at the design flight
 663	ran to the end	ran to the end
 666	ran, stopped early	refused: [M 3.0-3.5] made at the design flight
-674	refused: At the starting throttle (960 K), the control	refused: [M 2.0-2.5] thrust asked
+674	refused: At the starting throttle (960 K), the control	refused: [M 2.0-2.5] design-flight table
 677	ran to the end	ran to the end
 693	ran to the end	ran to the end
-694	refused: [M 3.0-3.5] off the part of their maps	refused: [M 3.0-3.5] off the part of their maps
 721	ran to the end	refused: [M 1.5-2.0] made at the design flight
 735	ran to the end	refused: [M 2.0-2.5] design-flight table
 738	ran to the end	ran to the end
@@ -70,10 +66,9 @@
 775	ran to the end	refused: [M 0.5-1.0] made at the design flight
 812	ran to the end	ran to the end
 813	ran to the end	refused: [M 0.0-0.5] design-flight table
-860	refused: [M 3.0-3.5] off the part of their maps	refused: [M 3.0-3.5] off the part of their maps
-863	refused: At the starting throttle (1410 K), the contro	refused: [M 2.0-2.5] With this
+863	refused: At the starting throttle (1410 K), the contro	refused: [M 2.0-2.5] design-flight table
 867	ran to the end	refused: [M 2.0-2.5] made at the design flight
-868	refused: At the starting throttle (720 K), the control	refused: [M 0.0-0.5] With this
+868	refused: At the starting throttle (720 K), the control	refused: [M 0.0-0.5] design-flight table
 906	ran to the end	ran to the end
 910	ran to the end	ran to the end
 915	ran to the end	refused: [M 3.0-3.5] made at the design flight
@@ -81,7 +76,7 @@
 922	ran to the end	refused: [M 1.5-2.0] made at the design flight
 937	ran to the end	ran to the end
 939	ran to the end	ran to the end
-947	refused: At the starting throttle (1290 K), the contro	refused: [M 0.5-1.0] With this
+947	refused: At the starting throttle (1290 K), the contro	refused: [M 0.5-1.0] design-flight table
 988	ran to the end	ran to the end
 1007	ran, stopped early	refused: [M 2.0-2.5] made at the design flight
 1009	ran to the end	refused: [M 2.0-2.5] made at the design flight
@@ -108,16 +103,15 @@
 1206	ran to the end	refused: [M 2.0-2.5] made at the design flight
 1225	ran to the end	ran to the end
 1242	ran to the end	refused: [M 2.0-2.5] made at the design flight
-1246	refused: At the final throttle (1160 K), the control h	refused: [M 0.5-1.0] thrust asked
+1246	refused: At the final throttle (1160 K), the control h	refused: [M 0.5-1.0] design-flight table
 1252	ran, stopped early	refused: [M 3.0-3.5] made at the design flight
 1266	ran to the end	refused: [M 1.5-2.0] made at the design flight
 1286	ran to the end	refused: [M 1.5-2.0] design-flight table
 1300	ran to the end	ran to the end
 1321	ran to the end	ran to the end
-1330	refused: [M 2.0-2.5] off the part of their maps	refused: [M 2.0-2.5] off the part of their maps
 1338	ran to the end	ran to the end
 1364	ran to the end	ran to the end
-1371	refused: At the starting throttle (880 K), the control	refused: [M 0.5-1.0] With this
+1371	refused: At the starting throttle (880 K), the control	refused: [M 0.5-1.0] design-flight table
 1409	ran to the end	refused: [M 3.0-3.5] made at the design flight
 1413	ran to the end	ran to the end
 1430	ran to the end	refused: [M 3.0-3.5] made at the design flight
@@ -126,16 +120,14 @@
 1450	ran to the end	ran to the end
 1452	ran to the end	ran to the end
 1459	ran to the end	refused: [M 2.0-2.5] made at the design flight
-1470	refused: [M 0.5-1.0] cooling together	refused: [M 0.5-1.0] cooling together
 1471	refused: [M 1.0-1.5] acceleration schedule	refused: [M 1.0-1.5] made at the design flight
 
 # classify.py:
-129 differ; 0 outside (uses a table, off design, tables at design)
-{'+accel': 70, 'inferred': 27, '+prop': 13, 'inferred+accel': 12, '+accel+prop': 7}
-unchanged though carried-eligible: 346
+122 differ; 0 outside (uses a table, off design, tables at design)
+{'+accel': 70, 'inferred': 22, '+prop': 13, 'inferred+accel': 10, '+accel+prop': 7}
+unchanged though carried-eligible: 353
 
 # new-build summary:
-    1  [z   3400..  3400]  refused: At the starting throttle (1600 K), holding th
     1  [z  22250.. 22250]  refused: At the starting throttle (1690 K), the contro
     2  [z  16300.. 19400]  refused: At the starting throttle (680 K), holding HP 
     2  [z  13650.. 14850]  refused: At the starting throttle (720 K), holding HP 
@@ -150,25 +142,26 @@ unchanged though carried-eligible: 346
    14  [z   -400.. 15200]  refused: The speed governor's gain must be above 0 and
     2  [z  21150.. 21750]  refused: The speed governor's time constant must be at
   147  [z   -950.. 24750]  refused: The temperature limiter's lag delays the limi
-   11  [z  11900.. 24900]  refused: [M 0.0-0.5] With this
+   10  [z  11900.. 24900]  refused: [M 0.0-0.5] With this
     9  [z   1300.. 23000]  refused: [M 0.0-0.5] acceleration schedule
     7  [z   -950.. 17050]  refused: [M 0.0-0.5] cooling together
    11  [z  12550.. 23100]  refused: [M 0.0-0.5] customer bleed would take
-    1  [z  19550.. 19550]  refused: [M 0.0-0.5] design-flight table
+    2  [z  19550.. 20250]  refused: [M 0.0-0.5] design-flight table
     2  [z  12450.. 18550]  refused: [M 0.0-0.5] does not settle
     4  [z   2850.. 17600]  refused: [M 0.0-0.5] generator would take
    19  [z   -850.. 23600]  refused: [M 0.0-0.5] off the part of their maps
     7  [z   8800.. 19850]  refused: [M 0.0-0.5] thrust asked
     1  [z  12500.. 12500]  refused: [M 0.0-0.5] too little pressure
-    8  [z  11300.. 24200]  refused: [M 0.5-1.0] With this
+    6  [z  14200.. 24200]  refused: [M 0.5-1.0] With this
    19  [z    150.. 24550]  refused: [M 0.5-1.0] acceleration schedule
     7  [z   3800.. 19950]  refused: [M 0.5-1.0] cooling together
    10  [z  12700.. 23850]  refused: [M 0.5-1.0] customer bleed would take
+    3  [z  11300.. 13800]  refused: [M 0.5-1.0] design-flight table
     2  [z   1000.. 19600]  refused: [M 0.5-1.0] does not settle
    13  [z   -750.. 23950]  refused: [M 0.5-1.0] generator would take
     1  [z   1450..  1450]  refused: [M 0.5-1.0] made at the design flight
    13  [z   -600.. 23650]  refused: [M 0.5-1.0] off the part of their maps
-    6  [z   3800.. 20900]  refused: [M 0.5-1.0] thrust asked
+    5  [z   3800.. 20900]  refused: [M 0.5-1.0] thrust asked
     2  [z   1900..  5000]  refused: [M 0.5-1.0] too little pressure
    12  [z  17700.. 24550]  refused: [M 1.0-1.5] With this
    22  [z   1600.. 21350]  refused: [M 1.0-1.5] acceleration schedule
@@ -187,17 +180,17 @@ unchanged though carried-eligible: 346
    10  [z   6300.. 24100]  refused: [M 1.5-2.0] generator would take
    11  [z    -50.. 14350]  refused: [M 1.5-2.0] made at the design flight
    36  [z   -300.. 24450]  refused: [M 1.5-2.0] off the part of their maps
-    5  [z  16150.. 23650]  refused: [M 1.5-2.0] thrust asked
-    2  [z  22350.. 23550]  refused: [M 2.0-2.5] With this
+    4  [z  16150.. 23650]  refused: [M 1.5-2.0] thrust asked
+    1  [z  22350.. 22350]  refused: [M 2.0-2.5] With this
    16  [z   3650.. 24800]  refused: [M 2.0-2.5] acceleration schedule
     3  [z  19150.. 24450]  refused: [M 2.0-2.5] cooling together
     2  [z  18600.. 24200]  refused: [M 2.0-2.5] customer bleed would take
-    1  [z  13350.. 13350]  refused: [M 2.0-2.5] design-flight table
+    3  [z  13350.. 23550]  refused: [M 2.0-2.5] design-flight table
     1  [z  18250.. 18250]  refused: [M 2.0-2.5] does not settle
     6  [z  17000.. 23700]  refused: [M 2.0-2.5] generator would take
-   14  [z   -350.. 15150]  refused: [M 2.0-2.5] made at the design flight
+   15  [z   -350.. 22500]  refused: [M 2.0-2.5] made at the design flight
    52  [z   -850.. 23650]  refused: [M 2.0-2.5] off the part of their maps
-    6  [z  11750.. 22500]  refused: [M 2.0-2.5] thrust asked
+    4  [z  11750.. 21900]  refused: [M 2.0-2.5] thrust asked
     3  [z  21400.. 24700]  refused: [M 2.5-3.0] With this
    19  [z    600.. 24250]  refused: [M 2.5-3.0] acceleration schedule
     1  [z  24800.. 24800]  refused: [M 2.5-3.0] cooling together
@@ -213,5 +206,5 @@ unchanged though carried-eligible: 346
     3  [z  17250.. 23100]  refused: [M 3.0-3.5] thrust asked
     1  [z  19500.. 19500]  refused: [M 3.5-4.0] off the part of their maps
 stop kinds: {"floor_unreachable": 50, "lean": 5, "other": 1, "rich": 3, "unknown": 3}
-0 panics; total 162.6 s, median 0.001 s, slowest 2.82 / 2.73 / 2.56 s
-slowest request: {"op":"controls","controls":{"T0":220.4206916359102,"p0":57752.57626199698,"shape":"flat-lp","lever":"none","bleed_mode":"valve","valve_speed":"slow","redline_on":0,"gov_lag_on":0,"accel_on":0,"floor_on":0,"floor_ref":"incidence","floor_phi":0.8,"release_on":0,"govern":0,"hold":"thrust","thrust_by":"epr","speed_law":"rate","gov_tau":0.44,"gov_gain":5,"generator":"hp","generator_power":0.095,"customer":"share","customer_share":0.06,"customer_amount":0.06,"cool_vane":0,"cool_blade":0,"metal_on":1,"from":1690,"to":1620,"ramp":1.7,"settle":6,"rho":0.30000000000000004,"M0":0.31,"table_at":"design","corr_p":1,"corr_t":0}}
+0 panics; total 185.1 s, median 0.001 s, slowest 5.25 / 3.92 / 2.74 s
+slowest request: {"op":"controls","controls":{"T0":258.65,"p0":6518.382973698321,"shape":"tilted","lever":"none","bleed_mode":"valve","valve_speed":"slow","redline_on":0,"gov_lag_on":0,"accel_on":0,"floor_on":1,"floor_ref":"phi","floor_phi":0.735,"release_on":0,"govern":1,"hold":"speed","thrust_by":"true","speed_law":"prop","gov_tau":0.33,"gov_gain":22,"generator":"off","generator_power":0.06,"customer":"share","customer_share":0.15,"customer_amount":0.15,"cool_vane":0,"cool_blade":0,"metal_on":0,"from":940,"to":1460,"ramp":1.34,"settle":4.800000000000001,"rho":0.6000000000000001,"M0":1.27,"table_at":"flight","corr_p":0,"corr_t":1}}
