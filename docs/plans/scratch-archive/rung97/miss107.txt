@@ -1,0 +1,8 @@
+Tt4 940 OLD: equilibrium nuL 0.6181 nuH 0.5789 (Primary/6) Subsonic | LP-balanced curve: 61 points, Phi_H sign changes at ["nuH 0.573-0.580"]
+Tt4 940 NEW: equilibrium FAILS: rung-97: the nozzle cannot pass the LP turbine's flow against 98358 Pa even with the turbi | LP-balanced curve: 61 points, Phi_H sign changes at []
+Tt4 1000 OLD: equilibrium nuL 0.6463 nuH 0.6204 (Primary/6) Subsonic | LP-balanced curve: 61 points, Phi_H sign changes at ["nuH 0.618-0.625"]
+Tt4 1000 NEW: equilibrium nuL 0.6355 nuH 0.6173 (Primary/6) Subsonic | LP-balanced curve: 61 points, Phi_H sign changes at ["nuH 0.610-0.618"]
+Tt4 1050 OLD: equilibrium nuL 0.6695 nuH 0.6527 (Primary/6) Subsonic | LP-balanced curve: 61 points, Phi_H sign changes at ["nuH 0.648-0.655"]
+Tt4 1050 NEW: equilibrium nuL 0.6695 nuH 0.6527 (Primary/6) Subsonic | LP-balanced curve: 61 points, Phi_H sign changes at ["nuH 0.648-0.655"]
+Tt4 1100 OLD: equilibrium nuL 0.6925 nuH 0.6835 (Primary/6) Choked | LP-balanced curve: 61 points, Phi_H sign changes at ["nuH 0.677-0.685"]
+Tt4 1100 NEW: equilibrium nuL 0.6925 nuH 0.6835 (Primary/6) Choked | LP-balanced curve: 61 points, Phi_H sign changes at ["nuH 0.677-0.685"]

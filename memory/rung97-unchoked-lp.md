@@ -33,3 +33,9 @@ typed `python -` once more (the Store stub hang) — see [[windows-tooling-file-
 **Why:** these are the traps that let a void number ship or a gate certify itself.
 **How to apply:** any new branch in a shared solver — census who reaches it (a logger, one write per record), gate with
 a conservation law the new code does not compute, and re-run neighbouring rungs' archived scoring scripts.
+
+**Final review (advisor), 2026-10-18:** (a) compare a crash map against the code JUST BEFORE the change, back to back in
+a worktree, request by request — the archived baseline predated an unrelated words commit; (b) the clean compare found
+the pin had INVENTED steady points (HP generator, low throttle, warm air): a power-balance scan proved the branch has
+none, so the new refusals are the model's, not the Newton's; (c) I wrote "rung 96's G2 now fails" without measuring —
+it SURVIVES (subsonic push also depends on pt9 alone); G3's straight line is what breaks. Measure every "now fails".

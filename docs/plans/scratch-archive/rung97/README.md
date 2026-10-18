@@ -29,3 +29,8 @@ After the build (the SHIPPED branch):
 - `crash.rs` → `crash14.txt`, `crash15.txt`, `crash16.txt` — sandbox § 27's crash map (seeds 14, 15) re-run, and seed 16
   at −1 … 3 km; prints unclassified refusals in full (`UNCLASSIFIED`).
 - `rerun.txt` — rungs 95/96's archived scoring scripts re-run against this rung, diffed against their archives.
+- `followup.rs` → `followup.txt` — the final review: fuel monotonicity at frozen speeds on unchoked and boundary-crossing
+  sweeps (rungs 95/96 keep one root), rung 96's G2 at unchoked instants, and airflow / `pt5/p0` / thrust per air at the H1 ends.
+- `crash_compare.txt` — the crash map on this rung and on `36b4908` (a worktree), back to back, diffed request by request
+  (`crash.rs` now prints one `OUT` line per request); `miss107.txt` — seed 16 #107 at 940–1100 K: the LP-balanced curve
+  scanned for an HP balance, pin against branch (the pin finds a steady point at 940 K; the branch has none).

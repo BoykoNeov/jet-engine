@@ -1,0 +1,13 @@
+plain shape 0: 2417 fuel steps (192 unchoked samples, 4 sweeps crossing the boundary); non-rising: thrust 0 EPR 0 dnuL 0 dnuH 0
+plain shape 1: 2407 fuel steps (197 unchoked samples, 4 sweeps crossing the boundary); non-rising: thrust 0 EPR 0 dnuL 0 dnuH 0
+plain shape 2: 2401 fuel steps (202 unchoked samples, 4 sweeps crossing the boundary); non-rising: thrust 0 EPR 0 dnuL 0 dnuH 0
+generator LP shape 0: 2402 fuel steps (247 unchoked samples, 4 sweeps crossing the boundary); non-rising: thrust 0 EPR 0 dnuL 0 dnuH 0
+generator LP shape 1: 2384 fuel steps (261 unchoked samples, 3 sweeps crossing the boundary); non-rising: thrust 0 EPR 0 dnuL 0 dnuH 0
+generator LP shape 2: 2383 fuel steps (263 unchoked samples, 3 sweeps crossing the boundary); non-rising: thrust 0 EPR 0 dnuL 0 dnuH 0
+rung 96 G2 at unchoked instants: 60 pairs, worst |gross thrust ratio - 1| at equal EPR 9.21e-14 (choked: ~1e-15)
++40 K shape 0: face air 0.59031 vs 0.60078 (-1.74 %) | pt5/p0 1.5910 vs 1.5804 | thrust per face air 56.89 vs 53.33 (+6.67 %) | thrust +4.81 %
++40 K shape 1: face air 0.59271 vs 0.60335 (-1.76 %) | pt5/p0 1.5959 vs 1.5872 | thrust per face air 58.04 vs 55.00 (+5.51 %) | thrust +3.65 %
++40 K shape 2: face air 0.58946 vs 0.60022 (-1.79 %) | pt5/p0 1.5893 vs 1.5789 | thrust per face air 56.48 vs 52.96 (+6.63 %) | thrust +4.72 %
+ISA shape 0: face air 0.69664 vs 0.69679 (-0.02 %) | pt5/p0 1.8351 vs 1.8350 | thrust per face air 126.95 vs 126.92 (+0.02 %) | thrust +0.00 %
+ISA shape 1: face air 0.69954 vs 0.69964 (-0.01 %) | pt5/p0 1.8425 vs 1.8425 | thrust per face air 128.28 vs 128.27 (+0.01 %) | thrust -0.00 %
+ISA shape 2: face air 0.69560 vs 0.69578 (-0.03 %) | pt5/p0 1.8324 vs 1.8323 | thrust per face air 126.48 vs 126.44 (+0.03 %) | thrust +0.00 %

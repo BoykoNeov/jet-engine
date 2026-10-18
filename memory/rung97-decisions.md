@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: f1e86d85-6f2a-4ab4-9593-9fd477e71319
-  modified: 2026-10-18T03:25:58.976Z
+  modified: 2026-10-18T05:09:15.665Z
 ---
 
 Rung 96's seam "the table made at one flight condition and flown at another, corrected by δ/θ". User picked it
@@ -20,7 +20,7 @@ Rung 96's seam "the table made at one flight condition and flown at another, cor
 - **Mach: YES, add a Mach knob to the Controls view in this step** (I recommended not now). Corrections cannot undo a
   speed change — the textbook reason schedules carry a Mach axis.
 
-Pre-anchor probe (2026-10-18, `W:\temp\claude\rung97-probe\`), disclosed so steady temperature claims are NOT blind:
+Pre-anchor probe (2026-10-18, outputs in `docs/plans/scratch-archive/rung97/sim.txt`), disclosed so steady temperature claims are NOT blind:
 pressure similarity exact (0.0); temperature similarity NOT exact — corrected thrust +0.69 %/+10 % θ at 1400 K
 (+0.48 % at 1000 K), because `f = (h4−h3)/(η_b·hPR − h4)`: the fuel's fixed heating value makes `f/θ` rise with θ.
 Fixed generator power / fixed customer amount break pressure similarity (12 % / 33 % thrust at p0×½).
@@ -31,8 +31,9 @@ UNCHOKED (the reply's `choked` flag is ignored by the page) — and the two-spoo
 (e.g. sea level +40 K, 700 K throttle; 9–20 of 126 points), far more at low Mach. Offered: stop/refuse in words,
 or draw dashed — user chose to BUILD the two-spool unchoked LP branch (CLAUDE.md OPEN item, rung 38's flag) FIRST.
 
-Mach density-rule check done (inlet total density, `density_ratio` with a Mach factor): 792 runs, unclamped worst
-1.7e−4, rich-edge worst 6.4e−4 — same level as § 27's disclosed 2.5e−4 / 7e−4 (`W:\temp\claude\rung97-probe\mach_rulecheck.txt`).
+Mach density-rule check (inlet total density, `density_ratio` with a Mach factor): 792 runs, unclamped worst 1.7e−4,
+rich-edge worst 6.4e−4 (`docs/plans/scratch-archive/rung97/mach_rulecheck.txt`) — **STALE: measured BEFORE rung 97**;
+low Mach is where the nozzle unchokes, so redo it (and `mach_reach`, `choke`) after popping the stash.
 Mach code edits are in git stash "sandbox-28-mach-wip" (sandbox_controls.rs m0 field + density Mach factor, tests/sandbox_controls.rs, template, browser.mjs) — pop it for step (2).
 
 **How to apply:** order is now — (1) RUNG 97 = the two-spool unchoked LP branch on the TRANSIENT family (rung 40 tails

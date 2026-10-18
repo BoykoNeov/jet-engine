@@ -75,7 +75,7 @@ unchoked (of the run's moments)"). The numbers there are now the model's own.
 * **The red check:** with the switch's default flipped to the pin, three of the five gates fail, each on a wrong VALUE
   (the independent solve, mass conservation, the expansion gap).
 * **The step check** (0.02 against 0.005, max flow-coefficient difference) on the unchoked 700 → 1400 K runs, three maps,
-  +40 K and standard day: the open march ≤ 2.2e−8; governed runs within 1e−6 (thrust), 6.4e−5 (HP proportional),
+  +40 K and standard day: the open march ≤ 2.2e−8; governed runs ≤ 1.4e−6 (thrust), 6.4e−5 (HP proportional),
   9.4e−5 (HP rate), 5.4e−5 (pressure ratio); the fan-speed rate law 1.3–1.45e−4 unclamped and up to 4.0e−4 at its rich
   edge. **The same with the pin**, to the second digit (e.g. 1.45e−4 against 1.44e−4): the bisection adds no march noise;
   the dense-air roughness is plan § 27's, already disclosed.
@@ -102,8 +102,9 @@ Flat-LP has no steady point at 700 K on either day: **2 cells VACUOUS** each.
 
 * **Thrust at the unchoked end: MORE than the old model said** — 33.58 / 34.40 / 33.29 against 32.04 / 33.19 / 31.79
   N per kg/s of design airflow (+40 K; +3.6 to +4.8 %); equal to the second decimal on the standard day. The LP turbine
-  takes less, so the gas reaches the nozzle at a higher pressure and leaves faster; the slower LP shaft passes less air,
-  and the faster jet wins. No sign was derived for this.
+  takes less, so the gas reaches the nozzle at a higher pressure (`pt5/p0` 1.590 / 1.596 / 1.589 against 1.580 / 1.587 /
+  1.579) and leaves faster: each kg of air gives 5.5–6.7 % more thrust, while the slower LP shaft passes 1.7–1.8 % less
+  air (`followup.txt`). The faster jet wins. No sign was derived for this.
 * **Through the slam** (+40 K): the peak `Tt4` is 9.7–10.5 K higher; the LP compressor's lowest flow coefficient is
   0.0004–0.0017 HIGHER (further from its stall line) and the HP compressor's 0.0018–0.0023 LOWER (nearer). At the start
   end the LP's is 0.007–0.008 higher and the HP's 0.001 lower. The unchoked stretch is 9–10 of 126 points.
@@ -115,17 +116,28 @@ Flat-LP has no steady point at 700 K on either day: **2 cells VACUOUS** each.
   `ends`) re-run against this rung print the same, line for line, timings aside (`rerun.txt`). The only lines that
   differ are rung 95's two step checks at gains 200 and 100, which the page's later gain limit (50) now refuses — not this
   rung. So the census's hits in those tests changed no printed number; no verdict of either spec moves.
-* **The crash map** (sandbox plan § 27's script, its seeds 14 and 15 — 1 400 requests, −5 … 47 km, ±100 K — and a new
-  seed 16, 1 000 requests at −1 … 3 km where the nozzle unchokes; `crash14/15/16.txt`): **no panic.** Against § 27's runs
-  of the same seeds: two more requests run to the end and two fewer stop early; § 27's three nozzle refusals are gone —
-  one now runs into the off-map words (the test's request, above), one into the customer-air words, and one is
-  **this rung's own refusal** (seed 15: 2.9 km, +87.5 K, 800 K, the generator on). Seed 14 meets the rung-97 refusal
-  once more (14.9 km, +29 K, 760 K, the generator on); both read in words, and in both the generator-off check finds a
-  steady point and names the load. Seed 16: 506 run to the end, 68 stop early (61 the stall floor out of reach), the
-  rest refused in words. Median request 0.015 s (§ 27: 0.011 s, on a machine then not shared with another build).
+* **The crash map, against the code just before this rung.** Sandbox § 27's script (seeds 14 and 15: 1 400 requests,
+  −5 … 47 km, ±100 K) and a new seed 16 (1 000 requests at −1 … 3 km, where the nozzle unchokes), run back to back on
+  this rung and on `36b4908` in a worktree, and compared request by request (`crash_compare.txt`). **No panic on
+  either.**
+  * Seed 15: one request differs — a refused thrust hold now quotes a different thrust.
+  * Seed 14: 15 differ — 7 refusals of the same kind quoting moved numbers (thrust holds whose unloaded target sits at an
+    unchoked end); 5 refusals now of another kind (among them the pin's "the nozzle cannot push it out", now the off-map
+    words — the test's request above — and the customer-air words); one stopped run and one off-map refusal now run to
+    the end; one stopped run is now refused in this rung's words (14.9 km, +29 K, 760 K, the generator on the HP shaft).
+  * Seed 16: 28 differ. **15 runs the pin had run (12 to the end, 3 stopping early) are now REFUSED**: 5 in this rung's
+    words, every one with the generator on the HP shaft (power 0.05–0.09), at 670–940 K in warm air; 6 by the acceleration schedule, whose steady line now lacks a point; 2 with the generator
+    words; 2 by a hold. 4 stopped runs now run to the end; 4 refusals change kind; 5 quote moved numbers.
+  * **The pin invented steady points.** For seed 16's #107 (the generator on the HP shaft at power 0.09, 940 K, sea level +20 K), a scan of the
+    LP-balanced curve for an HP balance finds one equilibrium on the pin and none with the branch (`miss107.txt`) — the
+    refusal is the model's, not the Newton's. At 1 000 K both have one, the branch's LP shaft 1.7 % slower.
+  * Rung 97's own refusal appears 1 / 1 / 6 times (seeds 14 / 15 / 16) and reads in words; where the generator is on, the
+    generator-off check finds a steady point and names the load.
+  * Median request on the same machine, back to back: 0.014 / 0.002 / 0.035 s against 0.012 / 0.002 / 0.033 s.
 * **The generator-refusal check stays on the pin.** The Controls view still asks rung 92's STEADY matcher whether a
-  load removes a steady point; at an unchoked throttle its answer is the pin's. Over the crash maps the count of the
-  "generator would take" refusals is unchanged, and at both rung-97 refusals that matcher did not override the words.
+  load removes a steady point; at an unchoked throttle its answer is the pin's. In seed 16 two runs the pin had run now
+  refuse with the generator words and two earlier generator refusals take other words — where the branch removes a
+  steady point under a load, those words name the right cause, but any figure they quote comes from the pinned cascade.
 * **Cost:** a choked instant pays one nozzle evaluation more in its power hook; an unchoked one ~44 bisection steps,
   each a turbine and a nozzle evaluation. The march, best of 15, interleaved: **+1 %** on the default move (never
   unchoked), **+5 %** on the +40 K 700 K move (`cost.txt`).
@@ -151,8 +163,14 @@ expansion is geometry; below the boundary it re-couples to the compressors and t
 * **Rung 33 — its result extended to two shafts:** the decoupling breaks one throat further down, and only for the LP
   shaft.
 * **Rungs 95/96 — unmoved** (§ 4): their scored slams never unchoke, and no printed number sat on an unchoked instant.
-  Rung 96's G2 ("the pressure ratio reads gross thrust exactly") needs a choked nozzle; on the Controls view that now
-  fails, honestly, wherever the nozzle unchokes; its decomposition gate passes unchanged on its own settings.
+  Rung 96's G2 ("equal pressure ratio ⇒ equal gross thrust") SURVIVES the unchoked branch, measured: 60 pairs of
+  unchoked instants matched in pressure ratio give gross thrusts equal to ≤ 9.2e−14 (`followup.txt`). A fully expanded
+  convergent nozzle's gross push, `A8·p0·(2γ/(γ−1))·((pt9/p0)^g − 1)` on the perfect gas, depends on `pt9` alone, as the choked one's does. What
+  does NOT survive is its G3 — gross thrust AFFINE in the pressure ratio — so on unchoked stretches the table's linear
+  rows carry an interpolation error in the gross part (not measured). Its controllers keep one root: at frozen shaft
+  speeds thrust, the pressure ratio and both accelerations still rise strictly with fuel at every one of 14 394 fuel
+  steps over the +40 K 700 → 1400 K move (plain and LP generator, three maps), 1 362 of them unchoked and 22 sweeps
+  crossing the boundary.
 * **Sandbox § 27** — its one new end failure is gone; the off-map words now cover that request.
 
 ## Concessions

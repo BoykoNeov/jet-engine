@@ -63,6 +63,7 @@ fn main() {
         let out = std::panic::catch_unwind(|| call(&req));
         let el = t0.elapsed().as_secs_f64();
         times.push((el, req.clone()));
+        let brief: String = match &out { Ok(s) => match s.find("\"reason\":\"") { Some(p) => s[p + 10..].chars().take(80).collect(), None => if s.contains("\"stopped\":1") { "stopped".into() } else { "ran".into() } }, Err(_) => "PANIC".into() };
         let key = match out {
             Err(e) => {
                 let m = e.downcast_ref::<String>().cloned().or_else(|| e.downcast_ref::<&str>().map(|s| s.to_string())).unwrap_or_default();
@@ -102,6 +103,7 @@ fn main() {
                 format!("refused: {g}")
             }
         };
+        println!("OUT	{i}	{el:.4}	{key}	{brief}");
         let e = tally.entry(key).or_insert((0, f64::INFINITY, f64::NEG_INFINITY));
         e.0 += 1; e.1 = e.1.min(z); e.2 = e.2.max(z);
     }

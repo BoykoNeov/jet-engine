@@ -1,0 +1,98 @@
+Crash map run back to back on rung 97 (d04538e + follow-ups) and on the code just before it (36b4908, a git worktree), same patched crash.rs (one OUT line per request: index, seconds, class, first 80 characters of the reply's words). Requests whose class or first 80 characters differ:
+=== seed 14
+new:  0 panics; total 77.2 s, median 0.014 s, slowest 1.53 / 1.41 / 1.35 s
+base: 0 panics; total 68.5 s, median 0.012 s, slowest 1.44 / 1.24 / 1.08 s
+#124: BASE [ran, stopped early] stopped
+      NEW  [ran to the end] ran
+#193: BASE [refused: [ 5-10 km] off the part of their maps] At the starting throttle (840 K): the engine has no steady operating point: the 
+      NEW  [refused: [ 5-10 km] customer bleed would take] At the starting throttle (840 K): the engine has no steady operating point: the 
+#25: BASE [ran, stopped early] stopped
+      NEW  [refused: At the final throttle (760 K): the engine has] At the final throttle (760 K): the engine has no steady operating point: at this
+#272: BASE [refused: [ 5-10 km] thrust asked] At the final throttle (790 K), holding thrust: The thrust asked for (2.7868 N pe
+      NEW  [refused: [ 5-10 km] thrust asked] At the final throttle (790 K), holding thrust: The thrust asked for (3.6888 N pe
+#276: BASE [refused: [ 0-5  km] off the part of their maps] At the starting throttle (740 K): the engine has no steady operating point: the 
+      NEW  [refused: [ 0-5  km] does not settle] At the starting throttle (740 K): the engine has no steady operating point: the 
+#3: BASE [refused: [ 0-5  km] With this] At the starting throttle (1080 K), holding HP speed: With this load the engine h
+      NEW  [refused: At the starting throttle (1080 K), holding HP] At the starting throttle (1080 K), holding HP speed: The search for the HP shaft
+#32: BASE [refused: At the starting throttle (600 K): the engine ] At the starting throttle (600 K): the engine has no steady operating point: at t
+      NEW  [refused: [ 0-5  km] off the part of their maps] At the starting throttle (600 K): the engine has no steady operating point: the 
+#360: BASE [refused: [ 0-5  km] thrust asked] At the final throttle (650 K), holding thrust: The thrust asked for (28.9631 N p
+      NEW  [refused: [ 0-5  km] thrust asked] At the final throttle (650 K), holding thrust: The thrust asked for (29.1731 N p
+#42: BASE [refused: [10-15 km] thrust asked] At the final throttle (610 K), holding thrust: The thrust asked for (10.0126 N p
+      NEW  [refused: [10-15 km] thrust asked] At the final throttle (610 K), holding thrust: The thrust asked for (10.0206 N p
+#427: BASE [refused: [ 0-5  km] thrust asked] At the starting throttle (740 K), holding thrust: The thrust asked for (8.7204 N
+      NEW  [refused: [ 0-5  km] thrust asked] At the starting throttle (740 K), holding thrust: The thrust asked for (10.0444 
+#547: BASE [refused: [10-15 km] thrust asked] At the final throttle (710 K), holding thrust: The thrust asked for (9.1847 N pe
+      NEW  [refused: [10-15 km] thrust asked] At the final throttle (710 K), holding thrust: The thrust asked for (9.0381 N pe
+#727: BASE [refused: [ 5-10 km] cooling together] At the final throttle (610 K): the engine has no steady operating point: the air
+      NEW  [refused: [ 5-10 km] cooling together] At the starting throttle (840 K): the engine has no steady operating point: the 
+#74: BASE [refused: [ 0-5  km] thrust asked] At the starting throttle (630 K), holding thrust: The thrust asked for (-72.5757
+      NEW  [refused: [ 0-5  km] thrust asked] At the starting throttle (630 K), holding thrust: The thrust asked for (-63.5934
+#822: BASE [refused: [ 0-5  km] off the part of their maps] At the final throttle (1000 K): the engine has no steady operating point: the co
+      NEW  [ran to the end] ran
+#825: BASE [refused: At the final throttle (610 K): the engine has] At the final throttle (610 K): the engine has no steady operating point: at this
+      NEW  [refused: [10-15 km] customer bleed would take] At the final throttle (610 K): the engine has no steady operating point: the air
+=== seed 15
+new:  0 panics; total 28.2 s, median 0.002 s, slowest 1.23 / 0.84 / 0.80 s
+base: 0 panics; total 27.1 s, median 0.002 s, slowest 1.24 / 1.03 / 0.83 s
+#107: BASE [refused: [10-15 km] thrust asked] At the starting throttle (640 K), holding thrust: The thrust asked for (10.4045 
+      NEW  [refused: [10-15 km] thrust asked] At the starting throttle (640 K), holding thrust: The thrust asked for (10.4143 
+=== seed 16
+new:  0 panics; total 105.7 s, median 0.035 s, slowest 2.79 / 1.19 / 1.16 s
+base: 0 panics; total 82.6 s, median 0.033 s, slowest 1.20 / 0.81 / 0.77 s
+#100: BASE [refused: [ 0-5  km] thrust asked] At the starting throttle (630 K), holding thrust: The thrust asked for (-24.9501
+      NEW  [refused: [ 0-5  km] thrust asked] At the starting throttle (630 K), holding thrust: The thrust asked for (-17.8203
+#107: BASE [ran to the end] ran
+      NEW  [refused: At the starting throttle (940 K): the engine ] At the starting throttle (940 K): the engine has no steady operating point: at t
+#126: BASE [refused: [ 0-5  km] thrust asked] At the final throttle (610 K), holding thrust: The thrust asked for (-7.4353 N p
+      NEW  [refused: [ 0-5  km] thrust asked] At the final throttle (610 K), holding thrust: The thrust asked for (-2.5156 N p
+#17: BASE [ran to the end] ran
+      NEW  [refused: At the starting throttle (710 K): the engine ] At the starting throttle (710 K): the engine has no steady operating point: at t
+#178: BASE [refused: [ 0-5  km] generator would take] At the final throttle (810 K): the engine has no steady operating point: the air
+      NEW  [refused: [ 0-5  km] off the part of their maps] At the final throttle (810 K): the engine has no steady operating point: the com
+#21: BASE [ran, stopped early] stopped
+      NEW  [refused: [ 0-5  km] acceleration schedule] The acceleration schedule is read off this engine's own steady running line betw
+#25: BASE [ran to the end] ran
+      NEW  [refused: At the starting throttle (850 K): the engine ] At the starting throttle (850 K): the engine has no steady operating point: at t
+#255: BASE [ran to the end] ran
+      NEW  [refused: At the final throttle (830 K): the engine has] At the final throttle (830 K): the engine has no steady operating point: at this
+#262: BASE [ran to the end] ran
+      NEW  [refused: [ 0-5  km] generator would take] At the starting throttle (780 K): the engine has no steady operating point: the 
+#319: BASE [ran, stopped early] stopped
+      NEW  [ran to the end] ran
+#353: BASE [refused: [ 0-5  km] off the part of their maps] At the final throttle (660 K): the engine has no steady operating point: the com
+      NEW  [refused: [ 0-5  km] generator would take] At the starting throttle (980 K): the engine has no steady operating point: the 
+#361: BASE [refused: [ 0-5  km] thrust asked] At the final throttle (660 K), holding thrust: The thrust asked for (-20.4378 N 
+      NEW  [refused: [ 0-5  km] thrust asked] At the final throttle (660 K), holding thrust: The thrust asked for (-19.6493 N 
+#437: BASE [ran to the end] ran
+      NEW  [refused: [ 0-5  km] acceleration schedule] The acceleration schedule is read off this engine's own steady running line betw
+#468: BASE [ran to the end] ran
+      NEW  [refused: [ 0-5  km] acceleration schedule] The acceleration schedule is read off this engine's own steady running line betw
+#492: BASE [refused: [ 0-5  km] thrust asked] At the starting throttle (610 K), holding thrust: The thrust asked for (-132.238
+      NEW  [refused: [ 0-5  km] cooling together] At the starting throttle (610 K): with the generator off this throttle has no st
+#522: BASE [ran, stopped early] stopped
+      NEW  [refused: [ 0-5  km] acceleration schedule] The acceleration schedule is read off this engine's own steady running line betw
+#553: BASE [refused: [ 0-5  km] generator would take] At the final throttle (640 K): the engine has no steady operating point: the air
+      NEW  [refused: [ 0-5  km] does not settle] At the final throttle (640 K): the engine has no steady operating point: the sea
+#596: BASE [ran to the end] ran
+      NEW  [refused: [ 0-5  km] generator would take] At the starting throttle (770 K): the engine has no steady operating point: the 
+#63: BASE [ran, stopped early] stopped
+      NEW  [refused: [ 0-5  km] acceleration schedule] The acceleration schedule is read off this engine's own steady running line betw
+#633: BASE [ran to the end] ran
+      NEW  [refused: At the starting throttle (640 K), holding HP ] At the starting throttle (640 K), holding HP speed: The HP shaft speed asked for
+#671: BASE [ran, stopped early] stopped
+      NEW  [ran to the end] ran
+#749: BASE [refused: [ 0-5  km] thrust asked] At the final throttle (600 K), holding thrust: The thrust asked for (17.9783 N p
+      NEW  [refused: [ 0-5  km] thrust asked] At the final throttle (600 K), holding thrust: The thrust asked for (19.3335 N p
+#78: BASE [ran to the end] ran
+      NEW  [refused: At the starting throttle (670 K): the engine ] At the starting throttle (670 K): the engine has no steady operating point: at t
+#790: BASE [ran to the end] ran
+      NEW  [refused: [ 0-5  km] thrust asked] At the final throttle (630 K), holding thrust: The thrust asked for (-39.4008 N 
+#844: BASE [refused: [ 0-5  km] thrust asked] At the starting throttle (660 K), holding thrust: The thrust asked for (-58.4219
+      NEW  [refused: [ 0-5  km] thrust asked] At the starting throttle (660 K), holding thrust: The thrust asked for (-36.6659
+#847: BASE [ran, stopped early] stopped
+      NEW  [ran to the end] ran
+#866: BASE [ran to the end] ran
+      NEW  [refused: [ 0-5  km] acceleration schedule] The acceleration schedule is read off this engine's own steady running line betw
+#947: BASE [ran, stopped early] stopped
+      NEW  [ran to the end] ran
