@@ -1188,8 +1188,8 @@ pub fn endpoint_words(message: &str) -> String {
         // which way to move.
         "the compressors would have to run off the part of their maps the model covers. Mostly this is a throttle too \
          low for the air (on the flat-LP map at the design flight, below about 700–900 K; warmer air raises that, \
-         and so does flying faster, which warms the air before it reaches the engine; colder air lowers it), or the \
-         flat-LP map flown faster than about Mach 1.5 (at every throttle measured), or a large fixed load or amount of air in thin air; away from the design flight it can \
+         and so does flying faster, which warms the air before it reaches the engine — on the flat-LP map about \
+         1000 K at Mach 1.6, 1200 K at Mach 2, 1600 K at Mach 2.6; colder air lowers it), or a large fixed load or amount of air in thin air; away from the design flight it can \
          also be the top of the range (measured: 1700 K at 11 km on the map curved along flow at LP, along pressure at \
          HP); or a lever whose schedule does nearly all its travel just below the design speed. Move this throttle \
          toward the middle of its range, or start the lever's schedule lower"
@@ -1667,6 +1667,9 @@ pub enum StopKind {
     Generator,
     /// Rung 95: the governed metal leg met a point where the metal is over its limit even at the leanest fuel.
     MetalCap,
+    /// Rung 46: the temperature limiter met a point where even the least fuel that solves burns hotter than the redline
+    /// (plan § 29: met flown fast, at a run's first step).
+    RedlineFloor,
     /// Anything else the model refused at this point of the run.
     Other,
 }
@@ -1681,6 +1684,7 @@ impl StopKind {
             StopKind::Customer => "customer",
             StopKind::Generator => "generator",
             StopKind::MetalCap => "metal_cap",
+            StopKind::RedlineFloor => "redline_floor",
             StopKind::Other => "other",
         }
     }
@@ -1692,6 +1696,11 @@ impl StopKind {
                 "The turbine metal went over its limit even at the leanest fuel the engine runs on, so the metal cap had \
                  nothing left to burn and the model stops. Cool the turbine more, pick a newer material, or switch the \
                  metal cap off.",
+            StopKind::RedlineFloor =>
+                "The temperature limiter could not hold its redline: at these shaft speeds even the least fuel the \
+                 engine can run on burns hotter than the redline, so the limiter has nothing left to cut and the model \
+                 stops. Flying fast heats the air before it reaches the burner, which is where this was met. Raise the \
+                 redline, or switch the limiter off.",
             StopKind::Customer =>
                 "The aircraft asked for more air than the engine could give. Its customer bleed is a fixed amount of \
                  air, so as the engine slowed it became a bigger and bigger share of what the HP compressor delivers; \
@@ -1757,6 +1766,9 @@ pub fn classify(_sv: &ControlsSolver, stop: &Stop, last: Option<&FuelPoint>) -> 
     }
     if m.contains("rung-92:") {
         return StopKind::Generator;
+    }
+    if m.contains("redline below the flow's floor") {
+        return StopKind::RedlineFloor;
     }
     if !m.contains("fuel closure does not bracket") {
         return StopKind::Other;

@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: feedback
   originSessionId: f1e86d85-6f2a-4ab4-9593-9fd477e71319
-  modified: 2026-10-18T05:56:07.854Z
+  modified: 2026-10-18T06:30:58.562Z
 ---
 
 The § 29 rerun of the density-rule check rebuilt the probe from its ARCHIVED source, which had been archived as a copy
@@ -17,6 +17,12 @@ size (`cmp` said IDENTICAL). The real source was recovered from the session tran
 **How to apply:** when archiving a probe, check its output header against the archived output it claims to produce;
 when rerunning from an archive, check the new output has the expected FORMAT before reading numbers; two different
 probes giving outputs of equal size is a red flag — `cmp` them.
+
+Second lesson (the review caught it): the page and the refusal words said the flat-LP map "is refused faster than
+about Mach 1.5 at every throttle", but between Mach 1.8 and 2.6 only a 1000 K start had been tried. A sweep over starts
+showed it runs from 1100–1600 K — the lowest start rises with Mach. Also "−320 N" was in N per kg/s. **How to apply:**
+before writing "at every X", list the X values actually tried AT THAT POINT, not anywhere in the study; read the unit off
+the chart label, not the probe's bare print.
 
 Also: the bash `$side`-in-a-Windows-path hazard bit again (see [[windows-tooling-file-hazards]]) — build per-side loops
 in PowerShell. Related: [[sandbox-altitude]], [[rung97-decisions]].

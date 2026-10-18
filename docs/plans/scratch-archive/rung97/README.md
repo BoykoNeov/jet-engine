@@ -7,7 +7,11 @@ Run from a scratch crate depending on `turbojet` by path (`W:\temp\claude\rung97
 - `mach_reach.rs` → `mach_reach.txt` — § 29: the default move over Mach 0.05–3.5 on four maps, after rung 97.
 - `mach_choke.rs` → `mach_choke.txt` — § 29: unchoked points per run over Mach and air (default move and from 700 K), after
   rung 97.
-- `mach_high.rs` → `mach_high.txt` — § 29: higher throttles at Mach 3 and 3.5 (three maps run from 1300 K; flat-LP never).
+- `mach_high.rs` → `mach_high.txt` — § 29: higher throttles at Mach 3 and 3.5 (three maps run from 1300 K; flat-LP not to 1600 K).
+- `mach_flat.rs` → `mach_flat.txt` — § 29 (review): flat-LP over Mach 1.5–2.6 from 800–1600 K starts; the lowest start that
+  runs rises with Mach (it is NOT refused at every throttle, as a first draft said).
+- `mach_redline_stop.rs` → `mach_redline_stop.txt` (request `mach_redline_stop.json`) — § 29: the crash map's first-step
+  redline stop rerun with the redline raised and off.
 - `mach_crash.rs` → `mach_crash29.txt` — § 29: the crash map over Mach 0.05–3.5 (`crash.rs` plus a random Mach; seed 29,
   1 500 requests; the full request is kept only behind the odd stops).
 - `mach_default_compare.txt` — § 29: the previous commit's 69 check requests through a worktree of it and through the

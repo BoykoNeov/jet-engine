@@ -1,0 +1,5 @@
+as is: ok1 true stopped true s-points~0
+redline 1550: ok1 true stopped true s-points~0
+redline 1650: ok1 true stopped false s-points~330
+redline 1800: ok1 true stopped false s-points~330
+redline off: ok1 true stopped false s-points~330

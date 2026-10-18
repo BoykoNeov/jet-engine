@@ -108,3 +108,21 @@ fn every_new_refusal_is_words() {
     let nan = controls_precheck(&ControlsSettings { m0: f64::NAN, ..d }).unwrap_err().0;
     assert!(nan.contains("M0 is not a number"), "{nan}");
 }
+
+/// The crash map's one first-step redline stop (seed 29, #379: governed on thrust with both levers, the redline on, Mach
+/// 1.56 at 14.7 km): at these shaft speeds even the least fuel that solves burns hotter than the redline. It stops at
+/// once with its own words, and runs to the end with the redline raised to 1650 K or switched off.
+#[test]
+fn a_redline_below_the_least_fuels_temperature_stops_in_its_own_words() {
+    let req = r#"{"op":"controls","controls":{"T0":245.64999999999998,"p0":12695.766315741415,"shape":"flat-lp","lever":"both","bleed_mode":"schedule","valve_speed":"instant","redline_on":1,"gov_lag_on":0,"accel_on":0,"floor_on":0,"floor_ref":"incidence","floor_phi":0.62,"release_on":0,"govern":1,"hold":"thrust","thrust_by":"true","speed_law":"rate","gov_tau":0.43,"gov_gain":17,"generator":"hp","generator_power":0.095,"customer":"share","customer_share":0.02,"customer_amount":0.02,"cool_vane":0,"cool_blade":0,"metal_on":1,"from":1260,"to":1250,"ramp":0.7000000000000001,"settle":5.9,"rho":2.9000000000000004,"M0":1.56}}"#;
+    let r = Json::parse(&call(req));
+    assert_eq!(r.get("ok"), Some(&Json::Int(1)));
+    assert_eq!(r.get("stopped"), Some(&Json::Int(1)));
+    let stop = r.get("stop").unwrap();
+    assert_eq!(stop.get("kind"), Some(&Json::Str("redline_floor".into())));
+    match stop.get("words") { Some(Json::Str(w)) => assert!(w.contains("Raise the redline"), "{w}"), o => panic!("{o:?}") }
+    for other in [req.replace(r#""redline_on":1"#, r#""redline_on":1,"redline":1650.0"#), req.replace(r#""redline_on":1"#, r#""redline_on":0"#)] {
+        let r = Json::parse(&call(&other));
+        assert_eq!(r.get("stopped"), Some(&Json::Int(0)), "{other}");
+    }
+}
