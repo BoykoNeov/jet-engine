@@ -24,3 +24,5 @@ After the build (the SHIPPED code):
 - `crash99.rs` → `crash_compare.txt` — the crash map (seed 99, 1 500) on both builds, request by request;
   `classify99.py` checks every differing request is in the predicted class; `one.rs` prints a request's refusal (the
   three that ran and are now refused).
+- Final review: `margins.rs` → `margins.txt` — the gates' worst values; `fansplit.rs` → `fansplit.txt` — the formula's unchoked
+  miss split into the airflow guess and the jet push, both readings (the fan speed's +5 % is the jet push).

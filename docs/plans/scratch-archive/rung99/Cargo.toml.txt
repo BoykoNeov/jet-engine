@@ -44,3 +44,11 @@ path = "src/one.rs"
 [[bin]]
 name = "cost"
 path = "src/cost.rs"
+
+[[bin]]
+name = "fansplit"
+path = "src/fansplit.rs"
+
+[[bin]]
+name = "margins"
+path = "src/margins.rs"

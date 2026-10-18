@@ -1,0 +1,8 @@
+flow/press Epr: F_true−F̂ -1.394% of F = airflow guess +0.061% (ṁ̂/ṁ−1 +1.404%) + jet push -1.456%
+flow/press LpSpeed: F_true−F̂ +4.726% of F = airflow guess -0.043% (ṁ̂/ṁ−1 -1.018%) + jet push +4.769%
+press/flow Epr: F_true−F̂ -1.342% of F = airflow guess +0.061% (ṁ̂/ṁ−1 +1.386%) + jet push -1.403%
+press/flow LpSpeed: F_true−F̂ +4.340% of F = airflow guess -0.037% (ṁ̂/ṁ−1 -0.867%) + jet push +4.377%
+tilted     Epr: F_true−F̂ -1.454% of F = airflow guess +0.065% (ṁ̂/ṁ−1 +1.480%) + jet push -1.519%
+tilted     LpSpeed: F_true−F̂ +4.810% of F = airflow guess -0.043% (ṁ̂/ṁ−1 -1.010%) + jet push +4.853%
+flat-lp    Epr: F_true−F̂ -1.042% of F = airflow guess +0.045% (ṁ̂/ṁ−1 +1.050%) + jet push -1.087%
+flat-lp    LpSpeed: F_true−F̂ +4.224% of F = airflow guess -0.042% (ṁ̂/ṁ−1 -1.004%) + jet push +4.266%

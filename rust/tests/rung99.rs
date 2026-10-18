@@ -186,6 +186,44 @@ fn the_blend_is_the_two_slices_answers_blended_at_equal_reading() {
 }
 
 #[test]
+fn the_run_reads_all_three_tables_blended_from_the_two_slices_around_it() {
+    // The final review: H6 passes whether or not the schedule and the steady table are blended (it would pass on rung
+    // 98's table too). At Mach 0.5, rebuild the Mach-0.3 and Mach-0.6 slices here, from flights built by hand, and the
+    // run's OWN three tables must be their blend, bit for bit — and differ from rung 98's.
+    let fl = |m: f64| turbojet::engine::FlightCondition::new(250.0, 50_000.0, m);
+    let w = (0.5 - 0.3) / (0.6 - 0.3);
+    let check = |s: ControlsSettings| {
+        let sv = build(&s).unwrap();
+        let ft = &sv.core.fuel;
+        let (a, b) = (ct::Carry::new(ft, &fl(0.3), &fl(0.5), true, true), ct::Carry::new(ft, &fl(0.6), &fl(0.5), true, true));
+        let g = sv.governor.as_ref();
+        if let Some(t) = g.and_then(|g| g.infer.as_ref()) {
+            let one = |c: &ct::Carry| c.thrust_table(&ct::try_design_table(ft, c, s.from, s.to).unwrap());
+            assert_eq!(*t, ma::blend_thrust(&one(&a), &one(&b), w, Reading::Epr), "the thrust table");
+        }
+        if let Some(g) = g.filter(|g| !g.table.is_empty()) {
+            let one = |c: &ct::Carry| c.steady_table(&ct::try_design_steady_table(ft, c, sv.start.tt4, sv.end.tt4).unwrap());
+            assert_eq!(g.table, ma::blend_pairs(&one(&a), &one(&b), w), "the steady table");
+        }
+        let acc = sv.accel.as_ref().unwrap();
+        let one = |c: &ct::Carry| {
+            let t = c.accel(&ct::try_design_accel(ft, c, s.from, s.to, turbojet::sandbox_controls::ACCEL_ROWS, s.accel_margin).unwrap());
+            t.n_h.iter().copied().zip(t.kappa.iter().copied()).collect::<Vec<_>>()
+        };
+        let want = ma::blend_pairs(&one(&a), &one(&b), w);
+        assert_eq!(acc.n_h, want.iter().map(|p| p.0).collect::<Vec<_>>(), "the schedule's abscissa");
+        assert_eq!(acc.kappa, want.iter().map(|p| p.1).collect::<Vec<_>>(), "the schedule");
+        let rung98 = build(&none(s)).unwrap();
+        assert_ne!(acc.kappa, rung98.accel.as_ref().unwrap().kappa, "not rung 98's schedule");
+        sv
+    };
+    let e = check(air(ControlsSettings { shape: FLOW_PRESS, accel_on: true, ..gov(ThrustBy::Epr) }, 0.5));
+    assert!(e.governor.as_ref().unwrap().infer.is_some());
+    let p = check(air(ControlsSettings { shape: FLOW_PRESS, accel_on: true, ..prop() }, 0.5));
+    assert!(!p.governor.as_ref().unwrap().table.is_empty());
+}
+
+#[test]
 fn the_formula_leaves_only_the_airflow_guess_while_choked() {
     // Anchor § 2 / G3: on an EPR run under the formula at Mach 1.4 (every point and row choked), the rest of the gap
     // after the airflow guess is zero. Bar 1e-12 x the thrust.

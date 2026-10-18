@@ -55,7 +55,7 @@ const ENTROPY = /\.s$|\.ts_(burner|reject)\.\d+\.0$|\.settled_(lp|hp)$/;
 // thrust. Under rung 98's split the same column is a constant of tens of N per kg/s and passes the same bar.
 // The first part (`gap_ram`) is, under the formula, the airflow guess `V0·(ṁ̂ − ṁ_face)` -- a small difference of two
 // nearly equal flows (~0.1 N per kg/s); relative it read 8.0e-12 against the 1e-11 bar (#242), so it takes the same
-// absolute rule (worst 1.3e-12 seen on the rest; rung 98's ram part, tens of N per kg/s, differs by ~1e-12 there).
+// absolute rule. Worst seen on both parts with both under it: 1.9e-12 (#232.gap_ram), rung 98's ram part included.
 const GAP = /\.gap_(ram|nozzle)\.\d+$/;
 const GAP_ABS = 1e-10;
 const BARS = {
@@ -90,7 +90,7 @@ function compare(a, b, path, fails, kind) {
     const isS = isGap || ENTROPY.test(path);
     const d = isS ? Math.abs(a - b) : Math.abs(a - b) / Math.max(Math.abs(a), Math.abs(b));
     const bar = isGap ? GAP_ABS : isS ? BARS[kind].s_abs : BARS[kind].rel;
-    const key = kind + (isGap ? ' thrust-gap rest (abs)' : isS ? (kind === 'march' ? ' settled gap (abs)' : ' entropy (abs)') : ' relative');
+    const key = kind + (isGap ? ' thrust-gap parts (abs)' : isS ? (kind === 'march' ? ' settled gap (abs)' : ' entropy (abs)') : ' relative');
     if (!worst[key] || d > worst[key].d) worst[key] = { d, where: path };
     if (!(d <= bar)) fails.push(`${path}: browser ${a} vs native ${b} (${isS ? 'abs' : 'rel'} ${d.toExponential(2)} > ${bar})`);
     return;

@@ -29,6 +29,13 @@ the new field broke its compile and the first 15-minute gate died at the build. 
 `.`): write `\\s`, `\\.`, as the surrounding checks do. Python heredoc edits add their own escaping layer on top — check
 the written file.
 
+**Lesson 5 — a gate that reads the device's own parameter back from the run cannot see it wrong.** The blend gate took
+the weight from the run's `Tables`; H6's 10 K / 0.1 % bars pass on rung 98's table too. The final review asked for the
+run's OWN three tables to equal a blend of two slices rebuilt by hand, bit for bit; the red check (weight × 1.001)
+failed ONLY that new gate. Also: the review caught my spec blaming the airflow guess for the fan-speed +5 % — my own
+G6 bound (≤ 0.22 %) ruled that out; measured, it is the jet push (rung 97's LP-shaft work). Check a stated cause
+against your own bounds before writing it.
+
 **Census held exactly as pre-registered** (2 of 83 check requests; crash map 76 diffs, 0 outside the class); three
 newly refused crash requests were each read — slow slices' own reach (a fixed customer amount; rows with no operating
 point at Mach 0.3/0.6), not bugs.

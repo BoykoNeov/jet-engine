@@ -49,16 +49,21 @@ probe showed a grid ending at Mach 2.0 could not build Mach 2.5–3 flights — 
   whether the line is carried past the grid; under the formula the pressure-ratio gap splits into the airflow guess and
   the rest (zero while choked); under the grid it is shown whole.
 
-## Gates (anchor § 2) — measured
+## Gates (anchor § 2) — measured margins (`margins.txt`, two maps)
 
 | Gate | Bar | Measured |
 |---|---|---|
 | `none` / `table_at: flight` / no table / design flight ⇒ old code | bit for bit | bit for bit (whole gate, goldens) |
 | `grid` at Mach 0.85, hot / cold / thin air, four laws, two maps | bit for bit | bit for bit |
 | `grid` at each slice's own flight ⇒ tables made there | bit for bit | bit for bit, 7 slices × 3 laws |
-| Pressure-only flight per slice: carried slice vs tables built there | 1e−9 | passes, 8 slices × 4 variants × 2 laws |
-| The blend = the two slices' answers blended, inside both | 1e−12 | passes (Mach 0.5, 1.4, 0.15; all three tables) |
-| The formula's rest after the airflow guess, choked run (Mach 1.4) | 1e−12 × thrust | passes, every point, two maps |
+| Pressure-only flight per slice: carried slice vs tables built there | 1e−9 | 3.5e−12 (8 slices × 4 variants × 2 laws) |
+| The blend = the two slices' answers blended, inside both | 1e−12 | 4.8e−16 (Mach 0.5, 1.4, 0.15) |
+| The RUN's three tables = the blend of two slices rebuilt by hand (Mach 0.5) | bit for bit | bit for bit; ≠ rung 98's |
+| The formula's rest after the airflow guess, choked run (Mach 1.4) | 1e−12 × thrust | 2.4e−15 × thrust |
+
+**Red check** (the final review): a 0.1 % error put into the blend weight failed ONLY the run-tables gate above — the
+blend gate reads the weight back from the run, and H1–H6's bars are wider than 0.1 % of a few-tenths miss. Before that
+gate (added at the final review) no test could see a wrong weight. Restored.
 
 **What the default moved** (census by running, against a worktree of `7113ed3`): of 83 Controls check requests, 2 —
 exactly the two pre-registered (rung 98's Mach-1.4 `EPR` request and its sea-level Mach-3 one, the latter still
@@ -89,8 +94,12 @@ high one, which is why Mach 1.4's 1400 K end was left unscored — it came out �
 ## Reported, not scored
 
 * **The fan-speed formula where the nozzle is not choked: +4.4…+5.1 %** (Mach 0.05, 700 K start) — the opposite sign to
-  the pressure ratio's. Unchoked, the fan runs at a different speed for a given thrust (first order, G2's 8–14 %); the
-  formula has no term for it. The cell was taken out of scoring before the freeze for exactly this reason.
+  the pressure ratio's. Split at the calibrated end (`fansplit.txt`): the airflow guess is ±0.04–0.06 % of the thrust
+  (the table's airflow ~1 % off, but the flight speed only ~16 m/s); the **jet push** is +4.3…+4.9 % (pressure ratio:
+  −1.1…−1.5 %, G6's term). Rung 97's mechanism: unchoked, the back-pressure takes work off the LP shaft, so at a given
+  fan speed the jet keeps MORE pressure than the choked table expects — the formula's gross push, read at that fan speed,
+  falls short of the truth. (Taken out of scoring before the freeze; the review corrected this spec's first wording,
+  which blamed the airflow guess.)
 * Fan-speed formula against the grid at Mach 1.4: formula +0.15…+0.29 % / +0.20…+0.40 %, grid +0.29…+0.31 % / −0.04 %.
 * Across Mach (flow/press and flat-LP, both readings): Mach 0.05 grid +3.3…+3.4 % / +1.7 % (rung 98: +23…+27 %, the
   formula ±0.2 %); Mach 0.9–1.1 (the bracket spanning the inlet recovery's onset at Mach 1) grid within 0.1 %, rung 98
@@ -139,6 +148,7 @@ schedule 0.061 → 0.065 s; the proportional law 0.041 → 0.045 s.
 
 ## The next seam
 
-**The formula with the unchoked nozzle**: recompute the jet's push from the pressure ratio with the subsonic exit when
-`pt9/p0` is below critical — the fan-speed reading's +5 % says the airflow guess must move too. Or the steady matchers'
+**The formula with the unchoked nozzle**: recompute the jet's push with the subsonic exit when `pt9/p0` is below
+critical — on the pressure ratio a closed form (G6); on the fan speed it also needs the LP shaft's unchoked work split
+(rung 97), since that, not the airflow guess, makes the +5 %. Or the steady matchers'
 unchoked branch (rung 97's seam), or the governor on the lagged marchers (rung 95's).
