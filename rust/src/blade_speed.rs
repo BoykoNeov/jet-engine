@@ -302,6 +302,9 @@ pub struct Machine {
     /// RUNG 103: every plant this machine builds re-solves below choke instead of refusing (the Blades view sets it;
     /// `false` from [`build`], so every shipped reading is unchanged).
     pub below_choke: bool,
+    /// The below-idle floor (sandbox plan § 38) on every plant it builds — `false` from [`build`]; set with
+    /// `below_choke` by [`Machine::for_pages`].
+    pub idle_floor: bool,
 }
 
 /// The `(γ, cp)` a spool's Mach numbers are read with, at its face total temperature `tt`.
@@ -339,7 +342,7 @@ pub fn build(
     let lp = size(duty_lp, knobs_lp)?;
     let hp = size(duty_hp, knobs_hp)?;
     Ok(Machine { design: design.clone(), flight, map_lp: reshape(map_lp, lp.r, knobs_lp.droop),
-                 map_hp: reshape(map_hp, hp.r, knobs_hp.droop), lp, hp, below_choke: false })
+                 map_hp: reshape(map_hp, hp.r, knobs_hp.droop), lp, hp, below_choke: false, idle_floor: false })
 }
 
 /// Which stator lever moves, and over which rows.
@@ -407,6 +410,9 @@ impl LeverRead {
 }
 
 impl Machine {
+    /// The sandbox views' machine: rung 103's below-choke re-solve and the below-idle floor (plan § 38), together.
+    pub fn for_pages(self) -> Self { Machine { below_choke: true, idle_floor: true, ..self } }
+
     /// The rung-55 plant for `lever` with `spool`'s lever moving.
     pub fn plant(&self, lever: Lever, spool: Spool) -> StageStackCore {
         let base = StageStackCoreSpec::new(self.design.clone(), self.flight, 1.0, self.map_lp, self.map_hp);
@@ -419,6 +425,7 @@ impl Machine {
             k_lp, k_hp, vsv_stages_lp: front(Spool::Lp), vsv_stages_hp: front(Spool::Hp), ..base
         });
         plant.core.core.base.below_choke.set(self.below_choke);
+        plant.core.core.base.idle_floor.set(self.idle_floor);
         plant
     }
 

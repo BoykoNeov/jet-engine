@@ -104,6 +104,9 @@ high one, which is why Mach 1.4's 1400 K end was left unscored — it came out �
 * Across Mach (flow/press and flat-LP, both readings): Mach 0.05 grid +3.3…+3.4 % / +1.7 % (rung 98: +23…+27 %, the
   formula ±0.2 %); Mach 0.9–1.1 (the bracket spanning the inlet recovery's onset at Mach 1) grid within 0.1 %, rung 98
   −0.8…−4.9 %; Mach 3.2 refused on every setting (the default move's low throttle has no steady point there).
+  *Since sandbox plan § 38 (2026-10-19)* the live page's below-idle floor also refuses the Mach-3 slice's own flight
+  from 1000 K (below idle there); this rung's tests run with it off (`idle_floor`, a hidden reduce setting), so every
+  number above stands.
 * The schedule and the proportional law at Mach 0.15 from 700 K (slow slices with unchoked rows): peak within 0.9 K,
   HP speed within 0.006 % — the schedule only cuts in higher up.
 * Fixed amounts (`EPR`, grid / none): generator by power +0.19 / −0.06 % at Mach 0.5, +2.3 / +0.5 % at Mach 1.4 (none

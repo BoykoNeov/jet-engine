@@ -700,6 +700,11 @@ pub struct TwoSpoolCore {
     /// turbine free (rung 97's root) — [`crate::steady_unchoked::dispatch`]. `false` by default: every shipped path keeps
     /// rung 38's refusal; the sandbox views and rung 103's tests turn it on.
     pub below_choke: std::cell::Cell<bool>,
+    /// THE BELOW-IDLE FLOOR (sandbox plan § 38): `true` refuses every steady point whose net thrust is not positive —
+    /// choked or not, and from whichever start rung 40's equilibrium found it — in "below idle" words
+    /// ([`crate::steady_unchoked::dispatch`], `TwoSpoolTransientCore::try_equilibrium`). `false` by default (the
+    /// user's decision: off in the old code, on in the pages); the sandbox views turn it on.
+    pub idle_floor: std::cell::Cell<bool>,
     /// RUNG 103: how the steady cascades solve the LP turbine right now — [`crate::steady_unchoked::SteadyLp`]. `Pin`
     /// except for the length of one re-solve (or the independent-root gate's held search).
     pub steady_lp: std::cell::Cell<crate::steady_unchoked::SteadyLp>,
@@ -869,6 +874,7 @@ impl TwoSpoolCore {
             ab_out: std::cell::Cell::new(false),
             ab_last: std::cell::Cell::new(None),
             below_choke: std::cell::Cell::new(false),
+            idle_floor: std::cell::Cell::new(false),
             steady_lp: std::cell::Cell::new(crate::steady_unchoked::SteadyLp::Pin),
             dispatching: std::cell::Cell::new(false),
             pin_past_choke: std::cell::Cell::new(false),

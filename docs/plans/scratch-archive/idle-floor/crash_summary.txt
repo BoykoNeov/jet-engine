@@ -1,0 +1,1 @@
+1200 requests (seed 36) against a worktree of 6e49d33: 1162 byte-equal; 24 runs now refused below idle (-0.8 to -56 N per kg/s of inlet air; 23 with the bleed lever); 14 refusals reworded (12 the floors sentence, #349 the customer-bleed sentence, #477 now refused at its start too); 0 refused->run, 0 runs changed, 0 panics.

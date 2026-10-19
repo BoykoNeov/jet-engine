@@ -135,8 +135,9 @@ impl CoolingSettings {
     pub fn fixed(&self) -> FixedEngine {
         let b = BladeSettings::defaults();
         let (ml, mh) = control_maps(CONTROL_SHAPES[self.shape]).expect("CONTROL_SHAPES lists only buildable shapes");
-        // Rung 103: this view's engine re-solves an unchoked throttle instead of refusing it.
-        FixedEngine { below_choke: true, ..FixedEngine::new(b.design(), b.flight(), 1.0, ml, mh) }
+        // Rung 103: this view's engine re-solves an unchoked throttle instead of refusing it; plan § 38: and refuses
+        // a point below idle whichever path solved it.
+        FixedEngine::new(b.design(), b.flight(), 1.0, ml, mh).for_pages()
     }
 }
 

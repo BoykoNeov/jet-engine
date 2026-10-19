@@ -57,7 +57,7 @@ use crate::afterburner::{AbMode, Afterburner, Throat, TwoShaftFit};
 use crate::sandbox_blades::BladeSettings;
 use crate::stator_transient::{IncidenceLimiter, ScheduledStatorCore, ScheduledStatorTransient, StatorArm,
                               StatorSchedule};
-use crate::two_spool::Spool;
+use crate::two_spool::{Spool, TwoSpoolEngine};
 use crate::bleed_transient::r62_try_close_fuel;
 use crate::two_spool_transient::{ForcedBleed, Instant2, MarchedBleed};
 use crate::visuals::Json;
@@ -278,6 +278,10 @@ pub struct ControlsSettings {
     /// Written to a reply only when not at their defaults, so every default reply is rung 99's in shape.
     pub low_grid: bool,
     pub formula_choked: bool,
+    /// The below-idle floor (sandbox plan § 38) — on by default; hidden, its reduce setting (off: every machine this
+    /// view builds answers as before the floor, so rungs 98–101's tests read their anchored cells). Written to a reply
+    /// only when off.
+    pub idle_floor: bool,
     /// RUNG 101: where the formula (`speed_corr: formula`) gets the air swallowed — rung 100's table (the default),
     /// the speed grid's, or the exhaust-temperature sensor; and that sensor's lag (off by default; HP-shaft τ). Written to
     /// a reply only off their defaults, so every default reply is rung 100's in shape.
@@ -418,7 +422,7 @@ impl ControlsSettings {
             govern: false, speed_law: SpeedLaw::Rate, gov_tau: 0.1, gov_gain: 20.0,
             thrust_by: ThrustBy::True, table_clean: true,
             table_at: TableAt::Design, corr_p: true, corr_t: true, speed_corr: SpeedCorr::Grid,
-            low_grid: true, formula_choked: false,
+            low_grid: true, formula_choked: false, idle_floor: true,
             airflow: AirflowFrom::Table, exhaust_lag: false, exhaust_tau: 1.0,
             t0: fd.t0, p0: fd.p0, m0: fd.m0,
             ab: None, tt7: AB_TT7, light_at: AB_LIGHT_AT, a8_ratio: 1.0, a8_match: false,
@@ -575,6 +579,8 @@ impl ControlsSettings {
         if let Json::Obj(kv) = &mut j {
             if !self.low_grid { kv.push(("low_grid".into(), b(false))); }
             if self.formula_choked { kv.push(("formula_choked".into(), b(true))); }
+            // The below-idle floor's, likewise (plan § 38).
+            if !self.idle_floor { kv.push(("idle_floor".into(), b(false))); }
             // Rung 101's three, likewise.
             if self.airflow != AirflowFrom::Table { kv.push(("airflow".into(), Json::from(self.airflow.key()))); }
             if self.exhaust_lag { kv.push(("exhaust_lag".into(), b(true))); }
@@ -669,7 +675,8 @@ impl ControlsSettings {
                           ("release_on", &mut s.release_on), ("metal_on", &mut s.metal_on), ("hold_cap", &mut s.hold_cap),
                           ("govern", &mut s.govern), ("table_clean", &mut s.table_clean),
                           ("corr_p", &mut s.corr_p), ("corr_t", &mut s.corr_t), ("low_grid", &mut s.low_grid),
-                          ("formula_choked", &mut s.formula_choked), ("exhaust_lag", &mut s.exhaust_lag),
+                          ("formula_choked", &mut s.formula_choked), ("idle_floor", &mut s.idle_floor),
+                          ("exhaust_lag", &mut s.exhaust_lag),
                           ("a8_match", &mut s.a8_match)] {
             flag(k, into)?;
         }
@@ -1164,11 +1171,26 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
         Some(so) => design.with_shaft_offtake(so),
         None => design,
     };
+    // The customer bleed's twin of question (ii): the same machine — cooling, afterburner and generator kept — with
+    // only the aircraft's air left in the engine. Asked only if the generator's question did not name the load.
+    let unbled = s.customer_bleed().is_some().then(|| {
+        let d = BladeSettings::defaults().design();
+        let d = match s.turbine_cooling() { Some(tc) => d.with_turbine_cooling(tc), None => d };
+        let d = match s.afterburner_fit() { Some(fit) => d.with_afterburner(fit), None => d };
+        match s.shaft_offtake() { Some(so) => d.with_shaft_offtake(so), None => d }
+    });
     let gen_check = (s.shaft_offtake().is_some() && s.lever == LeverChoice::None).then(|| design.clone());
-    let core = match builder(design, fd, MDOT_DESIGN, Some(ml), Some(mh), s.rho, &s.lever_arm()) {
-        ScheduledStatorTransient::Full(c) => c,
-        ScheduledStatorTransient::Degenerate(_) => unreachable!("the Controls engine has both shafts"),
+    // Every machine this view builds — the flown one and each sibling a refusal or a hold re-solves — refuses a
+    // steady point below idle, whichever start its equilibrium found it from (plan § 38).
+    let make = |d: TwoSpoolEngine| -> ScheduledStatorCore {
+        let c = match builder(d, fd, MDOT_DESIGN, Some(ml), Some(mh), s.rho, &s.lever_arm()) {
+            ScheduledStatorTransient::Full(c) => c,
+            ScheduledStatorTransient::Degenerate(_) => unreachable!("the Controls engine has both shafts"),
+        };
+        c.fuel.inner.inner.base.idle_floor.set(s.idle_floor);
+        c
     };
+    let core = make(design);
     let steady = |which: &str, tt4: f64| -> Result<Instant2, DoesNotRun> {
         core.fuel.inner.try_equilibrium(&fl, tt4, None).map(|(i, _, _)| i).map_err(|e| {
             let mut m = e.0;
@@ -1177,19 +1199,28 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
                 // Rung 103: the steady check re-solves an unchoked throttle, as the march's own equilibrium does
                 // (rung 97) — so its answer is no longer the pin's there.
                 st.core.base.below_choke.set(true);
+                st.core.base.idle_floor.set(s.idle_floor);
                 if let Err(e2) = st.try_match_point(&fl, tt4) {
                     if e2.0.contains("rung-92:") { m = e2.0; }
                 }
             }
             let mut words = format!("At the {which} throttle ({tt4:.0} K): {}", endpoint_words(&m));
             if let Some(de) = unloaded.as_ref().filter(|_| !m.contains("rung-92:")) {
-                let bare = match builder(de.clone(), fd, MDOT_DESIGN, Some(ml), Some(mh), s.rho, &s.lever_arm()) {
-                    ScheduledStatorTransient::Full(c) => c,
-                    ScheduledStatorTransient::Degenerate(_) => unreachable!("the Controls engine has both shafts"),
-                };
+                let bare = make(de.clone());
                 if bare.fuel.inner.try_equilibrium(&fl, tt4, None).is_ok() {
                     words += " With the generator off this throttle does have a steady point, so the generator's \
                               load is what removes it: ask for less power, or raise the throttle.";
+                }
+            }
+            // Only on the "off the maps" refusal: the others already name their cause (the bleed's own "takes more
+            // than half" among them). Crash map: the one such refusal with the customer bleed on (plan § 38).
+            let named = words.contains("With the generator off");
+            let off_maps = m.contains("does not bracket") || m.contains("off-map compressor trial");
+            if let Some(de) = unbled.as_ref().filter(|_| !named && off_maps) {
+                let bare = make(de.clone());
+                if bare.fuel.inner.try_equilibrium(&fl, tt4, None).is_ok() {
+                    words += " With the customer bleed off this throttle does have a steady point, so the air the \
+                              aircraft takes is what removes it: ask for less, or raise the throttle.";
                 }
             }
             DoesNotRun(words)
@@ -1216,10 +1247,7 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
     let carry = s.carried().then(|| Carry::new(&core.fuel, &fd, &fl, s.corr_p, s.corr_t));
     let clean = match (s.calibrated() && tables.is_none(), unloaded.as_ref()) {
         (true, Some(de)) => {
-            let bare = match builder(de.clone(), fd, MDOT_DESIGN, Some(ml), Some(mh), s.rho, &s.lever_arm()) {
-                ScheduledStatorTransient::Full(c) => c,
-                ScheduledStatorTransient::Degenerate(_) => unreachable!("the Controls engine has both shafts"),
-            };
+            let bare = make(de.clone());
             let end_of = |which: &str, t: f64| bare.fuel.inner.try_equilibrium(&fl, t, None).map(|(i, _, _)| i)
                 .map_err(|e| DoesNotRun(format!(
                     "At the {which} throttle ({t:.0} K): with the generator off this throttle has no steady point, so the \
@@ -1267,10 +1295,7 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
         let Some(de) = unloaded.as_ref().filter(|_| s.hold != Hold::BurnerTemp) else {
             return Ok((steady(which, t_set)?, None));
         };
-        let bare = match builder(de.clone(), fd, MDOT_DESIGN, Some(ml), Some(mh), s.rho, &s.lever_arm()) {
-            ScheduledStatorTransient::Full(c) => c,
-            ScheduledStatorTransient::Degenerate(_) => unreachable!("the Controls engine has both shafts"),
-        };
+        let bare = make(de.clone());
         let target = held(&bare.fuel.inner.try_equilibrium(&fl, t_set, None).map_err(|e| DoesNotRun(format!(
             "At the {which} throttle ({t_set:.0} K): with the generator off this throttle has no steady point, so it \
              sets no {} to hold ({})", if s.hold == Hold::Thrust { "thrust" } else { "speed" }, endpoint_words(&e.0))))?.0);
@@ -1310,10 +1335,7 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
             let made = |m: &ScheduledStatorCore, lo: f64, hi: f64| tb.thrust_table(&m.fuel, lo, hi, r).map_err(DoesNotRun);
             let ((table, dt), targets) = match (carried_clean, unloaded.as_ref()) {
                 (true, Some(de)) => {
-                    let bare = match builder(de.clone(), fd, MDOT_DESIGN, Some(ml), Some(mh), s.rho, &s.lever_arm()) {
-                        ScheduledStatorTransient::Full(c) => c,
-                        ScheduledStatorTransient::Degenerate(_) => unreachable!("the Controls engine has both shafts"),
-                    };
+                    let bare = make(de.clone());
                     let target_of = |which: &str, t: f64| bare.fuel.inner.try_equilibrium(&fl, t, None)
                         .map(|(i, _, _)| ControlsSolver::thrust(&i)).map_err(|e| DoesNotRun(format!(
                             "At the {which} throttle ({t:.0} K): with the generator off this throttle has no steady point, so \
@@ -1454,7 +1476,9 @@ pub fn endpoint_words(message: &str) -> String {
     let why = if message.contains("below idle") {
         "at this throttle the engine is below idle: it makes more drag than thrust. Raise the throttle (at the \
          design flight the first one that runs is about 480 K on every map; flying faster raises it — about 580 K \
-         at Mach 1.6, 690 K at Mach 2 — and so does warmer air: on a standard sea-level day about 550–560 K)"
+         at Mach 1.6, 690 K at Mach 2, 960 K at Mach 2.6 — and so does warmer air (on a standard sea-level day about \
+         550–560 K) or air taken off the engine: the bleed lever adds about 40–120 K, more than 140 K at Mach 2.6, \
+         and a 5 % customer bleed about 30–90 K)"
     } else if message.contains("customer bleed takes") {
         "the aircraft's customer bleed would take more than half of the HP compressor's air here, which starves the \
          burner. A fixed amount of air is a larger share at low power: raise the throttle, or ask for less air"

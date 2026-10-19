@@ -1,0 +1,148 @@
+
+===== request 0: shape press/flow from 575.0 to 1051.5 lever Both customer Off cool 0.067/0.069 gen Lp T0 241.5 p0 24328 M 0.939
+page now: {"ok":0,"reason":"At the starting throttle (575 K): the engine has no steady operating point: the compressors would have to run off the part of their 
+failing end: 575.0 K -> rung-91 two-shaft closure with turbine cooling does not bracket at nu=(0.0529,0.5576), Tt4=575, b=0.1000 — off the modeled speed-line region.
+2-D starts that solve: 0 of 54
+residual signs (LP power, HP power): A ++  B +-  C -+  D --  x close fails
+  nu_hp 1.00 xxxxxxxxxxBBBBDDDDDD
+  nu_hp 0.98 xxxxxxxxxxBBBBDDDDDD
+  nu_hp 0.96 xxxxxxxxxxBBBDDDDDDD
+  nu_hp 0.94 xxxxxxxxxBBBBDDDDDDD
+  nu_hp 0.92 xxxxxxxxxBBBBDDDDDDD
+  nu_hp 0.90 xxxxxxxxxBBBDDDDDDDD
+  nu_hp 0.88 xxxxxxxxBBBBDDDDDDDD
+  nu_hp 0.86 xxxxxxxxBBBBDDDDDDDD
+  nu_hp 0.84 xxxxxxxxBBBDDDDDDDDD
+  nu_hp 0.82 xxxxxxxBBBBDDDDDDDDD
+  nu_hp 0.80 xxxxxxxBBBDDDDDDDDDD
+  nu_hp 0.78 xxxxxxxBBBDDDDDDDDDD
+  nu_hp 0.76 xxxxxxBBBBDDDDDDDDDD
+  nu_hp 0.74 xxxxxxBBBDDDDDDDDDDD
+  nu_hp 0.72 xxxxxxBBBDDDDDDDDDDD
+  nu_hp 0.70 xxxxxxBBDDDDDDDDDDDD
+  nu_hp 0.68 xxxxxBBBDDDDDDDDDDDD
+  nu_hp 0.66 xxxxxBBDDDDDDDDDDDDD
+  nu_hp 0.64 xxxxxBBDDDDDDDDDDDDD
+  nu_hp 0.62 xxxxxBDDDDDDDDDDDDDD
+  nu_hp 0.60 xxxxDDDDDDDDDDDDDDDD
+  nu_hp 0.58 xxxxDDDDDDDDDDDDDDDD
+  nu_hp 0.56 xxxxDDDDDDDDDDDDDDDD
+  nu_hp 0.54 xxxxDDDDDDDDCCCCCCCC
+  nu_hp 0.52 xxxCCCCCCCCCCCCCCCCC
+  nu_hp 0.50 xxxCCCCCCCCCCCCCCCCC
+  nu_hp 0.48 xxxCCCCCCCCCCCCCCCCC
+  nu_hp 0.46 xxxCCCCCCCCCCCCCCCCC
+  nu_hp 0.44 xxxCCCCCCCCCCCCCCCCC
+  nu_hp 0.42 xxxCCCCCCCCCCCCCCCCC
+  nu_hp 0.40 xxCCCCCCCCCCCCCCCCCC
+smallest residual on the grid 1.665e-2 at nu=(0.25,0.60)
+  generator power 0.0000: runs nu=(0.5526,0.5388) thrust/inlet 27.49
+  generator power 0.0020: runs nu=(0.5293,0.5384) thrust/inlet 20.47
+  generator power 0.0040: runs nu=(0.5025,0.5379) thrust/inlet 12.92
+  generator power 0.0060: runs nu=(0.4713,0.5374) thrust/inlet 4.72
+  generator power 0.0080: runs nu=(0.4335,0.5369) thrust/inlet -4.25
+  generator power 0.0100: refused: rung-92: the generator takes 54.6 % of the LP turbine's work here: half or more, so the LP compressor is starved — the aircraft is asking for more pow
+  generator power 0.0120: refused: rung-92: the generator takes 73.0 % of the LP turbine's work here: half or more, so the LP compressor is starved — the aircraft is asking for more pow
+  generator power 0.0140: refused: rung-92: the generator takes 97.7 % of the LP turbine's work here: half or more, so the LP compressor is starved — the aircraft is asking for more pow
+  generator power 0.0160: refused: rung-91 two-shaft closure with turbine cooling does not bracket at nu=(0.1720,0.5378), Tt4=575, b=0.1000 — off the modeled speed-line region.
+  generator power 0.0180: refused: rung-91 two-shaft closure with turbine cooling does not bracket at nu=(0.0877,0.5449), Tt4=575, b=0.1000 — off the modeled speed-line region.
+  generator power 0.0200: refused: rung-91 two-shaft closure with turbine cooling does not bracket at nu=(0.0529,0.5576), Tt4=575, b=0.1000 — off the modeled speed-line region.
+
+===== request 1: shape flat-lp from 1008.0 to 583.8 lever None customer Share cool 0.000/0.000 gen Off T0 282.4 p0 53737 M 0.293
+page now: {"ok":0,"reason":"At the final throttle (584 K): the engine has no steady operating point: the compressors would have to run off the part of their map
+failing end: 583.8 K -> rung-90 two-shaft closure with the customer bleed does not bracket at nu=(-0.0524,0.5883), Tt4=584, b=0.0000 — off the modeled speed-line region.
+2-D starts that solve: 0 of 54
+residual signs (LP power, HP power): A ++  B +-  C -+  D --  x close fails
+  nu_hp 1.00 xxBBBBBBBBBDDDDDDDDD
+  nu_hp 0.98 xxBBBBBBBBBDDDDDDDDD
+  nu_hp 0.96 xxBBBBBBBBBDDDDDDDDD
+  nu_hp 0.94 xxBBBBBBBBBDDDDDDDDD
+  nu_hp 0.92 xxBBBBBBBBBDDDDDDDDD
+  nu_hp 0.90 xxBBBBBBBBBDDDDDDDDD
+  nu_hp 0.88 xBBBBBBBBBBDDDDDDDDD
+  nu_hp 0.86 xBBBBBBBBBBDDDDDDDDD
+  nu_hp 0.84 xBBBBBBBBBBDDDDDDDDD
+  nu_hp 0.82 xBBBBBBBBBBDDDDDDDDD
+  nu_hp 0.80 xBBBBBBBBBBDDDDDDDDD
+  nu_hp 0.78 xBBBBBBBBBBDDDDDDDDD
+  nu_hp 0.76 xBBBBBBBBBBDDDDDDDDD
+  nu_hp 0.74 xBBBBBBBBBBDDDDDDDDD
+  nu_hp 0.72 xBBBBBBBBBBDDDDDDDDD
+  nu_hp 0.70 xBBBBBBBBBDDDDDDDDDD
+  nu_hp 0.68 xBBBBBBBBBDDDDDDDDDD
+  nu_hp 0.66 xBBBBBBBBDDDDDDDDDDD
+  nu_hp 0.64 xBBBBBBBDDDDDDDDDDDD
+  nu_hp 0.62 xBBBBBDDDDDDDDDDDDDD
+  nu_hp 0.60 xBBDDDDDDDDDDDDDDDDC
+  nu_hp 0.58 xxxCCCCCCCCCCCCCCCCC
+  nu_hp 0.56 xxxxxxCCCCCCCCCCCCCC
+  nu_hp 0.54 xxxxxxxCCCCCCCCCCCCC
+  nu_hp 0.52 xxxxxxxxxCCCCCCCCCCC
+  nu_hp 0.50 xxxxxxxxxxCCCCCCCCCC
+  nu_hp 0.48 xxxxxxxxxxxCCCCCCCCC
+  nu_hp 0.46 xxxxxxxxxxxxCCCCCCCC
+  nu_hp 0.44 xxxxxxxxxxxxCCCCCCCC
+  nu_hp 0.42 xxxxxxxxxxxxxCCCCCCC
+  nu_hp 0.40 xxxxxxxxxxxxxxCCCCCC
+smallest residual on the grid 4.092e-3 at nu=(0.20,0.60)
+  customer share 0.0000: runs nu=(0.2962,0.5987) thrust/inlet 121.64
+  customer share 0.0058: runs nu=(0.2757,0.5976) thrust/inlet 117.71
+  customer share 0.0115: runs nu=(0.2529,0.5964) thrust/inlet 113.80
+  customer share 0.0173: runs nu=(0.2274,0.5952) thrust/inlet 109.91
+  customer share 0.0230: runs nu=(0.1980,0.5940) thrust/inlet 106.03
+  customer share 0.0288: runs nu=(0.1627,0.5929) thrust/inlet 102.17
+  customer share 0.0346: runs nu=(0.1158,0.5917) thrust/inlet 98.32
+  customer share 0.0403: refused: rung-90 two-shaft closure with the customer bleed does not bracket at nu=(-0.0088,0.5904), Tt4=584, b=0.0000 — off the modeled speed-line region.
+  customer share 0.0461: refused: rung-90 two-shaft closure with the customer bleed does not bracket at nu=(-0.0258,0.5891), Tt4=584, b=0.0000 — off the modeled speed-line region.
+  customer share 0.0519: refused: rung-90 two-shaft closure with the customer bleed does not bracket at nu=(-0.0470,0.5886), Tt4=584, b=0.0000 — off the modeled speed-line region.
+  customer share 0.0576: refused: rung-90 two-shaft closure with the customer bleed does not bracket at nu=(-0.0524,0.5883), Tt4=584, b=0.0000 — off the modeled speed-line region.
+  steady customer-bleed matcher (lever ignored): refused: speed-line bracket fails for (m=0.26585090728075056, tau_c=1.003898866033862): 0.0004838166512565068, 3.9904838166512566
+
+===== request 2: shape tilted from 597.6 to 1362.7 lever Bleed customer Off cool 0.000/0.000 gen Hp T0 268.0 p0 89288 M 0.456
+page now: {"ok":0,"reason":"At the starting throttle (598 K): the engine has no steady operating point: the compressors would have to run off the part of their 
+failing end: 597.6 K -> rung-62 bled two-shaft closure does not bracket at nu=(0.0122,0.5369), Tt4=598, b=0.1000 — off the modeled speed-line region.
+2-D starts that solve: 0 of 54
+residual signs (LP power, HP power): A ++  B +-  C -+  D --  x close fails
+  nu_hp 1.00 xxxxxxxBBBBBBDDDDDDD
+  nu_hp 0.98 xxxxxxBBBBBBBDDDDDDD
+  nu_hp 0.96 xxxxxxBBBBBBBDDDDDDD
+  nu_hp 0.94 xxxxxxBBBBBBBDDDDDDD
+  nu_hp 0.92 xxxxxxBBBBBBDDDDDDDD
+  nu_hp 0.90 xxxxxBBBBBBBDDDDDDDD
+  nu_hp 0.88 xxxxxBBBBBBBDDDDDDDD
+  nu_hp 0.86 xxxxxBBBBBBBDDDDDDDD
+  nu_hp 0.84 xxxxxBBBBBBBDDDDDDDD
+  nu_hp 0.82 xxxxxBBBBBBBDDDDDDDD
+  nu_hp 0.80 xxxxBBBBBBBDDDDDDDDD
+  nu_hp 0.78 xxxxBBBBBBBDDDDDDDDD
+  nu_hp 0.76 xxxxBBBBBBBDDDDDDDDD
+  nu_hp 0.74 xxxxBBBBBBBDDDDDDDDD
+  nu_hp 0.72 xxxxBBBBBBBDDDDDDDDD
+  nu_hp 0.70 xxxBBBBBBBBDDDDDDDDD
+  nu_hp 0.68 xxxBBBBBBBDDDDDDDDDD
+  nu_hp 0.66 xxxBBBBBBBDDDDDDDDDD
+  nu_hp 0.64 xxxBBBBBBDDDDDDDDDDD
+  nu_hp 0.62 xxxBBBBBBDDDDDDDDDDD
+  nu_hp 0.60 xxxBBBBBDDDDDDDDDDDD
+  nu_hp 0.58 xxBBBBBDDDDDDDCCCCCC
+  nu_hp 0.56 xxBBBDDDDCCCCCCCCCCC
+  nu_hp 0.54 xxxCCCCCCCCCCCCCCCCC
+  nu_hp 0.52 xxxxxCCCCCCCCCCCCCCC
+  nu_hp 0.50 xxxxxxCCCCCCCCCCCCCC
+  nu_hp 0.48 xxxxxxxCCCCCCCCCCCCC
+  nu_hp 0.46 xxxxxxxxCCCCCCCCCCCC
+  nu_hp 0.44 xxxxxxxxxCCCCCCCCCCC
+  nu_hp 0.42 xxxxxxxxxxCCCCCCCCCC
+  nu_hp 0.40 xxxxxxxxxxxCCCCCCCCC
+smallest residual on the grid 6.356e-3 at nu=(0.30,0.56)
+  generator power 0.0000: runs nu=(0.4397,0.6085) thrust/inlet 93.28
+  generator power 0.0020: runs nu=(0.4300,0.6038) thrust/inlet 89.51
+  generator power 0.0040: runs nu=(0.4190,0.5989) thrust/inlet 85.53
+  generator power 0.0060: runs nu=(0.4066,0.5937) thrust/inlet 81.28
+  generator power 0.0080: runs nu=(0.3922,0.5883) thrust/inlet 76.71
+  generator power 0.0100: runs nu=(0.3752,0.5824) thrust/inlet 71.74
+  generator power 0.0120: runs nu=(0.3547,0.5761) thrust/inlet 66.28
+  generator power 0.0140: runs nu=(0.3286,0.5692) thrust/inlet 60.13
+  generator power 0.0160: runs nu=(0.2930,0.5614) thrust/inlet 52.96
+  generator power 0.0180: runs nu=(0.2360,0.5522) thrust/inlet 44.00
+  generator power 0.0200: refused: rung-62 bled two-shaft closure does not bracket at nu=(0.0122,0.5369), Tt4=598, b=0.1000 — off the modeled speed-line region.

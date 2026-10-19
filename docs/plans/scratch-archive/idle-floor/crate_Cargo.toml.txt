@@ -1,0 +1,23 @@
+[package]
+name = "idle-rule-probe"
+version = "0.1.0"
+edition = "2021"
+[dependencies]
+turbojet = { path = "W:/Claude_projects/jet engine/rust" }
+[profile.release]
+opt-level = 3
+[[bin]]
+name = "offmap"
+path = "src/offmap.rs"
+[[bin]]
+name = "replies"
+path = "src/replies.rs"
+[[bin]]
+name = "unique_neg"
+path = "src/unique_neg.rs"
+[[bin]]
+name = "fly_neg"
+path = "src/fly_neg.rs"
+[[bin]]
+name = "floors2"
+path = "src/floors2.rs"

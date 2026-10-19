@@ -1500,7 +1500,7 @@ impl TwoSpoolTransientCore {
         EQ_CALLS.with(|x| x.set(x.get() + 1));
         let first = self.try_newton(flight, tt4, start.unwrap_or((1.0, 1.0)));
         if first.is_ok() || start.is_some() {
-            return first;
+            return self.idle_floored(first, tt4);
         }
         for s in Self::LOW_STARTS {
             if let Ok(r) = self.try_newton(flight, tt4, (s, s)) {
@@ -1519,6 +1519,28 @@ impl TwoSpoolTransientCore {
             }
         }
         first
+    }
+
+    /// THE BELOW-IDLE FLOOR (sandbox plan § 38): with `idle_floor` on, a root the first Newton found with no
+    /// positive thrust per inlet air is refused, as the low start's are — the one root at its throttle (no second
+    /// root from 48 starts at any of 1 022 such points — bare, bled and cooled engines, four maps, 34 flights,
+    /// measured). Off, the result as it was.
+    fn idle_floored(
+        &self, r: Result<(Instant2, EqExit, usize), Abort>, tt4: f64,
+    ) -> Result<(Instant2, EqExit, usize), Abort> {
+        match r {
+            Ok(x) if self.inner.base.idle_floor.get() => {
+                let sp = x.0.sp_thrust_inlet.unwrap_or(x.0.sp_thrust);
+                if sp > 0.0 {
+                    Ok(x)
+                } else {
+                    Err(Abort(format!(
+                        "rung-40 equilibrium below idle at Tt4={tt4:.0}: the one root, nu=({:.4},{:.4}), gives more \
+                         drag than thrust ({sp:.2} N per kg/s of inlet air)", x.0.nu_lp, x.0.nu_hp)))
+                }
+            }
+            r => r,
+        }
     }
 
     /// The Newton of [`try_equilibrium`](Self::try_equilibrium) from one start.

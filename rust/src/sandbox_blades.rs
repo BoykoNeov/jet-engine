@@ -255,8 +255,9 @@ pub fn machine(s: &BladeSettings) -> Result<Machine, DoesNotRun> {
     blade_precheck(s)?;
     let (ml, mh) = shape_maps(SHAPES[s.shape]).expect("SHAPES lists only buildable shapes");
     let design = s.design();
-    // Rung 103: this view's plants re-solve an unchoked throttle instead of refusing it.
-    build(&design, s.flight(), ml, mh, s.lp, s.hp).map(|z| Machine { below_choke: true, ..z }).map_err(|e| {
+    // Rung 103: this view's plants re-solve an unchoked throttle instead of refusing it; plan § 38: and refuse a
+    // point below idle whichever path solved it.
+    build(&design, s.flight(), ml, mh, s.lp, s.hp).map(Machine::for_pages).map_err(|e| {
         // `build` sizes the LP spool first, so the refusal is the LP's iff the LP's knobs alone
         // (on both spools) refuse the same way — a second sizing, microseconds.
         let lp_alone = build(&design, s.flight(), ml, mh, s.lp, s.lp).err();
@@ -370,6 +371,13 @@ pub fn lever_json(s: &BladeSettings, tt4: f64) -> Result<Json, DoesNotRun> {
 ///   past the bottom of the gas tables.
 pub fn lever_words(message: &str) -> String {
     // Rung 103: the view's engine re-solves an unchoked throttle, so two new refusals reach it.
+    // Plan § 38: the below-idle floor refuses a CHOKED point too — the jet still leaves at the speed of sound, but its
+    // push no longer pays for the air the engine takes in.
+    if message.contains("rung-103: below idle") && !message.contains("with the nozzle unchoked") {
+        return "At this throttle the engine makes more drag than thrust: the jet's push no longer pays for the drag of \
+                the air the engine takes in. Below this throttle it does not run usefully. Raise the throttle."
+                .to_string();
+    }
     if message.contains("rung-103: below idle") {
         return "At this throttle the engine makes more drag than thrust: with the nozzle no longer choked, the jet \
                 leaves slower than the air comes in. Below this throttle it does not run usefully. Raise the \

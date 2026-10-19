@@ -308,6 +308,9 @@ pub struct FixedEngine {
     /// RUNG 103: its matchers re-solve an unchoked throttle instead of refusing (the Cooling view sets it; `false`
     /// from [`FixedEngine::new`], so rungs 93/94 read exactly as before).
     pub below_choke: bool,
+    /// The below-idle floor (sandbox plan § 38) on its matchers — `false` from [`FixedEngine::new`]; set with
+    /// `below_choke` by [`FixedEngine::for_pages`].
+    pub idle_floor: bool,
 }
 
 /// The hottest `Tt4` the metal allows at given shares.
@@ -341,13 +344,17 @@ impl FixedEngine {
                                            the design engine without it.");
         assert!(design.customer.is_none() && design.offtake.is_none(),
                 "rung-93's fixed engine is scoped without the customer bleed or a shaft load.");
-        FixedEngine { design, flight_design, mdot_design, map_lp, map_hp, below_choke: false }
+        FixedEngine { design, flight_design, mdot_design, map_lp, map_hp, below_choke: false, idle_floor: false }
     }
+
+    /// The sandbox views' engine: rung 103's below-choke re-solve and the below-idle floor (plan § 38), together.
+    pub fn for_pages(self) -> Self { FixedEngine { below_choke: true, idle_floor: true, ..self } }
 
     pub fn matcher(&self, cool: TurbineCooling) -> TurbineCoolingMatcher {
         let m = TurbineCoolingMatcher::new(self.design.clone().with_turbine_cooling(cool), self.flight_design,
                                            self.mdot_design, self.map_lp, self.map_hp, 0.0);
         m.core.base.below_choke.set(self.below_choke);
+        m.core.base.idle_floor.set(self.idle_floor);
         m
     }
 

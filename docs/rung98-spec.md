@@ -42,7 +42,10 @@ this flight" kept as the setting that reproduces rungs 96/97.
   laws are not calibrated; they settle where their own law balances.
 * **Reach.** A row with no steady point at the design flight is refused in words (*"a table made at the design flight
   cannot cover this flight. Make the tables at this flight instead."*): the translated throttle below about 500 K —
-  roughly Mach 2.5 and above for the default move, lower for low throttles.
+  roughly Mach 2.5 and above for the default move, lower for low throttles. *Since sandbox plan § 38 (2026-10-19)*
+  the live page refuses some of these first for another reason — at Mach 3 at sea level the default move's 1000 K start
+  is below idle; this rung's tests read the reach with the page's below-idle floor off (`idle_floor`, a hidden reduce
+  setting).
 * **Reduce.** Tables made at this flight, a run flown AT the design flight, or a run that reads no table: the old code,
   bit for bit, by dispatch.
 

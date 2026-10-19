@@ -26,7 +26,9 @@
 //! What it does not change, stated — the user's choice (2026-10-19), not one rule everywhere: the
 //! full-speed path already returns some below-idle points (41 on the probe grid, hot or fast
 //! flights, nozzle choked; at Mach 2.6 the Controls page starts at −64 to −80 N per kg/s); the
-//! filter guards only the rescue, so those stand as they were.
+//! filter guards only the rescue, so those stand as they were. **In the pages they are refused
+//! since § 38** (the below-idle floor, `tests/idle_floor.rs`; off in the old code), which moved this
+//! file's Controls starts for the bleed lever and the customer bleed: 560 K was below idle with each.
 
 use turbojet::atmosphere::standard;
 use turbojet::bleed_transient::{build_scheduled_bleed, LeverArm};
@@ -252,12 +254,16 @@ fn the_controls_page_starts_just_above_idle() {
             s.t0 = t_sl;
             s.p0 = p_sl;
             match variant {
-                "bleed lever" => s.lever = LeverChoice::Bleed,
-                "customer" => s.customer = CustomerMode::Share,
+                // Plan § 38: the open bleed's dumped air pays full ram drag, so 560 K was BELOW idle with the lever
+                // (−26 N per kg/s of inlet air on flat-LP) — the page's below-idle floor refuses it; 600 K is the
+                // first start it accepts on a standard sea-level day.
+                "bleed lever" => { s.lever = LeverChoice::Bleed; s.from = 600.0; }
+                // So was 560 K with a 5 % customer bleed: it first runs at 590 K.
+                "customer" => { s.customer = CustomerMode::Share; s.from = 590.0; }
                 "cooling" => { s.cool_vane = 0.03; s.cool_blade = 0.02; }
                 _ => {}
             }
-            let sv = build(&s).unwrap_or_else(|e| panic!("{shape} {variant} from 560 K: {}", e.0));
+            let sv = build(&s).unwrap_or_else(|e| panic!("{shape} {variant} from {} K: {}", s.from, e.0));
             assert_eq!(sv.march().len(), s.expected_points(), "{shape} {variant}: the march stopped early");
         }
     }

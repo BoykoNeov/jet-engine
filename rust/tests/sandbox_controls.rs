@@ -548,6 +548,8 @@ fn settings_round_trip_and_the_entry_point_answers() {
                                speed_corr: turbojet::mach_axis::SpeedCorr::Formula,
                                // Rung 100's hidden reduce settings, off their defaults so the reply writes them.
                                low_grid: false, formula_choked: true,
+                               // The below-idle floor's (plan § 38), off likewise.
+                               idle_floor: false,
                                // Rung 101's three, off their defaults likewise.
                                airflow: turbojet::airflow_source::AirflowFrom::Exhaust, exhaust_lag: true,
                                exhaust_tau: 0.75,
@@ -559,7 +561,7 @@ fn settings_round_trip_and_the_entry_point_answers() {
     // At their defaults they are not written at all (every default reply keeps rung 99's shape), and read back.
     let d0 = ControlsSettings::defaults();
     let j0 = d0.to_json().dump_compact();
-    assert!(!j0.contains("low_grid") && !j0.contains("formula_choked"));
+    assert!(!j0.contains("low_grid") && !j0.contains("formula_choked") && !j0.contains("idle_floor"));
     assert!(!j0.contains("airflow") && !j0.contains("exhaust_lag") && !j0.contains("exhaust_tau"));
     assert!(!j0.contains("\"ab\"") && !j0.contains("Tt7") && !j0.contains("light_at") && !j0.contains("a8_"));
     assert_eq!(ControlsSettings::from_json(&Json::parse(&j0)).unwrap(), d0);
@@ -731,6 +733,35 @@ fn the_customer_bleed_reads_the_models_closure_and_its_refusals_are_words() {
         mf: 0.01, nu_lp: 0.8, nu_hp: 0.9, s: 0.42 }) };
     assert_eq!(classify(&sv, &stop, o.points.last()), StopKind::Customer);
     assert!(StopKind::Customer.words().contains("more air than the engine could give"));
+}
+
+/// Plan § 38: a low throttle where the customer bleed slows the LP shaft off its map (crash map seed 36, request 349)
+/// names the bleed — the same machine without it has a steady point — and a throttle with no steady point even
+/// unbled does not.
+#[test]
+fn an_off_map_endpoint_the_customer_bleed_removes_is_named() {
+    let d = ControlsSettings::defaults();
+    let s = ControlsSettings { shape: 3, rho: 2.1287, from: 1008.0, to: 584.0, ramp: 0.48, customer: CustomerMode::Share,
+                               customer_share: 0.0576, t0: 282.44, p0: 53737.0, m0: 0.2925, ..d };
+    let e = match controls(&s) {
+        Err(e) => e,
+        Ok(_) => panic!("a 0.0576 share at 584 K slows the LP shaft off its map"),
+    };
+    assert!(e.0.contains("does not bracket"), "{}", e.0);
+    assert!(e.0.ends_with("With the customer bleed off this throttle does have a steady point, so the air the aircraft \
+                           takes is what removes it: ask for less, or raise the throttle."), "{}", e.0);
+    assert!(controls(&ControlsSettings { customer: CustomerMode::Off, ..s }).is_ok(),
+            "the unbled engine must run there, or the sentence is unearned");
+    // a refusal that already names the bleed ("more than half") does not repeat it, though unbled it runs
+    let s = ControlsSettings { customer: CustomerMode::Amount, customer_amount: 0.3, ..d };
+    let e = match controls(&s) {
+        Err(e) => e,
+        Ok(_) => panic!("a 0.3 amount has no steady point at 1000 K on this engine"),
+    };
+    assert!(e.0.contains("customer bleed would take more than half"), "{}", e.0);
+    assert!(controls(&ControlsSettings { customer: CustomerMode::Off, ..s }).is_ok(),
+            "the unbled engine must run there, or this check is vacuous");
+    assert!(!e.0.contains("With the customer bleed off"), "{}", e.0);
 }
 
 /// RUNG 91 on the page: the cooling reaches the model's closure (and only when a share is set), its

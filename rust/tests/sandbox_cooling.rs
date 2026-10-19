@@ -115,7 +115,7 @@ fn heavy_cooling_starts_the_knobs_search_where_the_engine_solves() {
     let cool = TurbineCooling::new(0.135, 0.185);
     let e = off.try_point(cool, &flight(), sk::KNOB_LO).expect_err("switch off: no point at the search's floor");
     assert!(e.0.contains("UNCHOKED"), "{}", e.0);
-    let fe = FixedEngine { below_choke: true, ..FixedEngine::new(design(), flight(), 1.0, ml, mh) };
+    let fe = FixedEngine::new(design(), flight(), 1.0, ml, mh).for_pages();
     assert!(fe.try_point(cool, &flight(), sk::KNOB_LO).is_ok(), "the view's engine solves at the search's floor");
     // So the view's answer is the search from the floor on the view's engine — a number, or that search's own refusal.
     match fe.try_max_tt4(cool, &lim(1985.0, 1.0), &flight(), sk::KNOB_LO, sk::KNOB_HI) {

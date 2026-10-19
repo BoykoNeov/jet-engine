@@ -1965,7 +1965,7 @@ is hotter than the burner's target), while the running point has one.
   start still returns choked below-idle points (41 on the probe grid, hot or fast flights; the Controls page starts at
   −64 to −80 N/(kg/s) at Mach 2.6, and at Mach 2 on two maps), and the steady matchers refuse below idle only on the
   unchoked branch. Kept as it was, honest words on the new refusals; **open**: one below-idle rule everywhere (it would
-  move existing results, likely Python-held).
+  move existing results, likely Python-held). **Done in the pages, 2026-10-19 — § 38** (off in the old code).
 - **The census:** the whole gate with the repair on — no Python-held key moved (2913 passed); the 2 failures were the
   stale page and `sandbox_controls`' refused endpoint (500 K now runs). Rewritten: that endpoint (470 K, the new words),
   its "does not settle" case (crash-map request 7, a lever with a generator in other air) and its acceleration-gap case
@@ -1987,3 +1987,62 @@ is hotter than the burner's target), while the running point has one.
   unchanged (there the full-speed start already accepts below-idle points); standard sea-level day 550–560 K, +40 K
   610–620 K. The refusal words carry the running floors; "off the maps" no longer quotes a low-throttle floor.
 - Probes archived: `docs/plans/scratch-archive/low-start-repair/`.
+## 38. One below-idle rule in the pages (2026-10-19) — a page rule, not a slice, not a rung
+
+§ 37's open item, plus the crash map's last three "off the maps" refusals. The user's choice (asked in plain terms):
+**refuse consistently, behind a switch — off in the old code, on in the pages** (as rung 103's), not "show a point
+with more drag than thrust, with a warning" (a bigger job: the shared scoring is not built for negative thrust).
+- **The three refusals first** (crash map seed 36, requests 158/349/399): a probe of 54 starts over both shafts, a
+  residual sign map over `(ν_LP, ν_HP)` and the load swept down — no start solves, no cell has both shaft powers
+  positive, and each sweep walks the root down to the LP shaft stopping and off its map. Real: the load takes the
+  running point away. Two already said so ("with the generator off …"); the customer-bleed one now does too — the
+  same machine re-solved without the aircraft's air, only on the "off the maps" refusal and only when the
+  generator's sentence did not fire (`sandbox_controls::build`; test `an_off_map_endpoint_the_customer_bleed_removes_is_named`).
+- **The rule:** `TwoSpoolCore::idle_floor` (default `false`). On, (a) rung 40's equilibrium refuses a root its
+  first Newton found with no positive thrust per inlet air ("rung-40 equilibrium below idle …" — the page's
+  below-idle words), and (b) every steady matcher's OUTER call refuses a point with no positive net thrust
+  (`steady_unchoked::dispatch`; a choked point, in rung 103's lead words "rung-103: below idle", without
+  "unchoked"). One comparison (`> 0`, NaN refused) on one quantity's sign (net thrust; per inlet air in the
+  equilibrium, absolute in the matchers — the same sign). Rung 38's infallible matcher is not reached by a page and
+  is untouched. Set by `Machine::for_pages` (Blades), `FixedEngine::for_pages` (Cooling) — each sets rung 103's
+  switch and the floor together — and by one `make` in the Controls view for every machine it builds (the flown
+  one, and each sibling a refusal, a hold or a calibration re-solves) plus its steady generator check. The
+  stator's `at_setting` sibling carries it by hand, as it carries rung 103's.
+- **Why refusing is safe:** at 1 022 below-idle points the full-speed start returned (bare, 5 % customer bleed and
+  cooled engines; four maps; 34 flights incl. Mach 2.6), 48 starts over both shafts found no second root.
+- **What moved on the page** — two crash maps against a worktree of `6e49d33`:
+  - *Seed 36, 1 200 requests* (the HP-wall map: Mach 0.2–1.6, no governor, tables or limiters): 1 162 byte-equal;
+    **24 runs now refused** below idle (−0.8 to −56 N per kg/s of inlet air) — 23 with the bleed lever, whose dumped
+    air pays full ram drag; 14 refusals reworded (12 the floors sentence, 1 the customer-bleed sentence, 1 now refused
+    at its start too); nothing refused began to run, no run moved, no panic.
+  - *Rung 101's map, seed 99, 1 500 requests* (every knob: altitude −1…25 km, ±45 K, Mach 0.05–3.5, governors,
+    tables, limiters): **178 runs now refused below idle** (126 at the start, 49 at the end, 3 a table row) — −2.9 to
+    −346 N per kg/s of inlet air, median −74; 149 of them at Mach 2 or above (59 of the 213 requests at Mach 3–3.5),
+    on every lever (none 59, stator 41, both 44, bleed 34). The other 151 that moved were refusals before and after
+    (94 old below-idle ones in the new floors sentence; the rest now refused below idle, or at another end, first);
+    nothing refused began to run; no panic. So **at high Mach the page refuses much more than
+    before** — runs that started or ended far below idle.
+- **The page's lowest start, re-measured** (10 K steps): plain engine 480 K at the design flight, 580 K at Mach 1.6,
+  690 K at Mach 2 (unchanged), **960 K at Mach 2.6** (was 800–820 K, below idle), 550–560 K on a standard sea-level
+  day, 630 K at +40 K (was 610–620). The bleed lever adds 40–120 K, and at Mach 2.6 it is still below idle at
+  1 100 K (−19.6 N per kg/s); a 5 % customer bleed adds 30–90 K; cooling 0–10 K. The stator lever is the plain
+  engine's within 10 K. The below-idle words quote these.
+- **A test premise corrected:** `low_start_repair.rs`' "the Controls page from just above idle" started the bleed
+  lever and the customer bleed at 560 K — below idle with each (−26 N per kg/s with the lever on flat-LP); they start
+  at 600 / 590 K now, their measured floors.
+- **One shaft:** the Fly view shows no running point with negative thrust (438 points, three air temperatures,
+  Mach 0.3–2.8, 500–1250 K; why not was not traced). Unchanged.
+- **The gate:** `tests/idle_floor.rs` — off, the full-speed root below idle is returned, on, refused in words, and
+  above idle bit for bit; a refused root is the only root (three cells × 48 starts); a steady matcher's choked
+  below-idle point (customer bleed, 11 km, Mach 1.6, 510 K, −6.9 N) refused on, bit for bit above idle; the pages
+  (Mach 2.6 820 K refused / 960 K runs; the bleed lever at sea level 560 refused / 600 runs; Blades' choked words).
+  Red check (a temporary env flag disabling the floor, then removed): 3 of 4 red; the uniqueness test holds without.
+- Probes archived: `docs/plans/scratch-archive/idle-floor/`.
+- **Rungs 98/99 are built ON the Controls page** and anchored cells below idle (the Mach-3 slice from 1000 K): the
+  first gate failed four of their tests. Their cells are NOT moved: the page carries a hidden reduce setting
+  `idle_floor` (on; written to a reply only when off, as rung 100's), and `rung99.rs`' `r99()` and rung 98's G4 test
+  turn it off; the two "refused in words" tests also assert what the live page says there now ("below idle" at the
+  1000 K start). Specs 98/99 say so.
+- **The census:** the whole gate — no Python-held key moved; after the hidden setting 2920 passed, 2 failed: the
+  browser check's two "a knob move stops a running sweep" races (the sweep finished before the move), which passed
+  in the first gate and in two solo re-runs of the browser check — load, not the floor.

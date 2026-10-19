@@ -266,7 +266,7 @@ fn a_lever_point_where_the_nozzle_unchokes_is_re_solved_by_the_view() {
     let e = quiet(|| z.schedule(Lever::Lumped, Spool::Lp, &[600.0])).expect_err("the switch-off schedule panics here");
     assert!(e.contains("nozzle UNCHOKED"), "{e}");
     // …and with the switch on it reads what the page reads, bit for bit.
-    let r = Machine { below_choke: true, ..z }.schedule(Lever::Lumped, Spool::Lp, &[600.0])[0];
+    let r = z.for_pages().schedule(Lever::Lumped, Spool::Lp, &[600.0])[0];
     assert_eq!(r.n_lp.to_bits(), f(&j, "n_lp").to_bits());
     assert_eq!(r.n_lp_bare.to_bits(), f(&j, "n_lp_bare").to_bits());
 }
