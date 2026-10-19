@@ -24,3 +24,6 @@ After the code (against the rung-103 repo unless noted; crate `score_Cargo.toml.
   from the seed and were not kept).
 - `score_ask.rs` — prints the page's reply to a request (used to read the changed page tests' cases).
 - `gate_on_summary.txt` — the whole gate with the switch's default flipped ON (spec § 5).
+
+The `W:/temp/claude/rung103-*` paths inside these files (the crates' `path =` lines, the gate summary's log lines) are
+kept as recorded; those folders and their logs were deleted on 2026-10-19 — the failing tests are named in the summary, and spec § 5 says what moved in each.

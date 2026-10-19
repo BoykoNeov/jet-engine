@@ -58,7 +58,7 @@ back-pressure" refusal is now the honest "below idle" (§ 4).
 | R3 | an independent root: the LP turbine HELD at a trial `π` (never calling rung 97's helper), the variant's own body to its rebuild, an outer bisection on the nozzle's mass balance read off the result | 5.6e−13 (23–32 unchoked cells per variant); choked: root = pin ≤ 1e−12 | 1e−11 |
 | R4 | rung 40's equilibrium (rung 97's branch), plain map matcher | 2.5e−10 over 60 unchoked cells; its choked floor 2.7e−12 | 1e−8 |
 | R5 | a hand-written perfect-gas solve of the whole point (rung 38's matcher; rung 39's on flat maps) | 3.6e−14 | 1e−9 |
-| R6 | just below the boundary the branch meets the pin (`Tt4` bisected onto it) | 3.5e−14, 12 boundaries | 1e−9 |
+| R6 | just below the boundary the branch meets the pin (`Tt4` bisected onto it) — **a continuity check only, not evidence the branch is right** (blind to the red check below) | 3.5e−14, 12 boundaries | 1e−9 |
 | R7 | mass at the nozzle: `A8·ρ9·V9` against the station-5 flow | 2.2e−13, 61 points | 1e−11 |
 | R8 | no re-solve state left after any call — success, refusal, rung 38's panic | clean | — |
 
