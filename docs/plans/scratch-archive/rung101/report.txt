@@ -1,0 +1,56 @@
+== (1) cost, best of 9 (s), from 900 K
+M0.25 Epr: table 0.165  grid 0.171 (1.04x)  sensor 0.203 (1.23x)  sensor lagged 0.204 (1.24x)
+M0.25 N1: table 0.222  grid 0.227 (1.02x)  sensor 0.474 (2.13x)  sensor lagged 0.405 (1.82x)
+M1.2 Epr: table 0.178  grid 0.179 (1.00x)  sensor 0.167 (0.94x)  sensor lagged 0.165 (0.93x)
+M1.2 N1: table 0.211  grid 0.211 (1.00x)  sensor 0.508 (2.41x)  sensor lagged 0.473 (2.25x)
+== (2) the lagged sensor on the fan speed, Mach 0.7 / 1.2 from 750 K
+M0.7 fan, table                                            start -0.030%  move +48.523%
+M0.7 fan, sensor                                           start -0.010%  move +30.151%
+M0.7 fan, sensor τ 0.1                                     start -0.010%  move +35.939%
+M0.7 fan, sensor τ 0.5                                     start -0.010%  move +44.688%
+M0.7 fan, sensor τ 2                                       start -0.010%  move +48.221%
+M1.2 fan, table                                            start +0.134%  move +51.901%
+M1.2 fan, sensor                                           start +0.021%  move +20.314%
+M1.2 fan, sensor τ 0.1                                     start +0.021%  move +34.641%
+M1.2 fan, sensor τ 0.5                                     start +0.021%  move +47.962%
+M1.2 fan, sensor τ 2                                       start +0.021%  move +53.648%
+== (3) the generator (calibrated ends), Mach 1.2 from 900 K
+gen HP share 0.05 Epr table                                start +2.650%  move +19.773%
+gen HP share 0.05 Epr grid                                 start +2.556%  move +19.708%
+gen HP share 0.05 Epr exhaust                              start -0.000%  move -0.000%
+gen HP share 0.05 N1 table                                 start -4.256%  move +33.526%
+gen HP share 0.05 N1 grid                                  start -4.329%  move +33.491%
+gen HP share 0.05 N1 exhaust                               start -5.247%  move +10.929%
+gen LP share 0.05 Epr table                                start +0.949%  move +18.853%
+gen LP share 0.05 Epr grid                                 start +0.855%  move +18.790%
+gen LP share 0.05 Epr exhaust                              start +0.000%  move -0.000%
+gen LP share 0.05 N1 table                                 start +10.132%  move +40.414%
+gen LP share 0.05 N1 grid                                  start +10.053%  move +40.383%
+gen LP share 0.05 N1 exhaust                               start +7.081%  move +19.979%
+gen HP power 0.02 Epr table                                start +2.689%  move +19.564%
+gen HP power 0.02 Epr grid                                 start +2.596%  move +19.500%
+gen HP power 0.02 Epr exhaust                              start -0.000%  move -0.000%
+gen HP power 0.02 N1 table                                 start -4.549%  move +33.576%
+gen HP power 0.02 N1 grid                                  start -4.625%  move +33.540%
+gen HP power 0.02 N1 exhaust                               start -5.637%  move +11.327%
+== (4) Mach 0.5 from 700 K (the 0.3-0.6 gap)
+M0.5 Epr table                                             start -0.002%  move +14.057%
+M0.5 Epr grid                                              start -0.282%  move +14.117%
+M0.5 Epr exhaust                                           start +0.000%  move +0.000%
+M0.5 N1 table                                              start -0.173%  move +49.614%
+M0.5 N1 grid                                               start +0.044%  move +49.646%
+M0.5 N1 exhaust                                            start -0.141%  move +35.024%
+== (5) Mach 2.0 from 1000 K
+M2.0 Epr table                                             start +0.812%  move +22.983%
+M2.0 Epr grid                                              start +0.000%  move +22.485%
+M2.0 Epr exhaust                                           start +0.000%  move -0.000%
+M2.0 Epr exhaust τ1                                        start +0.000%  move +34.185%
+M2.0 N1 table                                              start +0.963%  move +28.632%
+M2.0 N1 grid                                               start +0.274%  move +28.293%
+M2.0 N1 exhaust                                            start +0.078%  move +4.531%
+M2.0 N1 exhaust τ1                                         start +0.078%  move +36.783%
+== (6) the fan proportional law under the sensor
+M0.25 fan prop, table                                      start -0.069%  move +33.153%
+M0.25 fan prop, sensor                                     start -0.053%  move +29.106%
+M1.2 fan prop, table                                       start +0.132%  move +37.824%
+M1.2 fan prop, sensor                                      start +0.031%  move +15.748%

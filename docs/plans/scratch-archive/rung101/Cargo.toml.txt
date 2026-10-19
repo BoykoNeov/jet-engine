@@ -44,3 +44,11 @@ path = "src/crash101.rs"
 [[bin]]
 name = "h8why"
 path = "src/h8why.rs"
+
+[[bin]]
+name = "onereq"
+path = "src/onereq.rs"
+
+[[bin]]
+name = "report"
+path = "src/report.rs"

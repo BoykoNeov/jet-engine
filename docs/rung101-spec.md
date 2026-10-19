@@ -129,9 +129,29 @@ throttle, where a loaded engine (a generator, a valve) can have no steady point 
 all. It now starts from the nearest grid temperature that answers, upward first; one of the five then runs. Reached
 only where the set throttle has no steady point, so no scored cell (generator off, every set throttle answers) moved.
 
-**Cost** (`smoke.txt`, one run each, under the crash maps' load — indicative only): a governed run 0.3–1.6 s on every
-source; the sensor on the fan speed up to 0.9 s against rung 100's 0.3 s at Mach 0.5 (each demand a root over the rows
-at the trial fuel), lagged 1.5 s at Mach 1.4.
+**Cost** (`report.txt`, best of 9, the machine idle; anchor § 4's trigger was 3× the table's run): the speed tables
+1.00–1.04×; the sensor on the pressure ratio 0.94–1.23× (lagged 0.93–1.24×); on the fan speed 2.13–2.41× (lagged
+1.82–2.25×; each demand a root over the rows at the trial fuel) — under the trigger. (`smoke.txt`'s single runs under
+the crash maps' load read up to 5×; a load artifact.) **The no-row-root risk** (anchor § 4's other trigger, 5 %): 0 of
+the targeted map's 63 fan-speed sensor requests (12 ran; 51 refused by earlier rungs' prechecks).
+
+## Reported, not scored (`report.txt`)
+
+* **The generator (calibrated ends — the second calibration fix's path), Mach 1.2 from 900 K.** On the pressure ratio
+  the sensor is exact with the HP or LP generator, by share or by power (start and move 0.000 %), against the table's
+  +0.9…+2.7 % start and +19 % move. On the fan speed it helps the move (+33…+40 % → +11…+20 %) but not always the start
+  (HP generator −4.3 → −5.2 %); the LP generator's +10 % start is rung 100's clean table on a loaded fan (its lesson 3).
+* **The lagged sensor on the fan speed** (Mach 0.7 / 1.2 from 750 K): the move's error rises with the lag as on the
+  pressure ratio, the sensor's advantage gone by τ 2 (+30 → +36 → +45 → +48 % at Mach 0.7, against the table's +49 %;
+  +20 → +54 % at Mach 1.2 against +52 %). The start is the unlagged sensor's.
+* **Mach 0.5 from 700 K** (the 0.3–0.6 gap, a re-measure of G1): the grid's pressure-ratio start −0.28 % against the
+  table's −0.002 % — in the gap the grid is the worse of the two; the sensor exact.
+* **Mach 2.0 from 1000 K:** the grid's pressure-ratio start 0.000 % (a grid slice), the sensor exact, lagged at 1 τ the
+  move +34 % against the table's +23 %; on the fan speed the sensor's move +4.5 % against +29 %.
+* **The fan proportional law under the sensor** (its own root): runs; start −0.069 → −0.053 % (Mach 0.25), +0.132 →
+  +0.031 % (Mach 1.2), move +33 → +29 %, +38 → +16 %.
+* **Refusals by class:** the crash maps' (above); the score's 24 vacuous claim-cells of rung 100's own fan formula at
+  hot sea level from 750 K.
 
 ## What it does to its neighbours
 

@@ -22,3 +22,6 @@ After the build (the SHIPPED code):
 - `crash101.rs` (rung 99's generator, the three keys on a separate stream, `CRASH_STRIP`, `CRASH_FORMULA`) →
   `crash_summary.txt`, built also against a worktree of `54ee954` (`W:\temp\claude\rung101-base`, deleted);
   `onereq.rs` + `five.jsonl` — the five newly refused requests before the second calibration fix.
+- `report.rs` → `report.txt` — reported, not scored: cost best of 9 (anchor § 4's 3× trigger, not crossed), the lagged
+  sensor on the fan speed, the generator cells, Mach 0.5, Mach 2.0 from 1000 K, the fan proportional law.
+- `census.txt` — every check request of every view, this build against the worktree: 326 / 326 byte-equal, the 9 new.
