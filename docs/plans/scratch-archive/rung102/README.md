@@ -12,3 +12,9 @@ BESIDE the shipped code by the probe, not rung 102's device.
   matched area; the opened thrust is computed at the dry core (correct by the effective-throat argument).
 - `rayleigh.rs` → `rayleigh.txt`: G5 — thermal choke and the heat-addition loss, perfect gas.
 - `twospool.rs` → `twospool.txt`: G6 — rung 39's STEADY two-shaft matcher (not the Controls march); panics at 2000 K.
+
+Part A (after the anchor):
+- `score_a.rs` → `score_a.txt`: H2–H6 at the anchor's § 3 cells (H1 is pinned in `rust/tests/rung102.rs`).
+- `newton.rs`: where the rung-6 equilibrium Newton fails hugging stoichiometric (φ 0.999999 at 1500 K, 3.2 bar).
+- `crashreq.rs` (seeded random Design-view requests, afterburner off/on) + `replay.rs` (request file → replies, a panic
+  caught) → `census_a.txt`. The base side ran `replay.rs` in a second crate on a worktree of `884e60a`.

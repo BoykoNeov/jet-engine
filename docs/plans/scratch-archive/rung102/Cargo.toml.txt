@@ -32,3 +32,19 @@ path = "src/held.rs"
 [[bin]]
 name = "rayleigh"
 path = "src/rayleigh.rs"
+
+[[bin]]
+name = "score_a"
+path = "src/score_a.rs"
+
+[[bin]]
+name = "newton"
+path = "src/newton.rs"
+
+[[bin]]
+name = "replay"
+path = "src/replay.rs"
+
+[[bin]]
+name = "crashreq"
+path = "src/crashreq.rs"

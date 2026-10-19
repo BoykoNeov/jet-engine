@@ -1,0 +1,16 @@
+# Part A census (2026-10-19), against a clean worktree of 884e60a
+check requests: first 335 of native.txt byte-identical to the base build's 335; 12 appended (check_ab_requests)
+crash map OFF (crashreq 102 1500 off): replay new vs base: 1500/1500 identical; 85 panics in both
+crash map crash_on: ran 666, refused 749, panic 85 (every panic the core's: same message on the base build with the afterburner removed)
+    297 "reason":"The afterburner cannot reach N K: burning all the oxygen 
+    225 "reason":"The afterburner cannot cool the gas: it arrives at N K, a
+    160 "reason":"The turbine-inlet temperature (N K) is not above the comp
+     46 "reason":"The turbine-inlet temperature (N K) is not above the compr
+     20 "reason":"Heating the gas to N K would choke the afterburner duct (
+      1 "reason":"The efficiency bookkeeping failedN This happens at very low 
+crash map crash_on2: ran 669, refused 736, panic 95 (every panic the core's: same message on the base build with the afterburner removed)
+    292 "reason":"The afterburner cannot reach N K: burning all the oxygen 
+    229 "reason":"The afterburner cannot cool the gas: it arrives at N K, a
+    147 "reason":"The turbine-inlet temperature (N K) is not above the comp
+     48 "reason":"The turbine-inlet temperature (N K) is not above the compr
+     20 "reason":"Heating the gas to N K would choke the afterburner duct (

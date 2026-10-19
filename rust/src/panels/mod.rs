@@ -44,6 +44,7 @@ pub mod corrected_tables;
 pub mod mach_axis;
 pub mod unchoked_formula;
 pub mod airflow_source;
+pub mod afterburner;
 pub mod unchoked_lp;
 pub mod valve_reference;
 pub mod twospool;
@@ -115,7 +116,8 @@ pub const RUST_OWNED: &[&str] = &["print_blade_speed_table", "print_three_levers
                                   "print_burner_hold_table", "print_governor_table",
                                   "print_inferred_table", "print_unchoked_lp_table",
                                   "print_corrected_tables_table", "print_mach_axis_table",
-                                  "print_unchoked_formula_table", "print_airflow_source_table"];
+                                  "print_unchoked_formula_table", "print_airflow_source_table",
+                                  "print_afterburner_table"];
 
 /// `main()`'s calls, in order, each named as the golden's segment file names it (a `print_*`
 /// function's name, or `main:<what>` for text `main()` prints inline).
@@ -229,6 +231,7 @@ pub const PANELS: &[(&str, Panel)] = &[
     ("print_mach_axis_table", mach_axis::mach_axis_table),
     ("print_unchoked_formula_table", unchoked_formula::unchoked_formula_table),
     ("print_airflow_source_table", airflow_source::airflow_source_table),
+    ("print_afterburner_table", afterburner::afterburner_table),
     // ---- slice AR: the chart's line (the data itself is written by `src/main.rs`)
     ("plot_ts_diagram", cycle::ts_diagram_line),
 ];

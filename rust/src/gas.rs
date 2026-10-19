@@ -1032,12 +1032,18 @@ pub fn try_equilibrium_composition(f: f64, t: f64, p: f64)
 ///
 /// Reusing one gas across two burn configs at the same `far` but different `(Tt4, pt4)` trips
 /// the guard. That restores "pure function of far for a fixed burn config" — no hidden state.
+///
+/// **RUNG 102 — the guard is kept PER `far`**, as the sentence above always said. Until then it
+/// held ONE burn condition for the whole gas, which is the same thing while one burner is the only
+/// freeze; an afterburner freezes a SECOND mixture, at its own `(f7, Tt7, pt7)`, into the gas the
+/// nozzle reads. Each `far` keys its own composition, so each keeps its own condition. An assert
+/// only: no number moves (`docs/rung102-spec.md`).
 #[derive(Debug, Default)]
 pub struct EquilibriumSection {
     /// Hash maps for the reason on [`ReactingSection`].
     cache: RefCell<HashMap<u64, TpgSection>>,
     comp: RefCell<HashMap<u64, Vec<(&'static str, f64)>>>,
-    burn: RefCell<Option<(f64, f64)>>,
+    burn: RefCell<HashMap<u64, (f64, f64)>>,
 }
 
 impl Clone for EquilibriumSection {
@@ -1061,8 +1067,8 @@ impl EquilibriumSection {
     {
         {
             let mut burn = self.burn.borrow_mut();
-            match *burn {
-                None => *burn = Some((t_burn, p_burn)),
+            match burn.get(&far.to_bits()).copied() {
+                None => { burn.insert(far.to_bits(), (t_burn, p_burn)); }
                 Some((t0, p0)) => assert!(
                     (t0 - t_burn).abs() < 1e-9 * t_burn && (p0 - p_burn).abs() < 1e-6 * p_burn,
                     "equilibrium section: burn condition changed on a reused Gas \
@@ -1503,6 +1509,8 @@ impl Gas {
     pub fn try_t_from_pr_t(&self, pr: f64, far: f64) -> Result<f64, Abort> {
         self.hot.try_t_from_pr(pr, far)
     }
+    /// The FALLIBLE `T_from_h_t` — rung 102's afterburner names its ceiling with it.
+    pub fn try_t_from_h_t(&self, h: f64, far: f64) -> Result<f64, Abort> { self.hot.try_t_from_h(h, far) }
     pub fn gamma_t_at(&self, t: f64, far: f64) -> f64 { self.hot.gamma_at(t, far) }
 
     /// Hot-section gas constant. Constant for CPG/frozen-TPG (`== r_t`); for a reacting

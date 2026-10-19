@@ -6,7 +6,7 @@
 //! build against the native model on a grid, and drives the page in a headless Chrome.
 
 use turbojet::blade_speed::SHAPES;
-use turbojet::sandbox::{base64, call, splice_page, unbase64, FlySettings, GasModel, MapShape, NozzleMode, Settings,
+use turbojet::sandbox::{base64, call, splice_page, unbase64, FlySettings, GasModel, MapShape, NozzleMode,
                         WASM_PLACEHOLDER};
 use turbojet::sandbox_blades::{lever_key, BladeGas, BladeSettings};
 use turbojet::visuals::Json;
@@ -268,7 +268,9 @@ fn every_knob_is_a_setting_and_every_numeric_setting_has_a_knob() {
     let t = read(TEMPLATE);
     let mut knobs = num_list(&t);
     knobs.sort();
-    let mut numeric: Vec<String> = match Settings::defaults().to_json() {
+    // What the page opens on: the `defaults` reply, which carries rung 102's knobs even at their defaults
+    // (a run's own settings echo leaves them out there).
+    let mut numeric: Vec<String> = match Json::parse(&call(r#"{"op":"defaults"}"#)) {
         Json::Obj(kv) => kv.into_iter().filter(|(_, v)| matches!(v, Json::Float(_))).map(|(k, _)| k).collect(),
         _ => unreachable!(),
     };

@@ -46,7 +46,7 @@ function close(a, b, path = '') {
     // Rung 100: the settled gaps too, as check.mjs compares them (a gap between two nearly equal speeds: 7.8e-10 at
     // Mach 0.05 from 700 K, 4.4e-16 apart, read 5.7e-7 "relative").
     const isSettled = /\.settled_(lp|hp)$/.test(path);
-    const isS = isSettled || /\.s$|\.ts_(burner|reject)\.\d+\.0$/.test(path);
+    const isS = isSettled || /\.s$|\.ts_(burner|reject|afterburner)\.\d+\.0$/.test(path);
     // Rung 99: the thrust gap's parts are small differences (the formula's rest is 0 in algebra): absolute, as check.mjs.
     const isGap = /\.gap_(ram|nozzle)\.\d+$/.test(path);
     const d = isS || isGap ? Math.abs(a - b) : Math.abs(a - b) / Math.max(Math.abs(a), Math.abs(b), 1e-300);
@@ -805,6 +805,29 @@ try {
   // (A Controls result has a thrust too -- a LIST -- so the design's station table is what identifies it.)
   const home = await waitFor(`window.sandbox.view() === 'design' && window.sandbox.state === 'ran' && window.sandbox.last.nu === undefined && Array.isArray(window.sandbox.last.stations)`, 20000);
   check('back_to_design_is_the_opening_design', home && JSON.stringify(await ev('window.sandbox.last')) === JSON.stringify(first), 'differs');
+
+  // 17b. RUNG 102: light the afterburner on the opening design. The run is the native one (the first of
+  // check_ab_requests), its tiles show, station 7 joins the table, and switching it off restores the opening run.
+  const abState = await ev(`window.sandbox.set({afterburner: 1})`, 30000);
+  const abRun = await ev('window.sandbox.last');
+  // (check_ab_requests lists the gases in GasModel::ALL's order; the opening design's, equilibrium, is the first
+  // lit request on that gas.)
+  const nativeAb = JSON.parse(readFileSync(nativeTxt, 'utf8').split(/\r?\n/).find(l => l.startsWith('{"op":"run"')
+    && l.split('\t')[0].includes('"afterburner":1') && l.split('\t')[0].includes('"gas":"equilibrium"')).split('\t')[1]);
+  const eAb = abRun ? close(abRun, nativeAb) : 'no result';
+  check('the_afterburner_lit_matches_native', abState === 'ran' && abRun.afterburner && !eAb, eAb || abState);
+  const abShown = await ev(`[document.getElementById('ab-tiles').hidden, document.getElementById('ab-box').hidden,
+    [...document.getElementById('stations').tBodies[0].rows].map(r => r.cells[0].textContent).join('|'),
+    document.getElementById('d-ab-dry').textContent]`);
+  check('the_afterburner_shows_its_tiles_knobs_and_station', abShown[0] === false && abShown[1] === false
+        && /7 · afterburner exit/.test(abShown[2]) && /lit gives/.test(abShown[3]), JSON.stringify(abShown));
+  await shot('design-afterburner');
+  const tooHot = await ev(`window.sandbox.set({Tt7: 2600})`, 30000);
+  const hotWords = await ev(`document.getElementById('bad-plain').textContent`);
+  check('too_hot_an_afterburner_is_refused_in_words', tooHot === 'does-not-run' && /cannot reach 2600 K/.test(hotWords), JSON.stringify([tooHot, hotWords]));
+  await ev(`window.sandbox.set({Tt7: 2000, afterburner: 0})`, 30000);
+  check('switching_the_afterburner_off_restores_the_opening_design',
+        JSON.stringify(await ev('window.sandbox.last')) === JSON.stringify(first), 'differs');
 
   // 18. Nothing threw on the page along the way.
   const thrown = s.events.filter(e => e.method === 'Runtime.exceptionThrown').map(e => e.params.exceptionDetails?.exception?.description || e.params.exceptionDetails?.text);

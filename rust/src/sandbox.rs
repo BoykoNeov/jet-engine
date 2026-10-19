@@ -16,10 +16,11 @@
 //! - **It edits no model code.** It calls `build_turbojet(…).run(…)` exactly as the CLI does, so
 //!   every golden and oracle is unchanged.
 
+use crate::afterburner::{build_afterburning_turbojet, AbDetail, AbMode, AbResult, Afterburner};
 use crate::atmosphere::{self, Ambient};
-use crate::components::{ram_recovery, Component};
+use crate::components::{choked_mfp, ram_recovery, Component};
 use crate::engine::{build_turbojet, score, EngineResult, FlightCondition, Losses};
-use crate::gas::{FlowState, Gas};
+use crate::gas::{powp, FlowState, Gas};
 use crate::jobj;
 use crate::map::ComponentMap;
 use crate::matcher::{Branch, Rebuilt};
@@ -132,6 +133,14 @@ pub struct Settings {
     pub nozzle: NozzleMode,
     pub p_exit: f64,
     pub gas: GasModel,
+    /// RUNG 102 — an afterburner behind the turbine, lit, and its four knobs (`afterburner::Afterburner`). Off by
+    /// default; a reply carries these keys only when one is off its default, so every default reply keeps slice 1's
+    /// shape.
+    pub afterburner: bool,
+    pub tt7: f64,
+    pub eta_ab: f64,
+    pub pi_fh: f64,
+    pub m6: f64,
 }
 
 impl Settings {
@@ -140,14 +149,19 @@ impl Settings {
     pub fn defaults() -> Self {
         let f = flight();
         let l = real_losses();
+        let ab = Afterburner::default();
         Settings {
             t0: f.t0, p0: f.p0, m0: f.m0, pi_c: PI_C, tt4: TT4, mdot: 20.0,
             pi_d_max: l.pi_d, compressor_polytropic: false, eta_c: l.eta_c, e_c: 0.90,
             turbine_polytropic: false, eta_t: l.eta_t, e_t: 0.90,
             eta_b: l.eta_b, pi_b: l.pi_b, eta_m: l.eta_m, pi_n: l.pi_n,
             nozzle: NozzleMode::Expanded, p_exit: f.p0, gas: GasModel::Equilibrium,
+            afterburner: false, tt7: ab.tt7, eta_ab: ab.eta_ab, pi_fh: ab.pi_fh, m6: ab.m6,
         }
     }
+
+    /// The afterburner the knobs describe.
+    pub fn ab(&self) -> Afterburner { Afterburner { tt7: self.tt7, eta_ab: self.eta_ab, pi_fh: self.pi_fh, m6: self.m6 } }
 
     pub fn flight(&self) -> FlightCondition { FlightCondition::new(self.t0, self.p0, self.m0) }
 
@@ -166,7 +180,7 @@ impl Settings {
     }
 
     pub fn to_json(&self) -> Json {
-        jobj! {
+        let mut j = jobj! {
             "T0" => self.t0, "p0" => self.p0, "M0" => self.m0, "pi_c" => self.pi_c,
             "Tt4" => self.tt4, "mdot" => self.mdot, "pi_d_max" => self.pi_d_max,
             "compressor_eff" => if self.compressor_polytropic { "polytropic" } else { "isentropic" },
@@ -175,7 +189,17 @@ impl Settings {
             "eta_t" => self.eta_t, "e_t" => self.e_t,
             "eta_b" => self.eta_b, "pi_b" => self.pi_b, "eta_m" => self.eta_m, "pi_n" => self.pi_n,
             "nozzle" => self.nozzle.key(), "p_exit" => self.p_exit, "gas" => self.gas.key(),
+        };
+        // Rung 102's five, only off their defaults (slice 1's replies keep their shape).
+        let d = Afterburner::default();
+        if let Json::Obj(kv) = &mut j {
+            if self.afterburner { kv.push(("afterburner".into(), Json::Int(1))); }
+            for (k, v, dv) in [("Tt7", self.tt7, d.tt7), ("eta_ab", self.eta_ab, d.eta_ab), ("pi_fh", self.pi_fh, d.pi_fh),
+                               ("M6", self.m6, d.m6)] {
+                if v != dv { kv.push((k.into(), Json::Float(v))); }
+            }
         }
+        j
     }
 
     /// Read settings; a missing key keeps its default, so a page may send only what it changed.
@@ -212,6 +236,15 @@ impl Settings {
         num("eta_m", &mut s.eta_m)?;
         num("pi_n", &mut s.pi_n)?;
         num("p_exit", &mut s.p_exit)?;
+        num("Tt7", &mut s.tt7)?;
+        num("eta_ab", &mut s.eta_ab)?;
+        num("pi_fh", &mut s.pi_fh)?;
+        num("M6", &mut s.m6)?;
+        match j.get("afterburner") {
+            None => {}
+            Some(Json::Int(n)) if *n == 0 || *n == 1 => s.afterburner = *n == 1,
+            Some(o) => return Err(format!("switch \"afterburner\" must be 0 or 1, got {o:?}")),
+        }
         let mode = |k: &str, cur: bool| -> Result<bool, String> {
             match text(k)?.as_deref() {
                 None => Ok(cur),
@@ -270,6 +303,23 @@ pub fn precheck(s: &Settings) -> Result<(), DoesNotRun> {
     if s.nozzle == NozzleMode::ExitPressure && s.p_exit <= 0.0 {
         return no("The nozzle exit pressure must be above zero.".into());
     }
+    if s.afterburner {
+        let ab = [("Tt7", s.tt7), ("eta_ab", s.eta_ab), ("pi_fh", s.pi_fh), ("M6", s.m6)];
+        if let Some((k, _)) = ab.iter().find(|(_, v)| !v.is_finite()) {
+            return no(format!("Setting {k} is not a number."));
+        }
+        if !(0.5..=1.0).contains(&s.eta_ab) {
+            return no("The afterburner's combustion efficiency must be between 0.5 and 1 (100 %).".into());
+        }
+        if !(0.85..=1.0).contains(&s.pi_fh) {
+            return no("The flame holders' pressure ratio must be between 0.85 and 1 — they can only lose pressure, \
+                       and real ones lose a few percent.".into());
+        }
+        if !(0.0..=0.35).contains(&s.m6) {
+            return no("The burning zone's entry speed must be between Mach 0 and 0.35: a faster zone blows the flame \
+                       out, and heating fast gas chokes the duct.".into());
+        }
+    }
     // The one solve-dependent check: the burner can only ADD heat. Run the inlet and compressor
     // (cheap, and pure) to find the compressor-exit temperature.
     let engine = build_turbojet(s.gas.gas(), s.pi_c, s.tt4, s.p0, s.losses());
@@ -293,21 +343,62 @@ pub fn precheck(s: &Settings) -> Result<(), DoesNotRun> {
 /// One sandbox run: the model's own result plus what the page needs beside it.
 pub struct Outcome {
     pub settings: Settings,
+    /// With the afterburner lit, the LIT engine (stations 0 2 3 4 5 7 9, performance on the total fuel).
     pub result: EngineResult,
     /// `(label, s, T)` for the T–s diagram — see [`ts_points`].
     pub ts: Vec<(&'static str, f64, f64)>,
     /// The burner and exhaust-cooling legs as `(s, T)` curves — see [`ts_curves`].
     pub curves: [Vec<(f64, f64)>; 2],
+    /// Rung 102, with the afterburner lit: the same engine unlit, and what the afterburner did.
+    pub ab: Option<AbOutcome>,
 }
 
-/// Run one design. The solve itself is `build_turbojet(…).run(…)`, the CLI's own call.
+/// What the Design view shows beside a lit afterburner.
+pub struct AbOutcome {
+    pub detail: AbDetail,
+    /// The same engine with the afterburner fitted and unlit — the "dry" readout (`None` where it does not run).
+    pub dry: Option<AbResult>,
+    /// The engine with no afterburner at all (the core's own nozzle on station 5).
+    pub none: EngineResult,
+    /// The nozzle throat the lit engine needs, over the dry one's.
+    pub a8_ratio: f64,
+    /// The afterburner leg (5 → 7) as an `(s, T)` curve — see [`ts_afterburner_leg`].
+    pub curve: Vec<(f64, f64)>,
+}
+
+/// Run one design. The solve itself is `build_turbojet(…).run(…)`, the CLI's own call; with the afterburner
+/// lit, rung 102's builder continues that very run from station 5.
 pub fn run(s: &Settings) -> Result<Outcome, DoesNotRun> {
     precheck(s)?;
+    if s.afterburner {
+        let e = build_afterburning_turbojet(s.gas.gas(), s.pi_c, s.tt4, s.p0, s.losses(), s.ab());
+        let none = e.run_core(&s.flight(), s.mdot);
+        // The afterburner's own refusals are already plain words; anything else (the lit jet barely faster than the
+        // flight, the efficiency bookkeeping) gets slice 1's words beside the model's message.
+        let words = |m: String| if m.starts_with("The ") || m.starts_with("Heating ") { m }
+                                else { format!("{} Model message: {m}", explain(&m)) };
+        let lit = e.try_continue(&none, AbMode::Lit).map_err(|x| DoesNotRun(words(x.0)))?;
+        // The unlit readout can itself fail where the lit engine runs (an engine near zero dry thrust, whose
+        // efficiency bookkeeping is 0/0): then it is left out, and the page says so.
+        let dry = e.try_continue(&none, AbMode::Unlit).ok();
+        let gas = &e.engine.gas;       // carries both frozen mixtures on the equilibrium gas
+        let area = |st: &FlowState| st.mdot * powp(st.tt, 0.5) / (st.pt * choked_mfp(gas, st.tt, st.far));
+        let s5 = *none.station("5");
+        let s7_unlit = FlowState { pt: s.pi_fh * s5.pt, ..s5 };     // the unlit duct (`afterburner::try_afterburn`)
+        let a8_ratio = area(lit.station("7")) / area(&s7_unlit);
+        let result = EngineResult { stations: lit.stations.clone(), performance: lit.performance, v0: lit.v0,
+                                    v9: lit.v9, m9: lit.m9, t9: lit.t9, p9: lit.p9 };
+        let ts = ts_points(gas, &result, &s.flight());
+        let curves = ts_curves(gas, &result, &ts);
+        let curve = ts_afterburner_leg(gas, &result, &ts);
+        let ab = AbOutcome { detail: lit.detail, dry, none, a8_ratio, curve };
+        return Ok(Outcome { settings: *s, result, ts, curves, ab: Some(ab) });
+    }
     let engine = build_turbojet(s.gas.gas(), s.pi_c, s.tt4, s.p0, s.losses());
     let result = engine.run(&s.flight(), s.mdot);
     let ts = ts_points(&engine.gas, &result, &s.flight());
     let curves = ts_curves(&engine.gas, &result, &ts);
-    Ok(Outcome { settings: *s, result, ts, curves })
+    Ok(Outcome { settings: *s, result, ts, curves, ab: None })
 }
 
 /// Entropy at each station for the T–s diagram, ON THE RUN'S OWN GAS and from the run's OWN
@@ -329,7 +420,9 @@ pub fn ts_points(gas: &Gas, r: &EngineResult, fl: &FlightCondition) -> Vec<(&'st
             gas.r_c() * (gas.pr_c(t).ln() - gas.pr_c(tref).ln()) - gas.r_c() * (p / pref).ln()
         }
     };
-    let s_hot = |t: f64, p: f64| {
+    // Rung 102: the hot stations each on their OWN mixture — station 7 and the jet carry the afterburner's. Without one,
+    // station 9's fuel/air ratio IS station 4's, so this is the slice-1 arithmetic bit for bit.
+    let s_hot = |t: f64, p: f64, far: f64| {
         if gas.hot_is_cpg() {
             gas.spec.cp_t * (t / tref).ln() - gas.spec.r_t * (p / pref).ln()
         } else {
@@ -338,14 +431,18 @@ pub fn ts_points(gas: &Gas, r: &EngineResult, fl: &FlightCondition) -> Vec<(&'st
         }
     };
     let st = |l: &str| -> FlowState { *r.station(l) };
-    vec![
+    let mut pts = vec![
         ("0", s_cold(fl.t0, fl.p0), fl.t0),
         ("2", s_cold(st("2").tt, st("2").pt), st("2").tt),
         ("3", s_cold(st("3").tt, st("3").pt), st("3").tt),
-        ("4", s_hot(st("4").tt, st("4").pt), st("4").tt),
-        ("5", s_hot(st("5").tt, st("5").pt), st("5").tt),
-        ("9", s_hot(r.t9, r.p9), r.t9),
-    ]
+        ("4", s_hot(st("4").tt, st("4").pt, far), st("4").tt),
+        ("5", s_hot(st("5").tt, st("5").pt, far), st("5").tt),
+    ];
+    if r.stations.iter().any(|(l, _)| *l == "7") {
+        pts.push(("7", s_hot(st("7").tt, st("7").pt, st("7").far), st("7").tt));
+    }
+    pts.push(("9", s_hot(r.t9, r.p9, st("9").far), r.t9));
+    pts
 }
 
 /// The two heat-exchange legs of the T–s diagram as CURVES, `TS_CURVE_POINTS` each: the burner
@@ -359,7 +456,18 @@ pub fn ts_points(gas: &Gas, r: &EngineResult, fl: &FlightCondition) -> Vec<(&'st
 /// the charts page's `ts_legs` method, there on the perfect gas only. Both ends land on the
 /// stations, so the curve and the points agree (`tests/sandbox.rs`).
 pub fn ts_curves(gas: &Gas, r: &EngineResult, pts: &[(&'static str, f64, f64)]) -> [Vec<(f64, f64)>; 2] {
-    let far = r.station("4").far;
+    // The burner leg on the main burner's products; the cooling leg on the JET's (rung 102: the afterburner's, when
+    // lit — and station 4's otherwise, the same value, so slice 1's curve bit for bit).
+    [ts_leg(gas, pts, "3", "4", r.station("4").far), ts_leg(gas, pts, "9", "0", r.station("9").far)]
+}
+
+/// RUNG 102: the afterburner's heat addition (5 → 7) as a curve, on the afterburner's products, by [`ts_curves`]'s
+/// method — the change of reference mixture spread with the pressure loss, as the main burner's leg does.
+pub fn ts_afterburner_leg(gas: &Gas, r: &EngineResult, pts: &[(&'static str, f64, f64)]) -> Vec<(f64, f64)> {
+    ts_leg(gas, pts, "5", "7", r.station("7").far)
+}
+
+fn ts_leg(gas: &Gas, pts: &[(&'static str, f64, f64)], a: &str, b: &str, far: f64) -> Vec<(f64, f64)> {
     let at = |l: &str| { let p = pts.iter().find(|p| p.0 == l).unwrap(); (p.1, p.2) };
     let shape = |t: f64, ta: f64| {
         if gas.hot_is_cpg() {
@@ -368,17 +476,14 @@ pub fn ts_curves(gas: &Gas, r: &EngineResult, pts: &[(&'static str, f64, f64)]) 
             gas.r_t_at(far) * (gas.pr_t(t, far).ln() - gas.pr_t(ta, far).ln())
         }
     };
-    let leg = |a: &str, b: &str| {
-        let ((sa, ta), (sb, tb)) = (at(a), at(b));
-        let residual = sb - (sa + shape(tb, ta));
-        (0..TS_CURVE_POINTS)
-            .map(|i| {
-                let t = ta + (tb - ta) * i as f64 / (TS_CURVE_POINTS - 1) as f64;
-                (sa + shape(t, ta) + residual * (t - ta) / (tb - ta), t)
-            })
-            .collect()
-    };
-    [leg("3", "4"), leg("9", "0")]
+    let ((sa, ta), (sb, tb)) = (at(a), at(b));
+    let residual = sb - (sa + shape(tb, ta));
+    (0..TS_CURVE_POINTS)
+        .map(|i| {
+            let t = ta + (tb - ta) * i as f64 / (TS_CURVE_POINTS - 1) as f64;
+            (sa + shape(t, ta) + residual * (t - ta) / (tb - ta), t)
+        })
+        .collect()
 }
 
 /// Points per curved T–s leg.
@@ -490,9 +595,11 @@ pub fn outcome_json(o: &Outcome) -> Result<Json, DoesNotRun> {
         }
         curves.push(Json::List(line));
     }
-    let f = r.station("4").far;
+    // The TOTAL fuel: the jet's fuel/air ratio — station 4's without an afterburner (the same value), the main burner's
+    // plus the afterburner's with one (rung 102).
+    let f = r.station("9").far;
     let thrust = finite(p.specific_thrust, "specific thrust")? * s.mdot;
-    Ok(jobj! {
+    let mut j = jobj! {
         "ok" => Json::Int(1),
         "settings" => s.to_json(),
         "ambient" => ambient_json(s.t0, s.p0),
@@ -511,7 +618,38 @@ pub fn outcome_json(o: &Outcome) -> Result<Json, DoesNotRun> {
         "ts" => Json::List(ts),
         "ts_burner" => curves[0].clone(),
         "ts_reject" => curves[1].clone(),
-    })
+    };
+    if let (Some(ab), Json::Obj(kv)) = (&o.ab, &mut j) {
+        let mut leg = Vec::new();
+        for &(sv, t) in &ab.curve {
+            leg.push(Json::List(vec![Json::Float(finite(sv, "entropy")?), Json::Float(finite(t, "temperature")?)]));
+        }
+        kv.push(("ts_afterburner".into(), Json::List(leg)));
+        let d = &ab.detail;
+        let np = &ab.none.performance;
+        let dry = match &ab.dry {
+            None => Json::Null,
+            Some(dr) => {
+                let dp = &dr.performance;
+                jobj! {
+                    "thrust" => finite(dp.specific_thrust, "specific thrust")? * s.mdot,
+                    "specific_thrust" => dp.specific_thrust, "tsfc" => finite(dp.tsfc, "TSFC")?,
+                    "fuel_flow" => d.f5 * s.mdot, "V9" => finite(dr.v9, "jet speed")?,
+                    "eta_overall" => finite(dp.eta_overall, "efficiency")?,
+                }
+            }
+        };
+        kv.push(("afterburner".into(), jobj! {
+            "f_main" => d.f5, "f_ab" => d.f7 - d.f5, "pi_ab" => d.pi_ab, "pi_heat" => d.pi_r,
+            "M6" => d.m6, "M7" => d.m7, "passes" => Json::Int(d.passes as i64),
+            "a8_ratio" => finite(ab.a8_ratio, "nozzle area ratio")?,
+            "dry" => dry,
+            "none" => jobj! {
+                "thrust" => finite(np.specific_thrust, "specific thrust")? * s.mdot, "tsfc" => finite(np.tsfc, "TSFC")?,
+            },
+        }));
+    }
+    Ok(j)
 }
 
 /// The four connected flight knobs for raw `T0`/`p0` — `Null` when `p0` lies outside the
@@ -572,7 +710,18 @@ pub fn call(request: &str) -> String {
         _ => None,
     };
     let out = match op {
-        "defaults" => Settings::defaults().to_json(),
+        // The page reads every knob's opening value here, so rung 102's five ride along even at their defaults
+        // (a run's reply echoes them only off their defaults).
+        "defaults" => {
+            let (s, mut j) = (Settings::defaults(), Settings::defaults().to_json());
+            if let Json::Obj(kv) = &mut j {
+                kv.push(("afterburner".into(), Json::Int(0)));
+                for (k, v) in [("Tt7", s.tt7), ("eta_ab", s.eta_ab), ("pi_fh", s.pi_fh), ("M6", s.m6)] {
+                    kv.push((k.into(), Json::Float(v)));
+                }
+            }
+            j
+        }
         "run" => {
             let empty = Json::Obj(Vec::new());
             match Settings::from_json(req.get("settings").unwrap_or(&empty)) {
@@ -945,8 +1094,8 @@ pub fn fly_json(o: &FlyOutcome) -> Result<Json, DoesNotRun> {
     // ENGINE chose (an output here) in place of the design's.
     let op = Outcome {
         settings: Settings { t0: s.t0, p0: s.p0, m0: s.m0, tt4: s.tt4, pi_c: p.pi_c, mdot: p.mdot_air,
-                             gas: s.gas, nozzle: NozzleMode::Convergent, ..s.design },
-        result: o.result.clone(), ts: o.ts.clone(), curves: o.curves.clone(),
+                             gas: s.gas, nozzle: NozzleMode::Convergent, afterburner: false, ..s.design },
+        result: o.result.clone(), ts: o.ts.clone(), curves: o.curves.clone(), ab: None,
     };
     let mut j = outcome_json(&op)?;
     let d = &o.design;
@@ -1124,5 +1273,24 @@ pub fn check_requests() -> Vec<String> {
     out.extend(crate::sandbox_controls::check_requests());
     out.extend(crate::sandbox_burner::check_requests());
     out.extend(crate::sandbox_cooling::check_requests());
+    out.extend(check_ab_requests());
+    out
+}
+
+/// RUNG 102's Design-view requests, appended LAST so every earlier request keeps its number (the check's bars cite
+/// them): a lit afterburner on every gas at the opening design; the fixed convergent and set-exit-pressure nozzles; no
+/// heat-addition loss (Mattingly's fixed duct); a hot, fast Mach-1.6 design; and the three refusals in words — too hot,
+/// a choking duct, a knob out of range.
+pub fn check_ab_requests() -> Vec<String> {
+    let lit = |s: Settings| jobj! { "op" => "run", "settings" => Settings { afterburner: true, ..s }.to_json() }.dump_compact();
+    let d = Settings::defaults();
+    let mut out: Vec<String> = GasModel::ALL.iter().map(|&g| lit(Settings { gas: g, ..d })).collect();
+    out.push(lit(Settings { nozzle: NozzleMode::Convergent, ..d }));
+    out.push(lit(Settings { nozzle: NozzleMode::ExitPressure, p_exit: 0.9 * d.p0, gas: GasModel::ThermallyPerfect, ..d }));
+    out.push(lit(Settings { m6: 0.0, pi_fh: 0.94, gas: GasModel::Perfect, ..d }));
+    out.push(lit(Settings { m0: 1.6, t0: 216.65, p0: 22_632.1, pi_c: 6.0, tt4: 1600.0, tt7: 2150.0, ..d }));
+    out.push(lit(Settings { tt7: 2600.0, ..d }));                                          // too hot
+    out.push(lit(Settings { tt4: 1100.0, tt7: 2100.0, m6: 0.35, gas: GasModel::Reacting, ..d })); // the duct chokes
+    out.push(lit(Settings { m6: 0.5, ..d }));                                             // out of range
     out
 }

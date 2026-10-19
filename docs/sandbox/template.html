@@ -824,6 +824,25 @@ footer p { max-width: 90ch; }
           <option value="perfect">Perfect gas (textbook constants)</option>
         </select></div>
     </fieldset>
+    <fieldset id="ab-set">
+      <legend>Afterburner</legend>
+      <div class="knob"><label for="ab-on" style="grid-column: 1 / -1"><input type="checkbox" id="ab-on"> Light an afterburner behind the turbine</label></div>
+      <div id="ab-box" hidden>
+        <div class="knob"><label for="Tt7">Afterburner exit temperature <small>K</small></label><input type="number" id="Tt7" step="10">
+          <input type="range" id="Tt7-r" min="1100" max="2400" step="10" aria-label="Afterburner temperature slider"></div>
+        <div class="knob"><label for="eta_ab">Afterburner combustion efficiency</label><input type="number" id="eta_ab" step="0.005">
+          <input type="range" id="eta_ab-r" min="0.5" max="1" step="0.005" aria-label="Afterburner efficiency slider"></div>
+        <div class="knob"><label for="pi_fh">Flame holders' pressure ratio</label><input type="number" id="pi_fh" step="0.005">
+          <input type="range" id="pi_fh-r" min="0.85" max="1" step="0.005" aria-label="Flame holder pressure ratio slider"></div>
+        <div class="knob"><label for="M6">Burning zone entry Mach</label><input type="number" id="M6" step="0.01">
+          <input type="range" id="M6-r" min="0" max="0.35" step="0.01" aria-label="Burning zone Mach slider"></div>
+        <p class="note">A second burner in the jet pipe burns the oxygen the main burner left, then the nozzle opens to pass the
+          hotter, lighter gas. The duct loses pressure twice: at the flame holders, lit or not, and from heating gas that is
+          moving (the faster it enters, the more; heated too much it chokes). On the equilibrium gas the hottest reachable
+          temperature is about 2 250 K, because the hot gas splits apart and soaks up the heat. Results are shown beside the
+          same engine with the afterburner fitted but unlit.</p>
+      </div>
+    </fieldset>
     <div class="actions">
       <button type="button" id="pin">Pin this design</button>
       <button type="button" id="unpin" hidden>Clear pin</button>
@@ -974,6 +993,12 @@ footer p { max-width: 90ch; }
         <div class="tile"><div class="k">Fuel per thrust (TSFC)</div><div class="v"><span id="v-tsfc">–</span> <span class="u">g/(kN·s)</span></div><div class="d" id="d-tsfc"></div></div>
         <div class="tile"><div class="k">Overall efficiency</div><div class="v"><span id="v-eo">–</span> <span class="u">%</span></div><div class="d" id="d-eo"></div></div>
       </div>
+      <div class="tiles" id="ab-tiles" hidden style="margin-top:10px">
+        <div class="tile"><div class="k">Thrust unlit</div><div class="v"><span id="v-ab-dry">–</span> <span class="u">kN</span></div><div class="d" id="d-ab-dry"></div></div>
+        <div class="tile"><div class="k">Fuel per thrust unlit</div><div class="v"><span id="v-ab-tsfc">–</span> <span class="u">g/(kN·s)</span></div><div class="d" id="d-ab-tsfc"></div></div>
+        <div class="tile"><div class="k">Nozzle throat, lit over unlit</div><div class="v"><span id="v-ab-a8">–</span> <span class="u">×</span></div><div class="d" id="d-ab-a8"></div></div>
+        <div class="tile"><div class="k">Afterburner duct pressure ratio</div><div class="v"><span id="v-ab-pi">–</span></div><div class="d" id="d-ab-pi"></div></div>
+      </div>
       <div class="tiles" id="fly-tiles" hidden style="margin-top:10px">
         <div class="tile"><div class="k">Shaft speed</div><div class="v"><span id="v-nu">–</span> <span class="u">% of design</span></div><div class="d" id="d-nu"></div></div>
         <div class="tile"><div class="k">Compressor pressure ratio</div><div class="v"><span id="v-pic">–</span></div><div class="d" id="d-pic"></div></div>
@@ -1075,7 +1100,18 @@ footer p { max-width: 90ch; }
   mixture. The burner and the exhaust-cooling legs are drawn as curves: the shape is the burned gas's own
   constant-pressure line, and whatever that misses the next station by (the pressure loss, the change of mixture)
   is spread evenly along the way, so the curves meet the station points exactly. With the perfect gas, the textbook constants (cp = 1004, R = 287, γ = 1.4) do not quite agree
-  with each other. An ideal compressor then shows a tiny, exactly predictable slope instead of a vertical line.</p>
+  with each other. An ideal compressor then shows a tiny, exactly predictable slope instead of a vertical line.
+  With an afterburner lit, station 7 (its exit, a total state) joins, and its heat addition (5 → 7) is a third curve,
+  drawn the same way on the afterburner's own products.</p>
+  <p><b>The afterburner.</b> The project's rung 102: a second burner behind the turbine, burning the oxygen the main
+  burner left. Its fuel follows from an energy balance with the turbine's exhaust as the "air" coming in; on the
+  equilibrium gas the hot products split apart, which sets the hottest reachable temperature (about 2 250 K). The duct
+  loses pressure at the flame holders (a fixed ratio, lit or not) and from heating a moving gas in a constant-area duct
+  (Rayleigh flow, solved from mass, momentum and energy); heated too much, the gas would reach the speed of sound and
+  choke the duct, which is refused. The nozzle is re-sized for the hotter gas: the tile gives its throat over the unlit
+  engine's. The "unlit" numbers are the same engine with the afterburner fitted but not burning. The afterburner uses
+  the burned-gas properties of the turbine section; it is checked against the afterburning turbojet in Mattingly's
+  <i>Elements of Propulsion</i> (§ 8.4).</p>
   <p><b>Fly it.</b> The design's hardware is frozen: the turbine and nozzle throat areas, and the flow and
   speed it was designed for. Moving the throttle or the flight then lets the engine find its own pressure ratio,
   airflow and shaft speed (the project's rungs 31–36: a choked turbine, a fixed convergent nozzle that may
@@ -1252,7 +1288,7 @@ async function makeModel() {
 // ---------------------------------------------------------------- state
 let model = null, S = null, DEFAULTS = null, last = null, pinned = null, gen = 0;
 const NUM = ["T0", "p0", "M0", "pi_c", "Tt4", "mdot", "pi_d_max", "eta_c", "e_c", "eta_b", "pi_b",
-             "eta_t", "e_t", "eta_m", "pi_n", "p_exit"];
+             "eta_t", "e_t", "eta_m", "pi_n", "p_exit", "Tt7", "eta_ab", "pi_fh", "M6"];
 // Fly it (slice 3): F is the fly settings (turbojet::sandbox::FlySettings). The flight knobs are
 // shared: in fly mode they move the FLIGHT, not the design. FLY_NUM maps a knob id to its setting.
 let mode = "design", F = null, FLY_DEFAULTS = null, designAsSet = null;
@@ -1326,7 +1362,7 @@ const BN_VIEW = ["bn-set", "bn-quench-set", "bn-out", "bn-card", "bn-bell-card",
 const clone = o => JSON.parse(JSON.stringify(o));
 function setKnob(k, v) { if (linked) { B.lp[k] = v; B.hp[k] = v; } else B[editSpool][k] = v; }
 const STATION = { "0": "0 · outside air", "2": "2 · compressor face", "3": "3 · compressor exit",
-                  "4": "4 · turbine inlet", "5": "5 · turbine exit", "9": "9 · nozzle exit" };
+                  "4": "4 · turbine inlet", "5": "5 · turbine exit", "7": "7 · afterburner exit", "9": "9 · nozzle exit" };
 
 function fmt(x, sig = 4) {
   if (x === null || x === undefined || !isFinite(x)) return "–";
@@ -1363,7 +1399,9 @@ function showSettings() {
   for (const [id, m] of [["mode-design", "design"], ["mode-fly", "fly"], ["mode-blades", "blades"], ["mode-controls", "controls"],
                          ["mode-burner", "burner"], ["mode-cooling", "cooling"]]) $(id).setAttribute("aria-pressed", String(mode === m));
   $("cycle-set").hidden = mode !== "design" && !burner;
-  for (const id of ["components-set", "nozzle-set"]) $(id).hidden = mode !== "design";
+  for (const id of ["components-set", "nozzle-set", "ab-set"]) $(id).hidden = mode !== "design";
+  // Rung 102: the afterburner switch and, when it is on, its knobs.
+  $("ab-on").checked = S.afterburner === 1; $("ab-box").hidden = S.afterburner !== 1;
   for (const id of ["fly-set", "fly-tiles", "map-card", "slam-set", "slam-card"]) $(id).hidden = !fly;
   for (const id of BLADE_VIEW) $(id).hidden = !blades;
   for (const id of CTL_VIEW) $(id).hidden = !controls;
@@ -2874,6 +2912,21 @@ function render() {
   const tile = (id, f, up) => { $("v-" + id).textContent = fmt(f(r)); $("d-" + id).textContent = p ? delta(f(r), f(p), up)[0] : ""; };
   tile("thrust", x => x.thrust / 1e3, true); tile("st", x => x.specific_thrust, true);
   tile("tsfc", x => x.tsfc * 1e6, false); tile("eo", x => x.eta_overall * 100, true);
+  // Rung 102: a lit afterburner, beside the same engine unlit.
+  const ab = mode === "design" && r.afterburner;
+  $("ab-tiles").hidden = !ab;
+  if (ab) {
+    const a = r.afterburner;
+    // The unlit engine can fail to run where the lit one runs (near zero dry thrust): then only the lit numbers show.
+    $("v-ab-dry").textContent = a.dry ? fmt(a.dry.thrust / 1e3) : "–";
+    $("d-ab-dry").textContent = a.dry ? `lit gives ${fmt(r.thrust / a.dry.thrust, 3)} × the thrust` : "unlit, this engine makes almost no thrust";
+    $("v-ab-tsfc").textContent = a.dry ? fmt(a.dry.tsfc * 1e6) : "–";
+    $("d-ab-tsfc").textContent = a.dry ? `lit burns ${fmt(r.tsfc / a.dry.tsfc, 3)} × the fuel per thrust` : "";
+    $("v-ab-a8").textContent = fmt(a.a8_ratio, 4);
+    $("d-ab-a8").textContent = `afterburner fuel/air ${a.f_ab.toFixed(5)} on top of the burner's ${a.f_main.toFixed(5)}`;
+    $("v-ab-pi").textContent = fmt(a.pi_ab, 4);
+    $("d-ab-pi").textContent = `heating alone ${fmt(a.pi_heat, 4)}; leaves the burning zone at Mach ${fmt(a.M7, 3)}`;
+  }
   if (r.nu !== undefined) {
     tile("nu", x => x.nu * 100, true); tile("pic", x => x.settings.pi_c, true); tile("mdot", x => x.mdot_air, true);
     const sm = r.stall.kind === "margin";
@@ -2915,7 +2968,8 @@ function render() {
 function drawTs() {
   const svg = $("ts"), W = 640, H = 360, L = 58, R = 16, T = 14, B = 40;
   // Every drawn (s, T): the station points and the two curved heat-exchange legs.
-  const pts = r => r.ts.concat(r.ts_burner.map(([s, T]) => ({ s, T })), r.ts_reject.map(([s, T]) => ({ s, T })));
+  const pts = r => r.ts.concat(r.ts_burner.map(([s, T]) => ({ s, T })), r.ts_reject.map(([s, T]) => ({ s, T })),
+                               (r.ts_afterburner || []).map(([s, T]) => ({ s, T })));
   const all = pts(last).concat(pinned ? pts(pinned) : []);
   let s0 = Math.min(...all.map(q => q.s)), s1 = Math.max(...all.map(q => q.s));
   let t0 = Math.min(...all.map(q => q.T)), t1 = Math.max(...all.map(q => q.T));
@@ -2933,7 +2987,8 @@ function drawTs() {
   // (9→0) as the model's curves (turbojet::sandbox::ts_curves).
   const line = q => q.map((p, i) => (i ? "L" : "M") + X(p[0]).toFixed(1) + " " + Y(p[1]).toFixed(1)).join(" ");
   const engine = r => { const at = l => { const q = r.ts.find(p => p.label === l); return [q.s, q.T]; };
-    return line([at("0"), at("2")].concat(r.ts_burner, [at("5"), at("9")])); };
+    // Rung 102: a lit afterburner's heat addition (5→7) is a third curve, between the turbine and the nozzle.
+    return line([at("0"), at("2")].concat(r.ts_burner, [at("5")], r.ts_afterburner || [], [at("9")])); };
   if (pinned) g += `<path class="pinned" d="${engine(pinned)} ${line(pinned.ts_reject).replace("M", "L")}"/>`;
   g += `<path class="cycle" d="${engine(last)}"/>`;
   g += `<path class="reject" d="${line(last.ts_reject)}"/>`;
@@ -2954,6 +3009,7 @@ function wire() {
     }
   };
   for (const k of NUM) knob($(k), $(k + "-r"), v => { if (FLIGHT.includes(k)) target()[k] = v; else S[k] = v; });
+  $("ab-on").addEventListener("change", () => { S.afterburner = $("ab-on").checked ? 1 : 0; showSettings(); change(); });
   for (const [id, k] of Object.entries(FLY_NUM)) knob($(id), $(id + "-r"), v => { F[k] = v; });
   for (const k of ["altitude", "delta_t"]) {
     $(k).addEventListener("input", () => { if (isFinite(parseFloat($(k).value))) { $(k + "-r").value = $(k).value; fromAltitude(!slow()); } });

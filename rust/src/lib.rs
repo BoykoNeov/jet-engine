@@ -148,6 +148,7 @@ pub mod corrected_tables;
 pub mod mach_axis;
 pub mod unchoked_formula;
 pub mod airflow_source;
+pub mod afterburner;
 pub mod corrector_law;
 pub mod cross_loop;
 pub mod cross_split;

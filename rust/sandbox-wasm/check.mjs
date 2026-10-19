@@ -52,7 +52,8 @@ import { readFileSync } from 'node:fs';
 // Entropy lives in the station points (`.s`) and as the first element of each curve pair
 // (`ts_burner.N.0`, `ts_reject.N.0`) -- where it can be exactly 0 (the cooling curve ends ON the
 // ambient datum), so only an absolute bar means anything.
-const ENTROPY = /\.s$|\.ts_(burner|reject)\.\d+\.0$|\.settled_(lp|hp)$/;
+// RUNG 102: the afterburner's curve (`ts_afterburner.N.0`) is entropy too.
+const ENTROPY = /\.s$|\.ts_(burner|reject|afterburner)\.\d+\.0$|\.settled_(lp|hp)$/;
 // RUNG 99: the pressure-ratio gap's second part (`gap_nozzle`) is, under the thrust recomputed for the flight speed,
 // what is left after the airflow guess -- exactly 0 in algebra while the nozzle is choked, rounding (~1e-13 N per kg/s)
 // in arithmetic, so its relative change is meaningless (two noise values of opposite sign read 190 %). Compared

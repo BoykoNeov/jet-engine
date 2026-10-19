@@ -1830,3 +1830,30 @@ constants; both readings. Anchor `604f6a2` (Status corrected `eab1563`); spec `d
   proportional law; lagged at 1 τ (pressure ratio) and 0.5 τ (fan speed); a lag of 0.04 τ refused). `browser.mjs`
   presses the sensor at Mach 1.4 from 700 K (the run matches native, the guess is nothing, the lag box shows) and then
   the slow checkbox (matches native, the results show the probe behind the gas).
+
+## 34. The afterburner — rung 102 (2026-10-19) — Part A on the Design view; Parts B (Fly it) and C (Controls) to come
+
+CLAUDE.md's open item, scoped by the user on measured probes (memory `rung102-decisions`): one rung in three parts, the
+design half on the Design view, the built-engine half on Fly it AND Controls (a light-off at a chosen moment), the duct
+loss derived, too hot refused in words, the nozzle on a built engine a slider with a *match* setting. Anchor `379646c`;
+spec `docs/rung102-spec.md`; scratch `scratch-archive/rung102/`.
+
+- **Built (Part A)** in `sandbox.rs` on `afterburner.rs`: `Settings` gains `afterburner` (off) and `tt7` / `eta_ab` /
+  `pi_fh` / `m6` (2000 K, 0.95, 0.97, 0.20), written to a reply only off their defaults (the `defaults` op names all
+  five, so the page knows their opening values). Lit, `run` continues `build_turbojet`'s own run from station 5: the
+  result is the lit engine (stations 0 2 3 4 5 7 9), and the reply gains an `afterburner` block — the main and
+  afterburner fuel, the duct's pressure ratio and its heating part, the burning zone's exit Mach, the throat over the
+  unlit throat, the same engine unlit (`dry`, `null` where it does not run) and with no afterburner (`none`) — and a
+  `ts_afterburner` curve (5 → 7). The fuel flow everywhere is the jet's fuel/air ratio (station 4's without an
+  afterburner — the same value). The page: an *Afterburner* panel under *Nozzle and gas* (a switch, then the four
+  knobs and a note), a row of four tiles (thrust and fuel rate unlit, the throat, the duct), station 7 in the table, the
+  third curve on the T–s chart, and a paragraph in the notes. Precheck words for the three knob ranges; the model's
+  refusals (too hot, too cold, a choking duct) are already plain words; any other message gets slice 1's words beside it.
+- **What the defaults moved:** nothing. Census against a clean worktree of `884e60a`: all 335 check requests byte-equal;
+  a crash map (seed 102, 1 500, afterburner off) identical reply for reply. Two crash maps with the afterburner on
+  (seeds 103, 202): no new panic (every panic the core's own, the same on the old build without the afterburner); the
+  first found three defects, fixed before the commit (a slow duct's momentum closure, the equilibrium Newton at the
+  stoichiometric edge, an unlit readout refusing a lit design) — `census_a.txt`.
+- `check_requests` adds 12, appended LAST (`check_ab_requests`); `check.mjs` / `browser.mjs` treat `ts_afterburner`'s
+  entropy absolutely; `browser.mjs` lights the afterburner on the opening design (matches native; tiles, knobs and
+  station 7 shown; 2600 K refused in words; switched off, the opening run returns bit for bit).

@@ -1,0 +1,28 @@
+
+THE AFTERBURNER (rung 102): a second burner behind the turbine, its duct losing pressure at the flame holders
+and by heating a moving gas, the nozzle re-sized for the hotter jet.
+
+  Mattingly's afterburning turbojet (Elements of Propulsion, 8.4), sea level, Tt4 1778 K, Tt7 2000 K:
+                              book     model
+  fuel/air, main            0.0358    0.0358
+  fuel/air, afterburner     0.0195    0.0195
+  F/m0, N.s/kg              1350.3    1354.5
+  TSFC, mg/(N.s)             41.00     40.87
+  exit Mach                   1.85     1.827
+
+  The project's design (pressure ratio 10, Tt4 1500 K) on the equilibrium gas, lit over the same engine unlit:
+
+  flight         Tt7 K  thrust x    TSFC x    throat x   duct pt      f_AB
+  M0.85           1700     1.247     1.270       1.200    0.9600    0.0159
+  M0.85           1900     1.354     1.389       1.289    0.9551    0.0240
+  M0.85           2100     1.460     1.516       1.379    0.9498    0.0330
+  M2 11 km        1700     1.473     1.267       1.256    0.9569    0.0188
+  M2 11 km        1900     1.642     1.363       1.350    0.9514    0.0268
+  M2 11 km        2100     1.808     1.463       1.444    0.9456    0.0356
+
+  Asked for 2600 K: "The afterburner cannot reach 2600 K: burning all the oxygen left in the gas gives at most 2218 K here."
+
+  The afterburner pays most flown fast: the same temperature buys more thrust at Mach 2 for less extra fuel per
+  thrust. The nozzle must open more than the square root of the temperature rise, because the hotter gas passes
+  less flow per area of throat. On the equilibrium gas the hot products split apart and soak up heat, so burning
+  all the oxygen left cannot reach much past 2200 K.
