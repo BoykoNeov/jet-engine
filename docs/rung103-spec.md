@@ -184,7 +184,8 @@ where the nozzle first unchokes.
 
 **Rung 40's equilibrium refuses running engines** (found in this rung's probe, not built): on `flat-lp` at sea level it
 fails to bracket ("two-shaft closure does not bracket") where the steady matcher finds one clean root with positive
-thrust — 550–750 K unchoked, and on the +40 K day 800–950 K **choked** too (`probe1_census.txt`). The Controls page
+thrust — unchoked at 650–750 K on the +40 K day (550/600 K are below idle) and 550–700 K on a standard day, and on the
++40 K day at 800–950 K **choked** too (`probe1_census.txt`, Mach 0.85). The Controls page
 starts and ends its slam from that equilibrium and words the failure as "no steady operating point … off the part of
 their maps the model covers", so it likely refuses throttles that run. A solver fix (or a start from the steady
 matcher), not a rung; rung 97 § 3's "no steady point" is corrected in place.
