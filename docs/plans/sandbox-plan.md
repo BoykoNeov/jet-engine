@@ -1980,8 +1980,9 @@ is hotter than the burner's target), while the running point has one.
 - **What moved on the page** (crash map seed 36, 1 200 requests, against a worktree of `534f69e`): 1 185 byte-equal;
   2 refusals now run (560–562 K, just above idle); 13 change words, each "off the maps" → below idle (−13 to −90 N/(kg/s));
   no panic. 3 low-throttle "off the maps" stay (575–598 K, each with a load or the bleed, the search slowing the LP
-  shaft to ~0). Slowest reply: noise on this machine — two runs of the same code put different requests on top (175,
-  then 655 ms), the first run's slowest at 15–19 ms the second time. The page's lowest start, re-measured: 480 K at the
+  shaft to ~0). Time: not measured cleanly on a busy machine — the slowest request moved between two runs of the same
+  code (175, then 655 ms; the first run's slowest at 15–19 ms the second time), but the total rose in both (12.7 s →
+  14.9 s, 17.5 s), and a refused call now costs up to 7 solves where it cost 1. The page's lowest start, re-measured: 480 K at the
   design flight on every map (was 510–520), 580 K at Mach 1.6 (610–620), 690 K at Mach 2 and 800–820 K at Mach 2.6
   unchanged (there the full-speed start already accepts below-idle points); standard sea-level day 550–560 K, +40 K
   610–620 K. The refusal words carry the running floors; "off the maps" no longer quotes a low-throttle floor.
