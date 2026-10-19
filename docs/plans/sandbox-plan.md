@@ -1831,7 +1831,7 @@ constants; both readings. Anchor `604f6a2` (Status corrected `eab1563`); spec `d
   presses the sensor at Mach 1.4 from 700 K (the run matches native, the guess is nothing, the lag box shows) and then
   the slow checkbox (matches native, the results show the probe behind the gas).
 
-## 34. The afterburner — rung 102 (2026-10-19) — Part A on the Design view; Parts B (Fly it) and C (Controls) to come
+## 34. The afterburner — rung 102 (2026-10-19) — Part A on the Design view, Part B on Fly it; Part C (Controls) to come
 
 CLAUDE.md's open item, scoped by the user on measured probes (memory `rung102-decisions`): one rung in three parts, the
 design half on the Design view, the built-engine half on Fly it AND Controls (a light-off at a chosen moment), the duct
@@ -1857,3 +1857,20 @@ spec `docs/rung102-spec.md`; scratch `scratch-archive/rung102/`.
 - `check_requests` adds 12, appended LAST (`check_ab_requests`); `check.mjs` / `browser.mjs` treat `ts_afterburner`'s
   entropy absolutely; `browser.mjs` lights the afterburner on the opening design (matches native; tiles, knobs and
   station 7 shown; 2600 K refused in words; switched off, the opening run returns bit for bit).
+- **Built (Part B)** — Fly it with the afterburner fitted. `FlySettings` gains `ab` (`none` / `unlit` / `lit`, written
+  only when fitted), `Tt7` (the temperature flown, written only off the design's), `a8_ratio` (the throat over the dry
+  throat, 1–2) and `a8_match` (the rule); the `fly_defaults` op carries all four at their opening values. `fly` solves the
+  dry engine (fitted, unlit, the dry throat) and then the point (`afterburner::FlyAfterburner`), rebuilds the station
+  table through the afterburner (station 7) and checks the throat passes its flow; the reply gains the same
+  `afterburner` block as the Design view's — its `dry` is the fitted engine unlit at THIS throttle and flight, with its
+  shaft speed, pressure ratio, airflow and stall margin — plus `mode` and `match`, and the `ts_afterburner` curve. The
+  running-line point flies the same relation (a refusal ends the line, as any non-running point does). The slam refuses
+  a fitted afterburner in words (`sandbox_transient::slam_precheck`). The page: an *Afterburner* panel under *Fly it*
+  (not fitted / fitted, not lit / lit; the temperature; the throat slider; *open by the rule*), the Design view's four
+  tiles in fly mode, the unlit stall margin under the stall tile. Entering Fly it from a design lit on the Design view
+  flies it lit, opened by the rule (what that view shows).
+- **What Part B moved:** check requests 0–334 byte-equal against Part A's commit; Part A's lit replies within 3.2e−11
+  (the duct and fuel solvers' bisections became Illinois, for cost — spec Part B). `check_requests` adds 13
+  (`check_ab_fly_requests`, appended after Part A's); `browser.mjs` step 11c flies it lit (matches native; less thrust
+  held; the panel, tiles and station 7 shown; more thrust by the rule at the dry speed; the slam refused; not fitted
+  restores the plain engine bit for bit). `check.mjs`'s table bar re-measured: worst 4.84e−10 (a lit stall margin).

@@ -1,0 +1,93 @@
+== map flow
+  250K 50kPa M0.5  Tt4 1300 Tt7 1700: held thrust x0.726 fuel x1.128 sm 0.3253->0.0425 (drop 87%) H7 HIT H8 HIT | match s 1.3051 (sqrt 1.2488) thrust x1.335 pi_AB held 0.9615 match 0.9538 M6 held 0.158 Choked
+  250K 50kPa M0.5  Tt4 1300 Tt7 1900: held thrust x0.645 fuel x1.128 sm 0.3253->0.0092 (drop 97%) H7 HIT H8 HIT | match s 1.3998 (sqrt 1.3202) thrust x1.434 pi_AB held 0.9599 match 0.9480 M6 held 0.149 Choked
+      H9 HIT (strictly rising true, crosses dry at s Some(1.1999)): 0.645/0.009 0.722/0.027 0.801/0.048 0.881/0.073 0.961/0.100 1.041/0.130 1.121/0.164 1.201/0.200 1.280/0.239 1.358/0.281 1.434/0.325
+      cost (page reply, best of 9): dry 4.3 ms, lit held 7.2 ms (x1.69), lit match 2.2 ms (x0.51)
+  250K 50kPa M0.5  Tt4 1500 Tt7 1700: held thrust x0.813 fuel x1.070 sm 0.5074->0.1690 (drop 67%) H7 HIT H8 HIT | match s 1.1944 (sqrt 1.1599) thrust x1.212 pi_AB held 0.9639 match 0.9602 M6 held 0.170 Choked
+  250K 50kPa M0.5  Tt4 1500 Tt7 1900: held thrust x0.730 fuel x1.068 sm 0.5074->0.0919 (drop 82%) H7 HIT H8 HIT | match s 1.2797 (sqrt 1.2263) thrust x1.302 pi_AB held 0.9620 match 0.9553 M6 held 0.160 Choked
+      H9 HIT (strictly rising true, crosses dry at s Some(1.1399)): 0.730/0.092 0.787/0.121 0.846/0.152 0.904/0.187 0.962/0.224 1.020/0.265 1.078/0.308 1.135/0.354 1.191/0.402 1.247/0.454 1.302/0.507
+      cost (page reply, best of 9): dry 5.7 ms, lit held 8.7 ms (x1.52), lit match 3.0 ms (x0.52)
+  3 km M0.3        Tt4 1300 Tt7 1700: held thrust x0.711 fuel x1.146 sm 0.2906->0.0365 (drop 87%) H7 HIT H8 HIT | match s 1.3051 (sqrt 1.2488) thrust x1.309 pi_AB held 0.9615 match 0.9538 M6 held 0.158 Choked
+  3 km M0.3        Tt4 1300 Tt7 1900: held thrust x0.628 fuel x1.152 sm 0.2906->0.0065 (drop 98%) H7 HIT H8 HIT | match s 1.3998 (sqrt 1.3202) thrust x1.400 pi_AB held 0.9599 match 0.9480 M6 held 0.149 Choked
+      H9 HIT (strictly rising true, crosses dry at s Some(1.1999)): 0.628/0.007 0.704/0.023 0.781/0.042 0.859/0.064 0.937/0.088 1.016/0.116 1.094/0.146 1.172/0.178 1.249/0.213 1.325/0.251 1.400/0.291
+      cost (page reply, best of 9): dry 5.6 ms, lit held 8.9 ms (x1.59), lit match 3.0 ms (x0.54)
+  3 km M0.3        Tt4 1500 Tt7 1700: held thrust x0.802 fuel x1.078 sm 0.4508->0.1484 (drop 67%) H7 HIT H8 HIT | match s 1.1944 (sqrt 1.1599) thrust x1.197 pi_AB held 0.9639 match 0.9602 M6 held 0.170 Choked
+  3 km M0.3        Tt4 1500 Tt7 1900: held thrust x0.717 fuel x1.080 sm 0.4508->0.0794 (drop 82%) H7 HIT H8 HIT | match s 1.2797 (sqrt 1.2263) thrust x1.281 pi_AB held 0.9620 match 0.9553 M6 held 0.160 Choked
+      H9 HIT (strictly rising true, crosses dry at s Some(1.1399)): 0.717/0.079 0.774/0.105 0.831/0.133 0.888/0.164 0.945/0.198 1.003/0.234 1.060/0.273 1.116/0.314 1.172/0.357 1.227/0.403 1.281/0.451
+      cost (page reply, best of 9): dry 6.0 ms, lit held 6.2 ms (x1.03), lit match 2.4 ms (x0.40)
+  11 km M1.4       Tt4 1300 Tt7 1700: held thrust x0.880 fuel x1.197 sm 0.2221->0.0255 (drop 89%) H7 HIT H8 HIT | match s 1.3051 (sqrt 1.2488) thrust x1.482 pi_AB held 0.9615 match 0.9538 M6 held 0.158 Choked
+  11 km M1.4       Tt4 1300 Tt7 1900: held thrust x0.829 fuel x1.218 sm 0.2221->0.0021 (drop 99%) H7 HIT H8 HIT | match s 1.3998 (sqrt 1.3202) thrust x1.626 pi_AB held 0.9599 match 0.9480 M6 held 0.149 Choked
+      H9 HIT (strictly rising true, crosses dry at s Some(1.1199)): 0.829/0.002 0.907/0.015 0.987/0.030 1.067/0.047 1.148/0.066 1.229/0.087 1.310/0.110 1.390/0.136 1.470/0.163 1.548/0.192 1.626/0.222
+      cost (page reply, best of 9): dry 3.0 ms, lit held 6.9 ms (x2.31), lit match 2.3 ms (x0.78)
+  11 km M1.4       Tt4 1500 Tt7 1700: held thrust x0.900 fuel x1.102 sm 0.3389->0.1084 (drop 68%) H7 HIT H8 HIT | match s 1.1944 (sqrt 1.1599) thrust x1.291 pi_AB held 0.9639 match 0.9602 M6 held 0.170 Choked
+  11 km M1.4       Tt4 1500 Tt7 1900: held thrust x0.845 fuel x1.116 sm 0.3389->0.0555 (drop 84%) H7 HIT H8 HIT | match s 1.2797 (sqrt 1.2263) thrust x1.415 pi_AB held 0.9620 match 0.9553 M6 held 0.160 Choked
+      H9 HIT (strictly rising true, crosses dry at s Some(1.0839)): 0.845/0.056 0.902/0.075 0.959/0.097 1.017/0.121 1.075/0.146 1.132/0.174 1.190/0.203 1.247/0.234 1.303/0.268 1.359/0.302 1.415/0.339
+      cost (page reply, best of 9): dry 4.3 ms, lit held 8.5 ms (x1.99), lit match 2.9 ms (x0.69)
+  SL M0.1          Tt4 1300 Tt7 1700: held thrust x0.702 fuel x1.173 sm 0.2510->0.0300 (drop 88%) H7 HIT H8 HIT | match s 1.3051 (sqrt 1.2488) thrust x1.282 pi_AB held 0.9615 match 0.9538 M6 held 0.158 Choked
+  SL M0.1          Tt4 1300 Tt7 1900: held thrust x0.620 fuel x1.187 sm 0.2510->0.0038 (drop 98%) H7 HIT H8 HIT | match s 1.3998 (sqrt 1.3202) thrust x1.366 pi_AB held 0.9599 match 0.9480 M6 held 0.149 Choked
+      H9 HIT (strictly rising true, crosses dry at s Some(1.2399)): 0.620/0.004 0.693/0.018 0.767/0.034 0.843/0.054 0.918/0.075 0.994/0.099 1.070/0.125 1.145/0.154 1.219/0.184 1.293/0.217 1.366/0.251
+      cost (page reply, best of 9): dry 5.6 ms, lit held 8.2 ms (x1.45), lit match 2.1 ms (x0.38)
+  SL M0.1          Tt4 1500 Tt7 1700: held thrust x0.795 fuel x1.090 sm 0.3862->0.1251 (drop 68%) H7 HIT H8 HIT | match s 1.1944 (sqrt 1.1599) thrust x1.183 pi_AB held 0.9639 match 0.9602 M6 held 0.170 Choked
+  SL M0.1          Tt4 1500 Tt7 1900: held thrust x0.708 fuel x1.098 sm 0.3862->0.0654 (drop 83%) H7 HIT H8 HIT | match s 1.2797 (sqrt 1.2263) thrust x1.261 pi_AB held 0.9620 match 0.9553 M6 held 0.160 Choked
+      H9 HIT (strictly rising true, crosses dry at s Some(1.1678)): 0.708/0.065 0.764/0.088 0.820/0.112 0.876/0.139 0.932/0.168 0.988/0.199 1.043/0.232 1.098/0.268 1.153/0.305 1.207/0.345 1.261/0.386
+      cost (page reply, best of 9): dry 6.4 ms, lit held 9.2 ms (x1.43), lit match 3.4 ms (x0.53)
+== map pressure
+  250K 50kPa M0.5  Tt4 1300 Tt7 1700: held thrust x0.730 fuel x1.132 sm 0.5755->0.0984 (drop 83%) H7 HIT H8 HIT | match s 1.3051 (sqrt 1.2488) thrust x1.335 pi_AB held 0.9615 match 0.9538 M6 held 0.158 Choked
+  250K 50kPa M0.5  Tt4 1300 Tt7 1900: held thrust x0.650 fuel x1.134 sm 0.5755->0.0376 (drop 93%) H7 HIT H8 HIT | match s 1.3998 (sqrt 1.3202) thrust x1.434 pi_AB held 0.9599 match 0.9480 M6 held 0.149 Choked
+      H9 HIT (strictly rising true, crosses dry at s Some(1.1999)): 0.650/0.038 0.727/0.071 0.805/0.109 0.884/0.151 0.963/0.198 1.043/0.250 1.122/0.306 1.202/0.367 1.280/0.432 1.358/0.502 1.434/0.575
+      cost (page reply, best of 9): dry 4.1 ms, lit held 7.0 ms (x1.72), lit match 2.8 ms (x0.69)
+  250K 50kPa M0.5  Tt4 1500 Tt7 1700: held thrust x0.816 fuel x1.073 sm 0.8828->0.3189 (drop 64%) H7 HIT H8 HIT | match s 1.1944 (sqrt 1.1599) thrust x1.212 pi_AB held 0.9639 match 0.9602 M6 held 0.170 Choked
+  250K 50kPa M0.5  Tt4 1500 Tt7 1900: held thrust x0.734 fuel x1.073 sm 0.8828->0.1883 (drop 79%) H7 HIT H8 HIT | match s 1.2797 (sqrt 1.2263) thrust x1.302 pi_AB held 0.9620 match 0.9553 M6 held 0.160 Choked
+      H9 HIT (strictly rising true, crosses dry at s Some(1.1399)): 0.734/0.188 0.791/0.237 0.849/0.291 0.906/0.349 0.964/0.412 1.022/0.479 1.079/0.550 1.135/0.627 1.192/0.708 1.247/0.793 1.302/0.883
+      cost (page reply, best of 9): dry 5.1 ms, lit held 10.1 ms (x1.96), lit match 3.3 ms (x0.64)
+  3 km M0.3        Tt4 1300 Tt7 1700: held thrust x0.714 fuel x1.150 sm 0.5164->0.0866 (drop 83%) H7 HIT H8 HIT | match s 1.3051 (sqrt 1.2488) thrust x1.309 pi_AB held 0.9615 match 0.9538 M6 held 0.158 Choked
+  3 km M0.3        Tt4 1300 Tt7 1900: held thrust x0.633 fuel x1.158 sm 0.5164->0.0315 (drop 94%) H7 HIT H8 HIT | match s 1.3998 (sqrt 1.3202) thrust x1.400 pi_AB held 0.9599 match 0.9480 M6 held 0.149 Choked
+      H9 HIT (strictly rising true, crosses dry at s Some(1.1999)): 0.633/0.032 0.708/0.062 0.784/0.096 0.862/0.134 0.939/0.177 1.017/0.224 1.095/0.274 1.172/0.329 1.249/0.388 1.325/0.450 1.400/0.516
+      cost (page reply, best of 9): dry 4.4 ms, lit held 6.8 ms (x1.54), lit match 2.8 ms (x0.64)
+  3 km M0.3        Tt4 1500 Tt7 1700: held thrust x0.805 fuel x1.081 sm 0.7882->0.2831 (drop 64%) H7 HIT H8 HIT | match s 1.1944 (sqrt 1.1599) thrust x1.197 pi_AB held 0.9639 match 0.9602 M6 held 0.170 Choked
+  3 km M0.3        Tt4 1500 Tt7 1900: held thrust x0.721 fuel x1.085 sm 0.7882->0.1656 (drop 79%) H7 HIT H8 HIT | match s 1.2797 (sqrt 1.2263) thrust x1.281 pi_AB held 0.9620 match 0.9553 M6 held 0.160 Choked
+      H9 HIT (strictly rising true, crosses dry at s Some(1.1399)): 0.721/0.166 0.777/0.210 0.834/0.258 0.890/0.310 0.947/0.366 1.004/0.426 1.060/0.491 1.116/0.559 1.172/0.631 1.227/0.708 1.281/0.788
+      cost (page reply, best of 9): dry 5.6 ms, lit held 8.4 ms (x1.51), lit match 3.5 ms (x0.63)
+  11 km M1.4       Tt4 1300 Tt7 1700: held thrust x0.882 fuel x1.199 sm 0.3991->0.0644 (drop 84%) H7 HIT H8 HIT | match s 1.3051 (sqrt 1.2488) thrust x1.482 pi_AB held 0.9615 match 0.9538 M6 held 0.158 Choked
+  11 km M1.4       Tt4 1300 Tt7 1900: held thrust x0.832 fuel x1.222 sm 0.3991->0.0208 (drop 95%) H7 HIT H8 HIT | match s 1.3998 (sqrt 1.3202) thrust x1.626 pi_AB held 0.9599 match 0.9480 M6 held 0.149 Choked
+      H9 HIT (strictly rising true, crosses dry at s Some(1.1199)): 0.832/0.021 0.910/0.045 0.990/0.072 1.069/0.102 1.150/0.135 1.230/0.172 1.310/0.212 1.390/0.254 1.470/0.300 1.548/0.348 1.626/0.399
+      cost (page reply, best of 9): dry 3.6 ms, lit held 7.9 ms (x2.20), lit match 2.3 ms (x0.65)
+  11 km M1.4       Tt4 1500 Tt7 1700: held thrust x0.902 fuel x1.104 sm 0.5991->0.2124 (drop 65%) H7 HIT H8 HIT | match s 1.1944 (sqrt 1.1599) thrust x1.291 pi_AB held 0.9639 match 0.9602 M6 held 0.170 Choked
+  11 km M1.4       Tt4 1500 Tt7 1900: held thrust x0.848 fuel x1.119 sm 0.5991->0.1214 (drop 80%) H7 HIT H8 HIT | match s 1.2797 (sqrt 1.2263) thrust x1.415 pi_AB held 0.9620 match 0.9553 M6 held 0.160 Choked
+      H9 HIT (strictly rising true, crosses dry at s Some(1.0839)): 0.848/0.121 0.905/0.156 0.962/0.193 1.019/0.233 1.076/0.277 1.133/0.323 1.190/0.372 1.247/0.424 1.303/0.480 1.359/0.538 1.415/0.599
+      cost (page reply, best of 9): dry 5.8 ms, lit held 8.7 ms (x1.50), lit match 4.6 ms (x0.79)
+  SL M0.1          Tt4 1300 Tt7 1700: held thrust x0.705 fuel x1.176 sm 0.4488->0.0736 (drop 84%) H7 HIT H8 HIT | match s 1.3051 (sqrt 1.2488) thrust x1.282 pi_AB held 0.9615 match 0.9538 M6 held 0.158 Choked
+  SL M0.1          Tt4 1300 Tt7 1900: held thrust x0.624 fuel x1.191 sm 0.4488->0.0251 (drop 94%) H7 HIT H8 HIT | match s 1.3998 (sqrt 1.3202) thrust x1.366 pi_AB held 0.9599 match 0.9480 M6 held 0.149 Choked
+      H9 HIT (strictly rising true, crosses dry at s Some(1.2399)): 0.624/0.025 0.696/0.052 0.770/0.082 0.845/0.115 0.920/0.153 0.995/0.194 1.070/0.238 1.145/0.286 1.219/0.337 1.293/0.391 1.366/0.449
+      cost (page reply, best of 9): dry 4.6 ms, lit held 8.2 ms (x1.77), lit match 2.2 ms (x0.47)
+  SL M0.1          Tt4 1500 Tt7 1700: held thrust x0.797 fuel x1.092 sm 0.6794->0.2422 (drop 64%) H7 HIT H8 HIT | match s 1.1944 (sqrt 1.1599) thrust x1.183 pi_AB held 0.9639 match 0.9602 M6 held 0.170 Choked
+  SL M0.1          Tt4 1500 Tt7 1900: held thrust x0.712 fuel x1.103 sm 0.6794->0.1399 (drop 79%) H7 HIT H8 HIT | match s 1.2797 (sqrt 1.2263) thrust x1.261 pi_AB held 0.9620 match 0.9553 M6 held 0.160 Choked
+      H9 HIT (strictly rising true, crosses dry at s Some(1.1678)): 0.712/0.140 0.767/0.178 0.822/0.220 0.878/0.266 0.933/0.314 0.988/0.367 1.044/0.422 1.099/0.481 1.153/0.544 1.207/0.610 1.261/0.679
+      cost (page reply, best of 9): dry 6.7 ms, lit held 10.1 ms (x1.51), lit match 6.4 ms (x0.96)
+== map tilted  (REPORTED, not scored)
+  250K 50kPa M0.5  Tt4 1300 Tt7 1700: held thrust x0.722 fuel x1.124 sm 0.4174->0.0562 (drop 87%) H7 HIT H8 HIT | match s 1.3051 (sqrt 1.2488) thrust x1.335 pi_AB held 0.9615 match 0.9538 M6 held 0.158 Choked
+  250K 50kPa M0.5  Tt4 1300 Tt7 1900: held thrust x0.640 fuel x1.122 sm 0.4174->0.0145 (drop 97%) H7 HIT H8 HIT | match s 1.3998 (sqrt 1.3202) thrust x1.434 pi_AB held 0.9599 match 0.9480 M6 held 0.149 Choked
+      H9 HIT (strictly rising true, crosses dry at s Some(1.1999)): 0.640/0.014 0.718/0.037 0.797/0.063 0.877/0.094 0.958/0.129 1.039/0.167 1.120/0.210 1.200/0.256 1.279/0.306 1.357/0.360 1.434/0.417
+  250K 50kPa M0.5  Tt4 1500 Tt7 1700: held thrust x0.814 fuel x1.070 sm 0.6584->0.2186 (drop 67%) H7 HIT H8 HIT | match s 1.1944 (sqrt 1.1599) thrust x1.212 pi_AB held 0.9639 match 0.9602 M6 held 0.170 Choked
+  250K 50kPa M0.5  Tt4 1500 Tt7 1900: held thrust x0.729 fuel x1.067 sm 0.6584->0.1203 (drop 82%) H7 HIT H8 HIT | match s 1.2797 (sqrt 1.2263) thrust x1.302 pi_AB held 0.9620 match 0.9553 M6 held 0.160 Choked
+      H9 HIT (strictly rising true, crosses dry at s Some(1.1399)): 0.729/0.120 0.787/0.157 0.846/0.197 0.904/0.242 0.963/0.290 1.021/0.342 1.078/0.398 1.135/0.457 1.192/0.521 1.247/0.588 1.302/0.658
+  3 km M0.3        Tt4 1300 Tt7 1700: held thrust x0.706 fuel x1.142 sm 0.3715->0.0482 (drop 87%) H7 HIT H8 HIT | match s 1.3051 (sqrt 1.2488) thrust x1.309 pi_AB held 0.9615 match 0.9538 M6 held 0.158 Choked
+  3 km M0.3        Tt4 1300 Tt7 1900: held thrust x0.623 fuel x1.146 sm 0.3715->0.0107 (drop 97%) H7 HIT H8 HIT | match s 1.3998 (sqrt 1.3202) thrust x1.400 pi_AB held 0.9599 match 0.9480 M6 held 0.149 Choked
+      H9 HIT (strictly rising true, crosses dry at s Some(1.1999)): 0.623/0.011 0.699/0.031 0.776/0.055 0.854/0.082 0.933/0.113 1.013/0.148 1.092/0.186 1.170/0.227 1.248/0.272 1.325/0.320 1.400/0.372
+  3 km M0.3        Tt4 1500 Tt7 1700: held thrust x0.802 fuel x1.078 sm 0.5833->0.1915 (drop 67%) H7 HIT H8 HIT | match s 1.1944 (sqrt 1.1599) thrust x1.197 pi_AB held 0.9639 match 0.9602 M6 held 0.170 Choked
+  3 km M0.3        Tt4 1500 Tt7 1900: held thrust x0.715 fuel x1.079 sm 0.5833->0.1038 (drop 82%) H7 HIT H8 HIT | match s 1.2797 (sqrt 1.2263) thrust x1.281 pi_AB held 0.9620 match 0.9553 M6 held 0.160 Choked
+      H9 HIT (strictly rising true, crosses dry at s Some(1.1399)): 0.715/0.104 0.773/0.136 0.830/0.172 0.888/0.212 0.945/0.255 1.003/0.301 1.060/0.351 1.116/0.404 1.172/0.460 1.227/0.520 1.281/0.583
+  11 km M1.4       Tt4 1300 Tt7 1700: held thrust x0.874 fuel x1.191 sm 0.2812->0.0335 (drop 88%) H7 HIT H8 HIT | match s 1.3051 (sqrt 1.2488) thrust x1.482 pi_AB held 0.9615 match 0.9538 M6 held 0.158 Choked
+  11 km M1.4       Tt4 1300 Tt7 1900: held thrust x0.822 fuel x1.210 sm 0.2812->0.0046 (drop 98%) H7 HIT H8 HIT | match s 1.3998 (sqrt 1.3202) thrust x1.626 pi_AB held 0.9599 match 0.9480 M6 held 0.149 Choked
+      H9 HIT (strictly rising true, crosses dry at s Some(1.1199)): 0.822/0.005 0.901/0.020 0.981/0.038 1.062/0.060 1.144/0.084 1.225/0.110 1.306/0.139 1.387/0.171 1.468/0.205 1.548/0.242 1.626/0.281
+  11 km M1.4       Tt4 1500 Tt7 1700: held thrust x0.898 fuel x1.100 sm 0.4348->0.1389 (drop 68%) H7 HIT H8 HIT | match s 1.1944 (sqrt 1.1599) thrust x1.291 pi_AB held 0.9639 match 0.9602 M6 held 0.170 Choked
+  11 km M1.4       Tt4 1500 Tt7 1900: held thrust x0.842 fuel x1.112 sm 0.4348->0.0724 (drop 83%) H7 HIT H8 HIT | match s 1.2797 (sqrt 1.2263) thrust x1.415 pi_AB held 0.9620 match 0.9553 M6 held 0.160 Choked
+      H9 HIT (strictly rising true, crosses dry at s Some(1.0839)): 0.842/0.072 0.899/0.097 0.957/0.124 1.015/0.154 1.073/0.187 1.131/0.222 1.189/0.260 1.246/0.300 1.303/0.342 1.359/0.387 1.415/0.435
+  SL M0.1          Tt4 1300 Tt7 1700: held thrust x0.697 fuel x1.167 sm 0.3193->0.0395 (drop 88%) H7 HIT H8 HIT | match s 1.3051 (sqrt 1.2488) thrust x1.282 pi_AB held 0.9615 match 0.9538 M6 held 0.158 Choked
+  SL M0.1          Tt4 1300 Tt7 1900: held thrust x0.613 fuel x1.179 sm 0.3193->0.0069 (drop 98%) H7 HIT H8 HIT | match s 1.3998 (sqrt 1.3202) thrust x1.366 pi_AB held 0.9599 match 0.9480 M6 held 0.149 Choked
+      H9 HIT (strictly rising true, crosses dry at s Some(1.2399)): 0.613/0.007 0.687/0.024 0.762/0.045 0.838/0.069 0.914/0.096 0.990/0.126 1.067/0.159 1.143/0.195 1.218/0.233 1.292/0.275 1.366/0.319
+  SL M0.1          Tt4 1500 Tt7 1700: held thrust x0.793 fuel x1.089 sm 0.4976->0.1609 (drop 68%) H7 HIT H8 HIT | match s 1.1944 (sqrt 1.1599) thrust x1.183 pi_AB held 0.9639 match 0.9602 M6 held 0.170 Choked
+  SL M0.1          Tt4 1500 Tt7 1900: held thrust x0.706 fuel x1.096 sm 0.4976->0.0854 (drop 83%) H7 HIT H8 HIT | match s 1.2797 (sqrt 1.2263) thrust x1.261 pi_AB held 0.9620 match 0.9553 M6 held 0.160 Choked
+      H9 HIT (strictly rising true, crosses dry at s Some(1.1678)): 0.706/0.085 0.762/0.114 0.818/0.145 0.874/0.179 0.930/0.215 0.987/0.255 1.043/0.298 1.098/0.344 1.153/0.392 1.207/0.443 1.261/0.498
+
+H7 32/32  H8 32/32  H9 16/16   worst cost ratio x2.31 (trigger 3)

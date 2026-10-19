@@ -7,7 +7,7 @@ continuing `build_turbojet`'s own run from station 5). `gas.rs`: the equilibrium
 fuel/air ratio, and `Gas::try_t_from_h_t`. **Gates:** `rust/tests/rung102.rs`. **Panel:** `print_afterburner_table` (born
 in Rust, held to `rust/oracle/rust_owned/`; a change detector only). **Anchor:** `docs/plans/rung102-anchor-afterburner.md`,
 committed as `379646c` before any rung-102 code. **Sandbox:** the Design view's *Afterburner* panel
-(`docs/plans/sandbox-plan.md` § 34). **Scratch:** `docs/plans/scratch-archive/rung102/`.
+and Fly it's (`docs/plans/sandbox-plan.md` § 34). **Scratch:** `docs/plans/scratch-archive/rung102/`.
 
 CLAUDE.md's open item *"Afterburner"*, SPEC.md's *"a second burner between turbine and nozzle, with the nozzle re-sized"*.
 The scope was set on measured probes, each answer the user's (memory `rung102-decisions`): ONE rung in three parts —
@@ -16,8 +16,8 @@ The scope was set on measured probes, each answer the user's (memory `rung102-de
 the ceiling; on a built engine the nozzle a slider (throat over the dry throat) with a *match* setting; rungs 96–101's
 thrust guesses refused with the afterburner lit.
 
-**Status: Part A shipped** (this file's Parts B and C sections are filled as those parts ship; their predictions are
-frozen in the anchor, Part C's in its addendum before its code).
+**Status: Parts A and B shipped** (Part C's section is filled when it ships; its predictions go in the anchor's
+addendum before its code).
 
 > **THE HEADLINE (Part A) — the afterburner pays most flown fast, the nozzle must open MORE than the square-root rule,
 > and dissociation sets the ceiling.** Lit to the same temperature, the same engine gains more thrust at higher flight
@@ -47,8 +47,10 @@ equilibrium gas the afterburner freezes its own mixture. **Thrust, TSFC and effi
 * The duct is solved by the general three-law solve on EVERY gas, the perfect gas included (§ 1 said "closed forms on
   CPG"): the closed form has no fuel-mass term, and one code path keeps the two gases comparable. The textbook closed
   form is the GATE's instrument instead (mass factor 1, below).
-* The exit state is parametrised by `u = V7²/2`, not `T7`: the first crash map found ducts at Mach 0.001–0.002 failing
-  the momentum closure — a bracket on `T7` resolves `Tt7 − T7` (a millionth of `T7`) only to 1e−8.
+* The exit state is parametrised by its speed (`u = V7²/2` read off it), not `T7`: the first crash map found ducts at
+  Mach 0.001–0.002 failing the momentum closure — a bracket on `T7` resolves `Tt7 − T7` (a millionth of `T7`) only to
+  1e−8. (Part B solves it for `V7` on the momentum residual times `V7`, finite at stagnation, by Illinois false position
+  — the duct and the equilibrium fuel search lost their bisections there; Part A's replies moved ≤ 3.2e−11.)
 * The equilibrium fuel search never asks for the cap up front: the rung-6 Newton fails at isolated points hugging
   stoichiometric (φ 0.999999 at 1500 K, 3.2 bar; 1540–1575 K at 5.8–8.6 bar in the crash map) where no afterburner that
   runs ever probes. The bisection approaches the cap only when the root is up there; the cap test steps back to
@@ -132,6 +134,94 @@ written: Part B's gate measures it.
 * The chart's 5 → 7 jump mixes heat added with a change of reference mixture, as the main burner's does.
 * Inherited: the frozen nozzle (rung 14 brackets it), the equilibrium Newton's isolated failures near stoichiometric.
 
-## Part B — Fly it (pending; frozen as H7–H9 in the anchor)
+## Part B — Fly it (shipped 2026-10-19; anchor § 3's H7–H9 and its dated § 3b, written on dry runs before the code)
+
+> **THE HEADLINE (Part B) — lit behind a held nozzle, an afterburner makes LESS thrust than not lighting it, and walks
+> the compressor to its stall line; opening the throat buys both back, crossing the unlit thrust about halfway to the
+> rule.** On the page's opening hardware at four flights off its design point, two throttles and two temperatures, a
+> held throat gives ×0.62–0.90 of the unlit thrust at ×1.07–1.22 of its fuel, the shaft slows to 72–86 % of its unlit
+> speed, and the stall margin falls by 64–99 % (H7, H8: 64 / 64). Over eleven equal steps to the rule's throat, thrust
+> and margin rise at every step and the lit thrust passes the unlit one at `s` 1.08–1.24 of 1.28–1.40 (H9: 16 / 16).
+> At the rule's size (*match*) the core runs where it runs unlit — to 1e−10 — and the throat opens 1.19–1.40×, more
+> than the square-root rule's 1.16–1.32 (Part A's H3, now on a flown engine).
+
+**Code** (`afterburner.rs`, Part B): `FlyAfterburner` on rung 34's captured plant — `capture` (the duct's area `A6` from
+the DRY design run at the `M6` knob; the dry throat `A8_core/π_fh`), `try_instant` (rung 34's instant with the nozzle
+relation (★AB) in place of (★): the compressor closed exactly as the shipped instant closes it, the turbine solved so
+the throat passes station 7, rung 33's dispatch on station 7's nozzle, the power balance unchanged, thrust on the total
+fuel), `try_equilibrium` (the speed search, re-run at the root and required to balance), `try_point` / `try_point_after_dry`
+(the throat held at `s` × the dry one, or *match*), `match_area`, `name_refusal`. `try_find_equilibrium_nu` is the
+shipped search COPIED fallible (same march, sentinel and Illinois, its panic an `Err` with the same message). In
+`sandbox.rs`: `FlySettings` gains `ab` (not fitted / unlit / lit), `tt7`, `a8_ratio`, `a8_match`; `fly_ab`; the
+running-line point; `check_ab_fly_requests`. `sandbox_transient.rs`: the slam refuses a fitted afterburner.
+
+**The device.** Choked, `π_t·π_AB·√(Tt4/Tt7) = A4·MFP4·(1+f7)/((1+f5)·A8·π_n·MFP7)`; unchoked `ṁ_air·(1+f7) = A8·ρ9·V9`
+at `p9 = p0`. Unlit (`Tt7 = Tt5`, `π_AB = π_fh`) it is rung 31's (★) with the throat `A8·π_fh` — so the fitted engine's
+dry throat is the core's over `π_fh`, and the unlit engine sits where the engine without an afterburner sits wherever
+the nozzle is choked (the flame holders still cost 0.4–1.1 % of the thrust, through the jet's pressure). Off design
+the burning zone's Mach FLOATS with the turbine-exit corrected flow through the hardware `A6` (held lit: 0.15–0.17 from
+the knob's 0.20). *Match* solves the dry engine first, sizes the throat from the lit exit at that core (`ṁ7/(ρ9·V9)`,
+choked or not), and runs the lit instant at the dry speed; with the throat set by the user the full lit speed search runs.
+The station table is the shipped forward rebuild at the point's core, continued through `try_afterburn` and the
+convergent nozzle; the throat's mass balance is checked there (`FLY_THROAT_TOL` 1e−7 — the shipped rebuild never reads
+the throat area, so a wrong relation would pass every older check).
+
+**Gates (`tests/rung102.rs`, `part_b_*`):** unlit at the dry throat ≡ the engine without an afterburner, choked, at four
+flights (speed, pressure ratio, airflow, `Tt5`, `π_t` within 1e−9; measured ≤ 5e−11 — `π_fh·(A8/π_fh)` is not
+bit-exact); *match* ⇒ the lit engine solved THROUGH (★AB) at the matched throat lands on the dry core (1e−9; measured
+≤ 1.3e−10), and matched at the dry point the core cannot move; an independent instrument — the SHIPPED solver with its
+throat scaled by G4's effective factor, iterated to a fixed point — agrees on the held lit point (1e−8; measured
+≤ 7e−11); the fly reply (not fitted is the shipped reply byte for byte whatever the keys say; the block, station 7 and
+the curve when fitted; the keys round-trip); the refusals in words; one matched point on the equilibrium gas.
+
+**Scored, Part B — 80 HIT of 80** (`score_b.txt`; thermally-perfect gas, the opening design, maps `flow` and `pressure`;
+`tilted` reported and hits every cell too):
+
+| claim | cells | HIT | measured |
+|---|---|---|---|
+| H7 held: lit thrust below unlit | 32 | 32 | ×0.620–0.902 |
+| H8 held: the margin collapses (> 60 % at 1900 K, > 40 % at 1700 K) | 32 | 32 | −79 … −99 % at 1900 K, −64 … −89 % at 1700 K |
+| H9 opening buys both back, crossing unlit inside | 16 | 16 | strictly rising at every step; crossing at `s` 1.08–1.24 |
+
+**The named risks, measured:** H7's (fast flight, a small rise) was right — 11 km Mach 1.4 at 1700 K is the closest,
+×0.880–0.902. H8's (`Tt4` 1300 conservative; the second map's stall line) — `Tt4` 1300 does drop more (83–99 % against
+64–84 %), and the `pressure` map's larger margins still collapse past both bars. H9's (a turning operating point) did
+not appear: the margin rises at every one of the 160 steps. **§ 3b's stated direction held:** at G4's own flight and
+throttle (Mach 0.85, `Tt4` 1500) Part B's held throat — 3 % larger than G4's, against an unlit denominator — gives
+×0.847 at 1700 K and ×0.775 at 1900 K, where G4's numbers interpolate to about ×0.75 and ×0.68: less severe, as
+stated. (The scored cells' wider range, ×0.61–0.90, is their own flights and throttles, not comparable to G4's.)
+
+**Cost (anchor § 4's trigger, 3× the dry point, best of 9).** The first build missed it: a lit point with the nozzle
+held cost 6–12× the shipped dry point, even unlit 3.5×. Measured, not guessed (the census of trials and instants), and
+re-planned before shipping: the duct's three bisections to Illinois false position (88 → 16 µs a duct), the burning
+zone's Mach left unsolved on unlit trials, the unchoked turbine bracketed from the choked root instead of marched,
+the turbine's lower bracket found by bisection past the band where low `π_t` chokes the duct's entry, the equilibrium
+afterburner fuel's bisection to Illinois once bracketed (5.7× → 2.1× there), each instant's turbine bracketed near the
+last instant's root within one search, and the speed search started at the design speed (the dry point) or the dry
+speed (a lit one), the shipped search the fallback. **On the page's own reply, against the shipped dry reply, at the 16
+scored H9 cells: held ×1.03–2.31, matched ×0.38–0.96.** Equilibrium gas at the design flight: held ×1.65, matched ×0.43.
+Part A's replies moved by the solver change at most 3.2e−11 relative (entropy 1.9e−8 J/(kg·K)); its golden panel did
+not move.
+
+**Census (against Part A's commit `7de9419`):** check requests 0–334 byte-equal; Part A's 12 — the 8 lit ones moved
+within the solvers' tolerances (above), the 4 refusals and the no-heat-loss one byte-equal. **A crash map of 1 200 random
+Fly-it requests** (seed 112, the afterburner keys randomized, every gas and map): **no new panic** — all 16 panics with
+the keys on reproduce, the same message, with them removed (the shipped speed search, the efficiency bookkeeping,
+Fork B's burner balance at `Tt4` 2024 K: the core's own). With the afterburner fitted, the speed search's failures come
+back as `explain_fly`'s words instead of a panic (the shipped plant panicked on 65 of the 1 200). Refusals, all in
+words: too hot 190, too cold 33, a choking duct 10, the duct's entry choking 4, the speed search's own words 135, the
+efficiency bookkeeping 4 (`census_b.txt`). The check grid gains 13 requests (`check_ab_fly_requests`); `browser.mjs`
+step 11c flies it lit, matched, slammed and removed.
+
+**Concessions (Part B):**
+* "Dry" is the fitted engine unlit (its flame holders cost pressure), not the engine without an afterburner; the
+  difference is the flame holders' pressure loss, 0.4–1.1 % of the thrust (the 32 H7 cells), and nothing in the core
+  while choked.
+* The unchoked branch is bracketed, not marched as the shipped one is; its root is unique, so the answer is the same to
+  the solve's tolerance — and the scored grid never reaches it (the dry pre-flight).
+* The slam (one shaft) refuses a fitted afterburner, lit or not, rather than flying the plain engine under a label that
+  says otherwise; the afterburner lit in a slam is Part C's (Controls, two shafts).
+* A lit request the afterburner refuses is named at THIS throttle and flight's dry point (its turbine exit is what the
+  afterburner is asked to heat); the lit engine's own turbine exit differs, so the named ceiling is the dry one's.
 
 ## Part C — Controls (pending; its predictions in the anchor's addendum, frozen before its code)

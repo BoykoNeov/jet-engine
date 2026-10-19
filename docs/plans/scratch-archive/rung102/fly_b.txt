@@ -1,0 +1,44 @@
+== ThermallyPerfect M0.85 map flow: shipped dry 3.7 ms  nu 1.000000 thrust 14916.2 sm 0.3953
+  Tt7 1700: unlit s=1 1.3 ms (x0.36)  vs shipped: nu 3.1e-12 pi_c 6.6e-12 mdot 6.7e-12 tt5 8.0e-13 thrust 6.1e-3
+    lit held 3.8 ms (x1.04)  thrust x0.847  sm 0.1284 (dry 0.3953)  nu 0.8545 M6 0.1704 pi_ab 0.9639 f7 0.0420 branch Choked
+    lit match 1.8 ms (x0.48)  s_match 1.19444 (sqrt rule 1.15994)  thrust x1.243  core vs dry: pi_t 2.4e-13 phi -3.5e-11
+    gate (full solve at s_match): nu 3.7e-13 pi_c 7.8e-13 mdot 7.8e-13 tt5 9.0e-16 sm 2.3e-12 thrust-vs-match 1.3e-12
+    instrument (shipped solver, throat x k=0.831360): nu 3.1e-11 pi_c 7.0e-11 mdot 7.0e-11 tt5 4.3e-14
+  Tt7 1900: unlit s=1 1.3 ms (x0.36)  vs shipped: nu 3.1e-12 pi_c 6.6e-12 mdot 6.7e-12 tt5 8.0e-13 thrust 6.1e-3
+    lit held 6.0 ms (x1.63)  thrust x0.775  sm 0.0674 (dry 0.3953)  nu 0.8002 M6 0.1604 pi_ab 0.9620 f7 0.0490 branch Choked
+    lit match 1.9 ms (x0.51)  s_match 1.27973 (sqrt rule 1.22627)  thrust x1.346  core vs dry: pi_t 4.0e-13 phi 7.4e-13
+    gate (full solve at s_match): nu 1.4e-12 pi_c 3.0e-12 mdot 3.0e-12 tt5 6.0e-14 sm 8.8e-12 thrust-vs-match 3.6e-12
+    instrument (shipped solver, throat x k=0.784182): nu 1.9e-13 pi_c 4.3e-13 mdot 4.4e-13 tt5 4.3e-13
+== ThermallyPerfect M0.85 map pressure: shipped dry 3.4 ms  nu 1.000000 thrust 14916.2 sm 0.6947
+  Tt7 1700: unlit s=1 1.4 ms (x0.41)  vs shipped: nu 3.5e-12 pi_c 6.6e-12 mdot 6.7e-12 tt5 8.0e-13 thrust 6.1e-3
+    lit held 5.2 ms (x1.54)  thrust x0.849  sm 0.2480 (dry 0.6947)  nu 0.8407 M6 0.1704 pi_ab 0.9639 f7 0.0420 branch Choked
+    lit match 1.9 ms (x0.55)  s_match 1.19444 (sqrt rule 1.15994)  thrust x1.243  core vs dry: pi_t 1.0e-15 phi 3.2e-13
+    gate (full solve at s_match): nu 4.1e-13 pi_c 7.7e-13 mdot 7.7e-13 tt5 4.6e-14 sm 2.2e-12 thrust-vs-match 8.7e-13
+    instrument (shipped solver, throat x k=0.831366): nu 1.3e-12 pi_c 2.6e-12 mdot 2.6e-12 tt5 2.0e-14
+  Tt7 1900: unlit s=1 1.4 ms (x0.41)  vs shipped: nu 3.5e-12 pi_c 6.6e-12 mdot 6.7e-12 tt5 8.0e-13 thrust 6.1e-3
+    lit held 4.8 ms (x1.42)  thrust x0.779  sm 0.1435 (dry 0.6947)  nu 0.7826 M6 0.1604 pi_ab 0.9620 f7 0.0490 branch Choked
+    lit match 1.9 ms (x0.58)  s_match 1.27973 (sqrt rule 1.22627)  thrust x1.346  core vs dry: pi_t 8.5e-12 phi -8.8e-12
+    gate (full solve at s_match): nu 3.4e-13 pi_c 6.5e-13 mdot 6.5e-13 tt5 1.7e-12 sm 1.8e-12 thrust-vs-match 7.3e-13
+    instrument (shipped solver, throat x k=0.784192): nu 2.8e-11 pi_c 5.7e-11 mdot 5.7e-11 tt5 5.0e-12
+== ThermallyPerfect 11km M1.4 map flow: shipped dry 3.5 ms  nu 0.989979 thrust 10708.6 sm 0.3394
+  Tt7 1700: unlit s=1 3.5 ms (x1.00)  vs shipped: nu 2.1e-11 pi_c 4.4e-11 mdot 4.4e-11 tt5 2.7e-15 thrust 3.9e-3
+    lit held 3.7 ms (x1.06)  thrust x0.900  sm 0.1085 (dry 0.3394)  nu 0.8489 M6 0.1704 pi_ab 0.9639 f7 0.0416 branch Choked
+    lit match 3.9 ms (x1.13)  s_match 1.19444 (sqrt rule 1.15994)  thrust x1.291  core vs dry: pi_t 6.6e-15 phi 2.1e-11
+    gate (full solve at s_match): nu 2.1e-11 pi_c 4.4e-11 mdot 4.4e-11 tt5 6.8e-12 sm 1.3e-10 thrust-vs-match 4.9e-11
+    instrument (shipped solver, throat x k=0.831362): nu 3.3e-13 pi_c 7.3e-13 mdot 7.3e-13 tt5 8.0e-12
+  Tt7 1900: unlit s=1 3.5 ms (x1.01)  vs shipped: nu 2.1e-11 pi_c 4.4e-11 mdot 4.4e-11 tt5 2.7e-15 thrust 3.9e-3
+    lit held 6.5 ms (x1.89)  thrust x0.845  sm 0.0556 (dry 0.3394)  nu 0.7960 M6 0.1604 pi_ab 0.9620 f7 0.0486 branch Choked
+    lit match 4.0 ms (x1.16)  s_match 1.27973 (sqrt rule 1.22627)  thrust x1.415  core vs dry: pi_t 4.6e-13 phi 2.2e-11
+    gate (full solve at s_match): nu 2.1e-11 pi_c 4.4e-11 mdot 4.4e-11 tt5 6.8e-12 sm 1.3e-10 thrust-vs-match 4.8e-11
+    instrument (shipped solver, throat x k=0.784184): nu 1.2e-11 pi_c 2.6e-11 mdot 2.6e-11 tt5 1.6e-11
+== ThermallyPerfect 11km M1.4 map pressure: shipped dry 4.4 ms  nu 0.987448 thrust 10706.8 sm 0.6000
+  Tt7 1700: unlit s=1 2.0 ms (x0.45)  vs shipped: nu 2.0e-11 pi_c 3.8e-11 mdot 3.8e-11 tt5 6.7e-12 thrust 3.9e-3
+    lit held 3.8 ms (x0.85)  thrust x0.902  sm 0.2127 (dry 0.6000)  nu 0.8336 M6 0.1704 pi_ab 0.9639 f7 0.0416 branch Choked
+    lit match 2.4 ms (x0.55)  s_match 1.19444 (sqrt rule 1.15994)  thrust x1.291  core vs dry: pi_t 1.9e-15 phi 2.3e-11
+    gate (full solve at s_match): nu 2.5e-11 pi_c 4.7e-11 mdot 4.7e-11 tt5 8.7e-12 sm 1.3e-10 thrust-vs-match 5.2e-11
+    instrument (shipped solver, throat x k=0.831370): nu 3.3e-11 pi_c 6.6e-11 mdot 6.6e-11 tt5 2.2e-13
+  Tt7 1900: unlit s=1 2.0 ms (x0.44)  vs shipped: nu 2.0e-11 pi_c 3.8e-11 mdot 3.8e-11 tt5 6.7e-12 thrust 3.9e-3
+    lit held 5.2 ms (x1.17)  thrust x0.848  sm 0.1216 (dry 0.6000)  nu 0.7774 M6 0.1604 pi_ab 0.9620 f7 0.0486 branch Choked
+    lit match 2.6 ms (x0.59)  s_match 1.27973 (sqrt rule 1.22627)  thrust x1.415  core vs dry: pi_t 4.8e-12 phi 1.9e-11
+    gate (full solve at s_match): nu 1.8e-11 pi_c 3.4e-11 mdot 3.5e-11 tt5 1.9e-12 sm 9.7e-11 thrust-vs-match 3.9e-11
+    instrument (shipped solver, throat x k=0.784195): nu 1.8e-12 pi_c 3.6e-12 mdot 3.6e-12 tt5 1.1e-14

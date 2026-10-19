@@ -6,7 +6,7 @@
 //! build against the native model on a grid, and drives the page in a headless Chrome.
 
 use turbojet::blade_speed::SHAPES;
-use turbojet::sandbox::{base64, call, splice_page, unbase64, FlySettings, GasModel, MapShape, NozzleMode,
+use turbojet::sandbox::{base64, call, splice_page, unbase64, GasModel, MapShape, NozzleMode,
                         WASM_PLACEHOLDER};
 use turbojet::sandbox_blades::{lever_key, BladeGas, BladeSettings};
 use turbojet::visuals::Json;
@@ -246,7 +246,8 @@ fn every_fly_knob_is_a_fly_setting_and_every_numeric_fly_setting_has_a_knob() {
     // The fly view's numbers: its own knobs, plus the flight knobs it shares with the design.
     let mut knobs: Vec<String> = fly_num(&t).into_iter().map(|(_, k)| k).chain(flight_list(&t)).collect();
     knobs.sort();
-    let mut numeric: Vec<String> = match FlySettings::defaults().to_json() {
+    // What the fly view opens on: the `fly_defaults` reply, which carries rung 102's keys even at their defaults.
+    let mut numeric: Vec<String> = match Json::parse(&call(r#"{"op":"fly_defaults"}"#)) {
         Json::Obj(kv) => kv.into_iter().filter(|(_, v)| matches!(v, Json::Float(_))).map(|(k, _)| k).collect(),
         _ => unreachable!(),
     };
@@ -298,6 +299,8 @@ fn the_selects_offer_exactly_the_models_choices() {
     let mut maps: Vec<String> = MapShape::ALL.iter().map(|m| m.key().to_string()).collect();
     maps.sort();
     assert_eq!(options("fly-map"), maps);
+    // Rung 102: the afterburner fitted to the engine you fly (`FlySettings::from_json`'s three words).
+    assert_eq!(options("fly-ab"), ["lit", "none", "unlit"]);
     let mut bg: Vec<String> = BladeGas::ALL.iter().map(|g| g.key().to_string()).collect();
     bg.sort();
     assert_eq!(options("bl-gas"), bg);

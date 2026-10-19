@@ -334,3 +334,178 @@ fn the_design_views_refusals_are_in_words() {
     assert!(reason(Settings { eta_ab: 0.2, ..d }).contains("combustion efficiency"));
     assert!(reason(Settings { tt7: 2600.0, ..d }).contains("cannot reach 2600 K"));
 }
+
+// --- Part B: the afterburner on the engine you fly (anchor § 2's Part B gates, § 3b) ---------------------------
+use turbojet::afterburner::{try_afterburn, FlyAfterburner, Throat, PHI_BALANCED};
+use turbojet::atmosphere::Ambient;
+use turbojet::components::choked_mfp;
+use turbojet::gas::FlowState;
+use turbojet::sandbox::{fly_solver, stall_reading, FlySettings, GasModel, MapShape, Stall};
+use turbojet::spool::Instant;
+
+/// Four flights off the design point, both scored map shapes between them (the dry pre-flight: all choked).
+fn fly_points() -> Vec<FlySettings> {
+    let a11 = Ambient::from_altitude(11000.0, 0.0);
+    let d = FlySettings::defaults();
+    vec![d, FlySettings { m0: 1.4, t0: a11.t0, p0: a11.p0, tt4: 1300.0, map: MapShape::Pressure, ..d },
+         FlySettings { m0: 0.1, t0: 288.15, p0: 101_325.0, map: MapShape::Pressure, ..d },
+         FlySettings { m0: 0.5, tt4: 1300.0, ..d }]
+}
+fn rel(a: f64, b: f64) -> f64 { (a - b).abs() / b.abs() }
+fn margin(st: &turbojet::spool::SpoolTransient, eq: &Instant, s: &FlySettings) -> f64 {
+    match stall_reading(st, eq, &s.map.map().with_phi_surge(s.phi_surge)) { Stall::Margin { sm_n, .. } => sm_n, o => panic!("{o:?}") }
+}
+/// The core's five numbers agree with another solve's within `bar`, relative.
+fn same_core(a: &Instant, b: &Instant, bar: f64, what: &str) {
+    for (k, x, y) in [("nu", a.nu, b.nu), ("pi_c", a.pi_c, b.pi_c), ("mdot", a.mdot_air, b.mdot_air), ("Tt5", a.tt5, b.tt5),
+                      ("pi_t", a.pi_t, b.pi_t)] {
+        assert!(rel(x, y) <= bar, "{what}: {k} {x} vs {y} ({:.2e} > {bar:.0e})", rel(x, y));
+    }
+}
+
+#[test]
+fn part_b_unlit_with_the_dry_throat_is_the_engine_without_an_afterburner_while_choked() {
+    for s in fly_points() {
+        let (fl, cmap) = (s.flight(), s.map.map().with_phi_surge(s.phi_surge));
+        let st = fly_solver(&s);
+        let none = st.equilibrium(&fl, s.tt4, Some(&cmap));
+        let fa = FlyAfterburner::capture(&st, Afterburner::default());
+        let dry = fa.try_point(&fl, s.tt4, &cmap, AbMode::Unlit, Throat::Held(1.0)).unwrap();
+        // pi_fh·(A8/pi_fh) is not bit-exact, and the searches differ: equal to the speed root's tolerance (measured
+        // <= 5e-11), not bit for bit.
+        same_core(&dry.eq, &none, 1e-9, "unlit vs no afterburner");
+        assert_eq!(dry.detail.f7, dry.eq.f);
+        assert!((dry.detail.pi_ab - 0.97).abs() < 1e-15 && dry.s5.tt == dry.s7.tt);
+    }
+}
+
+#[test]
+fn part_b_match_leaves_the_core_where_the_dry_engine_sits() {
+    // Gate 1 (anchor § 2): the lit engine solved THROUGH the new nozzle relation at the matched throat, its full speed
+    // search and all, lands on the dry core within 1e-9 (measured <= 1.3e-10).
+    for s in fly_points() {
+        let (fl, cmap) = (s.flight(), s.map.map().with_phi_surge(s.phi_surge));
+        let st = fly_solver(&s);
+        let fa = FlyAfterburner::capture(&st, Afterburner { tt7: 1900.0, ..Afterburner::default() });
+        let dry = fa.try_point(&fl, s.tt4, &cmap, AbMode::Unlit, Throat::Held(1.0)).unwrap();
+        let m = fa.try_lit_matched(&fl, s.tt4, &cmap, &dry).unwrap();
+        // Gate 2: matched at the dry point, the core cannot move (the textbook's law).
+        assert!(rel(m.eq.pi_t, dry.eq.pi_t) < 1e-9 && m.eq.phi.abs() < PHI_BALANCED, "matched pi_t {} vs {}", m.eq.pi_t, dry.eq.pi_t);
+        let full = fa.try_equilibrium(&fl, s.tt4, &cmap, AbMode::Lit, m.a8).unwrap();
+        same_core(&full.eq, &dry.eq, 1e-9, "lit at the matched throat vs dry");
+        assert!(rel(margin(&st, &full.eq, &s), margin(&st, &dry.eq, &s)) < 1e-9);
+        assert!(m.s > (1900.0 / dry.eq.tt5).sqrt(), "the throat opens MORE than the square-root rule");
+    }
+}
+
+#[test]
+fn part_b_an_independent_instrument_agrees_on_the_held_lit_point() {
+    // The SHIPPED solver (rung 31's nozzle relation, untouched) with its core throat scaled by the afterburner's
+    // effective factor k = pi_AB·(MFP7/MFP5)·sqrt(Tt5/Tt7)·(1+f5)/(1+f7), iterated to a fixed point (anchor G4's
+    // instrument). Not the device: its turbine never sees station 7. Agrees within 1e-8 (measured <= 7e-11).
+    for s in fly_points().into_iter().take(2) {
+        let (fl, cmap) = (s.flight(), s.map.map().with_phi_surge(s.phi_surge));
+        let st = fly_solver(&s);
+        let ab = Afterburner { tt7: 1900.0, ..Afterburner::default() };
+        let fa = FlyAfterburner::capture(&st, ab);
+        let held = fa.try_point(&fl, s.tt4, &cmap, AbMode::Lit, Throat::Held(1.0)).unwrap();
+        let mut st2 = fly_solver(&s);
+        let mut k = 1.0;
+        let mut e = None;
+        for _ in 0..80 {
+            st2.inner.inner.a8 = fa.a8_dry * k;
+            let q = st2.equilibrium(&fl, s.tt4, Some(&cmap));
+            let gas = st2.inner.inner.gas();
+            let pt4 = q.pt2 * q.pi_c * st2.inner.inner.pi_b;
+            let s4 = FlowState { tt: s.tt4, pt: pt4, mdot: 0.0, far: q.f };
+            let s5 = FlowState { tt: q.tt5, pt: q.pi_t * pt4, mdot: q.mdot_air * (1.0 + q.f), far: q.f };
+            // The duct's Mach off its captured area, at this turbine exit (the device's duct, reused: the instrument
+            // checks the NOZZLE relation, not the duct).
+            let m6 = fa.try_instant(&fl, q.nu, s.tt4, &cmap, AbMode::Lit, fa.a8_dry).unwrap().detail.m6;
+            let (s7, d) = try_afterburn(gas, &s4, &s5, q.mdot_air, &Afterburner { m6, ..ab }, AbMode::Lit).unwrap();
+            let k_new = d.pi_ab * (choked_mfp(gas, s7.tt, s7.far) / choked_mfp(gas, s5.tt, s5.far)) * (s5.tt / s7.tt).sqrt()
+                        * (1.0 + q.f) / (1.0 + s7.far);
+            let done = (k_new - k).abs() < 1e-13;
+            (k, e) = (k_new, Some(q));
+            if done { break; }
+        }
+        let q = e.unwrap();
+        for (kk, x, y) in [("nu", q.nu, held.eq.nu), ("pi_c", q.pi_c, held.eq.pi_c), ("mdot", q.mdot_air, held.eq.mdot_air),
+                           ("Tt5", q.tt5, held.eq.tt5)] {
+            assert!(rel(x, y) < 1e-8, "instrument {kk}: {x} vs {y}");
+        }
+    }
+}
+
+#[test]
+fn part_b_held_lit_gives_less_thrust_and_eats_the_stall_margin() {
+    // A construction pin on G4's direction at the design flight (the 80 scored cells are the archive's score_b).
+    let s = FlySettings::defaults();
+    let (fl, cmap) = (s.flight(), s.map.map().with_phi_surge(s.phi_surge));
+    let st = fly_solver(&s);
+    let fa = FlyAfterburner::capture(&st, Afterburner { tt7: 1900.0, ..Afterburner::default() });
+    let dry = fa.try_point(&fl, s.tt4, &cmap, AbMode::Unlit, Throat::Held(1.0)).unwrap();
+    let held = fa.try_point(&fl, s.tt4, &cmap, AbMode::Lit, Throat::Held(1.0)).unwrap();
+    let opened = fa.try_point(&fl, s.tt4, &cmap, AbMode::Lit, Throat::Held(1.2)).unwrap();
+    assert!(held.eq.thrust < dry.eq.thrust && held.eq.nu < dry.eq.nu);
+    assert!(margin(&st, &held.eq, &s) < 0.4 * margin(&st, &dry.eq, &s));
+    assert!(opened.eq.thrust > dry.eq.thrust && margin(&st, &opened.eq, &s) > margin(&st, &held.eq, &s));
+    // The duct's Mach floats with the turbine-exit flow: the held lit turbine passes less corrected flow.
+    assert!(held.detail.m6 < 0.2 && (dry.detail.m6 - 0.2).abs() < 1e-9);
+}
+
+fn fly_reply(extra: &str) -> Json {
+    Json::parse(&call(&format!(r#"{{"op":"fly","fly":{{{extra}}}}}"#)))
+}
+
+#[test]
+fn part_b_the_fly_reply() {
+    // Not fitted is the shipped reply byte for byte, whatever the afterburner keys say.
+    let plain = call(r#"{"op":"fly","fly":{}}"#);
+    assert_eq!(call(r#"{"op":"fly","fly":{"ab":"none","Tt7":2000,"a8_ratio":1.0,"a8_match":0}}"#), plain);
+    let lit = fly_reply(r#""ab":"lit","Tt7":1900"#);
+    let a = lit.get("afterburner").expect("the afterburner block");
+    for k in ["mode", "match", "f_main", "f_ab", "pi_ab", "pi_heat", "M6", "M7", "passes", "a8_ratio", "dry"] {
+        assert!(a.get(k).is_some(), "afterburner.{k}");
+    }
+    assert!(lit.get("ts_afterburner").is_some());
+    let labels = lit.get("stations").unwrap().dump_compact();
+    assert!(labels.contains(r#""label":"7""#));
+    // The keys round-trip, written only off their defaults.
+    let echo = lit.get("fly").unwrap().dump_compact();
+    assert!(echo.contains(r#""ab":"lit""#) && echo.contains(r#""Tt7":1900"#) && !echo.contains("a8_"));
+    let f = FlySettings::from_json(&Json::parse(r#"{"ab":"unlit","a8_ratio":1.3,"a8_match":1}"#)).unwrap();
+    assert_eq!((f.ab, f.a8_ratio, f.a8_match), (Some(AbMode::Unlit), 1.3, true));
+    assert_eq!(FlySettings::from_json(&f.to_json()).unwrap().to_json().dump_compact(), f.to_json().dump_compact());
+    // The opening keys ride on fly_defaults.
+    let d = call(r#"{"op":"fly_defaults"}"#);
+    assert!(d.contains(r#""ab":"none""#) && d.contains(r#""a8_ratio":1.0"#) && d.contains(r#""a8_match":0"#));
+}
+
+#[test]
+fn part_b_refusals_are_in_words() {
+    let why = |extra: &str| fly_reply(extra).get("reason").map(|r| r.dump_compact()).unwrap_or_default();
+    assert!(why(r#""ab":"lit","Tt7":2600"#).contains("cannot reach 2600 K"));
+    assert!(why(r#""ab":"lit","a8_ratio":2.5"#).contains("twice"));
+    assert!(why(r#""ab":"lit","design":{"M6":0.5}"#).contains("burning zone's entry speed"));
+    assert!(why(r#""ab":"maybe""#).contains("must be"));
+    let slam = call(r#"{"op":"slam","slam":{"fly":{"ab":"unlit"}}}"#);
+    assert!(slam.contains("without an afterburner"), "{slam}");
+    // A running-line point the afterburner refuses ends the line as any non-running point does (a panic the page
+    // reads as "the line ends here") — with the afterburner's own words.
+    let hot = std::panic::catch_unwind(|| call(r#"{"op":"running_point","fly":{"ab":"lit","Tt7":2600}}"#)).unwrap_err();
+    assert!(hot.downcast_ref::<String>().is_some_and(|m| m.contains("cannot reach 2600 K")));
+}
+
+#[test]
+fn part_b_on_the_equilibrium_gas() {
+    // One matched point (the cheaper solve): it runs, freezes its own mixtures on scratch copies (the per-far guard
+    // never fires), and its core is the dry engine's.
+    let s = FlySettings { gas: GasModel::Equilibrium, ..FlySettings::defaults() };
+    let (fl, cmap) = (s.flight(), s.map.map().with_phi_surge(s.phi_surge));
+    let st = fly_solver(&s);
+    let fa = FlyAfterburner::capture(&st, Afterburner { tt7: 1900.0, ..Afterburner::default() });
+    let dry = fa.try_point(&fl, s.tt4, &cmap, AbMode::Unlit, Throat::Held(1.0)).unwrap();
+    let m = fa.try_lit_matched(&fl, s.tt4, &cmap, &dry).unwrap();
+    assert!(rel(m.eq.pi_t, dry.eq.pi_t) < 1e-9 && m.eq.thrust > dry.eq.thrust && m.detail.passes >= 2);
+}

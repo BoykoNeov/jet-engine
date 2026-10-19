@@ -26,3 +26,17 @@ and by heating a moving gas, the nozzle re-sized for the hotter jet.
   thrust. The nozzle must open more than the square root of the temperature rise, because the hotter gas passes
   less flow per area of throat. On the equilibrium gas the hot products split apart and soak up heat, so burning
   all the oxygen left cannot reach much past 2200 K.
+
+  Flown (the page's Fly it): the opening design's hardware at its own flight, thermally-perfect gas, the
+  afterburner to 1900 K:
+
+  nozzle throat                 thrust kN   shaft speed   stall margin
+  unlit, dry size                   14.83       100.0 %         39.5 %
+  lit, held                         11.49        80.0 %          6.7 %
+  lit, opened x1.15                 16.08        91.3 %         21.6 %
+  lit, by the rule (x1.280)         19.96       100.0 %         39.5 %
+
+  Lit behind the dry-size throat, the engine makes LESS thrust than unlit: the hotter gas needs a bigger throat, so
+  it backs up into the turbine, which then does less work; the shaft slows and the compressor climbs toward stall.
+  Opening the throat gives both back. At the rule's size the core runs exactly as it does unlit, and every bit of
+  the afterburner's heat goes into the jet; the rule opens it MORE than the square root of the temperature rise.

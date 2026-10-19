@@ -55,3 +55,9 @@ Slider unit (my default, stated to user): area relative to the dry throat; "matc
 **Third answers:** Controls = **LIT AT A CHOSEN MOMENT** during the slam (light-off is an event in time); rungs 96–101's
 thrust guesses (pressure ratio / fan speed / exhaust sensor) with the AB lit ⇒ **REFUSE IN WORDS** (direct thrust,
 speed, Tt4 controls work). Staging (advisor): anchor → design + Design view → Fly it → Controls, each green + pushed.
+
+**Progress (2026-10-19):** Part A shipped `7de9419` (261/261). Part B clarification committed before its code
+(`f140dd1`: the two scored maps are flow + pressure, tilted reported; dry = the fitted engine UNLIT with throat
+`A8_core/π_fh`). Part B built, 80/80 (H7 32, H8 32, H9 16); cost trigger fired first (lit held 6–12×), fixed by
+measurement (see [[rung102-afterburner]]); slam refuses ANY fitted afterburner (my scope call, disclosed). Part C next:
+probe the Controls march, write the anchor ADDENDUM with predictions, commit, then code.

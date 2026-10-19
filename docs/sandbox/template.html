@@ -218,6 +218,27 @@ footer p { max-width: 90ch; }
         <input type="range" id="phi_surge-r" min="0.3" max="0.95" step="0.01" aria-label="Stall line slider">
         <div class="derived">A number you choose, not data. The stall margin depends on it and on the map: read its trend, not its size.</div></div>
     </fieldset>
+    <fieldset id="fly-ab-set" hidden>
+      <legend>Afterburner</legend>
+      <div class="knob"><label for="fly-ab">Afterburner</label>
+        <select id="fly-ab" style="grid-column: 1 / -1">
+          <option value="none">Not fitted</option>
+          <option value="unlit">Fitted, not lit</option>
+          <option value="lit">Lit</option>
+        </select></div>
+      <div id="fly-ab-box" hidden>
+        <div class="knob"><label for="fly-Tt7">Afterburner exit temperature <small>K</small></label><input type="number" id="fly-Tt7" step="10">
+          <input type="range" id="fly-Tt7-r" min="1100" max="2400" step="10" aria-label="Afterburner temperature slider"></div>
+        <div class="knob"><label for="fly-a8">Nozzle throat over its dry size</label><input type="number" id="fly-a8" step="0.01">
+          <input type="range" id="fly-a8-r" min="1" max="2" step="0.01" aria-label="Nozzle throat slider"></div>
+        <div class="knob"><label for="fly-a8-match" style="grid-column: 1 / -1"><input type="checkbox" id="fly-a8-match"> Open the nozzle by the rule: the size that keeps the engine running where it runs unlit</label></div>
+        <p class="note">Lighting the afterburner behind a nozzle held at its dry size makes LESS thrust than not lighting it: the hot
+          gas needs a bigger throat, so it backs up into the turbine, the turbine does less work, the shaft slows and the
+          compressor is pushed toward stall. Open the throat and both come back; at the rule's size the engine core runs
+          exactly as it does unlit, and all the extra heat goes into the jet. The flame holders, the combustion efficiency
+          and the burning zone's speed are the design's (Design view); the duct and the dry throat are sized there.</p>
+      </div>
+    </fieldset>
     <fieldset id="slam-set" hidden>
       <legend>Slam the throttle</legend>
       <p class="note" style="margin-top:0">Move the throttle from a starting setting to the one above, and watch the engine take its time to follow.</p>
@@ -1292,7 +1313,7 @@ const NUM = ["T0", "p0", "M0", "pi_c", "Tt4", "mdot", "pi_d_max", "eta_c", "e_c"
 // Fly it (slice 3): F is the fly settings (turbojet::sandbox::FlySettings). The flight knobs are
 // shared: in fly mode they move the FLIGHT, not the design. FLY_NUM maps a knob id to its setting.
 let mode = "design", F = null, FLY_DEFAULTS = null, designAsSet = null;
-const FLY_NUM = { "fly-Tt4": "Tt4", "phi_surge": "phi_surge" };
+const FLY_NUM = { "fly-Tt4": "Tt4", "phi_surge": "phi_surge", "fly-Tt7": "Tt7", "fly-a8": "a8_ratio" };
 const FLIGHT = ["T0", "p0", "M0"];
 // Slam the throttle (slice 4 A, turbojet::sandbox_transient): SL holds the slam's own knobs; the move
 // ends at the fly throttle F.Tt4. Each run is computed on its OWN worker, killed when a knob moves, so a
@@ -1385,6 +1406,9 @@ function showSettings() {
       $(id + "-r").value = F[k];
     }
     $("fly-gas").value = F.gas; $("fly-map").value = F.map;
+    // Rung 102: the afterburner fitted to the engine you fly.
+    $("fly-ab").value = F.ab; $("fly-a8-match").checked = F.a8_match === 1;
+    $("fly-ab-box").hidden = F.ab === "none"; $("fly-a8").disabled = $("fly-a8-r").disabled = F.a8_match === 1;
   }
   if (SL) {
     for (const [id, k] of Object.entries(SLAM_NUM)) {
@@ -1402,7 +1426,7 @@ function showSettings() {
   for (const id of ["components-set", "nozzle-set", "ab-set"]) $(id).hidden = mode !== "design";
   // Rung 102: the afterburner switch and, when it is on, its knobs.
   $("ab-on").checked = S.afterburner === 1; $("ab-box").hidden = S.afterburner !== 1;
-  for (const id of ["fly-set", "fly-tiles", "map-card", "slam-set", "slam-card"]) $(id).hidden = !fly;
+  for (const id of ["fly-set", "fly-ab-set", "fly-tiles", "map-card", "slam-set", "slam-card"]) $(id).hidden = !fly;
   for (const id of BLADE_VIEW) $(id).hidden = !blades;
   for (const id of CTL_VIEW) $(id).hidden = !controls;
   for (const id of BN_VIEW) $(id).hidden = !burner;
@@ -1608,7 +1632,9 @@ async function enterFly() {
   designAsSet = (!t.trap && t.reply.ok) ? { thrust: t.reply.thrust, nozzle: S.nozzle, gas: S.gas } : null;
   if (mode === "fly") return;
   // Freeze THIS design; fly it at its own point first (the reduce: shaft speed 100 %).
-  F = { ...FLY_DEFAULTS, design: { ...S }, Tt4: S.Tt4, T0: S.T0, p0: S.p0, M0: S.M0 };
+  // Rung 102: an afterburner lit on the Design view flies lit, its nozzle opened by the rule (what that view shows).
+  F = { ...FLY_DEFAULTS, design: { ...S }, Tt4: S.Tt4, T0: S.T0, p0: S.p0, M0: S.M0, Tt7: S.Tt7 ?? FLY_DEFAULTS.Tt7,
+        ab: S.afterburner === 1 ? "lit" : "none", a8_match: S.afterburner === 1 ? 1 : 0 };
   SL = { ...SLAM_DEFAULTS, from: Math.max(600, Math.round(S.Tt4 - 400)) }; slamPinned = null; slamKey = null;
   mode = "fly"; mapKey = null; lineKey = null; pinned = null; $("unpin").hidden = true; $("pin-legend").hidden = true;
   showSettings(); change();
@@ -2912,20 +2938,26 @@ function render() {
   const tile = (id, f, up) => { $("v-" + id).textContent = fmt(f(r)); $("d-" + id).textContent = p ? delta(f(r), f(p), up)[0] : ""; };
   tile("thrust", x => x.thrust / 1e3, true); tile("st", x => x.specific_thrust, true);
   tile("tsfc", x => x.tsfc * 1e6, false); tile("eo", x => x.eta_overall * 100, true);
-  // Rung 102: a lit afterburner, beside the same engine unlit.
-  const ab = mode === "design" && r.afterburner;
+  // Rung 102: a lit afterburner, beside the same engine unlit (Design view), or fitted to the engine you fly (Fly it:
+  // beside the same engine unlit, its throat at the dry size).
+  const ab = (mode === "design" || mode === "fly") && r.afterburner;
   $("ab-tiles").hidden = !ab;
   if (ab) {
-    const a = r.afterburner;
+    const a = r.afterburner, flown = mode === "fly";
+    const word = flown && a.mode === "unlit" ? "this setting" : "lit";
     // The unlit engine can fail to run where the lit one runs (near zero dry thrust): then only the lit numbers show.
     $("v-ab-dry").textContent = a.dry ? fmt(a.dry.thrust / 1e3) : "–";
-    $("d-ab-dry").textContent = a.dry ? `lit gives ${fmt(r.thrust / a.dry.thrust, 3)} × the thrust` : "unlit, this engine makes almost no thrust";
+    $("d-ab-dry").textContent = a.dry ? `${word} gives ${fmt(r.thrust / a.dry.thrust, 3)} × the thrust` : "unlit, this engine makes almost no thrust";
     $("v-ab-tsfc").textContent = a.dry ? fmt(a.dry.tsfc * 1e6) : "–";
-    $("d-ab-tsfc").textContent = a.dry ? `lit burns ${fmt(r.tsfc / a.dry.tsfc, 3)} × the fuel per thrust` : "";
+    $("d-ab-tsfc").textContent = a.dry ? `${word} burns ${fmt(r.tsfc / a.dry.tsfc, 3)} × the fuel per thrust` : "";
     $("v-ab-a8").textContent = fmt(a.a8_ratio, 4);
-    $("d-ab-a8").textContent = `afterburner fuel/air ${a.f_ab.toFixed(5)} on top of the burner's ${a.f_main.toFixed(5)}`;
+    $("d-ab-a8").textContent = flown
+      ? (a.match === 1 ? "opened by the rule: the core runs as it does unlit" : a.a8_ratio === 1 ? "held at its dry size" : "set by you")
+        + (a.mode === "lit" ? `; afterburner fuel/air ${a.f_ab.toFixed(5)}` : "")
+      : `afterburner fuel/air ${a.f_ab.toFixed(5)} on top of the burner's ${a.f_main.toFixed(5)}`;
     $("v-ab-pi").textContent = fmt(a.pi_ab, 4);
-    $("d-ab-pi").textContent = `heating alone ${fmt(a.pi_heat, 4)}; leaves the burning zone at Mach ${fmt(a.M7, 3)}`;
+    $("d-ab-pi").textContent = a.mode === "unlit" ? `flame holders only; the duct entered at Mach ${fmt(a.M6, 3)}`
+      : `heating alone ${fmt(a.pi_heat, 4)}; enters the burning zone at Mach ${fmt(a.M6, 3)}, leaves at ${fmt(a.M7, 3)}`;
   }
   if (r.nu !== undefined) {
     tile("nu", x => x.nu * 100, true); tile("pic", x => x.settings.pi_c, true); tile("mdot", x => x.mdot_air, true);
@@ -2937,6 +2969,10 @@ function render() {
       ? (p && p.stall && p.stall.kind === "margin" ? delta(r.stall.sm_n * 100, p.stall.sm_n * 100, true)[0] : "at constant speed")
       : { unchoked: "the nozzle is unchoked here", past_stall_line: "the line you set is beyond this point",
           off_map: "the stall line misses the map" }[r.stall.kind];
+    // Rung 102: with the afterburner fitted, the same engine's margin unlit (unless a pin is being compared).
+    const ad = r.afterburner && r.afterburner.dry;
+    if (ad && !(p && p.stall && p.stall.kind === "margin"))
+      $("d-sm").textContent = ad.sm_n === null ? "unlit: no margin reading" : `unlit: ${fmt(ad.sm_n * 100, 3)} %`;
   }
 
   const tb = $("stations").tBodies[0]; tb.innerHTML = "";
@@ -3046,6 +3082,8 @@ function wire() {
   for (const q of Object.keys(SLAM_Q)) $("q-" + q).addEventListener("click", () => { slamQ = q; showSettings(); drawSlam(); });
   $("fly-gas").addEventListener("change", () => { F.gas = $("fly-gas").value; change(); });
   $("fly-map").addEventListener("change", () => { F.map = $("fly-map").value; change(); });
+  $("fly-ab").addEventListener("change", () => { F.ab = $("fly-ab").value; showSettings(); change(); });
+  $("fly-a8-match").addEventListener("change", () => { F.a8_match = $("fly-a8-match").checked ? 1 : 0; showSettings(); change(); });
   $("nozzle").addEventListener("change", () => { S.nozzle = $("nozzle").value; showSettings(); change(); });
   $("gas").addEventListener("change", () => { S.gas = $("gas").value; change(); });
   for (const [id, key, v] of [["ceff-isen", "compressor_eff", "isentropic"], ["ceff-poly", "compressor_eff", "polytropic"],
@@ -3145,7 +3183,8 @@ function wire() {
   });
   $("reset").addEventListener("click", () => {
     if (mode === "fly") {
-      F = { ...FLY_DEFAULTS, design: F.design, Tt4: F.design.Tt4, T0: F.design.T0, p0: F.design.p0, M0: F.design.M0 };
+      F = { ...FLY_DEFAULTS, design: F.design, Tt4: F.design.Tt4, T0: F.design.T0, p0: F.design.p0, M0: F.design.M0,
+            Tt7: F.design.Tt7 ?? FLY_DEFAULTS.Tt7 };
       SL = { ...SLAM_DEFAULTS, from: Math.max(600, Math.round(F.design.Tt4 - 400)) };
     }
     else if (mode === "blades") { B = clone(B_DEFAULTS); linked = true; editSpool = "lp"; }

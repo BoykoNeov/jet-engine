@@ -16,11 +16,12 @@
 //! - **It edits no model code.** It calls `build_turbojet(…).run(…)` exactly as the CLI does, so
 //!   every golden and oracle is unchanged.
 
-use crate::afterburner::{build_afterburning_turbojet, AbDetail, AbMode, AbResult, Afterburner};
+use crate::afterburner::{build_afterburning_turbojet, is_refusal, try_afterburn, try_score_total, AbDetail, AbMode,
+                         AbResult, Afterburner, FlyAfterburner, FlyPoint, Throat};
 use crate::atmosphere::{self, Ambient};
-use crate::components::{choked_mfp, ram_recovery, Component};
+use crate::components::{choked_mfp, ram_recovery, Component, Nozzle};
 use crate::engine::{build_turbojet, score, EngineResult, FlightCondition, Losses};
-use crate::gas::{powp, FlowState, Gas};
+use crate::gas::{powp, Abort, FlowState, Gas};
 use crate::jobj;
 use crate::map::ComponentMap;
 use crate::matcher::{Branch, Rebuilt};
@@ -265,6 +266,27 @@ impl Settings {
 #[derive(Clone, Debug, PartialEq)]
 pub struct DoesNotRun(pub String);
 
+/// Rung 102's knob ranges, in words — the Design view's lit afterburner and the one fitted to the engine you fly.
+pub fn ab_precheck(ab: &Afterburner) -> Result<(), DoesNotRun> {
+    let no = |m: &str| Err(DoesNotRun(m.to_string()));
+    let named = [("Tt7", ab.tt7), ("eta_ab", ab.eta_ab), ("pi_fh", ab.pi_fh), ("M6", ab.m6)];
+    if let Some((k, _)) = named.iter().find(|(_, v)| !v.is_finite()) {
+        return Err(DoesNotRun(format!("Setting {k} is not a number.")));
+    }
+    if !(0.5..=1.0).contains(&ab.eta_ab) {
+        return no("The afterburner's combustion efficiency must be between 0.5 and 1 (100 %).");
+    }
+    if !(0.85..=1.0).contains(&ab.pi_fh) {
+        return no("The flame holders' pressure ratio must be between 0.85 and 1 — they can only lose pressure, \
+                   and real ones lose a few percent.");
+    }
+    if !(0.0..=0.35).contains(&ab.m6) {
+        return no("The burning zone's entry speed must be between Mach 0 and 0.35: a faster zone blows the flame \
+                   out, and heating fast gas chokes the duct.");
+    }
+    Ok(())
+}
+
 /// The checks made BEFORE the solve. Each names the knob and the physical reason.
 pub fn precheck(s: &Settings) -> Result<(), DoesNotRun> {
     let no = |m: String| Err(DoesNotRun(m));
@@ -304,21 +326,7 @@ pub fn precheck(s: &Settings) -> Result<(), DoesNotRun> {
         return no("The nozzle exit pressure must be above zero.".into());
     }
     if s.afterburner {
-        let ab = [("Tt7", s.tt7), ("eta_ab", s.eta_ab), ("pi_fh", s.pi_fh), ("M6", s.m6)];
-        if let Some((k, _)) = ab.iter().find(|(_, v)| !v.is_finite()) {
-            return no(format!("Setting {k} is not a number."));
-        }
-        if !(0.5..=1.0).contains(&s.eta_ab) {
-            return no("The afterburner's combustion efficiency must be between 0.5 and 1 (100 %).".into());
-        }
-        if !(0.85..=1.0).contains(&s.pi_fh) {
-            return no("The flame holders' pressure ratio must be between 0.85 and 1 — they can only lose pressure, \
-                       and real ones lose a few percent.".into());
-        }
-        if !(0.0..=0.35).contains(&s.m6) {
-            return no("The burning zone's entry speed must be between Mach 0 and 0.35: a faster zone blows the flame \
-                       out, and heating fast gas chokes the duct.".into());
-        }
+        ab_precheck(&s.ab())?;
     }
     // The one solve-dependent check: the burner can only ADD heat. Run the inlet and compressor
     // (cheap, and pure) to find the compressor-exit temperature.
@@ -763,7 +771,12 @@ pub fn call(request: &str) -> String {
             _ => refusal("explain needs a message"),
         },
         "range" => jobj! { "z_min" => atmosphere::Z_MIN, "z_max" => atmosphere::Z_MAX },
-        "fly_defaults" => FlySettings::defaults().to_json(),
+        // Rung 102's four keys ride along at their opening values (a fly reply echoes them only off their defaults).
+        "fly_defaults" => {
+            let (d, mut j) = (FlySettings::defaults(), FlySettings::defaults().to_json());
+            if let Json::Obj(kv) = &mut j { kv.extend(d.ab_defaults_json()); }
+            j
+        }
         "fly" | "running_point" | "running_grid" | "map_lines" => {
             let empty = Json::Obj(Vec::new());
             match FlySettings::from_json(req.get("fly").unwrap_or(&empty)) {
@@ -852,6 +865,14 @@ pub struct FlySettings {
     /// The stall line's flow coefficient — rung 36's ONE chosen constant, a knob here because the
     /// model has no data for it (user decision, plan § 10.7). Only the margin's TREND is load-bearing.
     pub phi_surge: f64,
+    /// RUNG 102 — an afterburner on the engine you fly: `None` not fitted (the shipped plant, untouched), or fitted
+    /// unlit or lit (`afterburner::FlyAfterburner`). Its hardware knobs (`η_AB`, `π_fh`, `M6`) are the design's; the
+    /// temperature it burns to is FLOWN, like the throttle.
+    pub ab: Option<AbMode>,
+    pub tt7: f64,
+    /// The nozzle throat over the dry throat (1 = held), unless `a8_match` opens it by the rule.
+    pub a8_ratio: f64,
+    pub a8_match: bool,
 }
 
 /// Where the page's stall-line knob opens: rung 36's own panel value.
@@ -866,7 +887,21 @@ impl FlySettings {
     /// Flying `design` at its own design point (the reduce: shaft speed 1, `π_c` = design).
     pub fn at_design(design: Settings) -> Self {
         FlySettings { design, gas: GasModel::ThermallyPerfect, tt4: design.tt4, t0: design.t0,
-                      p0: design.p0, m0: design.m0, map: MapShape::Flow, phi_surge: PHI_SURGE_DEFAULT }
+                      p0: design.p0, m0: design.m0, map: MapShape::Flow, phi_surge: PHI_SURGE_DEFAULT,
+                      ab: None, tt7: design.tt7, a8_ratio: 1.0, a8_match: false }
+    }
+
+    /// The afterburner flown: the design's hardware knobs, this flight's temperature.
+    pub fn afterburner(&self) -> Afterburner { Afterburner { tt7: self.tt7, ..self.design.ab() } }
+
+    /// The throat setting.
+    pub fn throat(&self) -> Throat { if self.a8_match { Throat::Match } else { Throat::Held(self.a8_ratio) } }
+
+    /// Rung 102's four keys at their opening values — the `fly_defaults` reply carries them even there (a fly reply's
+    /// settings echo writes them only off their defaults, so every earlier reply keeps its bytes).
+    pub fn ab_defaults_json(&self) -> Vec<(String, Json)> {
+        vec![("ab".into(), Json::Str("none".into())), ("Tt7".into(), Json::Float(self.design.tt7)),
+             ("a8_ratio".into(), Json::Float(1.0)), ("a8_match".into(), Json::Int(0))]
     }
 
     /// The design the hardware is captured from: the user's, on the fly gas, with a FIXED
@@ -879,11 +914,21 @@ impl FlySettings {
     pub fn flight(&self) -> FlightCondition { FlightCondition::new(self.t0, self.p0, self.m0) }
 
     pub fn to_json(&self) -> Json {
-        jobj! {
+        let mut j = jobj! {
             "design" => self.design.to_json(), "gas" => self.gas.key(), "Tt4" => self.tt4,
             "T0" => self.t0, "p0" => self.p0, "M0" => self.m0, "map" => self.map.key(),
             "phi_surge" => self.phi_surge,
+        };
+        // Rung 102's four, only off their defaults (every earlier fly and slam reply keeps its bytes).
+        if let Json::Obj(kv) = &mut j {
+            if let Some(m) = self.ab {
+                kv.push(("ab".into(), Json::Str(if m == AbMode::Lit { "lit" } else { "unlit" }.into())));
+            }
+            if self.tt7 != self.design.tt7 { kv.push(("Tt7".into(), Json::Float(self.tt7))); }
+            if self.a8_ratio != 1.0 { kv.push(("a8_ratio".into(), Json::Float(self.a8_ratio))); }
+            if self.a8_match { kv.push(("a8_match".into(), Json::Int(1))); }
         }
+        j
     }
 
     /// Read fly settings; a missing key keeps its default. A missing `design` is the opening
@@ -904,6 +949,20 @@ impl FlySettings {
         num("p0", &mut s.p0)?;
         num("M0", &mut s.m0)?;
         num("phi_surge", &mut s.phi_surge)?;
+        num("Tt7", &mut s.tt7)?;
+        num("a8_ratio", &mut s.a8_ratio)?;
+        match j.get("ab") {
+            None => {}
+            Some(Json::Str(k)) if k == "none" => s.ab = None,
+            Some(Json::Str(k)) if k == "unlit" => s.ab = Some(AbMode::Unlit),
+            Some(Json::Str(k)) if k == "lit" => s.ab = Some(AbMode::Lit),
+            Some(o) => return Err(format!("setting \"ab\" must be \"none\", \"unlit\" or \"lit\", got {o:?}")),
+        }
+        match j.get("a8_match") {
+            None => {}
+            Some(Json::Int(n)) if *n == 0 || *n == 1 => s.a8_match = *n == 1,
+            Some(o) => return Err(format!("switch \"a8_match\" must be 0 or 1, got {o:?}")),
+        }
         match j.get("gas") {
             None => {}
             Some(Json::Str(g)) => s.gas = GasModel::from_key(g)?,
@@ -944,6 +1003,12 @@ pub fn fly_precheck(s: &FlySettings) -> Result<(), DoesNotRun> {
     if !(s.phi_surge > 0.0 && s.phi_surge < 1.0) {
         return no("The stall line must sit between 0 and 1 in flow coefficient: below the design \
                    flow (1), above no flow (0).");
+    }
+    if s.ab.is_some() {
+        ab_precheck(&s.afterburner())?;
+        if !s.a8_match && !(1.0..=2.0).contains(&s.a8_ratio) {
+            return no("The nozzle throat opens from its dry size (1) to twice it (2).");
+        }
     }
     // The throttle must at least beat the air's own temperature at the compressor face: below it no
     // shaft speed can work, and the solver could only say "no workable speed" (measured, plan § 10.4).
@@ -987,6 +1052,8 @@ pub struct FlyOutcome {
     pub stall: Stall,
     pub ts: Vec<(&'static str, f64, f64)>,
     pub curves: [Vec<(f64, f64)>; 2],
+    /// Rung 102, with the afterburner fitted.
+    pub ab: Option<FlyAb>,
 }
 
 /// The fields of rung 34's equilibrium the page reads.
@@ -1058,6 +1125,69 @@ pub fn stall_reading(st: &SpoolTransient, eq: &crate::spool::Instant, cmap: &Com
     Stall::Margin { sm_n: pn / eq.pi_c - 1.0, sm_flow }
 }
 
+/// Rung 102's part of a fly run: the point flown, the same engine dry (fitted, unlit, its throat at the dry size), and
+/// the afterburner's leg for the T–s chart.
+pub struct FlyAb {
+    pub mode: AbMode,
+    pub matched: bool,
+    pub point: FlyPoint,
+    pub dry: FlyPoint,
+    pub dry_stall: Stall,
+    pub curve: Vec<(f64, f64)>,
+}
+
+/// An afterburner Fly-it failure in words: its own refusals are words already; the speed search's "does not bracket"
+/// gets [`explain_fly`]'s, anything else [`explain`]'s beside the model's message.
+fn fly_words(e: Abort) -> DoesNotRun {
+    if is_refusal(&e) {
+        return DoesNotRun(e.0);
+    }
+    DoesNotRun(format!("{} Model message: {}", explain_fly(&e.0), e.0))
+}
+
+/// Fly with the afterburner fitted (`afterburner::FlyAfterburner` on the captured hardware). The dry engine is solved
+/// first (the readout beside the lit one, and *match*'s starting point); the station table is the shipped forward
+/// rebuild at the point's core, continued through the afterburner and the convergent nozzle, and the throat's mass
+/// balance is checked there (the shipped rebuild never reads the throat area).
+fn fly_ab(s: &FlySettings, mode: AbMode, st: &SpoolTransient, fl: &FlightCondition, cmap: &ComponentMap)
+    -> Result<(EngineResult, Rebuilt, FlyAb), DoesNotRun>
+{
+    let fa = FlyAfterburner::capture(st, s.afterburner());
+    let dry = fa.try_point(fl, s.tt4, cmap, AbMode::Unlit, Throat::Held(1.0)).map_err(fly_words)?;
+    let point = match (mode, s.throat()) {
+        (AbMode::Unlit, Throat::Held(x)) if x == 1.0 => dry,
+        (_, throat) => fa.try_point_after_dry(fl, s.tt4, cmap, mode, throat, &dry).map_err(fly_words)?,
+    };
+    let m = &st.inner.inner;
+    let pi_d = m.pi_d_max * ram_recovery(fl.m0);
+    let eq = &point.eq;
+    let rb = m.rebuild(fl, pi_d, eq.pi_c, s.tt4, eq.mdot_air, eq.eta_c, eq.eta_t);
+    let ab = Afterburner { m6: point.detail.m6, ..s.afterburner() };
+    let (s7, _) = try_afterburn(&rb.gas, &rb.s4, &rb.s5, eq.mdot_air, &ab, mode).map_err(fly_words)?;
+    let exit = Nozzle::convergent(fl.p0, m.pi_n).try_apply(&s7, &rb.gas).map_err(fly_words)?;
+    // Conservation (contract #4, Part B's own): the throat passes the flow plus the afterburner's fuel.
+    let flux = exit.p9 / (rb.gas.r_t_at(s7.far) * exit.t9) * exit.v9;
+    let m7 = eq.mdot_air * (1.0 + s7.far);
+    let gap = (m7 - point.a8 * flux).abs() / m7;
+    if !(gap <= FLY_THROAT_TOL) {
+        return Err(DoesNotRun(format!("rung-102 throat continuity: the throat passes {:.6} kg/s of {m7:.6} \
+                                       (relative gap {gap:.2e})", point.a8 * flux)));
+    }
+    let stations = vec![("0", rb.state0), ("2", rb.s2), ("3", rb.s3), ("4", rb.s4), ("5", rb.s5), ("7", s7),
+                        ("9", exit.state)];
+    let performance = try_score_total(&rb.gas, &stations, s7.far, rb.v0, exit.t9, exit.v9, exit.p9, fl.p0, rb.gas.hpr())
+        .map_err(fly_words)?;
+    let result = EngineResult { stations, performance, v0: rb.v0, v9: exit.v9, m9: exit.m9, t9: exit.t9, p9: exit.p9 };
+    let dry_stall = stall_reading(st, &dry.eq, cmap);
+    let fab = FlyAb { mode, matched: s.a8_match, point, dry, dry_stall, curve: Vec::new() };
+    Ok((result, rb, fab))
+}
+
+/// How closely the rebuilt station table's throat must pass its flow: the point's turbine is converged to 1e−11 in
+/// `π_t` and the rebuild re-derives it from the shaft balance at `dν/ds` ≈ 1e−11, so a correct relation closes far
+/// inside this; a wrong throat (or one read off the wrong station) misses by percent.
+pub const FLY_THROAT_TOL: f64 = 1e-7;
+
 /// Fly the design's hardware at `s`'s throttle and flight.
 pub fn fly(s: &FlySettings) -> Result<FlyOutcome, DoesNotRun> {
     fly_precheck(s)?;
@@ -1065,6 +1195,19 @@ pub fn fly(s: &FlySettings) -> Result<FlyOutcome, DoesNotRun> {
     let design = st.inner.inner.reference.clone();
     let fl = s.flight();
     let cmap = s.map.map().with_phi_surge(s.phi_surge);
+    if let Some(mode) = s.ab {
+        let (result, rb, fab) = fly_ab(s, mode, &st, &fl, &cmap)?;
+        let eq = fab.point.eq;
+        let stall = stall_reading(&st, &eq, &cmap);
+        let ts = ts_points(&rb.gas, &result, &fl);
+        let curves = ts_curves(&rb.gas, &result, &ts);
+        let curve = if mode == AbMode::Lit { ts_afterburner_leg(&rb.gas, &result, &ts) } else { Vec::new() };
+        let point = SpoolPoint {
+            nu: eq.nu, n: eq.n, m: eq.m, phi: eq.flowcoef, pi_c: eq.pi_c, eta_c: eq.eta_c, eta_t: eq.eta_t,
+            mdot_air: eq.mdot_air, thrust: eq.thrust, choked: eq.branch == Branch::Choked,
+        };
+        return Ok(FlyOutcome { settings: *s, design, result, point, stall, ts, curves, ab: Some(FlyAb { curve, ..fab }) });
+    }
     let eq = st.equilibrium(&fl, s.tt4, Some(&cmap));
     let stall = stall_reading(&st, &eq, &cmap);
     // The station table: the forward rebuild every matcher ends with, at the equilibrium's
@@ -1082,7 +1225,7 @@ pub fn fly(s: &FlySettings) -> Result<FlyOutcome, DoesNotRun> {
         nu: eq.nu, n: eq.n, m: eq.m, phi: eq.flowcoef, pi_c: eq.pi_c, eta_c: eq.eta_c, eta_t: eq.eta_t,
         mdot_air: eq.mdot_air, thrust: eq.thrust, choked: eq.branch == Branch::Choked,
     };
-    Ok(FlyOutcome { settings: *s, design, result, point, stall, ts, curves })
+    Ok(FlyOutcome { settings: *s, design, result, point, stall, ts, curves, ab: None })
 }
 
 /// The page's view of a fly run, FULL precision. The operating point carries slice 1's keys (so
@@ -1120,6 +1263,26 @@ pub fn fly_json(o: &FlyOutcome) -> Result<Json, DoesNotRun> {
         },
     };
     if let (Json::Obj(a), Json::Obj(b)) = (&mut j, extra) { a.extend(b); }
+    if let (Some(ab), Json::Obj(kv)) = (&o.ab, &mut j) {
+        let mut leg = Vec::new();
+        for &(sv, t) in &ab.curve {
+            leg.push(Json::List(vec![Json::Float(finite(sv, "entropy")?), Json::Float(finite(t, "temperature")?)]));
+        }
+        kv.push(("ts_afterburner".into(), Json::List(leg)));
+        let (d, dry) = (&ab.point.detail, &ab.dry.eq);
+        let dry_sm = match ab.dry_stall { Stall::Margin { sm_n, .. } => Json::Float(sm_n), _ => Json::Null };
+        kv.push(("afterburner".into(), jobj! {
+            "mode" => if ab.mode == AbMode::Lit { "lit" } else { "unlit" }, "match" => Json::Int(ab.matched as i64),
+            "f_main" => d.f5, "f_ab" => d.f7 - d.f5, "pi_ab" => d.pi_ab, "pi_heat" => d.pi_r,
+            "M6" => d.m6, "M7" => d.m7, "passes" => Json::Int(d.passes as i64),
+            "a8_ratio" => finite(ab.point.s, "nozzle area ratio")?,
+            "dry" => jobj! {
+                "thrust" => finite(dry.thrust, "thrust")?, "tsfc" => finite(dry.f / dry.sp_thrust, "TSFC")?,
+                "fuel_flow" => dry.f * dry.mdot_air, "nu" => dry.nu, "pi_c" => dry.pi_c, "mdot" => dry.mdot_air,
+                "sm_n" => dry_sm,
+            },
+        }));
+    }
     Ok(j)
 }
 
@@ -1129,7 +1292,15 @@ pub fn fly_json(o: &FlyOutcome) -> Result<Json, DoesNotRun> {
 pub fn running_point_json(s: &FlySettings) -> Json {
     let st = fly_solver(s);
     let cmap = s.map.map().with_phi_surge(s.phi_surge);
-    let eq = st.equilibrium(&s.flight(), s.tt4, Some(&cmap));
+    // Rung 102: with the afterburner fitted, its own nozzle relation (a refusal ends the line, as a panic does here).
+    let eq = match s.ab {
+        None => st.equilibrium(&s.flight(), s.tt4, Some(&cmap)),
+        Some(mode) => {
+            let fa = FlyAfterburner::capture(&st, s.afterburner());
+            let fl = s.flight();
+            fa.try_point(&fl, s.tt4, &cmap, mode, s.throat()).unwrap_or_else(|e| panic!("{}", e.0)).eq
+        }
+    };
     let sm = match stall_reading(&st, &eq, &cmap) { Stall::Margin { sm_n, .. } => Json::Float(sm_n), _ => Json::Null };
     jobj! {
         "ok" => Json::Int(1), "Tt4" => s.tt4, "m_corr" => eq.m, "pi_c" => eq.pi_c, "nu" => eq.nu,
@@ -1274,6 +1445,7 @@ pub fn check_requests() -> Vec<String> {
     out.extend(crate::sandbox_burner::check_requests());
     out.extend(crate::sandbox_cooling::check_requests());
     out.extend(check_ab_requests());
+    out.extend(check_ab_fly_requests());
     out
 }
 
@@ -1292,5 +1464,32 @@ pub fn check_ab_requests() -> Vec<String> {
     out.push(lit(Settings { tt7: 2600.0, ..d }));                                          // too hot
     out.push(lit(Settings { tt4: 1100.0, tt7: 2100.0, m6: 0.35, gas: GasModel::Reacting, ..d })); // the duct chokes
     out.push(lit(Settings { m6: 0.5, ..d }));                                             // out of range
+    out
+}
+
+/// RUNG 102's Fly-it requests, appended after Part A's (every earlier request keeps its number): lit with the nozzle
+/// held, opened partway, and matched; fitted unlit with the nozzle opened; lit on every gas but equilibrium (one point
+/// there, matched, the cheaper solve); off its design flight; a running-line point; and the refusals in words — too
+/// hot, a throat out of range, the slam with the afterburner fitted.
+pub fn check_ab_fly_requests() -> Vec<String> {
+    let d = FlySettings::defaults();
+    let fly = |s: FlySettings| jobj! { "op" => "fly", "fly" => s.to_json() }.dump_compact();
+    let lit = FlySettings { ab: Some(AbMode::Lit), tt7: 1900.0, ..d };
+    let mut out = vec![
+        fly(lit),
+        fly(FlySettings { a8_ratio: 1.15, ..lit }),
+        fly(FlySettings { a8_match: true, ..lit }),
+        fly(FlySettings { ab: Some(AbMode::Unlit), a8_ratio: 1.3, ..d }),
+    ];
+    for g in [GasModel::Perfect, GasModel::Reacting, GasModel::ForkB] {
+        out.push(fly(FlySettings { gas: g, ..lit }));
+    }
+    out.push(fly(FlySettings { gas: GasModel::Equilibrium, a8_match: true, ..lit }));
+    out.push(fly(FlySettings { m0: 1.4, t0: 216.65, p0: 22_632.1, tt4: 1300.0, map: MapShape::Pressure, ..lit }));
+    out.push(jobj! { "op" => "running_point", "fly" => FlySettings { tt4: 1300.0, a8_match: true, ..lit }.to_json() }.dump_compact());
+    out.push(fly(FlySettings { tt7: 2600.0, ..lit }));                                     // too hot
+    out.push(fly(FlySettings { a8_ratio: 2.5, ..lit }));                                   // out of range
+    let slam = crate::sandbox_transient::SlamSettings { fly: lit, ..crate::sandbox_transient::SlamSettings::defaults() };
+    out.push(jobj! { "op" => "slam", "slam" => slam.to_json() }.dump_compact());          // refused: fitted
     out
 }

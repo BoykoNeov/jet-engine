@@ -324,7 +324,7 @@ the perfect gas, come out of iterated solves (stopping at 1e-12), so they get th
 
 None planned. Slices 1–5 cover plan § 5's list; what comes next is the user's choice (plan § 5).
 
-## Rung 102 — the afterburner (Part A shipped 2026-10-19)
+## Rung 102 — the afterburner (Parts A and B shipped 2026-10-19)
 
 On the **Design** view, under *Nozzle and gas*: **Light an afterburner behind the turbine**, then its knobs — the
 afterburner exit temperature, its combustion efficiency, the flame holders' pressure ratio, and the burning zone's entry
@@ -332,5 +332,12 @@ Mach (the faster the gas enters, the more pressure heating it costs; too fast an
 results gain a row: the same engine's thrust and fuel per thrust with the afterburner fitted but unlit, how much the
 nozzle throat must open, and the duct's pressure ratio; station 7 joins the table and the T–s chart gets a third curve.
 Asking for more heat than the oxygen left can give is refused, naming the hottest reachable temperature (about 2 250 K
-on the equilibrium gas, where the hot gas splits apart). The built-engine half (Fly it, Controls) comes next
+on the equilibrium gas, where the hot gas splits apart).
+
+On **Fly it**, the *Afterburner* panel fits one to the engine you fly: not fitted, fitted but not lit, or lit to a
+temperature you choose, with the nozzle throat on a slider (its dry size up to twice it) or opened **by the rule** (the
+size that keeps the engine core running exactly as it does unlit). Lit behind a throat held at its dry size, the engine
+makes LESS thrust than unlit and its stall margin collapses; open the throat and both come back. The four tiles compare
+with the same engine unlit at the same throttle and flight; the stall tile shows the unlit margin beneath. The throttle
+slam flies the engine without an afterburner (the Controls view will light one during a slam). Controls comes next
 (`docs/rung102-spec.md`, plan § 34).

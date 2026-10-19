@@ -1,0 +1,45 @@
+RUNG 102 PART B CENSUS (2026-10-19), against Part A's commit 7de9419 (a worktree; native replies via '-- sandbox-native')
+
+Check requests 0-334: byte-equal. Part A's 12 (335-346): the 8 lit ones moved (below), 342 (no heat loss), 344-346 (refusals) byte-equal.
+#335: 279 numbers, worst relative 5.33e-15 at .afterburner.pi_heat; entropy worst abs 1.82e-12 J/(kg K) at .ts_reject.3.0
+#336: 279 numbers, worst relative 1.64e-11 at .eta_thermal; entropy worst abs 9.94e-9 J/(kg K) at .ts.6.s
+#337: 279 numbers, worst relative 1.40e-14 at .afterburner.a8_ratio; entropy worst abs 5.00e-12 J/(kg K) at .ts_reject.13.0
+#338: 279 numbers, worst relative 1.40e-14 at .afterburner.a8_ratio; entropy worst abs 5.00e-12 J/(kg K) at .ts_reject.13.0
+#339: 279 numbers, worst relative 3.19e-11 at .eta_thermal; entropy worst abs 1.91e-8 J/(kg K) at .ts.6.s
+#340: 279 numbers, worst relative 3.17e-11 at .afterburner.a8_ratio; entropy worst abs 9.17e-9 J/(kg K) at .ts.6.s
+#341: 279 numbers, worst relative 8.40e-15 at .afterburner.a8_ratio; entropy worst abs 2.96e-12 J/(kg K) at .ts_reject.14.0
+#343: 280 numbers, worst relative 2.93e-11 at .afterburner.pi_heat; entropy worst abs 8.35e-9 J/(kg K) at .ts.5.s
+
+Crash map: 1200 random Fly-it requests (crashfly.rs, seed 112), afterburner keys randomized (none/unlit/lit 1:1:3,
+Tt7 1000-2600, a8 1-2 or match 40 %, design eta_ab/pi_fh/M6 over their ranges, every gas and map); 'off' = the same requests
+with the afterburner keys removed. Every panic with the afterburner on is reproduced, same message, off (16 of 16):
+the core's own (the shipped speed search, the efficiency cascade, Fork B's burner balance at Tt4 2024 K).
+
+== crashfly_on
+808  ran
+190  refused: The afterburner cannot reach (too hot)
+87  refused: Only the slowest shaft speeds can be worked
+33  refused: The afterburner cannot cool the gas: it arri
+22  refused: At this throttle the turbine gives more powe
+18  refused: No shaft speed gives a workable operating po
+11  panic (core: rung-34 equilibrium does not bracket (Ph)
+8  refused: At this throttle and flight the turbine cann
+4  refused: The gas leaves the turbine faster than the a
+4  refused: The efficiency bookkeeping failed. This happ
+4  panic (core: efficiency cascade eta_o == eta_thermal*)
+1  refused: Heating the gas to 2405 K would choke the af
+1  refused: Heating the gas to 2294 K would choke the af
+1  refused: Heating the gas to 2190 K would choke the af
+1  refused: Heating the gas to 2110 K would choke the af
+1  refused: Heating the gas to 2042 K would choke the af
+1  refused: Heating the gas to 2008 K would choke the af
+1  refused: Heating the gas to 1887 K would choke the af
+1  refused: Heating the gas to 1877 K would choke the af
+1  refused: Heating the gas to 1844 K would choke the af
+1  refused: Heating the gas to 1489 K would choke the af
+1  panic (core: Fork B absolute-enthalpy balance: Σ N h)
+== crashfly_off
+1135  ran
+47  panic (core: rung-34 equilibrium does not bracket (Ph)
+16  panic (core: efficiency cascade eta_o == eta_thermal*)
+2  panic (core: Fork B absolute-enthalpy balance: Σ N h)

@@ -42,9 +42,15 @@
 //! Reduces: no afterburner is `build_turbojet` itself (by dispatch — this module is never entered); [`AbMode::Unlit`]
 //! with `π_fh` 1 gives that run's station 9 and performance bit for bit.
 
-use crate::components::{Component, Nozzle, NozzleExit};
+use std::borrow::Cow;
+use std::cell::RefCell;
+
+use crate::components::{ram_recovery, try_choked_mfp, Component, Nozzle, NozzleExit};
 use crate::engine::{build_turbojet, Engine, EngineResult, FlightCondition, Losses, Performance};
 use crate::gas::{powp, Abort, FlowState, Gas};
+use crate::map::ComponentMap;
+use crate::matcher::Branch;
+use crate::spool::{illinois, try_illinois, Instant, SpoolTransient, ILLINOIS_MAXIT};
 
 /// The afterburner's knobs (`docs/rung102-spec.md` § The device).
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -203,14 +209,50 @@ fn bisect_t(lo: f64, hi: f64, mut r: impl FnMut(f64) -> Result<f64, Abort>) -> R
     Ok(0.5 * (lo + hi))
 }
 
+/// [`bisect_t`]'s root to the same width (1e−14 of the bracket's larger end), by the Illinois false position — about
+/// ten residuals where bisection takes about fifty (Part B: the duct is solved inside the Fly-it speed search, ~500
+/// times a point, and bisection made a lit point cost 6–12× a dry one against the anchor's 3×). No sign change at the
+/// ends ⇒ [`bisect_t`] itself (its end-point answer); no shared counters (rung 34's Illinois census stays its own).
+fn root(lo: f64, hi: f64, mut r: impl FnMut(f64) -> Result<f64, Abort>) -> Result<f64, Abort> {
+    let (mut a, mut b) = (lo, hi);
+    let (mut fa, mut fb) = (r(a)?, r(b)?);
+    if fa == 0.0 { return Ok(a); }
+    if fb == 0.0 { return Ok(b); }
+    if !(fa * fb < 0.0) {
+        return bisect_t(lo, hi, r);
+    }
+    for _ in 0..200 {
+        let c = (a * fb - b * fa) / (fb - fa);
+        let fc = r(c)?;
+        if fc == 0.0 { return Ok(c); }
+        if fc * fb < 0.0 { a = b; fa = fb; } else { fa *= 0.5; }
+        b = c;
+        fb = fc;
+        if (b - a).abs() <= 1e-14 * a.abs().max(b.abs()) { break; }
+    }
+    Ok(b)
+}
+
 /// What a lit equilibrium afterburner can be asked: `Ok(f7)`, or the refusal in words (too cold — below the frozen
 /// mixture's own recombination heat — or too hot, the ceiling named at this pressure).
 pub fn fuel_equilibrium(
     gas: &Gas, comp4: &[(&'static str, f64)], tt5: f64, f5: f64, tt7: f64, p7: f64, eta_ab: f64,
 ) -> Result<f64, Abort> {
+    fuel_equilibrium_named(gas, comp4, tt5, f5, tt7, p7, eta_ab, true)
+}
+
+/// [`fuel_equilibrium`], its refusals named in words (`name`) or as a bare [`REFUSED`] marker — the temperature a
+/// refusal names costs a bisection of its own, which a search that only needs "refused here" must not pay (Part B).
+#[allow(clippy::too_many_arguments)]
+fn fuel_equilibrium_named(
+    gas: &Gas, comp4: &[(&'static str, f64)], tt5: f64, f5: f64, tt7: f64, p7: f64, eta_ab: f64, name: bool,
+) -> Result<f64, Abort> {
     let cap = f_cap(gas);
     let (r_lo, _) = eq_residual(gas, comp4, tt5, f5, f5, tt7, p7, eta_ab)?;
     if r_lo > 0.0 {
+        if !name {
+            return Err(refused("too cold"));
+        }
         // No added fuel already leaves the products short of the reactants: the frozen mixture, re-equilibrated,
         // releases heat (anchor G2). The temperature it reaches unaided is the floor.
         let floor = bisect_t(tt5, tt5 + 200.0, |t| eq_residual(gas, comp4, tt5, f5, f5, t, p7, eta_ab).map(|r| r.0))?;
@@ -221,6 +263,7 @@ pub fn fuel_equilibrium(
     // that runs ever probes. The search approaches the cap only when the root lies at or past it — then the cap is
     // tested, and the ceiling named.
     let (mut lo, mut hi) = (f5, cap);
+    let (mut r_lo, mut r_hi) = (r_lo, f64::NAN);
     let (mut f, mut res, mut prod) = (f5, 0.0f64, 1.0f64);
     let mut found_hi = false;          // a trial on the lean side of the root has been seen (res ≥ 0)
     for _ in 0..FP_MAX {
@@ -232,9 +275,27 @@ pub fn fuel_equilibrium(
             Err(e) => return Err(e),
         };
         if hi - lo <= FP_TOL * f { break; }
-        if res < 0.0 { lo = f } else { hi = f; found_hi = true; }
+        if res < 0.0 { (lo, r_lo) = (f, res) } else { (hi, r_hi) = (f, res); found_hi = true; break; }
+    }
+    // Bracketed (both ends evaluated, the lean one below the cap): the Illinois false position to the same width —
+    // about eight equilibrium solves where bisection took about forty, three times over in the `pt7` iteration (Part B:
+    // a lit Fly-it point on this gas cost 5.7× a dry one against the anchor's 3×).
+    if found_hi && res != 0.0 {
+        let (mut a, mut fa, mut b, mut fb) = (lo, r_lo, hi, r_hi);
+        for _ in 0..FP_MAX {
+            let c = (a * fb - b * fa) / (fb - fa);
+            (res, prod) = eq_residual(gas, comp4, tt5, f5, c, tt7, p7, eta_ab)?;
+            f = c;
+            if res == 0.0 { break; }
+            if res * fb < 0.0 { (a, fa) = (b, fb) } else { fa *= 0.5 }
+            (b, fb) = (c, res);
+            if (b - a).abs() <= FP_TOL * f { break; }
+        }
     }
     if !found_hi && eq_residual_at_cap(gas, comp4, tt5, f5, tt7, p7, eta_ab)? < 0.0 {
+        if !name {
+            return Err(refused("too hot"));
+        }
         let ceiling = bisect_t(tt5, 4000.0, |t| eq_residual_at_cap(gas, comp4, tt5, f5, t, p7, eta_ab))?;
         return Err(too_hot(tt7, ceiling));
     }
@@ -249,7 +310,7 @@ fn static_at_mach(gas: &Gas, far: f64, tt: f64, pt: f64, m: f64) -> (f64, f64, f
     let r = gas.r_t_at(far);
     let h_tt = gas.h_t(tt, far);
     let resid = |t: f64| (h_tt - gas.h_t(t, far)) - 0.5 * (m * m) * gas.gamma_t_at(t, far) * r * t;
-    let t = bisect_t(0.5 * tt, tt, |t| Ok(resid(t))).expect("infallible residual");
+    let t = root(0.5 * tt, tt, |t| Ok(resid(t))).expect("infallible residual");
     let v = m * powp(gas.gamma_t_at(t, far) * r * t, 0.5);
     let p = pt * gas.pr_t(t, far) / gas.pr_t(tt, far);
     (t, p, v)
@@ -280,16 +341,19 @@ pub fn rayleigh(
     let temp = |u: f64| gas_out.try_t_from_h_t(h7t - u, f7);
     let momentum = |u: f64| -> Result<f64, Abort> { let v = powp(2.0 * u, 0.5); Ok(g7 / v * r7 * temp(u)? + g7 * v - impulse) };
     // The sonic exit: the momentum residual's minimum along the Rayleigh line.
-    let t_star = bisect_t(0.5 * tt7, tt7,
+    let t_star = root(0.5 * tt7, tt7,
                           |t| Ok((h7t - gas_out.h_t(t, f7)) - 0.5 * gas_out.gamma_t_at(t, f7) * r7 * t))?;
     let u_star = h7t - gas_out.h_t(t_star, f7);
     if momentum(u_star)? > 0.0 {
         return Ok(None);                    // thermal choke
     }
-    // The subsonic root: between stagnation (where the residual runs to +∞) and the sonic point; the bracket's
-    // stopping rule is relative to `u` itself, so a slow duct is resolved as finely as a fast one.
-    let u7 = bisect_t(0.0, u_star, momentum)?;
-    let (t7, v7) = (temp(u7)?, powp(2.0 * u7, 0.5));
+    // The subsonic root, between stagnation and the sonic point, solved for `V7` on the momentum residual times `V7`
+    // (`g7·R7·T7 + g7·V7² − impulse·V7`: finite at stagnation, where the residual itself runs to +∞, and convex, so
+    // one root on `[0, V*]`); `u = V7²/2` is still what the static temperature is read from, and the stopping rule is
+    // relative to `V7` itself, so a slow duct is resolved as finely as a fast one.
+    let v7 = root(0.0, powp(2.0 * u_star, 0.5), |v: f64| Ok(g7 * r7 * temp(0.5 * (v * v))? + g7 * (v * v) - impulse * v))?;
+    let u7 = 0.5 * (v7 * v7);
+    let t7 = temp(u7)?;
     let p7 = g7 / v7 * r7 * t7;
     let m7 = v7 / powp(gas_out.gamma_t_at(t7, f7) * r7 * t7, 0.5);
     let pt7 = p7 * gas_out.pr_t(tt7, f7) / gas_out.pr_t(t7, f7);
@@ -350,6 +414,23 @@ fn choked(tt7: f64, m6: f64, ceiling: f64) -> Abort {
 pub fn try_afterburn(
     gas: &Gas, s4: &FlowState, s5: &FlowState, mdot_air: f64, ab: &Afterburner, mode: AbMode,
 ) -> Result<(FlowState, AbDetail), Abort> {
+    afterburn(gas, s4, s5, mdot_air, ab, mode, true)
+}
+
+/// The prefix of a refusal left UNNAMED inside a search (Part B): which wall, without the temperature the words name.
+pub const REFUSED: &str = "afterburner refused";
+
+fn refused(what: &str) -> Abort { Abort(format!("{REFUSED}: {what}")) }
+
+/// Is this the afterburner (or its duct) saying no — named or not — rather than the core failing?
+pub fn is_refusal(e: &Abort) -> bool {
+    e.0.starts_with(REFUSED) || e.0.starts_with("The afterburner cannot") || e.0.contains("the afterburner duct")
+}
+
+/// [`try_afterburn`], with its refusals named (`name`) or bare ([`REFUSED`]).
+fn afterburn(
+    gas: &Gas, s4: &FlowState, s5: &FlowState, mdot_air: f64, ab: &Afterburner, mode: AbMode, name: bool,
+) -> Result<(FlowState, AbDetail), Abort> {
     let (tt5, f5) = (s5.tt, s5.far);
     if mode == AbMode::Unlit {
         let s7 = FlowState { tt: tt5, pt: ab.pi_fh * s5.pt, mdot: s5.mdot, far: f5 };
@@ -358,14 +439,14 @@ pub fn try_afterburn(
     }
     let tt7 = ab.tt7;
     if !(tt7 > tt5) {
-        return Err(too_cold(tt7, tt5));
+        return Err(if name { too_cold(tt7, tt5) } else { refused("too cold") });
     }
     let (f7, pi_r, m7, passes) = if gas.is_equilibrium() {
         let comp4 = gas.try_freeze_equilibrium(s4.far, s4.tt, s4.pt)?;
         let mut p = ab.pi_fh * s5.pt;
         let mut out = None;
         for pass in 1..=AB_PASSES_MAX {
-            let f7 = fuel_equilibrium(gas, &comp4, tt5, f5, tt7, p, ab.eta_ab)?;
+            let f7 = fuel_equilibrium_named(gas, &comp4, tt5, f5, tt7, p, ab.eta_ab, name)?;
             // The station-7 properties at this trial pressure, on a scratch copy (a clone starts with empty memos),
             // so the real gas freezes once, at the converged condition.
             let scratch = gas.clone();
@@ -373,6 +454,7 @@ pub fn try_afterburn(
             scratch.try_freeze_equilibrium(f7, tt7, p)?;
             let Some((pi_r, m7)) = rayleigh(&scratch, f5, &scratch, f7, tt5, ab.m6, tt7, (1.0 + f7) / (1.0 + f5))?
             else {
+                if !name { return Err(refused("the duct chokes")); }
                 return Err(choked(tt7, ab.m6, choke_ceiling_eq(gas, s4, tt5, f5, ab, p)?));
             };
             let p_new = ab.pi_fh * pi_r * s5.pt;
@@ -388,9 +470,11 @@ pub fn try_afterburn(
         (f7, pi_r, m7, passes)
     } else {
         let Some(f7) = fuel_frozen(gas, tt5, f5, tt7, ab.eta_ab)? else {
+            if !name { return Err(refused("too hot")); }
             return Err(too_hot(tt7, ceiling_frozen(gas, tt5, f5, ab.eta_ab)?));
         };
         let Some((pi_r, m7)) = rayleigh(gas, f5, gas, f7, tt5, ab.m6, tt7, (1.0 + f7) / (1.0 + f5))? else {
+            if !name { return Err(refused("the duct chokes")); }
             return Err(choked(tt7, ab.m6, choke_ceiling(gas, f5, tt5, ab.m6, tt7, ab.eta_ab)?));
         };
         (f7, pi_r, m7, 1)
@@ -499,5 +583,529 @@ impl AfterburningTurbojet {
 
     pub fn run(&self, flight: &FlightCondition, mdot: f64, mode: AbMode) -> AbResult {
         self.try_run(flight, mdot, mode).unwrap_or_else(|e| panic!("{}", e.0))
+    }
+}
+
+// =============================================================================================
+// PART B — the afterburner on the engine you FLY (rung 34's one-shaft plant, `crate::spool`)
+// =============================================================================================
+//
+// The core is rung 34's, unchanged: the compressor closed on its map at `(ν, Tt4)`, the turbine's guide vanes choked,
+// the shaft's power imbalance driving `dν/ds`. What the afterburner moves is the NOZZLE relation — the turbine expands
+// only as far as the throat lets the gas out, and the throat now sees station 7, not station 5:
+//
+//     choked    (★AB)   π_t·π_AB·√(Tt4/Tt7) = A4·MFP4·(1+f7) / ((1+f5)·A8·π_n·MFP7)
+//     unchoked          ṁ_air·(1+f7) = A8·ρ9·V9                     (p9 = p0)
+//
+// Unlit, `Tt7 = Tt5` and `π_AB = π_fh`: (★AB) is rung 31's (★) with the throat `A8·π_fh` — so the fitted engine's DRY
+// throat is the core's opened by `1/π_fh`, and the unlit engine sits where the engine without an afterburner sits
+// wherever the nozzle is choked. The burning zone's area `A6` is hardware, captured at the design at the `M6` knob; off
+// design `M6` floats with the turbine-exit corrected flow. The power balance is untouched (the afterburner is behind
+// the turbine), and thrust books the TOTAL fuel.
+
+/// The throat: held at `s` × the dry throat (`s` = 1 is *held*), or *matched* — the area that keeps the core where
+/// the dry engine sits at this throttle and flight (Mattingly § 8.4's control law).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Throat {
+    Held(f64),
+    Match,
+}
+
+/// The afterburner fitted to rung 34's plant.
+pub struct FlyAfterburner<'a> {
+    pub st: &'a SpoolTransient,
+    pub ab: Afterburner,
+    /// The burning zone's flow area, m², captured at the design at `ab.m6` (∞ when `m6` is 0: a stagnant duct).
+    pub a6: f64,
+    /// The dry throat, m²: the core's opened by `1/π_fh`.
+    pub a8_dry: f64,
+}
+
+/// One operating point with the afterburner fitted.
+#[derive(Clone, Copy, Debug)]
+pub struct FlyPoint {
+    /// Rung 34's instant — its nozzle fields (`branch`, thrust, `M9`, `pt9/p0`) read at the station-7 nozzle, its
+    /// thrust on the total fuel; `f` stays the main burner's.
+    pub eq: Instant,
+    pub detail: AbDetail,
+    pub s5: FlowState,
+    pub s7: FlowState,
+    /// The throat used, m², and over the dry throat.
+    pub a8: f64,
+    pub s: f64,
+}
+
+/// A scratch copy on the equilibrium gas, where each trial freezes its own `f7` (the per-`far` guard forbids one
+/// `f7` frozen at two pressures, which neighbouring trials of a converging search can produce); the gas itself on
+/// every other gas, which memoises nothing per trial.
+fn scratch<'g>(g: &'g Gas, s4: &FlowState) -> Result<Cow<'g, Gas>, Abort> {
+    if !g.is_equilibrium() {
+        return Ok(Cow::Borrowed(g));
+    }
+    // A clone starts with empty memos (as in [`try_afterburn`]): the station-4 mixture is frozen into it again.
+    let c = g.clone();
+    c.try_freeze_equilibrium(s4.far, s4.tt, s4.pt)?;
+    Ok(Cow::Owned(c))
+}
+
+/// The flow per unit area `ṁ·√Tt/(A·pt)` at static temperature `t` under the total `tt`, hot section at `far`.
+fn mfp_at_t(gas: &Gas, far: f64, tt: f64, t: f64) -> f64 {
+    let v = powp(2.0 * (gas.h_t(tt, far) - gas.h_t(t, far)), 0.5);
+    gas.pr_t(t, far) / gas.pr_t(tt, far) / (gas.r_t_at(far) * t) * v * powp(tt, 0.5)
+}
+
+/// The sonic static temperature under the total `tt`.
+fn t_sonic(gas: &Gas, far: f64, tt: f64) -> Result<f64, Abort> {
+    let r = gas.r_t_at(far);
+    root(0.5 * tt, tt, |t| Ok((gas.h_t(tt, far) - gas.h_t(t, far)) - 0.5 * gas.gamma_t_at(t, far) * r * t))
+}
+
+/// The duct area passing `mdot` at `(tt, pt, far)` at Mach `m` — the design capture of `A6`.
+fn area_at_mach(gas: &Gas, far: f64, tt: f64, pt: f64, mdot: f64, m: f64) -> f64 {
+    let (t, p, v) = static_at_mach(gas, far, tt, 1.0, m);
+    mdot * powp(tt, 0.5) / (pt * (p / (gas.r_t_at(far) * t) * v * powp(tt, 0.5)))
+}
+
+/// The burning zone's Mach number when the duct `a6` passes `mdot` at `(tt, pt, far)`: the subsonic root, by
+/// bisection on the static temperature (one enthalpy and one pressure ratio a step). A flow even Mach 1 cannot pass is
+/// a refusal.
+#[allow(clippy::too_many_arguments)]
+fn m6_in_duct(gas: &Gas, far: f64, tt: f64, pt: f64, mdot: f64, a6: f64, m6_design: f64, name: bool)
+    -> Result<f64, Abort>
+{
+    if a6.is_infinite() {
+        return Ok(0.0);
+    }
+    let target = mdot * powp(tt, 0.5) / (pt * a6);
+    let ts = t_sonic(gas, far, tt)?;
+    if !(target < mfp_at_t(gas, far, tt, ts)) {
+        return Err(if name {
+            Abort(format!("The gas leaves the turbine faster than the afterburner duct can pass it: it would choke at the \
+                           duct's entry (the duct is sized for Mach {m6_design:.2} at the design point)."))
+        } else {
+            refused("the duct entry chokes")
+        });
+    }
+    let t = root(ts, tt, |t| Ok(mfp_at_t(gas, far, tt, t) - target))?;
+    let v = powp(2.0 * (gas.h_t(tt, far) - gas.h_t(t, far)), 0.5);
+    Ok(v / powp(gas.gamma_t_at(t, far) * gas.r_t_at(far) * t, 0.5))
+}
+
+/// The bracket for a residual RISING through its root on `[lo, hi]`: the top end marched down by `step` past trials
+/// that fail (a too-cold afterburner near the turbine's top), the bottom end found by BISECTION toward the top past
+/// trials that fail — a held lit throat's low `π_t` sends the turbine-exit gas into the duct past Mach 1 over a wide
+/// band, and marching it up in steps cost ~20 refused trials an instant (the census, 2026-10-19). An evaluable trial
+/// above the root tightens the top. `(lo, f(lo), hi, f(hi))`, or the last failure when nothing evaluable is left.
+fn bracket_in(f: &impl Fn(f64) -> Result<f64, Abort>, lo: f64, hi: f64, step: f64)
+    -> Result<(f64, f64, f64, f64), Abort>
+{
+    let mut b = hi;
+    let mut fb = loop {
+        match f(b) {
+            Ok(v) => break v,
+            Err(e) if b - step <= lo => return Err(e),
+            Err(_) => b -= step,
+        }
+    };
+    let mut bad = match f(lo) {
+        Ok(v) => return Ok((lo, v, b, fb)),
+        Err(e) => (lo, e),
+    };
+    while b - bad.0 > 1e-6 {
+        let x = 0.5 * (bad.0 + b);
+        match f(x) {
+            Ok(v) if v < 0.0 => return Ok((x, v, b, fb)),
+            Ok(v) => (b, fb) = (x, v),
+            Err(e) => bad = (x, e),
+        }
+    }
+    Err(bad.1)
+}
+
+/// [`SpoolTransient::find_equilibrium_nu`], COPIED fallible (same march, same sentinel, same Illinois): the original
+/// panics when the speed search does not bracket; here that is an `Err` carrying the SAME message, so the page's
+/// plain words (`sandbox::explain_fly`) read it unchanged, and the afterburner's own refusal can be reported instead.
+pub fn try_find_equilibrium_nu<F>(mut resid: F) -> Result<f64, Abort>
+where
+    F: FnMut(f64) -> Result<f64, Abort>,
+{
+    let (mut lo, mut flo) = (None, None);
+    let mut nu = 0.30;
+    while nu < 1.6 {
+        if let Ok(v) = resid(nu) {
+            flo = Some(v);
+            lo = Some(nu);
+            break;
+        }
+        nu += 0.02;
+    }
+    let (mut hi, mut fhi) = (None, None);
+    nu = 1.60;
+    while let Some(l) = lo {
+        if nu <= l {
+            break;
+        }
+        if let Ok(v) = resid(nu) {
+            fhi = Some(v);
+            hi = Some(nu);
+            break;
+        }
+        nu -= 0.02;
+    }
+    let (lo, hi) = match (lo, hi) {
+        (Some(a), Some(b)) if flo.unwrap() > 0.0 && 0.0 > fhi.unwrap() => (a, b),
+        _ => return Err(Abort(format!(
+            "rung-34 equilibrium does not bracket (Phi[{lo:?}]={flo:?}, Phi[{hi:?}]={fhi:?})"))),
+    };
+    let mut resid_safe = |nu: f64| -> f64 { resid(nu).unwrap_or(1e9) };
+    Ok(illinois(&mut resid_safe, lo, hi, flo.unwrap(), fhi.unwrap(), SpoolTransient::N_TOL, ILLINOIS_MAXIT))
+}
+
+/// How far a balanced point's `dν/ds` may sit from zero: the speed root is converged to 1e−12 in `ν`, so a true
+/// balance reads ~1e−11; a search that settled on the EDGE of a refusing region reads its finite imbalance.
+pub const PHI_BALANCED: f64 = 1e-6;
+
+/// A bracket on `Φ(ν)` (falling) from a nearby speed `h`: `Φ(h)`, a first step of 0.1 toward the sign change, then
+/// steps sized by the secant to 1.2× the distance it predicts (0.02–0.3), inside the shipped search's range
+/// [0.30, 1.60]. `None` when a step fails or the range runs out (the caller searches fully).
+fn bracket_speed(resid: &impl Fn(f64) -> Result<f64, Abort>, h: f64) -> Option<(f64, f64, f64, f64)> {
+    let (mut x, mut fx) = (h, resid(h).ok()?);
+    let up = fx > 0.0;
+    let mut step = 0.1;
+    for _ in 0..12 {
+        let y = if up { x + step } else { x - step };
+        if !(0.30..=1.60).contains(&y) {
+            return None;
+        }
+        let fy = resid(y).ok()?;
+        if (fy > 0.0) != up {
+            return Some(if up { (x, fx, y, fy) } else { (y, fy, x, fx) });
+        }
+        let slope = (fy - fx) / (y - x);
+        step = if slope < 0.0 { (1.2 * (fy / slope).abs()).clamp(0.02, 0.3) } else { 0.1 };
+        (x, fx) = (y, fy);
+    }
+    None
+}
+
+/// Where a search with no nearby point starts: the design shaft speed.
+pub const NU_DESIGN: f64 = 1.0;
+
+thread_local! {
+    static TRIALS: std::cell::Cell<u64> = const { std::cell::Cell::new(0) };
+    static INSTANTS: std::cell::Cell<u64> = const { std::cell::Cell::new(0) };
+}
+
+/// Part B's work census — station-5→7 trials and instants run on this thread since the last [`take_census`]; the
+/// cost trigger (anchor § 4) is read against it, not guessed.
+pub fn take_census() -> (u64, u64) {
+    (TRIALS.with(|c| c.replace(0)), INSTANTS.with(|c| c.replace(0)))
+}
+
+impl<'a> FlyAfterburner<'a> {
+    /// Fit the afterburner to the captured hardware: `A6` from the DRY design run's station 5 at the `M6` knob.
+    pub fn capture(st: &'a SpoolTransient, ab: Afterburner) -> Self {
+        let m = &st.inner.inner;
+        let s5 = m.reference.station("5");
+        let a6 = if ab.m6 == 0.0 { f64::INFINITY } else { area_at_mach(m.gas(), s5.far, s5.tt, s5.pt, s5.mdot, ab.m6) };
+        FlyAfterburner { st, ab, a6, a8_dry: m.a8 / ab.pi_fh }
+    }
+
+    /// Station 5 → 7 at a trial `π_t`, on `g` (a scratch copy on the equilibrium gas): the turbine (rung 34's inverse
+    /// read), the duct's Mach off its area, the afterburner. `(τ_t, s5, s7, detail)`.
+    #[allow(clippy::too_many_arguments)]
+    fn trial(&self, g: &Gas, s4: &FlowState, mdot_air: f64, eta_t: f64, pi_t: f64, mode: AbMode, name: bool)
+        -> Result<(f64, FlowState, FlowState, AbDetail), Abort>
+    {
+        TRIALS.with(|c| c.set(c.get() + 1));
+        let m = &self.st.inner.inner;
+        let (tau_t, tt5) = m.tau_t_of_pi_t(g, s4.tt, s4.far, pi_t, Some(eta_t));
+        let s5 = FlowState { tt: tt5, pt: pi_t * s4.pt, mdot: mdot_air * (1.0 + s4.far), far: s4.far };
+        // Unlit, the duct heats nothing and its Mach moves no pressure: computed once at the point ([`Self::try_instant`]).
+        let m6 = if mode == AbMode::Lit { m6_in_duct(g, s5.far, s5.tt, s5.pt, s5.mdot, self.a6, self.ab.m6, name)? } else { self.ab.m6 };
+        let (s7, d) = afterburn(g, s4, &s5, mdot_air, &Afterburner { m6, ..self.ab }, mode, name)?;
+        Ok((tau_t, s5, s7, d))
+    }
+
+    /// The choked branch: `π_t` from (★AB) — bracketed first within 0.02 of `hint` (a neighbouring instant's root in
+    /// the same speed search; about half the trials of the full bracket), else on the turbine's whole range.
+    #[allow(clippy::too_many_arguments)]
+    fn solve_choked(&self, g: &Gas, s4: &FlowState, mdot_air: f64, eta_t: f64, a8: f64, mode: AbMode,
+                    hint: Option<f64>) -> Result<f64, Abort>
+    {
+        let m = &self.st.inner.inner;
+        let rhs = m.a4 * try_choked_mfp(g, s4.tt, s4.far)? / ((1.0 + s4.far) * a8 * m.pi_n);
+        let resid = |pi_t: f64| -> Result<f64, Abort> {
+            let gs = scratch(g, s4)?;
+            let (_, _, s7, d) = self.trial(&gs, s4, mdot_air, eta_t, pi_t, mode, false)?;
+            Ok(pi_t * d.pi_ab * powp(s4.tt / s7.tt, 0.5) - rhs * (1.0 + s7.far) / try_choked_mfp(&gs, s7.tt, s7.far)?)
+        };
+        if let Some(h) = hint {
+            let (a, b) = ((h - 0.02).max(0.02), (h + 0.02).min(0.999));
+            if let (Ok(fa), Ok(fb)) = (resid(a), resid(b)) {
+                if fa < 0.0 && 0.0 < fb {
+                    return try_illinois(resid, a, b, fa, fb, SpoolTransient::HOT_TOL, ILLINOIS_MAXIT);
+                }
+            }
+        }
+        let (lo, flo, hi, fhi) = bracket_in(&resid, 0.02, 0.999, 0.01)?;
+        if !(flo < 0.0 && 0.0 < fhi) {
+            return Err(Abort(format!("rung-102 turbine choke-match bracket does not straddle the root \
+                                      (pi_t {lo:.2}: {flo:.3e}, {hi:.3}: {fhi:.3e})")));
+        }
+        try_illinois(resid, lo, hi, flo, fhi, SpoolTransient::HOT_TOL, ILLINOIS_MAXIT)
+    }
+
+    /// The nozzle exit at a trial `π_t`, the throat's mass flux `ρ9·V9`, and the mass it must pass, `ṁ_air·(1+f7)`.
+    #[allow(clippy::too_many_arguments)]
+    fn exit_at(&self, g: &Gas, s4: &FlowState, mdot_air: f64, eta_t: f64, pi_t: f64, mode: AbMode, p0: f64)
+        -> Result<(NozzleExit, f64, f64), Abort>
+    {
+        let (_, _, s7, _) = self.trial(g, s4, mdot_air, eta_t, pi_t, mode, false)?;
+        let exit = Nozzle::convergent(p0, self.st.inner.inner.pi_n).try_apply(&s7, g)?;
+        let flux = exit.p9 / (g.r_t_at(s7.far) * exit.t9) * exit.v9;
+        Ok((exit, flux, mdot_air * (1.0 + s7.far)))
+    }
+
+    /// The unchoked branch: `π_t` so the subsonic nozzle (`p9 = p0`) passes the core's flow plus the afterburner's
+    /// fuel. `ṁ7 − A8·ρ9·V9` is continuous across the choke boundary (the convergent nozzle's choked flux is its subsonic
+    /// flux's limit) and falls as `π_t` rises, and the choked root `pi_t_c` sits on its flow-short side (there the
+    /// nozzle read subsonic: it passes less than the sonic formula said). So the root is bracketed by `pi_t_c` and the
+    /// top of the turbine's range — NOT `SpoolTransient::try_turbine_subsonic`'s march down from just under the choke
+    /// boundary in 0.01 steps, two nozzle solves a step, which made an unchoked lit instant cost 30–40 afterburner trials
+    /// (the census, 2026-10-19). The root is unique either way; a trial the afterburner refuses at the top is stepped past.
+    #[allow(clippy::too_many_arguments)]
+    fn solve_subsonic(&self, g: &Gas, s4: &FlowState, mdot_air: f64, eta_t: f64, a8: f64, mode: AbMode, p0: f64,
+                      pi_t_c: f64) -> Result<f64, Abort>
+    {
+        let resid = |pi_t: f64| -> Result<f64, Abort> {
+            let gs = scratch(g, s4)?;
+            let (_, flux, mdot7) = self.exit_at(&gs, s4, mdot_air, eta_t, pi_t, mode, p0)?;
+            Ok(mdot7 - a8 * flux)
+        };
+        let (lo, rlo) = (pi_t_c, resid(pi_t_c)?);
+        let mut hi = 0.9995;
+        let rhi = loop {
+            match resid(hi) {
+                Ok(r) => break r,
+                Err(e) if hi - 0.01 <= lo => return Err(e),
+                Err(_) => hi -= 0.01,
+            }
+        };
+        if !(rlo > 0.0 && rhi < 0.0) {
+            return Err(Abort(format!("rung-102 subsonic turbine does not bracket at tt4={:.0}", s4.tt)));
+        }
+        try_illinois(resid, lo, hi, rlo, rhi, SpoolTransient::HOT_TOL, ILLINOIS_MAXIT)
+    }
+
+    /// One quasi-steady instant at shaft speed `nu` and throttle `tt4`, the throat `a8` (m²): rung 34's instant with
+    /// (★AB) in place of (★) — the compressor closed exactly as `SpoolTransient::try_instant` closes it.
+    pub fn try_instant(
+        &self, flight: &FlightCondition, nu: f64, tt4: f64, cmap: &ComponentMap, mode: AbMode, a8: f64,
+    ) -> Result<FlyPoint, Abort> {
+        self.try_instant_hinted(flight, nu, tt4, cmap, mode, a8, None)
+    }
+
+    /// [`Self::try_instant`] with the turbine's `π_t` bracketed first near `pi_t_hint` ([`Self::solve_choked`]).
+    #[allow(clippy::too_many_arguments)]
+    fn try_instant_hinted(
+        &self, flight: &FlightCondition, nu: f64, tt4: f64, cmap: &ComponentMap, mode: AbMode, a8: f64,
+        pi_t_hint: Option<f64>,
+    ) -> Result<FlyPoint, Abort> {
+        let st = self.st;
+        let mm = &st.inner.inner;
+        let pi_d = mm.pi_d_max * ram_recovery(flight.m0);
+        let (state0, v0) = mm.freestream_for(flight);
+        let (tt2, pt2) = (state0.tt, pi_d * state0.pt);
+        let n = nu * powp(st.inner.tt2_d / tt2, 0.5);
+        INSTANTS.with(|c| c.set(c.get() + 1));
+        let comp = st.try_close_compressor(tt4, tt2, pt2, cmap, n)?;
+        let (f, pt4, mdot_air) = (comp.f, comp.pt4, comp.mdot_air);
+        let wgas = comp.gas(mm);
+        let s4 = FlowState { tt: tt4, pt: pt4, mdot: comp.mdot4, far: f };
+        let nu_t = nu * powp(st.inner.tt4_d / tt4, 0.5);
+        let eta_t = cmap.eta_t_at(mm.eta_t, nu_t);
+
+        // Assume choked; solve (★AB), rebuild the nozzle at station 7, and DISPATCH as rung 33 does.
+        let p0 = flight.p0;
+        let mut pi_t = self.solve_choked(wgas, &s4, mdot_air, eta_t, a8, mode, pi_t_hint)?;
+        let mut g = scratch(wgas, &s4)?;
+        let (mut tau_t, mut s5, mut s7, mut d) = self.trial(&g, &s4, mdot_air, eta_t, pi_t, mode, false)?;
+        let mut exit = Nozzle::convergent(p0, mm.pi_n).try_apply(&s7, &g)?;
+        let branch = if exit.p9 > p0 + 1e-6 { Branch::Choked } else { Branch::Subsonic };
+        if branch == Branch::Subsonic {
+            match self.solve_subsonic(wgas, &s4, mdot_air, eta_t, a8, mode, p0, pi_t) {
+                Ok(p) => {
+                    pi_t = p;
+                    g = scratch(wgas, &s4)?;
+                    (tau_t, s5, s7, d) = self.trial(&g, &s4, mdot_air, eta_t, pi_t, mode, false)?;
+                    exit = Nozzle::convergent(p0, mm.pi_n).try_apply(&s7, &g)?;
+                }
+                // The M9 → 1 boundary layer, where the subsonic root meets the choked one (rung 34's fallback).
+                Err(_) if exit.m9 > 0.985 => {}
+                Err(_) => return Err(Abort(format!(
+                    "rung-102 subsonic turbine failed to bracket AWAY from the M9->1 boundary (choked-star M9={:.4}) at \
+                     tt4={tt4:.0}, nu={nu:.3}", exit.m9))),
+            }
+        }
+
+        if mode == AbMode::Unlit {
+            let m6 = m6_in_duct(&g, s5.far, s5.tt, s5.pt, s5.mdot, self.a6, self.ab.m6, true)?;
+            (d.m6, d.m7) = (m6, m6);
+        }
+
+        // The power balance (the afterburner is behind the turbine: unchanged), thrust on the TOTAL fuel.
+        let tt5 = s5.tt;
+        let pt_spec = mm.eta_m * (1.0 + f) * (wgas.h_t(tt4, f) - wgas.h_t(tt5, f));
+        let pc_spec = wgas.h_c(comp.tt3) - wgas.h_c(tt2);
+        let p_net_spec = pt_spec - pc_spec;
+        let phi_dot = (mdot_air * p_net_spec) / (st.p_ref * nu);
+        let f7 = s7.far;
+        let press_thrust = (1.0 + f7) * g.r_t_at(f7) * exit.t9 * (1.0 - p0 / exit.p9) / exit.v9;
+        let sp_thrust = (1.0 + f7) * exit.v9 - v0 + press_thrust;
+        let eq = Instant {
+            nu, tt4, branch, pi_c: comp.pi_c, tau_c: comp.tau_c, eta_c: comp.eta_c, eta_t, m: comp.m, n,
+            flowcoef: comp.phi, mdot_air, f, pi_t, tau_t, tt3: comp.tt3, tt5, nu_t, p_net_spec, phi: phi_dot,
+            sp_thrust, thrust: mdot_air * sp_thrust, m9: exit.m9, pt9_over_p0: mm.pi_n * s7.pt / p0, tt2, pt2, v0,
+        };
+        Ok(FlyPoint { eq, detail: d, s5, s7, a8, s: a8 / self.a8_dry })
+    }
+
+    /// The balanced point at throttle `tt4` with the throat `a8`: the speed where the shaft's power balances, re-run
+    /// at the root and REQUIRED to balance ([`PHI_BALANCED`]) — the search's sentinel treats a refusing trial as "speeds
+    /// up", which is right below idle and wrong at a wall the afterburner draws elsewhere. A refusal is named at the
+    /// end ([`Self::name_refusal`]). The search starts at the design shaft speed ([`NU_DESIGN`]); the shipped search's
+    /// march from both ends of its range (19–37 instants a dry point, the census) is the fallback.
+    pub fn try_equilibrium(
+        &self, flight: &FlightCondition, tt4: f64, cmap: &ComponentMap, mode: AbMode, a8: f64,
+    ) -> Result<FlyPoint, Abort> {
+        self.try_equilibrium_from(flight, tt4, cmap, mode, a8, Some(NU_DESIGN))
+    }
+
+    /// [`Self::try_equilibrium`] from a known nearby speed `nu_hint` (the dry point's, for a lit one): the root is
+    /// bracketed by stepping 0.1 from it toward the sign change and found by the same Illinois with the same sentinel;
+    /// where that bracket cannot be made, the full search ([`try_find_equilibrium_nu`]). Within one search, each
+    /// instant's turbine is bracketed first near the last instant's root (state local to this call, so the answer
+    /// does not depend on what was solved before it). The root is unique (`Φ` falls with speed), so either way lands
+    /// on it to the search's tolerance.
+    pub fn try_equilibrium_from(
+        &self, flight: &FlightCondition, tt4: f64, cmap: &ComponentMap, mode: AbMode, a8: f64, nu_hint: Option<f64>,
+    ) -> Result<FlyPoint, Abort> {
+        let refusal: RefCell<Option<Abort>> = RefCell::new(None);
+        let pi_t_last: std::cell::Cell<Option<f64>> = std::cell::Cell::new(None);
+        let resid = |nu: f64| -> Result<f64, Abort> {
+            match self.try_instant_hinted(flight, nu, tt4, cmap, mode, a8, pi_t_last.get()) {
+                Ok(p) => { pi_t_last.set(Some(p.eq.pi_t)); Ok(p.eq.phi) }
+                Err(e) => { if is_refusal(&e) { *refusal.borrow_mut() = Some(e.clone()); } Err(e) }
+            }
+        };
+        let near = nu_hint.and_then(|h| bracket_speed(&resid, h));
+        let found = match near {
+            Some((lo, flo, hi, fhi)) => {
+                let mut resid_safe = |nu: f64| -> f64 { resid(nu).unwrap_or(1e9) };
+                Ok(illinois(&mut resid_safe, lo, hi, flo, fhi, SpoolTransient::N_TOL, ILLINOIS_MAXIT))
+            }
+            None => try_find_equilibrium_nu(resid),
+        };
+        let nu = match found {
+            Ok(nu) => nu,
+            Err(e) => return Err(match refusal.take() { Some(r) => self.name_refusal(flight, tt4, cmap, &r), None => e }),
+        };
+        match self.try_instant_hinted(flight, nu, tt4, cmap, mode, a8, pi_t_last.get()) {
+            Ok(p) if p.eq.phi.abs() < PHI_BALANCED => Ok(p),
+            Ok(p) => {
+                let why = refusal.take().map(|r| self.name_refusal(flight, tt4, cmap, &r).0).unwrap_or_default();
+                Err(Abort(format!("rung-102: the speed search settled where the shaft does not balance (dnu/ds \
+                                   {:.3e} at nu {nu:.4}). {why}", p.eq.phi)))
+            }
+            Err(e) if is_refusal(&e) => Err(self.name_refusal(flight, tt4, cmap, &e)),
+            Err(e) => Err(e),
+        }
+    }
+
+    /// An unnamed refusal ([`REFUSED`]) in words, named at THIS throttle and flight's DRY point (the unlit engine,
+    /// throat held — its turbine exit is what the afterburner is asked to heat). Where the dry point itself does not
+    /// run, or runs the afterburner without refusing (a wall the lit engine moved onto), the words name the wall alone.
+    pub fn name_refusal(&self, flight: &FlightCondition, tt4: f64, cmap: &ComponentMap, e: &Abort) -> Abort {
+        if !e.0.starts_with(REFUSED) {
+            return e.clone();
+        }
+        if let Ok(dry) = self.try_equilibrium(flight, tt4, cmap, AbMode::Unlit, self.a8_dry) {
+            let mm = &self.st.inner.inner;
+            let pt4 = dry.s5.pt / dry.eq.pi_t;
+            let wgas = mm.try_working_gas(dry.eq.f, tt4, pt4).ok().flatten();
+            let g = wgas.as_ref().unwrap_or(mm.gas());
+            let s4 = FlowState { tt: tt4, pt: pt4, mdot: 0.0, far: dry.eq.f };
+            let named = m6_in_duct(g, dry.s5.far, dry.s5.tt, dry.s5.pt, dry.s5.mdot, self.a6, self.ab.m6, true)
+                .and_then(|m6| afterburn(&*scratch(g, &s4)?, &s4, &dry.s5, dry.eq.mdot_air,
+                                         &Afterburner { m6, ..self.ab }, AbMode::Lit, true));
+            if let Err(w) = named {
+                if is_refusal(&w) {
+                    return w;
+                }
+            }
+        }
+        let wall = e.0.trim_start_matches(REFUSED).trim_start_matches(": ");
+        Abort(match wall {
+            "too hot" => format!("The afterburner cannot reach {:.0} K at this throttle and flight: burning all the \
+                                  oxygen left in the gas falls short.", self.ab.tt7),
+            "too cold" => format!("The afterburner cannot cool the gas: it leaves the turbine hotter than the {:.0} K \
+                                   asked at this throttle and flight.", self.ab.tt7),
+            "the duct entry chokes" => "The gas leaves the turbine faster than the afterburner duct can pass it at \
+                                        this throttle and flight: it would choke at the duct's entry.".to_string(),
+            _ => format!("Heating the gas to {:.0} K would choke the afterburner duct at this throttle and flight.",
+                         self.ab.tt7),
+        })
+    }
+
+    /// The point at throttle `tt4` with the throat set by `throat`. *Match*: the dry engine first, then the area the
+    /// lit exit needs at that core ([`Self::match_area`]), and the lit instant at the dry speed and that area — whose
+    /// `π_t` is the dry one (the core cannot move; a gate). Unlit, *match* is the dry throat.
+    pub fn try_point(
+        &self, flight: &FlightCondition, tt4: f64, cmap: &ComponentMap, mode: AbMode, throat: Throat,
+    ) -> Result<FlyPoint, Abort> {
+        match (throat, mode) {
+            (Throat::Held(s), _) => self.try_equilibrium(flight, tt4, cmap, mode, s * self.a8_dry),
+            (Throat::Match, AbMode::Unlit) => self.try_equilibrium(flight, tt4, cmap, mode, self.a8_dry),
+            (Throat::Match, AbMode::Lit) => {
+                let dry = self.try_equilibrium(flight, tt4, cmap, AbMode::Unlit, self.a8_dry)?;
+                self.try_lit_matched(flight, tt4, cmap, &dry)
+            }
+        }
+    }
+
+    /// [`Self::try_point`] when the DRY point is already solved (the page solves it anyway, for its readout): a held
+    /// throat's search starts from the dry speed, *match* starts from the dry point itself.
+    pub fn try_point_after_dry(
+        &self, flight: &FlightCondition, tt4: f64, cmap: &ComponentMap, mode: AbMode, throat: Throat, dry: &FlyPoint,
+    ) -> Result<FlyPoint, Abort> {
+        match (throat, mode) {
+            (Throat::Held(s), _) => self.try_equilibrium_from(flight, tt4, cmap, mode, s * self.a8_dry, Some(dry.eq.nu)),
+            (Throat::Match, AbMode::Unlit) => Ok(*dry),
+            (Throat::Match, AbMode::Lit) => self.try_lit_matched(flight, tt4, cmap, dry),
+        }
+    }
+
+    /// *Match* on an already-solved DRY point (the page solves the dry engine anyway, for its readout).
+    pub fn try_lit_matched(&self, flight: &FlightCondition, tt4: f64, cmap: &ComponentMap, dry: &FlyPoint)
+        -> Result<FlyPoint, Abort>
+    {
+        let a8 = self.match_area(flight, tt4, cmap, dry)?;
+        self.try_instant_hinted(flight, dry.eq.nu, tt4, cmap, AbMode::Lit, a8, Some(dry.eq.pi_t))
+            .map_err(|e| self.name_refusal(flight, tt4, cmap, &e))
+    }
+
+    /// The matched throat at a solved DRY point: the lit afterburner on the dry turbine exit, and the area its nozzle
+    /// needs, `ṁ_air·(1+f7)/(ρ9·V9)` — choked or not.
+    pub fn match_area(&self, flight: &FlightCondition, tt4: f64, cmap: &ComponentMap, dry: &FlyPoint)
+        -> Result<f64, Abort>
+    {
+        let mm = &self.st.inner.inner;
+        let comp = self.st.try_close_compressor(tt4, dry.eq.tt2, dry.eq.pt2, cmap, dry.eq.n)?;
+        let s4 = FlowState { tt: tt4, pt: comp.pt4, mdot: comp.mdot4, far: comp.f };
+        let g = scratch(comp.gas(mm), &s4)?;
+        let (_, flux, mdot7) = self.exit_at(&g, &s4, comp.mdot_air, dry.eq.eta_t, dry.eq.pi_t, AbMode::Lit, flight.p0)
+            .map_err(|e| self.name_refusal(flight, tt4, cmap, &e))?;
+        Ok(mdot7 / flux)
     }
 }

@@ -1,14 +1,16 @@
 //! Rung 102's panel — **born in Rust**, held to its own capture
 //! (`rust/oracle/rust_owned/print_afterburner_table.txt`), a CHANGE detector only; its numbers are checked by
 //! `tests/rung102.rs`. The afterburner on the design point: Mattingly § 8.4's reference engine through the model, then
-//! the project's design lit to three temperatures at two flights, on the equilibrium gas.
+//! the project's design lit to three temperatures at two flights, on the equilibrium gas; then (Part B) that hardware
+//! flown, its nozzle held, opened partway and opened by the rule.
 
 use super::{real_losses, Design, PI_C, TT4};
-use crate::afterburner::{build_afterburning_turbojet, AbMode, Afterburner};
+use crate::afterburner::{build_afterburning_turbojet, AbMode, Afterburner, FlyAfterburner, Throat};
 use crate::components::{choked_mfp, ram_recovery};
 use crate::engine::{FlightCondition, Losses};
 use crate::gas::{FlowState, Gas, GasSpec};
 use crate::pyfmt::Printer;
+use crate::sandbox::{fly_solver, stall_reading, FlySettings, Stall};
 
 /// `print_afterburner_table` — rung 102.
 pub fn afterburner_table(p: &mut Printer, _d: &Design) {
@@ -63,6 +65,31 @@ pub fn afterburner_table(p: &mut Printer, _d: &Design) {
     for line in NARRATIVE {
         p.print(*line);
     }
+
+    // Part B: the same hardware flown (the page's Fly it), its nozzle held, opened partway, and opened by the rule.
+    let s = FlySettings::defaults();
+    let (fl, cmap) = (s.flight(), s.map.map().with_phi_surge(s.phi_surge));
+    let st = fly_solver(&s);
+    let fa = FlyAfterburner::capture(&st, Afterburner { tt7: 1900.0, ..Afterburner::default() });
+    let dry = fa.try_point(&fl, s.tt4, &cmap, AbMode::Unlit, Throat::Held(1.0)).expect("runs");
+    let margin = |eq: &crate::spool::Instant| match stall_reading(&st, eq, &cmap) {
+        Stall::Margin { sm_n, .. } => format!("{:.1} %", sm_n * 100.0),
+        other => format!("{other:?}"),
+    };
+    p.print("\n  Flown (the page's Fly it): the opening design's hardware at its own flight, thermally-perfect gas, the");
+    p.print("  afterburner to 1900 K:");
+    p.print(format!("\n  {:<28}{:>11}{:>14}{:>15}", "nozzle throat", "thrust kN", "shaft speed", "stall margin"));
+    let rows = [("unlit, dry size".to_string(), dry),
+                ("lit, held".to_string(), fa.try_point_after_dry(&fl, s.tt4, &cmap, AbMode::Lit, Throat::Held(1.0), &dry).expect("runs")),
+                ("lit, opened x1.15".to_string(), fa.try_point_after_dry(&fl, s.tt4, &cmap, AbMode::Lit, Throat::Held(1.15), &dry).expect("runs")),
+                ("lit, by the rule".to_string(), fa.try_lit_matched(&fl, s.tt4, &cmap, &dry).expect("runs"))];
+    for (name, pt) in rows {
+        let name = if name == "lit, by the rule" { format!("{name} (x{:.3})", pt.s) } else { name };
+        p.print(format!("  {name:<28}{:>11.2}{:>12.1} %{:>15}", pt.eq.thrust / 1e3, pt.eq.nu * 100.0, margin(&pt.eq)));
+    }
+    for line in NARRATIVE_B {
+        p.print(*line);
+    }
 }
 
 const NARRATIVE: &[&str] = &[
@@ -70,4 +97,11 @@ const NARRATIVE: &[&str] = &[
     "  thrust. The nozzle must open more than the square root of the temperature rise, because the hotter gas passes",
     "  less flow per area of throat. On the equilibrium gas the hot products split apart and soak up heat, so burning",
     "  all the oxygen left cannot reach much past 2200 K.",
+];
+
+const NARRATIVE_B: &[&str] = &[
+    "\n  Lit behind the dry-size throat, the engine makes LESS thrust than unlit: the hotter gas needs a bigger throat, so",
+    "  it backs up into the turbine, which then does less work; the shaft slows and the compressor climbs toward stall.",
+    "  Opening the throat gives both back. At the rule's size the core runs exactly as it does unlit, and every bit of",
+    "  the afterburner's heat goes into the jet; the rule opens it MORE than the square root of the temperature rise.",
 ];

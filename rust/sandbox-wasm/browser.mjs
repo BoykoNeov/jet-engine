@@ -8,7 +8,7 @@
 //
 // Usage: node browser.mjs PAGE NATIVE_TXT       Prints a cargo-style "test result:" line.
 import { spawn, execFileSync } from 'node:child_process';
-import { existsSync, readFileSync, mkdirSync } from 'node:fs';
+import { existsSync, readFileSync, mkdirSync, rmSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { join } from 'node:path';
 
@@ -20,6 +20,10 @@ const CHROME = process.env.SANDBOX_CHROME || [
 if (!CHROME) { console.log('no Chrome found (set SANDBOX_CHROME)'); console.log('test result: FAILED. 0 passed; 1 failed; 0 ignored'); process.exit(1); }
 const PROFILE = `W:\\temp\\claude\\jet-sandbox-chrome-${process.pid}`;
 mkdirSync(PROFILE, { recursive: true });
+// The folder is named for this Node's PID, which Windows reuses: on 2026-10-19 a run landed on a folder left by a
+// 2026-10-15 run, read THAT run's port file before Chrome rewrote it, and failed "fetch failed" on a dead port.
+// So a port file already there is stale by construction; remove it before Chrome starts.
+rmSync(`${PROFILE}\\DevToolsActivePort`, { force: true });
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 const chrome = spawn(CHROME, ['--headless=new', '--disable-gpu', `--user-data-dir=${PROFILE}`,
@@ -238,6 +242,40 @@ try {
     await ev(`document.getElementById('q-Tt4').click()`);
     await ev(`window.sandbox.slam({from: 1100, ramp: 0.5, settle: 3, mode: 'both'})`);
   }
+
+  // 11c. RUNG 102: the afterburner fitted to the engine you fly. Lit with the nozzle held is the native first of
+  // check_ab_fly_requests and gives LESS thrust than unlit; opened by the rule it gives more; the slam refuses a fitted
+  // afterburner in words; "not fitted" restores the plain engine bit for bit.
+  await ev(`window.sandbox.fly({T0: 250, p0: 50000, M0: 0.85, Tt4: 1500})`);
+  const plainFly = await ev('window.sandbox.last');
+  const litState = await ev(`window.sandbox.fly({ab: 'lit', Tt7: 1900})`, 30000);
+  const litFly = await ev('window.sandbox.last');
+  const nativeLitFly = JSON.parse(readFileSync(nativeTxt, 'utf8').split(/\r?\n/).find(l => {
+    const q = l.split('\t')[0];
+    return q.startsWith('{"op":"fly"') && q.includes('"ab":"lit"') && q.includes('"Tt7":1900') && !q.includes('a8_')
+      && q.includes('"gas":"thermally_perfect"') && q.includes('"M0":0.85');
+  }).split('\t')[1]);
+  const eLit = litFly ? close(litFly, nativeLitFly) : 'no result';
+  check('the_lit_afterburner_flown_matches_native_and_gives_less_thrust_held', litState === 'ran' && !eLit
+        && litFly.afterburner && litFly.thrust < litFly.afterburner.dry.thrust, eLit || litState);
+  const flyAbShown = await ev(`[document.getElementById('fly-ab-set').hidden, document.getElementById('fly-ab-box').hidden,
+    document.getElementById('ab-tiles').hidden, document.getElementById('d-ab-a8').textContent,
+    [...document.getElementById('stations').tBodies[0].rows].map(r => r.cells[0].textContent).join('|')]`);
+  check('the_flown_afterburner_shows_its_knobs_tiles_and_station', flyAbShown[0] === false && flyAbShown[1] === false
+        && flyAbShown[2] === false && /held at its dry size/.test(flyAbShown[3]) && /7 · afterburner exit/.test(flyAbShown[4]),
+        JSON.stringify(flyAbShown));
+  const matched = await ev(`window.sandbox.fly({a8_match: 1})`, 30000);
+  const mFly = await ev('window.sandbox.last');
+  check('opened_by_the_rule_the_lit_engine_beats_unlit_at_the_dry_core', matched === 'ran' && mFly.thrust > mFly.afterburner.dry.thrust
+        && Math.abs(mFly.nu - mFly.afterburner.dry.nu) < 1e-9 && /by the rule/.test(await ev(`document.getElementById('d-ab-a8').textContent`)),
+        JSON.stringify([matched, mFly.thrust, mFly.afterburner && mFly.afterburner.dry]));
+  if (process.env.SANDBOX_SHOTS) { await shot('fly-afterburner'); await shot('fly-afterburner-phone', 390); }
+  await ev(`window.sandbox.slam({from: 1100, ramp: 0.5, settle: 3, mode: 'both'})`);
+  const abSlam = await ev(`document.getElementById('slam-stops').textContent`);
+  check('the_slam_refuses_a_fitted_afterburner_in_words', /without an afterburner/.test(abSlam), abSlam.slice(0, 200));
+  await ev(`window.sandbox.fly({ab: 'none', a8_match: 0, Tt7: 2000})`, 30000);
+  check('not_fitted_restores_the_plain_engine', JSON.stringify(await ev('window.sandbox.last')) === JSON.stringify(plainFly), 'differs');
+  await ev(`window.sandbox.slam({from: 1100, ramp: 0.5, settle: 3, mode: 'both'})`);
 
   // 12. The slow gas runs when the knob is let go, not per step of a drag.
   await ev(`(() => { const g = document.getElementById('fly-gas'); g.value = 'equilibrium'; g.dispatchEvent(new Event('change')); })()`);

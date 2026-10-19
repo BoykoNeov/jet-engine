@@ -49,6 +49,11 @@ import { readFileSync } from 'node:fs';
 // readout's jet-speed gain `dv9`/`dv9_frac` -- a difference of two nearly equal jet speeds, 3.2e-12 relative
 // (2.3e-13 m/s). The β-PDF model at its notch (EI ~1e-5) came out bit-identical. A burner value moved 1e-8
 // relative turned the check red (tampered once). The bar stands.
+// RE-MEASURED 2026-10-19 with rung 102's Fly-it requests (13 of 360, appended last): table worst 4.84e-10 relative at
+// #352.stall.sm_flow -- the reacting gas, lit, the nozzle held: the constant-flow stall margin again (a pressure-ratio
+// quotient minus 1, read on a far speed line), behind FOUR nested solves (the speed search, the turbine's pi_t, the
+// duct's Rayleigh exit, the afterburner's fuel), each stopping on its own iterate in each build. The bar stands, at 2x
+// headroom (it had 10x): a lit point past ~5e-10 here is the first thing to look at if this check reddens.
 // Entropy lives in the station points (`.s`) and as the first element of each curve pair
 // (`ts_burner.N.0`, `ts_reject.N.0`) -- where it can be exactly 0 (the cooling curve ends ON the
 // ambient datum), so only an absolute bar means anything.

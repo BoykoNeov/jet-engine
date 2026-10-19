@@ -18,3 +18,17 @@ Part A (after the anchor):
 - `newton.rs`: where the rung-6 equilibrium Newton fails hugging stoichiometric (φ 0.999999 at 1500 K, 3.2 bar).
 - `crashreq.rs` (seeded random Design-view requests, afterburner off/on) + `replay.rs` (request file → replies, a panic
   caught) → `census_a.txt`. The base side ran `replay.rs` in a second crate on a worktree of `884e60a`.
+
+Part B (after Part A shipped; against the Part B code):
+- `dry_b.rs` → `dry_b.txt`: the 16 scored (flight, `Tt4`) points DRY on all three maps, before any Part B code (anchor § 3b).
+- `fly_b.rs` → `fly_b.txt`: cost (best of 9) and the two match gates at two flights × two maps × two `Tt7`; the
+  instrument (the shipped solver, throat × k, iterated).
+- `micro_b.rs` (the parts of a lit instant, µs), `micro_b2.rs` / `micro_b3.rs` (the trials-and-instants census on the
+  solve and on the page's path) — what located each cost: the duct's bisections, the low-`π_t` band where the duct's
+  entry chokes, the unchoked march, the shipped speed search's march-in.
+- `fly_eq.rs` → `fly_eq.txt`: the reacting and equilibrium gases' cost.
+- `score_b.rs` → `score_b.txt`: H7–H9 (80 cells) + `tilted` reported + the page-reply cost at the H9 cells.
+- `nu_b.rs`: the held lit shaft speed over the unlit one, and the flame holders' thrust cost, over the 32 H7 cells.
+- `call_b.rs`: the fly ops through `sandbox::call`.
+- `crashfly.rs` (seeded random Fly-it requests, afterburner keys on/off) + `replay.rs` → `census_b.txt`, with the check
+  requests' comparison against a worktree of `7de9419`.

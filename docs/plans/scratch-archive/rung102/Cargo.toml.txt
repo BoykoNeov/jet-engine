@@ -48,3 +48,47 @@ path = "src/replay.rs"
 [[bin]]
 name = "crashreq"
 path = "src/crashreq.rs"
+
+[[bin]]
+name = "dry_b"
+path = "src/dry_b.rs"
+
+[[bin]]
+name = "fly_b"
+path = "src/fly_b.rs"
+
+[[bin]]
+name = "micro_b"
+path = "src/micro_b.rs"
+
+[[bin]]
+name = "micro_b2"
+path = "src/micro_b2.rs"
+
+[[bin]]
+name = "fly_eq"
+path = "src/fly_eq.rs"
+
+[[bin]]
+name = "call_b"
+path = "src/call_b.rs"
+
+[[bin]]
+name = "score_b"
+path = "src/score_b.rs"
+
+[[bin]]
+name = "micro_b3"
+path = "src/micro_b3.rs"
+
+[[bin]]
+name = "crashfly"
+path = "src/crashfly.rs"
+
+[[bin]]
+name = "nu_b"
+path = "src/nu_b.rs"
+
+[[bin]]
+name = "bt"
+path = "src/bt.rs"

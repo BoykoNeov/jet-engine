@@ -139,6 +139,12 @@ pub fn slam_precheck(s: &SlamSettings) -> Result<(), DoesNotRun> {
                    the two ways of moving the throttle cannot be compared; and one run would take about \
                    20 seconds. Pick another gas — the reacting gas is the closest.");
     }
+    // Rung 102: the one-shaft slam is the engine without an afterburner — fitted, lit or not, it would change the nozzle
+    // relation the march steps through. The afterburner lit in a slam is the Controls view's (two shafts).
+    if s.fly.ab.is_some() {
+        return no("The throttle slam flies the engine without an afterburner. Set the afterburner to \"not fitted\" \
+                   to slam the throttle; an afterburner lit during a slam is on the Controls view.");
+    }
     let named = [("from", s.from), ("to", s.to), ("ramp", s.ramp), ("settle", s.settle)];
     if let Some((k, _)) = named.iter().find(|(_, v)| !v.is_finite()) {
         return Err(DoesNotRun(format!("Setting {k} is not a number.")));
