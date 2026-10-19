@@ -61,3 +61,8 @@ speed, Tt4 controls work). Staging (advisor): anchor → design + Design view �
 `A8_core/π_fh`). Part B built, 80/80 (H7 32, H8 32, H9 16); cost trigger fired first (lit held 6–12×), fixed by
 measurement (see [[rung102-afterburner]]); slam refuses ANY fitted afterburner (my scope call, disclosed). Part C next:
 probe the Controls march, write the anchor ADDENDUM with predictions, commit, then code.
+
+**Part C (2026-10-19, user):** with the afterburner LIT on the Controls view, the "hold thrust" governor is REFUSED in words
+(reason measured in the probe: lit at a fixed Tt7, more main fuel at frozen shaft speeds LOWERS thrust — less air, the
+afterburner burns less — so the governor's root-or-clamp pushes the wrong way and bangs between the lean and rich walls).
+Hold HP speed and plain Tt4 throttling run. This reverses the anchor's "direct thrust control works" line.

@@ -1,0 +1,423 @@
+diff --git a/rust/src/afterburner.rs b/rust/src/afterburner.rs
+index 17cd5dd..ee91320 100644
+--- a/rust/src/afterburner.rs
++++ b/rust/src/afterburner.rs
+@@ -1109,3 +1109,147 @@ impl<'a> FlyAfterburner<'a> {
+         Ok(mdot7 / flux)
+     }
+ }
++
++// =============================================================================================
++// PART C PROBE — the afterburner on the two-shaft Controls plant (a hook, set per derivative)
++// =============================================================================================
++
++/// The afterburner fitted to the two-shaft plant at one instant: `w` is the light-off fraction (0 unlit, 1 fully
++/// lit); the burning temperature and the throat follow it from their unlit values.
++#[derive(Clone, Copy, Debug)]
++pub struct LpAb {
++    pub ab: Afterburner,
++    pub a6: f64,
++    pub a8_dry: f64,
++    /// The throat at full light over the dry throat (`Throat::Held`), or matched.
++    pub throat: Throat,
++    pub w: f64,
++}
++
++thread_local! {
++    static LP_AB: std::cell::Cell<Option<LpAb>> = const { std::cell::Cell::new(None) };
++    pub static LP_CALLS: std::cell::Cell<u64> = const { std::cell::Cell::new(0) };
++    pub static LP_TRIALS: std::cell::Cell<u64> = const { std::cell::Cell::new(0) };
++    pub static EXIT_CALLS: std::cell::Cell<u64> = const { std::cell::Cell::new(0) };
++}
++
++pub fn lp_ab() -> Option<LpAb> { LP_AB.with(|c| c.get()) }
++pub fn set_lp_ab(x: Option<LpAb>) { LP_AB.with(|c| c.set(x)) }
++pub fn set_lp_w(w: f64) { LP_AB.with(|c| if let Some(mut x) = c.get() { x.w = w; c.set(Some(x)) }) }
++
++impl LpAb {
++    /// Fit to a two-shaft core: `A6` from the design run's station 5 at the `M6` knob, the dry throat `a8/π_fh`.
++    pub fn capture(base: &crate::two_spool::TwoSpoolCore, ab: Afterburner, throat: Throat) -> Self {
++        let s5 = base.reference.station("5");
++        let a6 = if ab.m6 == 0.0 { f64::INFINITY } else { area_at_mach(base.gas(), s5.far, s5.tt, s5.pt, s5.mdot, ab.m6) };
++        LpAb { ab, a6, a8_dry: base.a8 / ab.pi_fh, throat, w: 0.0 }
++    }
++    pub fn lit(&self) -> bool { self.w > 0.0 }
++    /// The throat now, m²: dry, opening with the light-off to its setting (matched: `None`, sized at the point).
++    pub fn a8_now(&self) -> Option<f64> {
++        match self.throat {
++            Throat::Held(s) => Some(self.a8_dry * (1.0 + self.w * (s - 1.0))),
++            Throat::Match => None,
++        }
++    }
++    pub fn tt7_at(&self, tt5: f64) -> f64 { tt5 + self.w * (self.ab.tt7 - tt5) }
++
++    /// Station 5 -> 7, lit, at `s5` (gas mass flow `s5.mdot`).
++    pub fn burn(&self, gas: &Gas, s5: &FlowState, name: bool) -> Result<(FlowState, AbDetail), Abort> {
++        LP_TRIALS.with(|c| c.set(c.get() + 1));
++        let m6 = m6_in_duct(gas, s5.far, s5.tt, s5.pt, s5.mdot, self.a6, self.ab.m6, name)?;
++        let ab = Afterburner { tt7: self.tt7_at(s5.tt), m6, ..self.ab };
++        afterburn(gas, s5, s5, s5.mdot / (1.0 + s5.far), &ab, AbMode::Lit, name)
++    }
++}
++
++/// The LP turbine with the afterburner fitted: unlit (or matched) the shipped relation through the dry throat with the
++/// flame holders' loss in the nozzle's; lit and held, (★AB) one throat downstream of `A45`, else the subsonic root.
++#[allow(clippy::too_many_arguments)]
++pub fn try_lp_turbine_ab(
++    base: &crate::two_spool::TwoSpoolCore, gas: &Gas, tt45: f64, f45: f64, eta: f64, pt45: f64, p0: f64, x: &LpAb,
++) -> Result<(f64, f64, f64), Abort> {
++    let unlit = || crate::unchoked_lp::try_lp_turbine_with(base, gas, tt45, f45, eta, pt45, p0, x.a8_dry,
++                                                           base.pi_n * x.ab.pi_fh);
++    let Some(a8) = x.a8_now().filter(|_| x.lit()) else { return unlit() };
++    let mfp45 = try_choked_mfp(gas, tt45, f45)?;
++    let mdot5 = base.a45 * pt45 * mfp45 / powp(tt45, 0.5);
++    let trial = |pi: f64| -> Result<(f64, f64, FlowState, FlowState, AbDetail), Abort> {
++        let (tau, tt5) = base.try_tau_of(gas, tt45, f45, pi, eta)?;
++        let s5 = FlowState { tt: tt5, pt: pi * pt45, mdot: mdot5, far: f45 };
++        let (s7, d) = x.burn(gas, &s5, false)?;
++        Ok((tau, tt5, s5, s7, d))
++    };
++    let rhs = base.a45 * mfp45 / ((1.0 + f45) * a8 * base.pi_n);
++    let resid = |pi: f64| -> Result<f64, Abort> {
++        let (_, _, _, s7, d) = trial(pi)?;
++        Ok(pi * d.pi_ab * powp(tt45 / s7.tt, 0.5) - rhs * (1.0 + s7.far) / try_choked_mfp(gas, s7.tt, s7.far)?)
++    };
++    let (lo, flo, hi, fhi) = bracket_in(&resid, 0.02, 0.999, 0.01)?;
++    if !(flo < 0.0 && 0.0 < fhi) {
++        return Err(Abort(format!("rung-102 LP turbine choke-match bracket does not straddle the root \
++                                  (pi_t {lo:.2}: {flo:.3e}, {hi:.3}: {fhi:.3e})")));
++    }
++    let pi_c = try_illinois(resid, lo, hi, flo, fhi, SpoolTransient::HOT_TOL, ILLINOIS_MAXIT)?;
++    let (tau, tt5, _, s7, _) = trial(pi_c)?;
++    let nozzle = Nozzle::convergent(p0, base.pi_n);
++    if nozzle.try_apply(&s7, gas)?.p9 > p0 + 1e-6 {
++        return Ok((pi_c, tau, tt5));
++    }
++    let sub = |pi: f64| -> Result<f64, Abort> {
++        let (_, _, _, s7, _) = trial(pi)?;
++        let e = nozzle.try_apply(&s7, gas)?;
++        Ok(s7.mdot - a8 * e.p9 / (gas.r_t_at(s7.far) * e.t9) * e.v9)
++    };
++    let (lo, rlo) = (pi_c, sub(pi_c)?);
++    let mut hi = crate::unchoked_lp::PI_TOP;
++    let rhi = loop {
++        match sub(hi) {
++            Ok(r) => break r,
++            Err(e) if hi - 0.01 <= lo => return Err(e),
++            Err(_) => hi -= 0.01,
++        }
++    };
++    if !(rlo > 0.0 && rhi < 0.0) {
++        if rlo <= 0.0 && rlo > -1e-9 * s7.mdot { return Ok((pi_c, tau, tt5)); }
++        return Err(Abort(format!("rung-102 LP subsonic turbine does not bracket ({rlo:.3e}, {rhi:.3e})")));
++    }
++    let pi = try_illinois(sub, lo, hi, rlo, rhi, SpoolTransient::HOT_TOL, ILLINOIS_MAXIT)?;
++    let (tau, tt5, _, _, _) = trial(pi)?;
++    Ok((pi, tau, tt5))
++}
++
++/// The nozzle exit behind the LP turbine, and the gas's fuel-air ratio there: the shipped nozzle when no afterburner is
++/// fitted (bit for bit), else through the afterburner at `s5` (`s5.mdot` the core AIR, as the tails pass it).
++pub fn lp_exit(base: &crate::two_spool::TwoSpoolCore, gas: &Gas, s5: &FlowState, p0: f64)
++    -> Result<(NozzleExit, f64), Abort>
++{
++    let Some(x) = lp_ab() else {
++        return Ok((Nozzle::convergent(p0, base.pi_n).try_apply(s5, gas)?, s5.far));
++    };
++    EXIT_CALLS.with(|c| c.set(c.get() + 1));
++    if !x.lit() {
++        let s7 = FlowState { pt: x.ab.pi_fh * s5.pt, ..*s5 };
++        return Ok((Nozzle::convergent(p0, base.pi_n).try_apply(&s7, gas)?, s5.far));
++    }
++    let g5 = FlowState { mdot: s5.mdot * (1.0 + s5.far), ..*s5 };
++    let (s7, _) = x.burn(gas, &g5, true)?;
++    Ok((Nozzle::convergent(p0, base.pi_n).try_apply(&s7, gas)?, s7.far))
++}
++
++thread_local! {
++    static LIGHT: std::cell::Cell<Option<(f64, f64)>> = const { std::cell::Cell::new(None) };
++}
++/// The light-off time and ramp duration (HP spool τ) the march's derivatives read their `w` from.
++pub fn set_light(x: Option<(f64, f64)>) { LIGHT.with(|c| c.set(x)) }
++pub fn light_w(s: f64) -> f64 {
++    match LIGHT.with(|c| c.get()) {
++        None => 0.0,
++        Some((s_on, tau)) => if s <= s_on + 1e-9 { 0.0 } else if tau <= 0.0 || s >= s_on + tau { 1.0 } else { (s - s_on) / tau },
++    }
++}
++/// Called at every derivative evaluation with its march time.
++pub fn tick(s: f64) { if LIGHT.with(|c| c.get()).is_some() { set_lp_w(light_w(s)) } }
++
++/// PROBE: a site the afterburner hook does not reach — panics while an afterburner is fitted.
++pub fn guard(site: &str) { if lp_ab().is_some_and(|x| x.lit()) { panic!("UNPATCHED {site}") } }
+diff --git a/rust/src/bleed.rs b/rust/src/bleed.rs
+index 0e0aada..01c92b5 100644
+--- a/rust/src/bleed.rs
++++ b/rust/src/bleed.rs
+@@ -240,6 +240,7 @@ pub fn try_cascade_bleed(
+     for turb_pass in 0..TwoSpoolMapCore::TURB_MAX {
+         let (pi_hpt, tau_hpt, tt45) = base.try_solve_choked_turbine(
+             wgas, tt4, f, base.a4, base.a45, 1.0, eta_hpt)?;
++        crate::afterburner::guard("bleed.rs:243");
+         let (pi_lpt, tau_lpt, tt5) = base.try_solve_choked_turbine(
+             wgas, tt45, f, base.a45, base.a8, base.pi_n, eta_lpt)?;
+ 
+@@ -379,6 +380,7 @@ pub fn try_match_bleed(
+     let dh_lpt_reb =
+         (rgas.h_c(s25.tt) - rgas.h_c(s2.tt)) / (base.eta_m * (1.0 - b) * (1.0 + s4.far));
+     let s5 = Turbine::new(c.eta_lpt, None).apply(&s45, &rgas, dh_lpt_reb);
++        crate::afterburner::guard("bleed.rs:382");
+     let exit = Nozzle::convergent(flight.p0, base.pi_n).try_apply(&s5, &rgas)?;
+ 
+     // SCOPE GUARD (inherited). Bleed lowers pi_LPC hence pt4, so this bites SOONER — 23 cells of
+diff --git a/rust/src/bleed_transient.rs b/rust/src/bleed_transient.rs
+index 88ad731..45446c3 100644
+--- a/rust/src/bleed_transient.rs
++++ b/rust/src/bleed_transient.rs
+@@ -1037,9 +1037,9 @@ pub fn r62_tail_body(
+     let phi_lp_dot = (mdot_face * (pt_lp - pc_lp)) / (t.p_ref_lp * nu_lp);
+ 
+     let s5 = FlowState { tt: tt5, pt: pi_lpt * pi_hpt * c.pt4, mdot: mdot_core, far: f };
+-    let exit = Nozzle::convergent(flight.p0, core.base.pi_n).try_apply(&s5, wgas)?;
+-    let press = (1.0 + f) * wgas.r_t_at(f) * exit.t9 * (1.0 - flight.p0 / exit.p9) / exit.v9;
+-    let sp_thrust = (1.0 + f) * exit.v9 - v0 + press;
++    let (exit, f9) = crate::afterburner::lp_exit(&core.base, wgas, &s5, flight.p0)?;
++    let press = (1.0 + f9) * wgas.r_t_at(f9) * exit.t9 * (1.0 - flight.p0 / exit.p9) / exit.v9;
++    let sp_thrust = (1.0 + f9) * exit.v9 - v0 + press;
+ 
+     Ok(Instant2 {
+         close: c.clone(),
+diff --git a/rust/src/customer_bleed.rs b/rust/src/customer_bleed.rs
+index eff8bc7..855f543 100644
+--- a/rust/src/customer_bleed.rs
++++ b/rust/src/customer_bleed.rs
+@@ -246,6 +246,7 @@ pub fn try_cascade_customer(
+     for _ in 0..TwoSpoolMapCore::TURB_MAX {
+         let (pi_hpt, tau_hpt, tt45) = base.try_solve_choked_turbine(
+             wgas, tt4, f, base.a4, base.a45, 1.0, eta_hpt)?;
++        crate::afterburner::guard("customer_bleed.rs:249");
+         let (pi_lpt, tau_lpt, tt5) = base.try_solve_choked_turbine(
+             wgas, tt45, f, base.a45, base.a8, base.pi_n, eta_lpt)?;
+ 
+@@ -415,6 +416,7 @@ pub fn try_match_customer(
+     let dh_lpt_reb = (rgas.h_c(s25.tt) - rgas.h_c(s2.tt))
+         / (base.eta_m * (1.0 - b) * (1.0 - c) * (1.0 + s4.far));
+     let s5 = Turbine::new(x.eta_lpt, None).apply(&s45, &rgas, dh_lpt_reb);
++        crate::afterburner::guard("customer_bleed.rs:418");
+     let exit = Nozzle::convergent(flight.p0, base.pi_n).try_apply(&s5, &rgas)?;
+     if exit.p9 <= flight.p0 + 1e-6 {
+         return Err(Abort(format!(
+@@ -772,9 +774,9 @@ pub fn r90_try_instant_tail(
+     let burner = c.mdot_air;
+     let face = c.mdot_face.expect("a rung-90 closure always sets mdot_face");
+     let s5 = FlowState { tt: tt5, pt: pi_lpt * pi_hpt * c.pt4, mdot: burner, far: f };
+-    let exit = Nozzle::convergent(flight.p0, core.base.pi_n).try_apply(&s5, wgas)?;
+-    let press = (1.0 + f) * wgas.r_t_at(f) * exit.t9 * (1.0 - flight.p0 / exit.p9) / exit.v9;
+-    let sp_thrust = (1.0 + f) * exit.v9 - v0 + press;
++    let (exit, f9) = crate::afterburner::lp_exit(&core.base, wgas, &s5, flight.p0)?;
++    let press = (1.0 + f9) * wgas.r_t_at(f9) * exit.t9 * (1.0 - flight.p0 / exit.p9) / exit.v9;
++    let sp_thrust = (1.0 + f9) * exit.v9 - v0 + press;
+     // (6): per INLET air, both extractions carrying full ram drag.
+     let share = burner / face;
+     Ok(Instant2 {
+diff --git a/rust/src/fuel_transient.rs b/rust/src/fuel_transient.rs
+index d5a1ac4..f2a63fc 100644
+--- a/rust/src/fuel_transient.rs
++++ b/rust/src/fuel_transient.rs
+@@ -2484,6 +2484,7 @@ impl FuelTransientCore {
+         let der = |a: f64, b: f64, g: f64, s: f64|
+          -> Result<(f64, f64, f64, f64, FuelInstant), Abort> {
+             bump(&DER_CALLS);
++            crate::afterburner::tick(s);
+             let mf_sched = fuel_schedule(s);
+             let mut mf = mf_sched - g;
+             if 1e-9 > mf {
+@@ -2634,6 +2635,7 @@ impl FuelTransientCore {
+         let der = |a: f64, b: f64, g: f64, s: f64|
+          -> Result<(f64, f64, f64, f64, FuelInstant, f64), Abort> {
+             bump(&DER_CALLS);
++            crate::afterburner::tick(s);
+             let mf_sched = fuel_schedule(s);
+             let mut mf = mf_sched - g;
+             if 1e-9 > mf {
+@@ -3852,6 +3854,7 @@ pub fn r43_integrate_fuel(
+     let der = |a: f64, b: f64, mf_in: f64, s: f64|
+      -> Result<(f64, f64, f64, FuelInstant), Abort> {
+         bump(&DER_CALLS);
++        crate::afterburner::tick(s);
+         let mut mf = mf_in;
+         let mut i = match ft.try_instant_fuel(flight, a, b, mf) {
+             Ok(i) => i,
+diff --git a/rust/src/governor.rs b/rust/src/governor.rs
+index d220ea9..8f4cfc3 100644
+--- a/rust/src/governor.rs
++++ b/rust/src/governor.rs
+@@ -448,6 +448,7 @@ pub fn try_der(
+     ft: &FuelTransientCore, flight: &FlightCondition, gov: &Governor, lim: &FuelLimiters<'_>,
+     metal: Option<&dyn Fn(&Instant2) -> f64>, a: f64, b: f64, s: f64,
+ ) -> Result<GovDer, GovFailure> {
++    crate::afterburner::tick(s);
+     try_der_at(ft, flight, gov, lim, metal, a, b, s, None)
+ }
+ 
+@@ -457,6 +458,7 @@ pub fn try_der_at(
+     ft: &FuelTransientCore, flight: &FlightCondition, gov: &Governor, lim: &FuelLimiters<'_>,
+     metal: Option<&dyn Fn(&Instant2) -> f64>, a: f64, b: f64, s: f64, tm: Option<f64>,
+ ) -> Result<GovDer, GovFailure> {
++    crate::afterburner::tick(s);
+     assert!(lim.freeze.is_none() && lim.tau_gov.is_none() && lim.lag.is_none() && lim.s_off.is_none()
+                 && lim.tau_rel.is_none(),
+             "rung-95 governs rung 43's PLAIN min-select: no freeze, no lagged governor, no release lag or forced release");
+diff --git a/rust/src/lagged_bleed.rs b/rust/src/lagged_bleed.rs
+index ade611b..2a73ed5 100644
+--- a/rust/src/lagged_bleed.rs
++++ b/rust/src/lagged_bleed.rs
+@@ -386,6 +386,7 @@ pub fn r65_integrate_fuel_valve_lag(
+ 
+     type Der = (f64, f64, f64, f64, crate::fuel_transient::FuelInstant, f64);
+     let der = |a: f64, h: f64, q: f64, s: f64| -> Result<Der, Abort> {
++        crate::afterburner::tick(s);
+         let mf_sched = fuel_schedule(s);
+         // THE MIN-SELECT, rung 48/49's discipline verbatim: every cap is solved from the
+         // SCHEDULED fuel so arming one leg cannot perturb another's bracket.
+diff --git a/rust/src/shaft_offtake.rs b/rust/src/shaft_offtake.rs
+index c52f95b..3691fcc 100644
+--- a/rust/src/shaft_offtake.rs
++++ b/rust/src/shaft_offtake.rs
+@@ -268,6 +268,7 @@ fn try_cascade_loaded(
+     let (mut eta_hpt, mut eta_lpt, mut tt3) = (base.eta_hpt, base.eta_lpt, tt3_seed);
+     for _ in 0..TwoSpoolCore::MAX {
+         let hpt = try_solve_cooled_hpt(base, wgas, tt4, f, burner, e1, e2, tt3, eta_hpt)?;
++        crate::afterburner::guard("shaft_offtake.rs:271");
+         let (pi_lpt, tau_lpt, tt5) = base.try_solve_choked_turbine(
+             wgas, hpt.tt45, hpt.f45, base.a45, base.a8, base.pi_n, eta_lpt)?;
+ 
+@@ -494,6 +495,7 @@ pub fn try_match_loaded(
+     let dh_lpt_reb = ((rgas.h_c(s25.tt) - rgas.h_c(s2.tt)) * s2.mdot + power_lp)
+         / (base.eta_m * s45.mdot);
+     let s5 = Turbine::new(m.eta_lpt, None).apply(&s45, &rgas, dh_lpt_reb);
++        crate::afterburner::guard("shaft_offtake.rs:497");
+     let exit = Nozzle::convergent(flight.p0, base.pi_n).try_apply(&s5, &rgas)?;
+     if exit.p9 <= flight.p0 + 1e-6 {
+         return Err(Abort(format!(
+diff --git a/rust/src/turbine_cooling.rs b/rust/src/turbine_cooling.rs
+index 68f7eba..ab02670 100644
+--- a/rust/src/turbine_cooling.rs
++++ b/rust/src/turbine_cooling.rs
+@@ -310,6 +310,7 @@ pub fn try_cascade_cooled(
+     let (mut eta_hpt, mut eta_lpt, mut tt3) = (base.eta_hpt, base.eta_lpt, tt3_seed);
+     for _ in 0..TwoSpoolCore::MAX {
+         let hpt = try_solve_cooled_hpt(base, wgas, tt4, f, burner, e1, e2, tt3, eta_hpt)?;
++        crate::afterburner::guard("turbine_cooling.rs:313");
+         let (pi_lpt, tau_lpt, tt5) = base.try_solve_choked_turbine(
+             wgas, hpt.tt45, hpt.f45, base.a45, base.a8, base.pi_n, eta_lpt)?;
+ 
+@@ -517,6 +518,7 @@ pub fn try_match_cooled(
+     let s45 = mix(&s44, mdot_blade, s3.tt, s3.pt, &rgas);               // <- MIXER 2 (blade)
+     let dh_lpt_reb = (rgas.h_c(s25.tt) - rgas.h_c(s2.tt)) * s2.mdot / (base.eta_m * s45.mdot);
+     let s5 = Turbine::new(m.eta_lpt, None).apply(&s45, &rgas, dh_lpt_reb);
++        crate::afterburner::guard("turbine_cooling.rs:520");
+     let exit = Nozzle::convergent(flight.p0, base.pi_n).try_apply(&s5, &rgas)?;
+     if exit.p9 <= flight.p0 + 1e-6 {
+         return Err(Abort(format!(
+@@ -906,9 +908,9 @@ pub fn r91_try_instant_tail(
+     let f45 = tb.hpt.f45;
+     let s5 = FlowState { tt: tb.tt5, pt: tb.pi_lpt * tb.hpt.pi_hpt * c.pt4, mdot: nozzle_air,
+                          far: f45 };
+-    let exit = Nozzle::convergent(flight.p0, core.base.pi_n).try_apply(&s5, wgas)?;
+-    let press = (1.0 + f45) * wgas.r_t_at(f45) * exit.t9 * (1.0 - flight.p0 / exit.p9) / exit.v9;
+-    let sp_thrust = (1.0 + f45) * exit.v9 - v0 + press;
++    let (exit, f9) = crate::afterburner::lp_exit(&core.base, wgas, &s5, flight.p0)?;
++    let press = (1.0 + f9) * wgas.r_t_at(f9) * exit.t9 * (1.0 - flight.p0 / exit.p9) / exit.v9;
++    let sp_thrust = (1.0 + f9) * exit.v9 - v0 + press;
+     let share = nozzle_air / face;
+     Ok(Instant2 {
+         close: c.clone(),
+diff --git a/rust/src/two_spool.rs b/rust/src/two_spool.rs
+index b02715f..31bed55 100644
+--- a/rust/src/two_spool.rs
++++ b/rust/src/two_spool.rs
+@@ -1129,6 +1129,7 @@ impl TwoSpoolCore {
+         let s45 = Turbine::new(eta_hpt, None).apply(&s4, &rgas, dh_hpt_reb);
+         let dh_lpt_reb = (rgas.h_c(s25.tt) - rgas.h_c(s2.tt)) / (self.eta_m * (1.0 + s4.far));
+         let s5 = Turbine::new(eta_lpt, None).apply(&s45, &rgas, dh_lpt_reb);
++        crate::afterburner::guard("two_spool.rs:1132");
+         let exit = Nozzle::convergent(flight.p0, self.pi_n).try_apply(&s5, &rgas)?;
+         Ok(TwoSpoolRebuilt {
+             state0, v0, s2, s25, s3, s4, s45, s5,
+@@ -1501,6 +1502,7 @@ impl TwoSpoolMapCore {
+             // Steps 1–2: both turbines pinned by geometry, at the current turbine efficiencies.
+             let (pi_hpt, tau_hpt, tt45) = self.base.try_solve_choked_turbine(
+                 wgas, tt4, f, self.base.a4, self.base.a45, 1.0, eta_hpt)?;
++        crate::afterburner::guard("two_spool.rs:1504");
+             let (pi_lpt, tau_lpt, tt5) = self.base.try_solve_choked_turbine(
+                 wgas, tt45, f, self.base.a45, self.base.a8, self.base.pi_n, eta_lpt)?;
+ 
+diff --git a/rust/src/two_spool_transient.rs b/rust/src/two_spool_transient.rs
+index d911b85..a04fbd5 100644
+--- a/rust/src/two_spool_transient.rs
++++ b/rust/src/two_spool_transient.rs
+@@ -2087,9 +2087,9 @@ fn r40_try_instant_tail(
+     let phi_lp_dot = (c.mdot_air * (pt_lp - pc_lp)) / (t.p_ref_lp * nu_lp);
+ 
+     let s5 = FlowState { tt: tt5, pt: pi_lpt * pi_hpt * c.pt4, mdot: c.mdot_air, far: f };
+-    let exit = Nozzle::convergent(flight.p0, core.base.pi_n).try_apply(&s5, wgas)?;
+-    let press = (1.0 + f) * wgas.r_t_at(f) * exit.t9 * (1.0 - flight.p0 / exit.p9) / exit.v9;
+-    let sp_thrust = (1.0 + f) * exit.v9 - v0 + press;
++    let (exit, f9) = crate::afterburner::lp_exit(&core.base, wgas, &s5, flight.p0)?;
++    let press = (1.0 + f9) * wgas.r_t_at(f9) * exit.t9 * (1.0 - flight.p0 / exit.p9) / exit.v9;
++    let sp_thrust = (1.0 + f9) * exit.v9 - v0 + press;
+ 
+     Ok(Instant2 {
+         close: c.clone(),
+diff --git a/rust/src/unchoked_formula.rs b/rust/src/unchoked_formula.rs
+index 505138c..492c850 100644
+--- a/rust/src/unchoked_formula.rs
++++ b/rust/src/unchoked_formula.rs
+@@ -234,6 +234,7 @@ impl Formula {
+         let col = |y: fn(&GasGen) -> f64| lin_by(rows, |g| g.x, y, x);
+         let (pt45, tt45, f45, eta, w) = (col(|g| g.pt45), col(|g| g.tt45), col(|g| g.f45), col(|g| g.eta), col(|g| g.w));
+         let (base, gas) = (&ft.inner.inner.base, ft.inner.gas());
++        crate::afterburner::guard("unchoked_formula.rs:237");
+         let pin = base.try_solve_choked_turbine(gas, tt45, f45, base.a45, base.a8, base.pi_n, eta)?;
+         let (pi, _, tt5) = try_lp_turbine(base, gas, tt45, f45, eta, pt45, push.p0)?;
+         // The row's LP power at the re-solved work: exactly the row's own where the re-solve IS the pin.
+diff --git a/rust/src/unchoked_lp.rs b/rust/src/unchoked_lp.rs
+index 3a3d967..1d07169 100644
+--- a/rust/src/unchoked_lp.rs
++++ b/rust/src/unchoked_lp.rs
+@@ -34,11 +34,23 @@ pub const PI_TOP: f64 = 0.9995;
+ pub fn try_lp_turbine(
+     base: &TwoSpoolCore, gas: &Gas, tt45: f64, f45: f64, eta_lpt: f64, pt45: f64, p0: f64,
+ ) -> Result<(f64, f64, f64), Abort> {
+-    let pin = base.try_solve_choked_turbine(gas, tt45, f45, base.a45, base.a8, base.pi_n, eta_lpt)?;
++    if let Some(x) = crate::afterburner::lp_ab() {
++        crate::afterburner::LP_CALLS.with(|c| c.set(c.get() + 1));
++        return crate::afterburner::try_lp_turbine_ab(base, gas, tt45, f45, eta_lpt, pt45, p0, &x);
++    }
++    try_lp_turbine_with(base, gas, tt45, f45, eta_lpt, pt45, p0, base.a8, base.pi_n)
++}
++
++/// [`try_lp_turbine`] at a given nozzle throat `a8` and nozzle loss `pi_n`.
++#[allow(clippy::too_many_arguments)]
++pub fn try_lp_turbine_with(
++    base: &TwoSpoolCore, gas: &Gas, tt45: f64, f45: f64, eta_lpt: f64, pt45: f64, p0: f64, a8: f64, pi_n: f64,
++) -> Result<(f64, f64, f64), Abort> {
++    let pin = base.try_solve_choked_turbine(gas, tt45, f45, base.a45, a8, pi_n, eta_lpt)?;
+     if base.lp_pinned.get() {
+         return Ok(pin);
+     }
+-    let nozzle = Nozzle::convergent(p0, base.pi_n);
++    let nozzle = Nozzle::convergent(p0, pi_n);
+     let at = |pi: f64, tt5: f64| nozzle.try_apply(&FlowState { tt: tt5, pt: pi * pt45, mdot: 1.0, far: f45 }, gas);
+     if matches!(at(pin.0, pin.2), Ok(e) if e.p9 > p0 + 1e-6) {
+         return Ok(pin);
+@@ -47,7 +59,7 @@ pub fn try_lp_turbine(
+     let resid = |pi: f64| -> Result<(f64, f64, f64), Abort> {
+         let (tau, tt5) = base.try_tau_of(gas, tt45, f45, pi, eta_lpt)?;
+         let demand = match at(pi, tt5) {
+-            Ok(e) => base.a8 * (e.p9 / (gas.r_t_at(f45) * e.t9)) * e.v9,
++            Ok(e) => a8 * (e.p9 / (gas.r_t_at(f45) * e.t9)) * e.v9,
+             Err(_) => 0.0,   // the nozzle cannot push the gas out at all
+         };
+         Ok((supply - demand, tau, tt5))

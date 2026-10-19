@@ -325,3 +325,147 @@ runs only** (`dry_b.txt` in the scratch archive). No bar moves; three readings t
 * **A panic anywhere** in the crash maps ⇒ fixed as a refusal before the commit (rung 92's rule).
 * **Part C's addendum** may change Part C's device (light-off as a step in `Tt7` vs a ramp; the slider's meaning in
   time) — its own anchor, its own predictions; it cannot move Parts A/B's frozen bars.
+
+---
+
+## 5. ADDENDUM — Part C, the Controls slam (frozen 2026-10-19, before any Part C code)
+
+Written after Part B shipped (23c5651) and after a PROBE of the actual march (a throwaway worktree; sources and outputs
+in `docs/plans/scratch-archive/rung102/`, the `*_c*` files). The scored cells below were run UNLIT only (`grid_dry.txt`).
+
+### 5.0 What the probe found (seen — NOT scored)
+
+Seen settings: the page's default slam (shape `flow/press`, `ρ` 1, the design flight, 1000 → 1400 K), `Tt7` 1800 /
+2000 / 2200–2600, light-off at 0.24 / 0.25 / 3.0, throat ×1, ×1.15, ×1.3 and *match*; 600 → 1400 K at Mach 0.85 and
+0.3; the redline, the LP floor, and the governor (thrust, HP speed) on that slam; the 108 Controls check requests lit at
+0.24 (outcome classes only).
+
+* **P1 — fitted, unlit = the shipped engine with a wider throat and the flame holders in the nozzle's loss.** Through
+  the shipped LP relation with `A8_dry = A8/π_fh` and `π_n·π_fh`: speeds equal the unfitted run (choked), thrust ~1 %
+  lower; outcome class equal on all 108 check requests.
+* **P2 — *match* moves no shaft.** The matched lit march = the fitted-unlit march (speeds, `Tt4`, margins); thrust ×1.55
+  at `Tt7` 2000.
+* **P3 — held (×1), settled light-off, `Tt7` 2000:** the LP shaft slows 0.949 → 0.598, the HP OVERSPEEDS 0.959 →
+  1.078 (still rising at the run's end), `Tt4` 1400 → ~1600 K at the same metered fuel, thrust 611 → 757 (MORE than
+  unlit: the throttle meters fuel and `Tt4` floats — Part B held `Tt4`; a different throttle, not a contradiction).
+  ×1.15 / ×1.3 shrink every effect.
+* **P4 — the LP compressor dips toward stall, then the coordinates split.** Right after a held light-off both LP margins
+  fall (flow 0.7315 → 0.7129; speed-line pressure 0.188 → 0.131 at +0.6 τ); as the LP slows, the FLOW margin (the page's
+  reading, `φ` over the stall line) recovers past its start (1.156 at the end) while the PRESSURE margin stays below it
+  (0.163). Both HP margins rise. The steady G6 read the pressure margin only (rung 53's lesson: a margin is a distance).
+* **P5 — the lean wall.** Lit with a held throat, below some main fuel the LP turbine has no root (the gas cannot leave
+  the throat even with the LP turbine nearly unexpanded). Every limiter that cuts main fuel can reach it: 22 of the 108
+  check requests lit at 0.24 stop there (redline topping, acceleration schedule, LP floor, or directly); none with
+  *match*.
+* **P6 — lit at a fixed `Tt7`, more main fuel LOWERS thrust at frozen speeds** (every throat): less air (the HP throat
+  passes less hot gas), and the afterburner just burns less. The thrust governor's root-or-clamp assumes the opposite
+  sign and bangs between the lean and rich walls (main burner 590 ↔ 2580 K). **User, 2026-10-19: refuse "hold thrust"
+  while lit, in words** — this REVERSES § 0's "direct thrust control works". Hold HP speed works.
+* **P7 — the step.** Light-off off the march grid (0.25 with `DS` 0.02) costs first-order accuracy (DS vs DS/2:
+  1.5e−4 in `ν`); on the grid (0.24) 1.2e−7 (dry 1.4e−9).
+* **P8 — cost** (probe, unoptimized): plain route lit 1.4–1.9× the fitted-unlit run; governed lit 4–5.6× (~10 duct
+  trials per LP call held).
+* **P9 — reach.** Every transient LP solve goes through `unchoked_lp::try_lp_turbine`; thrust is computed per tail
+  (rungs 40, 62, 90, 91 — all reached; 92 wraps 62). The rung-99 formula's own LP solve (`unchoked_formula.rs`) is
+  reached only by a thrust guess (refused lit). `two_spool.rs:936`'s assert: **never reached** → NOT converted (an
+  unreachable assert made an Abort measures nothing; the anchor's § 1 line is retracted).
+
+### 5.1 The device (Part C)
+
+* **Fitted** (`ab: unlit | lit`): the two-shaft core's nozzle throat and loss become `A8/π_fh` and `π_n·π_fh` at
+  build, so every shipped path (tails, steady matchers, tables, the formula) runs the fitted-unlit engine unchanged. The
+  core carries the afterburner (`A6` from the design run's station 5 at `M6`, `Tt7`, `η_AB`, `π_fh`, the throat setting,
+  the shipped `π_n`) and a light-off fraction `w`.
+* **Light-off** at a chosen march time `s_on` (on the `DS` grid; the knob steps 0.02) over a fixed ramp of **0.10** HP
+  τ (5 steps): `w` 0 → 1. `Tt7(w) = Tt5 + w·(Tt7 − Tt5)`; the throat `A8_dry·(1 + w·(s − 1))`. `w` is set from `s` in
+  EVERY march's derivative (plain, release lag, governor lag, slow valve, governor) and at every re-read (`read`,
+  `reread`, `replay_step`, `stop_reason`, the reply). `w < 1e−9` is 0.
+* **Lit, held / slider:** the LP turbine from (★AB) one throat downstream of `A45` — `π_LPT·π_AB·√(Tt45/Tt7) =
+  A45·MFP45·(1+f7)/((1+f45)·A8·π_n·MFP7)` (shipped `π_n`) — else the subsonic root `ṁ7 = A8·ρ9·V9`; thrust from the
+  station-7 exit on the total fuel, in every tail.
+* **Lit, *match*:** the LP turbine is the fitted-unlit one; the thrust is the lit exit at that core (Mattingly's law in
+  time — an ideal nozzle scheduler, no actuator lag).
+* **The gas arriving hotter than `Tt7(w)`:** the afterburner burns nothing (the duct unlit, the throat at its current
+  area) — continuous, not a refusal.
+* **Refused in words:** "hold thrust" governed while lit (P6); the lean wall ("no running point: with the nozzle at
+  ×s the afterburner's gas cannot get out at this engine pressure — a real engine would stall here"); a stop from the
+  redline / schedule / floor solve in a lit run that the same run unlit does not have names the afterburner; too hot,
+  thermal choke, duct-entry choke in § 1's words (no unnamed `afterburner refused:` reaches the page).
+
+### 5.2 GATES (construction — no credit)
+
+* **Not fitted ⇒ the shipped Controls view bit for bit:** every check request, the crash map.
+* **Fitted unlit (swapped core) ≡ the probe's hooked unlit relation** to 1e−12 relative in `ν`, at the default slam
+  and one unchoked start; and ≡ not fitted in `ν` to 1e−9 where the nozzle is choked.
+* ***Match* ⇒ the march is the fitted-unlit march bit for bit** in `ν`, `Tt4`, the margins.
+* **The held lit LP root vs an independent instrument:** the effective-throat fixed point through the SHIPPED LP solve
+  (`A8_eff = A8/k`, `k = π_AB·(MFP7/MFP5)·√(Tt5/Tt7)·(1+f5)/(1+f7)`, iterated) agrees to 1e−8 in `π_LPT` at choked
+  lit instants.
+* **Step:** lit, light-off on the grid, DS vs DS/2 ≤ **1e−6** in `ν` at shared times.
+* **Refusals:** every stop a lit run has that its fitted-unlit run lacks names the afterburner (check requests + a crash
+  map); "hold thrust" lit refused at the precheck; no panic.
+* **Page:** default replies byte-equal (keys written only off their defaults); keys round-trip.
+
+### 5.3 PREDICTIONS — frozen here (Part C)
+
+**Grid (unseen):** shapes `press/flow`, `tilted`, `flat-lp`; `ρ` **0.5, 3.0**; the design flight and **5 km standard
+Mach 0.6**; slam **900 → 1350 K**, ramp 0.5, settle 6.0 (end `s` = 6.5); `Tt7` **1900**; light-off **0.30** (mid-slam)
+and **3.50** (late); throats **×1 (held), ×1.2, *match***. 12 settings × 2 light-offs = **24 cells** per throat, every
+one run unlit to the end, choked from the start (`grid_dry.txt`). Δ = lit minus the same run fitted-unlit, at the end
+unless stated. A lit run that stops (in words) makes its cells MISSES, reported with the words.
+
+**C1 — *match* multiplies thrust by more than √(Tt7/Tt5).** `F_lit/F_unlit > √(1900/Tt5_end)`. *Derivation:* gross
+thrust of a choked nozzle per unit mass scales with `√Tt` (both terms; the flame holders and the Rayleigh loss take ~1 %,
+the extra fuel's mass returns ~2 %); net = gross − ram drag, so the net ratio exceeds the gross ratio wherever ram drag
+is positive. *Risk:* the slowest flight (Mach 0.6) — the least ram-drag leverage. **24 cells.**
+
+**C2 — held: the LP slows.** `Δν_L < 0`, and `Δν_L/ν_L` in **[−50 %, −8 %]**. *Derivation:* the lit gas back-pressures
+the LP turbine (lower `π_LPT`, less LP work). *Risk:* `ρ` 3 with the late light-off (3 HP τ = 1 LP τ after light-off;
+the least settled). **24 cells** (both claims).
+
+**C3 — held: the HP overspeeds.** `Δν_H/ν_H` in **[+2 %, +20 %]**. *Derivation:* less airflow at metered fuel → hotter
+`Tt4` → more HP work; G6 (steady) +13–18 %. *Risk:* `ρ` 0.5 mid-slam. **24 cells.**
+
+**C4 — held: the main burner runs hotter.** `ΔTt4 > 0`. *Derivation:* C2's airflow loss at the same fuel. **24 cells.**
+
+**C5 — held: thrust above unlit.** `ΔF > 0`. *Derivation:* P3 (metered fuel). *Risk:* 5 km Mach 0.6 (less ram
+drag to lever against the core's airflow loss). **24 cells.**
+
+**C6 — held: the LP compressor dips toward stall in pressure.** The LP speed-line pressure margin's minimum over
+`[s_on, 6.5]` is below the unlit run's minimum over the same window. *Derivation:* P4 — the immediate back-pressure.
+*Risk:* mid-slam, where the unlit run's own minimum may fall inside the window. **24 cells.**
+
+**C7 — held: at the end the LP FLOW margin (the page's) is above unlit, the LP PRESSURE margin below it.** *Derivation:*
+P4 — the LP slows more than its corrected flow falls. *Risk:* `flat-lp` (a different stall line); `ρ` 3 late (unsettled).
+**24 cells** (both claims).
+
+**C8 — held: both HP margins above unlit at the end.** *Derivation:* P4. **24 cells** (both claims).
+
+**C9 — ×1.2 lies strictly between:** `0 < |Δ(×1.2)| < |Δ(×1)|` for `ν_L`, `ν_H`, `Tt4`. **24 × 3 = 72 cells.**
+
+**C10 — light-off below choke.** Shapes `press/flow` and `tilted` from **650 K**, `flat-lp` from **700 K**, Mach
+**0.5**, design altitude, `ρ` 1, → 1350, settle 6, light-off at **0.06** (still unchoked, dry). Held: the run COMPLETES,
+and C2's, C3's and C4's signs hold at the end; *match*: C1. *Risk:* the subsonic lit branch at a low `π_LPT`. **3 × 5
+= 15 cells.**
+
+**C11 — the HP-speed governor absorbs the overspeed.** `govern`, hold HP speed, the three shapes, design flight, `ρ` 1,
+900 → 1350, settle 6, held, light-off 0.30: the end HP speed within **0.5 %** of the unlit governed run's, and the LP
+**more than 5 %** slower. **3 × 2 = 6 cells.**
+
+**C12 — the redline holds through a late held light-off.** Redline on (1480 K), the three shapes, design flight, `ρ` 1,
+900 → 1350, settle 6, held, light-off 3.50: the run COMPLETES, `Tt4 ≤ 1480.5 K` at every point, and the redline BINDS
+(within 1 K of 1480) after light-off. *Risk:* the lean wall (P5) — the redline cuts toward it. **3 cells** (HIT only
+if all three hold).
+
+**Total Part C: 360 scored cells** (24 + 48 + 24 + 24 + 24 + 24 + 48 + 48 + 72 + 15 + 6 + 3).
+
+**Reported, not scored:** the matched throat over time; the duct Mach; `f_AB`; thrust and both margins through each
+run; every stop's words; the census; cost.
+
+### 5.4 What would change the plan (Part C)
+
+* **Cost:** the page's reply, best of 9, lit vs the same request fitted-unlit: above **3×** on any route ⇒ the lit LP
+  relation is sped up before shipping (P8 already exceeds it on the governed route: the first fix is Part B's ±0.02
+  bracket around the previous instant's root), re-measured by the same census.
+* **A matched march that moves a shaft** ⇒ the device is wrong (construction), not a finding.
+* **A lit stop not in words** anywhere ⇒ fixed before the commit.

@@ -1,0 +1,30 @@
+[package]
+name = "rung102-cprobe"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+turbojet = { path = "W:/temp/claude/rung102-c-wt/rust" }
+
+[profile.release]
+opt-level = 3
+
+[[bin]]
+name = "march_c"
+path = "src/march_c.rs"
+
+[[bin]]
+name = "march_c2"
+path = "src/march_c2.rs"
+
+[[bin]]
+name = "sweep_c"
+path = "src/sweep_c.rs"
+
+[[bin]]
+name = "reach_c"
+path = "src/reach_c.rs"
+
+[[bin]]
+name = "grid_dry"
+path = "src/grid_dry.rs"

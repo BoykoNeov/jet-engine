@@ -32,3 +32,17 @@ Part B (after Part A shipped; against the Part B code):
 - `call_b.rs`: the fly ops through `sandbox::call`.
 - `crashfly.rs` (seeded random Fly-it requests, afterburner keys on/off) + `replay.rs` → `census_b.txt`, with the check
   requests' comparison against a worktree of `7de9419`.
+
+Part C PROBE (after Part B shipped, before the addendum; a second crate `Cargo_c.toml.txt` against a throwaway worktree
+of `23c5651` carrying the hook in `probe_c.diff` — a thread-local afterburner read by `unchoked_lp::try_lp_turbine`, a
+light-off clock ticked in the march derivatives, `lp_exit` in the thrust tails, and `guard()` traps at unreached sites):
+- `march_c.rs` → `march_c.txt`: the default slam not fitted / fitted unlit / lit (held ×1, ×1.15, *match*; `Tt7` 1800,
+  2000; light-off 0.25 and 3.0) via a schedule wrapper.
+- `march_c2.rs` → `march_c2.txt`: the clock in the derivatives; `settle`, `dt`, `redline`, `floor`, `govern`, `hot`,
+  `unchoked` (the txt is that run; the source's later modes `gov1` (every point of the governed lit runs), `pm` →
+  `pm_c.txt` (both stall margins) and the dry `dt` baseline / on-grid light-off were run after it, printed in the
+  session).
+- `sweep_c.rs` → `sweep_c.txt`: thrust against MAIN fuel at frozen speeds, unlit and lit (the governor's handle).
+- `reach_c.rs` → `reach_c.txt`: the 108 Controls check requests not fitted / fitted unlit / lit held / lit *match*
+  (light-off 0.24), with lit-trial counts and the `guard()` traps.
+- `grid_dry.rs` → `grid_dry.txt`: the addendum's scored grid run FITTED-UNLIT only (no lit run on those cells).

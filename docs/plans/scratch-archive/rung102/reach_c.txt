@@ -1,0 +1,109 @@
+#  1 gov=0 thr=True gen=Off cool=0 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 5038)  match: ok (lit trials 455)
+#  2 gov=0 thr=True gen=Off cool=0 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: stop@0.28[rung-46 topping cannot reach Tt4_max=1480.0 at nu=(0.7765,0.] (lit trials 439)  match: ok (lit trials 2213)
+#  3 gov=0 thr=True gen=Off cool=0 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: stop@0.28[?] (lit trials 498)  match: ok (lit trials 2460)
+#  4 gov=0 thr=True gen=Off cool=0 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: stop@0.32[rung-48 accel-schedule set point does not bracket at nu=(0.7] (lit trials 2526)  match: ok (lit trials 2627)
+#  5 gov=0 thr=True gen=Off cool=0 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 16932)  match: ok (lit trials 1500)
+#  6 gov=0 thr=True gen=Off cool=0 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 16203)  match: ok (lit trials 1422)
+#  7 gov=0 thr=True gen=Off cool=0 cust=Off lever=Stator:  NF: ok  unlit: ok (lit trials 0)  held: stop@0.28[rung-46 topping cannot reach Tt4_max=1480.0 at nu=(0.8122,0.] (lit trials 2524)  match: ok (lit trials 5358)
+#  8 gov=0 thr=True gen=Off cool=0 cust=Off lever=Stator:  NF: ok  unlit: ok (lit trials 0)  held: stop@0.28[rung-49 phi floor 0.7005 on the LP spool is UNREACHABLE at n] (lit trials 2304)  match: ok (lit trials 7779)
+#  9 gov=0 thr=True gen=Off cool=0 cust=Off lever=Stator:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 5033)  match: ok (lit trials 455)
+# 10 gov=0 thr=True gen=Off cool=0 cust=Off lever=Bleed:  NF: ok  unlit: ok (lit trials 0)  held: stop@0.28[rung-46 topping cannot reach Tt4_max=1480.0 at nu=(0.7460,0.] (lit trials 949)  match: ok (lit trials 3638)
+# 11 gov=0 thr=True gen=Off cool=0 cust=Off lever=Both:  NF: ok  unlit: ok (lit trials 0)  held: stop@0.32[rung-48 accel-schedule set point does not bracket at nu=(0.7] (lit trials 2542)  match: ok (lit trials 2675)
+# 12 gov=0 thr=True gen=Off cool=0 cust=Off lever=Both:  NF: ok  unlit: ok (lit trials 0)  held: stop@0.28[?] (lit trials 706)  match: ok (lit trials 2408)
+# 13 gov=0 thr=True gen=Off cool=0 cust=Off lever=Both:  NF: ok  unlit: ok (lit trials 0)  held: stop@0.30[rung-49 phi floor 0.7590 on the LP spool is UNREACHABLE at n] (lit trials 2494)  match: ok (lit trials 2335)
+# 14 gov=0 thr=True gen=Off cool=0 cust=Off lever=Stator:  NF: stop@NaN[rung-49 phi floor 0.8250 on the LP spool is UNREACHABLE at n]  unlit: stop@NaN[rung-49 phi floor 0.8250 on the LP spool is UNREACHABLE at n] (lit trials 0)  held: stop@NaN[rung-49 phi floor 0.8250 on the LP spool is UNREACHABLE at n] (lit trials 0)  match: stop@NaN[rung-49 phi floor 0.8250 on the LP spool is UNREACHABLE at n] (lit trials 0)
+# 15 gov=0 thr=True gen=Off cool=0 cust=Off lever=Bleed:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 5036)  match: ok (lit trials 455)
+# 16 gov=0 thr=True gen=Off cool=0 cust=Off lever=Both:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 5033)  match: ok (lit trials 455)
+# 17 gov=0 thr=True gen=Off cool=0 cust=Off lever=Both:  NF: stop@0.18[rung-49 phi floor 0.7800 on the LP spool is UNREACHABLE at n]  unlit: stop@0.18[rung-49 phi floor 0.7800 on the LP spool is UNREACHABLE at n] (lit trials 0)  held: stop@0.18[rung-49 phi floor 0.7800 on the LP spool is UNREACHABLE at n] (lit trials 0)  match: stop@0.18[rung-49 phi floor 0.7800 on the LP spool is UNREACHABLE at n] (lit trials 0)
+# 18 gov=0 thr=True gen=Off cool=0 cust=Off lever=Both:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 10066)  match: ok (lit trials 910)
+# 19 gov=0 thr=True gen=Off cool=0 cust=Off lever=Bleed:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 5040)  match: ok (lit trials 455)
+# 20 gov=0 thr=True gen=Off cool=0 cust=Off lever=Both:  NF: ok  unlit: ok (lit trials 0)  held: stop@0.32[rung-48 accel-schedule set point does not bracket at nu=(0.7] (lit trials 2553)  match: ok (lit trials 2621)
+# 21 gov=0 thr=True gen=Off cool=0 cust=Off lever=Both:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 5035)  match: ok (lit trials 455)
+# 22 gov=0 thr=True gen=Off cool=0 cust=Off lever=Both:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 5038)  match: ok (lit trials 455)
+#23: refused unfitted
+#24: refused unfitted
+# 25 gov=0 thr=True gen=Off cool=0 cust=Share lever=None:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 5035)  match: ok (lit trials 455)
+# 26 gov=0 thr=True gen=Off cool=0 cust=Amount lever=Bleed:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 5033)  match: ok (lit trials 455)
+# 27 gov=0 thr=True gen=Off cool=0 cust=Share lever=Both:  NF: ok  unlit: ok (lit trials 0)  held: stop@0.32[rung-48 accel-schedule set point does not bracket at nu=(0.7] (lit trials 2549)  match: ok (lit trials 2647)
+#28: refused unfitted
+# 29 gov=0 thr=True gen=Off cool=1 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 5034)  match: ok (lit trials 455)
+# 30 gov=0 thr=True gen=Off cool=1 cust=Amount lever=Bleed:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 5036)  match: ok (lit trials 455)
+#31: refused unfitted
+#32: refused unfitted
+# 33 gov=0 thr=True gen=Hp cool=0 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 5032)  match: ok (lit trials 455)
+# 34 gov=0 thr=True gen=Lp cool=0 cust=Off lever=Bleed:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 5035)  match: ok (lit trials 455)
+# 35 gov=0 thr=True gen=Hp cool=1 cust=Share lever=None:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 5033)  match: ok (lit trials 455)
+#36: refused unfitted
+# 37 gov=0 thr=True gen=Off cool=0 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 5038)  match: ok (lit trials 455)
+# 38 gov=0 thr=True gen=Off cool=1 cust=Amount lever=None:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 5035)  match: ok (lit trials 455)
+# 39 gov=0 thr=True gen=Off cool=1 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: stop@0.28[rung-46 topping cannot reach Tt4_max=1480.0 at nu=(0.7595,0.] (lit trials 182)  match: ok (lit trials 2335)
+#40: refused unfitted
+# 41 gov=0 thr=True gen=Hp cool=0 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 5037)  match: ok (lit trials 455)
+# 42 gov=0 thr=True gen=Lp cool=0 cust=Off lever=Bleed:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 5034)  match: ok (lit trials 455)
+# 43 gov=0 thr=True gen=Hp cool=1 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 5036)  match: ok (lit trials 455)
+#44: refused unfitted
+#45: refused unfitted
+# 46 gov=1 thr=True gen=Off cool=0 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 251966)  match: ok (lit trials 18921)
+# 47 gov=1 thr=True gen=Off cool=0 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: stop@0.32[rung-48 accel-schedule set point does not bracket at nu=(0.7] (lit trials 8306)  match: ok (lit trials 26029)
+# 48 gov=1 thr=True gen=Off cool=0 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 157885)  match: ok (lit trials 7533)
+# 49 gov=1 thr=True gen=Lp cool=0 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 177613)  match: ok (lit trials 1365)
+# 50 gov=1 thr=True gen=Off cool=1 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 324287)  match: ok (lit trials 18347)
+#51: refused unfitted
+# 52 gov=1 thr=Epr gen=Off cool=0 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: stop@0.32[rung-48 accel-schedule set point does not bracket at nu=(0.7] (lit trials 25693)  match: ok (lit trials 17704)
+# 53 gov=1 thr=Epr gen=Hp cool=0 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 312040)  match: ok (lit trials 5410)
+# 54 gov=1 thr=N1 gen=Lp cool=0 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 131435)  match: ok (lit trials 4934)
+# 55 gov=1 thr=N1 gen=Off cool=0 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 29122)  match: ok (lit trials 2481)
+#56: refused unfitted
+# 57 gov=0 thr=True gen=Off cool=0 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: stop@0.30[rung-102 LP turbine choke-match bracket does not straddle th] (lit trials 157)  match: ok (lit trials 455)
+#58: refused unfitted
+# 59 gov=0 thr=True gen=Off cool=0 cust=Off lever=Stator:  NF: stop@0.56[rung-49 phi floor 0.7500 on the LP spool is UNREACHABLE at n]  unlit: stop@0.56[rung-49 phi floor 0.7500 on the LP spool is UNREACHABLE at n] (lit trials 0)  held: stop@0.26[rung-49 phi floor 0.7500 on the LP spool is UNREACHABLE at n] (lit trials 2065)  match: stop@0.56[rung-49 phi floor 0.7500 on the LP spool is UNREACHABLE at n] (lit trials 1910)
+# 60 gov=0 thr=True gen=Off cool=0 cust=Off lever=None:  NF: stop@0.62[rung-43 fuel closure does not bracket at nu=(0.8661,0.8887),]  unlit: stop@0.62[rung-43 fuel closure does not bracket at nu=(0.8661,0.8887),] (lit trials 0)  held: stop@0.30[rung-102 LP turbine choke-match bracket does not straddle th] (lit trials 169)  match: stop@0.62[rung-43 fuel closure does not bracket at nu=(0.8661,0.8887),] (lit trials 81)
+# 61 gov=0 thr=True gen=Off cool=0 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 5031)  match: ok (lit trials 455)
+# 62 gov=0 thr=True gen=Off cool=0 cust=Off lever=Bleed:  NF: ok  unlit: ok (lit trials 0)  held: stop@0.32[rung-49 phi floor 0.7500 on the LP spool is UNREACHABLE at n] (lit trials 2977)  match: ok (lit trials 1748)
+# 63 gov=1 thr=True gen=Off cool=0 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 444069)  match: ok (lit trials 17000)
+#64: refused unfitted
+#65: refused unfitted
+# 66 gov=0 thr=True gen=Off cool=0 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 5036)  match: ok (lit trials 455)
+# 67 gov=0 thr=True gen=Lp cool=0 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 5037)  match: ok (lit trials 455)
+# 68 gov=0 thr=True gen=Off cool=1 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 5034)  match: ok (lit trials 455)
+# 69 gov=1 thr=Epr gen=Off cool=0 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 281842)  match: ok (lit trials 5593)
+# 70 gov=0 thr=True gen=Off cool=0 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 5030)  match: ok (lit trials 455)
+# 71 gov=1 thr=True gen=Off cool=0 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: stop@0.30[rung-46 topping cannot reach Tt4_max=1480.0 at nu=(0.7805,0.] (lit trials 4388)  match: ok (lit trials 6734)
+# 72 gov=0 thr=True gen=Off cool=0 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 5172)  match: ok (lit trials 455)
+# 73 gov=1 thr=True gen=Off cool=0 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 148190)  match: ok (lit trials 17813)
+#74: refused unfitted
+#75: refused unfitted
+#76: refused unfitted
+# 77 gov=1 thr=Epr gen=Off cool=0 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 236230)  match: ok (lit trials 5279)
+# 78 gov=1 thr=Epr gen=Off cool=0 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 270170)  match: ok (lit trials 5356)
+# 79 gov=1 thr=N1 gen=Off cool=0 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 108894)  match: ok (lit trials 5106)
+# 80 gov=0 thr=True gen=Off cool=0 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 18753)  match: ok (lit trials 1502)
+# 81 gov=1 thr=True gen=Off cool=0 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 15099)  match: ok (lit trials 1365)
+#82: refused unfitted
+# 83 gov=1 thr=Epr gen=Off cool=0 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 270862)  match: ok (lit trials 5338)
+# 84 gov=1 thr=Epr gen=Off cool=0 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 296837)  match: ok (lit trials 5488)
+# 85 gov=1 thr=Epr gen=Off cool=0 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 281332)  match: ok (lit trials 5313)
+# 86 gov=1 thr=N1 gen=Off cool=0 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 125868)  match: ok (lit trials 4747)
+# 87 gov=1 thr=Epr gen=Off cool=0 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 257444)  match: ok (lit trials 6952)
+# 88 gov=0 thr=True gen=Off cool=0 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: stop@0.32[rung-48 accel-schedule set point does not bracket at nu=(0.7] (lit trials 2446)  match: ok (lit trials 2077)
+# 89 gov=1 thr=True gen=Off cool=0 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 15104)  match: ok (lit trials 1365)
+#90: refused unfitted
+# 91 gov=1 thr=Epr gen=Off cool=0 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 257478)  match: ok (lit trials 6988)
+# 92 gov=1 thr=N1 gen=Off cool=0 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 172881)  match: ok (lit trials 6499)
+# 93 gov=0 thr=True gen=Off cool=0 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: stop@0.28[rung-48 accel-schedule set point does not bracket at nu=(0.6] (lit trials 1978)  match: ok (lit trials 17934)
+# 94 gov=1 thr=Epr gen=Off cool=0 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 257451)  match: ok (lit trials 6979)
+# 95 gov=1 thr=Epr gen=Off cool=0 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 276287)  match: ok (lit trials 5348)
+# 96 gov=1 thr=Epr gen=Off cool=0 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 283622)  match: ok (lit trials 5443)
+# 97 gov=1 thr=N1 gen=Off cool=0 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: PANIC[UNPATCHED unchoked_formula.rs:237] (lit trials 13)  match: PANIC[UNPATCHED unchoked_formula.rs:237] (lit trials 1)
+# 98 gov=1 thr=N1 gen=Off cool=0 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: PANIC[UNPATCHED unchoked_formula.rs:237] (lit trials 12)  match: PANIC[UNPATCHED unchoked_formula.rs:237] (lit trials 1)
+#99: refused unfitted
+#100 gov=1 thr=Epr gen=Off cool=0 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 288579)  match: ok (lit trials 5478)
+#101 gov=1 thr=N1 gen=Off cool=0 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: PANIC[UNPATCHED unchoked_formula.rs:237] (lit trials 13)  match: PANIC[UNPATCHED unchoked_formula.rs:237] (lit trials 1)
+#102 gov=1 thr=Epr gen=Off cool=0 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 126516)  match: ok (lit trials 5439)
+#103 gov=1 thr=Epr gen=Off cool=0 cust=Share lever=None:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 243444)  match: ok (lit trials 6608)
+#104 gov=1 thr=N1 gen=Off cool=0 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: PANIC[UNPATCHED unchoked_formula.rs:237] (lit trials 22)  match: PANIC[UNPATCHED unchoked_formula.rs:237] (lit trials 2)
+#105 gov=1 thr=N1 gen=Off cool=0 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: PANIC[UNPATCHED unchoked_formula.rs:237] (lit trials 26)  match: PANIC[UNPATCHED unchoked_formula.rs:237] (lit trials 2)
+#106 gov=1 thr=Epr gen=Off cool=0 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: ok (lit trials 272000)  match: ok (lit trials 5946)
+#107 gov=1 thr=N1 gen=Off cool=0 cust=Off lever=None:  NF: ok  unlit: ok (lit trials 0)  held: PANIC[UNPATCHED unchoked_formula.rs:237] (lit trials 26)  match: PANIC[UNPATCHED unchoked_formula.rs:237] (lit trials 2)
+#108: refused unfitted
+108 controls requests

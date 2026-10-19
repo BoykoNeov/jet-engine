@@ -1,0 +1,37 @@
+shape 1 rho 0.5 design   : start Choked  326 pts; Tt5 at 0.30 1123, 3.50 1047, end 1047; Tt4 end 1350; nu end (0.918,0.940) 
+shape 1 rho 0.5 5km M0.6 : start Choked  326 pts; Tt5 at 0.30 1138, 3.50 1047, end 1047; Tt4 end 1350; nu end (0.929,0.943) 
+shape 1 rho 3 design   : start Choked  326 pts; Tt5 at 0.30 1174, 3.50 1052, end 1047; Tt4 end 1350; nu end (0.917,0.941) 
+shape 1 rho 3 5km M0.6 : start Choked  326 pts; Tt5 at 0.30 1190, 3.50 1054, end 1047; Tt4 end 1351; nu end (0.927,0.945) 
+shape 2 rho 0.5 design   : start Choked  326 pts; Tt5 at 0.30 1126, 3.50 1047, end 1047; Tt4 end 1350; nu end (0.921,0.939) 
+shape 2 rho 0.5 5km M0.6 : start Choked  326 pts; Tt5 at 0.30 1141, 3.50 1047, end 1047; Tt4 end 1350; nu end (0.931,0.943) 
+shape 2 rho 3 design   : start Choked  326 pts; Tt5 at 0.30 1176, 3.50 1052, end 1047; Tt4 end 1350; nu end (0.920,0.940) 
+shape 2 rho 3 5km M0.6 : start Choked  326 pts; Tt5 at 0.30 1191, 3.50 1054, end 1047; Tt4 end 1351; nu end (0.929,0.944) 
+shape 3 rho 0.5 design   : start Choked  326 pts; Tt5 at 0.30 1120, 3.50 1047, end 1047; Tt4 end 1350; nu end (0.947,0.938) 
+shape 3 rho 0.5 5km M0.6 : start Choked  326 pts; Tt5 at 0.30 1134, 3.50 1048, end 1047; Tt4 end 1350; nu end (0.947,0.942) 
+shape 3 rho 3 design   : start Choked  326 pts; Tt5 at 0.30 1163, 3.50 1051, end 1047; Tt4 end 1351; nu end (0.945,0.939) 
+shape 3 rho 3 5km M0.6 : start Choked  326 pts; Tt5 at 0.30 1179, 3.50 1052, end 1047; Tt4 end 1351; nu end (0.944,0.943) 
+12 cells
+gov HP shape 1: 326 of 326 pts, end nu (0.9182,0.9404) Tt4 end 1350.0 max 2078.1
+redline shape 1: 326 of 326 pts, end nu (0.9182,0.9404) Tt4 end 1350.0 max 1480.0
+gov HP shape 2: 326 of 326 pts, end nu (0.9213,0.9393) Tt4 end 1350.0 max 2090.3
+redline shape 2: 326 of 326 pts, end nu (0.9213,0.9393) Tt4 end 1350.0 max 1480.0
+gov HP shape 3: 326 of 326 pts, end nu (0.9470,0.9384) Tt4 end 1350.0 max 2092.6
+redline shape 3: 326 of 326 pts, end nu (0.9470,0.9384) Tt4 end 1350.0 max 1480.0
+unch shape 1 from 600 M0.85: start Subsonic M9 0.945; 326 of 326 pts; branch at 0.10 Some("Choked"), 0.30 Some("Choked")
+unch shape 1 from 600 M0.5: start Subsonic M9 0.755; 22 of 326 pts; branch at 0.10 Some("Subsonic"), 0.30 Some("Choked")
+unch shape 1 from 650 M0.85: start Choked M9 1.000; 326 of 326 pts; branch at 0.10 Some("Choked"), 0.30 Some("Choked")
+unch shape 1 from 650 M0.5: start Subsonic M9 0.858; 326 of 326 pts; branch at 0.10 Some("Subsonic"), 0.30 Some("Choked")
+unch shape 1 from 700 M0.85: start Choked M9 1.000; 326 of 326 pts; branch at 0.10 Some("Choked"), 0.30 Some("Choked")
+unch shape 1 from 700 M0.5: start Subsonic M9 0.954; 326 of 326 pts; branch at 0.10 Some("Choked"), 0.30 Some("Choked")
+unch shape 2 from 600 M0.85: start Subsonic M9 0.940; 326 of 326 pts; branch at 0.10 Some("Choked"), 0.30 Some("Choked")
+unch shape 2 from 600 M0.5: start Subsonic M9 0.752; 21 of 326 pts; branch at 0.10 Some("Subsonic"), 0.30 Some("Choked")
+unch shape 2 from 650 M0.85: start Choked M9 1.000; 326 of 326 pts; branch at 0.10 Some("Choked"), 0.30 Some("Choked")
+unch shape 2 from 650 M0.5: start Subsonic M9 0.854; 326 of 326 pts; branch at 0.10 Some("Subsonic"), 0.30 Some("Choked")
+unch shape 2 from 700 M0.85: start Choked M9 1.000; 326 of 326 pts; branch at 0.10 Some("Choked"), 0.30 Some("Choked")
+unch shape 2 from 700 M0.5: start Subsonic M9 0.950; 326 of 326 pts; branch at 0.10 Some("Choked"), 0.30 Some("Choked")
+unch shape 3 from 600 M0.85: refused unfitted
+unch shape 3 from 600 M0.5: refused unfitted
+unch shape 3 from 650 M0.85: refused unfitted
+unch shape 3 from 650 M0.5: refused unfitted
+unch shape 3 from 700 M0.85: refused unfitted
+unch shape 3 from 700 M0.5: start Subsonic M9 0.966; 326 of 326 pts; branch at 0.10 Some("Choked"), 0.30 Some("Choked")

@@ -1,0 +1,389 @@
+######## settle
+== fitted unlit  (326 of 326 points, 28 ms; LP calls 1335, burn trials 0); start Choked M9 1.000
+   min sm_lp 0.3372@0.24  min sm_hp 0.5658@0.40  max Tt4 1695.4@0.50  max nu_hp 0.9591@5.68
+    0.00 w0.00 nuL 0.75574 nuH 0.78979 Tt4  1000.0 mf 0.00954/0.00954 smL  0.4057 smH  0.7152 F,Tt5    251.20    775.2 Choked
+    0.50 w0.00 nuL 0.83485 nuH 0.85843 Tt4  1695.4 mf 0.02341/0.02341 smL  0.4043 smH  0.5731 F,Tt5    479.53   1314.3 Choked
+    1.00 w0.00 nuL 0.91219 nuH 0.92694 Tt4  1475.3 mf 0.02341/0.02341 smL  0.6323 smH  0.7308 F,Tt5    568.17   1143.6 Choked
+    1.50 w0.00 nuL 0.93731 nuH 0.94894 Tt4  1422.5 mf 0.02341/0.02341 smL  0.7012 smH  0.7758 F,Tt5    597.54   1102.7 Choked
+    2.00 w0.00 nuL 0.94552 nuH 0.95593 Tt4  1407.0 mf 0.02341/0.02341 smL  0.7227 smH  0.7896 F,Tt5    607.09   1090.7 Choked
+    2.50 w0.00 nuL 0.94821 nuH 0.95811 Tt4  1402.2 mf 0.02341/0.02341 smL  0.7295 smH  0.7939 F,Tt5    610.15   1087.0 Choked
+    3.00 w0.00 nuL 0.94909 nuH 0.95879 Tt4  1400.7 mf 0.02341/0.02341 smL  0.7316 smH  0.7952 F,Tt5    611.13   1085.8 Choked
+    3.50 w0.00 nuL 0.94938 nuH 0.95899 Tt4  1400.2 mf 0.02341/0.02341 smL  0.7322 smH  0.7956 F,Tt5    611.43   1085.4 Choked
+    4.00 w0.00 nuL 0.94947 nuH 0.95904 Tt4  1400.1 mf 0.02341/0.02341 smL  0.7324 smH  0.7957 F,Tt5    611.53   1085.3 Choked
+    4.50 w0.00 nuL 0.94950 nuH 0.95906 Tt4  1400.0 mf 0.02341/0.02341 smL  0.7324 smH  0.7957 F,Tt5    611.55   1085.3 Choked
+    5.00 w0.00 nuL 0.94951 nuH 0.95906 Tt4  1400.0 mf 0.02341/0.02341 smL  0.7324 smH  0.7957 F,Tt5    611.56   1085.3 Choked
+    5.50 w0.00 nuL 0.94952 nuH 0.95906 Tt4  1400.0 mf 0.02341/0.02341 smL  0.7324 smH  0.7957 F,Tt5    611.56   1085.3 Choked
+    6.00 w0.00 nuL 0.94952 nuH 0.95906 Tt4  1400.0 mf 0.02341/0.02341 smL  0.7324 smH  0.7957 F,Tt5    611.57   1085.3 Choked
+    6.50 w0.00 nuL 0.94952 nuH 0.95906 Tt4  1400.0 mf 0.02341/0.02341 smL  0.7324 smH  0.7957 F,Tt5    611.57   1085.3 Choked
+== lit at 3.0 Held(1.0)  (326 of 326 points, 30 ms; LP calls 1335, burn trials 7786); start Choked M9 1.000
+   min sm_lp 0.3372@0.24  min sm_hp 0.5658@0.40  max Tt4 1695.4@0.50  max nu_hp 1.0784@6.50
+    0.00 w0.00 nuL 0.75574 nuH 0.78979 Tt4  1000.0 mf 0.00954/0.00954 smL  0.4057 smH  0.7152 F,Tt5    251.20    775.2 Choked
+    0.50 w0.00 nuL 0.83485 nuH 0.85843 Tt4  1695.4 mf 0.02341/0.02341 smL  0.4043 smH  0.5731 F,Tt5    479.53   1314.3 Choked
+    1.00 w0.00 nuL 0.91219 nuH 0.92694 Tt4  1475.3 mf 0.02341/0.02341 smL  0.6323 smH  0.7308 F,Tt5    568.17   1143.6 Choked
+    1.50 w0.00 nuL 0.93731 nuH 0.94894 Tt4  1422.5 mf 0.02341/0.02341 smL  0.7012 smH  0.7758 F,Tt5    597.54   1102.7 Choked
+    2.00 w0.00 nuL 0.94552 nuH 0.95593 Tt4  1407.0 mf 0.02341/0.02341 smL  0.7227 smH  0.7896 F,Tt5    607.09   1090.7 Choked
+    2.50 w0.00 nuL 0.94821 nuH 0.95811 Tt4  1402.2 mf 0.02341/0.02341 smL  0.7295 smH  0.7939 F,Tt5    610.15   1087.0 Choked
+    3.00 w0.00 nuL 0.94909 nuH 0.95879 Tt4  1400.7 mf 0.02341/0.02341 smL  0.7316 smH  0.7952 F,Tt5    611.13   1085.8 Choked
+    3.50 w1.00 nuL 0.73555 nuH 0.98217 Tt4  1590.3 mf 0.02341/0.02341 smL  0.7698 smH  0.8139 F,Tt5    765.34   1304.5 Choked
+    4.00 w1.00 nuL 0.65890 nuH 1.01569 Tt4  1624.6 mf 0.02341/0.02341 smL  0.9056 smH  0.8697 F,Tt5    734.42   1329.4 Choked
+    4.50 w1.00 nuL 0.62870 nuH 1.04031 Tt4  1620.9 mf 0.02341/0.02341 smL  1.0056 smH  0.9119 F,Tt5    737.96   1326.7 Choked
+    5.00 w1.00 nuL 0.61395 nuH 1.05666 Tt4  1613.5 mf 0.02341/0.02341 smL  1.0707 smH  0.9394 F,Tt5    744.89   1321.4 Choked
+    5.50 w1.00 nuL 0.60574 nuH 1.06724 Tt4  1607.7 mf 0.02341/0.02341 smL  1.1123 smH  0.9569 F,Tt5    750.41   1317.1 Choked
+    6.00 w1.00 nuL 0.60085 nuH 1.07405 Tt4  1603.7 mf 0.02341/0.02341 smL  1.1390 smH  0.9680 F,Tt5    754.22   1314.2 Choked
+    6.50 w1.00 nuL 0.59784 nuH 1.07841 Tt4  1601.1 mf 0.02341/0.02341 smL  1.1561 smH  0.9751 F,Tt5    756.75   1312.3 Choked
+== lit at 3.0 Held(1.15)  (326 of 326 points, 31 ms; LP calls 1335, burn trials 9158); start Choked M9 1.000
+   min sm_lp 0.3372@0.24  min sm_hp 0.5658@0.40  max Tt4 1695.4@0.50  max nu_hp 1.0227@6.50
+    0.00 w0.00 nuL 0.75574 nuH 0.78979 Tt4  1000.0 mf 0.00954/0.00954 smL  0.4057 smH  0.7152 F,Tt5    251.20    775.2 Choked
+    0.50 w0.00 nuL 0.83485 nuH 0.85843 Tt4  1695.4 mf 0.02341/0.02341 smL  0.4043 smH  0.5731 F,Tt5    479.53   1314.3 Choked
+    1.00 w0.00 nuL 0.91219 nuH 0.92694 Tt4  1475.3 mf 0.02341/0.02341 smL  0.6323 smH  0.7308 F,Tt5    568.17   1143.6 Choked
+    1.50 w0.00 nuL 0.93731 nuH 0.94894 Tt4  1422.5 mf 0.02341/0.02341 smL  0.7012 smH  0.7758 F,Tt5    597.54   1102.7 Choked
+    2.00 w0.00 nuL 0.94552 nuH 0.95593 Tt4  1407.0 mf 0.02341/0.02341 smL  0.7227 smH  0.7896 F,Tt5    607.09   1090.7 Choked
+    2.50 w0.00 nuL 0.94821 nuH 0.95811 Tt4  1402.2 mf 0.02341/0.02341 smL  0.7295 smH  0.7939 F,Tt5    610.15   1087.0 Choked
+    3.00 w0.00 nuL 0.94909 nuH 0.95879 Tt4  1400.7 mf 0.02341/0.02341 smL  0.7316 smH  0.7952 F,Tt5    611.13   1085.8 Choked
+    3.50 w1.00 nuL 0.82519 nuH 0.97298 Tt4  1505.7 mf 0.02341/0.02341 smL  0.7372 smH  0.8064 F,Tt5    837.19   1208.7 Choked
+    4.00 w1.00 nuL 0.78598 nuH 0.99235 Tt4  1521.2 mf 0.02341/0.02341 smL  0.7903 smH  0.8381 F,Tt5    819.56   1219.7 Choked
+    4.50 w1.00 nuL 0.77238 nuH 1.00558 Tt4  1518.3 mf 0.02341/0.02341 smL  0.8284 smH  0.8609 F,Tt5    822.93   1217.6 Choked
+    5.00 w1.00 nuL 0.76642 nuH 1.01362 Tt4  1514.3 mf 0.02341/0.02341 smL  0.8515 smH  0.8748 F,Tt5    827.48   1214.8 Choked
+    5.50 w1.00 nuL 0.76340 nuH 1.01835 Tt4  1511.5 mf 0.02341/0.02341 smL  0.8650 smH  0.8830 F,Tt5    830.67   1212.8 Choked
+    6.00 w1.00 nuL 0.76176 nuH 1.02112 Tt4  1509.8 mf 0.02341/0.02341 smL  0.8729 smH  0.8877 F,Tt5    832.65   1211.6 Choked
+    6.50 w1.00 nuL 0.76084 nuH 1.02272 Tt4  1508.8 mf 0.02341/0.02341 smL  0.8775 smH  0.8905 F,Tt5    833.82   1210.9 Choked
+== lit at 3.0 Held(1.3)  (326 of 326 points, 32 ms; LP calls 1335, burn trials 9163); start Choked M9 1.000
+   min sm_lp 0.3372@0.24  min sm_hp 0.5658@0.40  max Tt4 1695.4@0.50  max nu_hp 0.9843@6.50
+    0.00 w0.00 nuL 0.75574 nuH 0.78979 Tt4  1000.0 mf 0.00954/0.00954 smL  0.4057 smH  0.7152 F,Tt5    251.20    775.2 Choked
+    0.50 w0.00 nuL 0.83485 nuH 0.85843 Tt4  1695.4 mf 0.02341/0.02341 smL  0.4043 smH  0.5731 F,Tt5    479.53   1314.3 Choked
+    1.00 w0.00 nuL 0.91219 nuH 0.92694 Tt4  1475.3 mf 0.02341/0.02341 smL  0.6323 smH  0.7308 F,Tt5    568.17   1143.6 Choked
+    1.50 w0.00 nuL 0.93731 nuH 0.94894 Tt4  1422.5 mf 0.02341/0.02341 smL  0.7012 smH  0.7758 F,Tt5    597.54   1102.7 Choked
+    2.00 w0.00 nuL 0.94552 nuH 0.95593 Tt4  1407.0 mf 0.02341/0.02341 smL  0.7227 smH  0.7896 F,Tt5    607.09   1090.7 Choked
+    2.50 w0.00 nuL 0.94821 nuH 0.95811 Tt4  1402.2 mf 0.02341/0.02341 smL  0.7295 smH  0.7939 F,Tt5    610.15   1087.0 Choked
+    3.00 w0.00 nuL 0.94909 nuH 0.95879 Tt4  1400.7 mf 0.02341/0.02341 smL  0.7316 smH  0.7952 F,Tt5    611.13   1085.8 Choked
+    3.50 w1.00 nuL 0.89622 nuH 0.96515 Tt4  1443.5 mf 0.02341/0.02341 smL  0.7297 smH  0.8003 F,Tt5    898.89   1136.6 Choked
+    4.00 w1.00 nuL 0.88098 nuH 0.97333 Tt4  1448.8 mf 0.02341/0.02341 smL  0.7473 smH  0.8134 F,Tt5    891.62   1140.3 Choked
+    4.50 w1.00 nuL 0.87618 nuH 0.97854 Tt4  1447.4 mf 0.02341/0.02341 smL  0.7600 smH  0.8223 F,Tt5    893.43   1139.3 Choked
+    5.00 w1.00 nuL 0.87426 nuH 0.98145 Tt4  1446.0 mf 0.02341/0.02341 smL  0.7673 smH  0.8274 F,Tt5    895.43   1138.3 Choked
+    5.50 w1.00 nuL 0.87337 nuH 0.98303 Tt4  1445.0 mf 0.02341/0.02341 smL  0.7712 smH  0.8301 F,Tt5    896.70   1137.7 Choked
+    6.00 w1.00 nuL 0.87293 nuH 0.98387 Tt4  1444.5 mf 0.02341/0.02341 smL  0.7733 smH  0.8316 F,Tt5    897.40   1137.3 Choked
+    6.50 w1.00 nuL 0.87269 nuH 0.98432 Tt4  1444.2 mf 0.02341/0.02341 smL  0.7745 smH  0.8323 F,Tt5    897.79   1137.1 Choked
+== lit at 3.0 Match  (326 of 326 points, 24 ms; LP calls 1335, burn trials 705); start Choked M9 1.000
+   min sm_lp 0.3372@0.24  min sm_hp 0.5658@0.40  max Tt4 1695.4@0.50  max nu_hp 0.9591@5.68
+    0.00 w0.00 nuL 0.75574 nuH 0.78979 Tt4  1000.0 mf 0.00954/0.00954 smL  0.4057 smH  0.7152 F,Tt5    251.20    775.2 Choked
+    0.50 w0.00 nuL 0.83485 nuH 0.85843 Tt4  1695.4 mf 0.02341/0.02341 smL  0.4043 smH  0.5731 F,Tt5    479.53   1314.3 Choked
+    1.00 w0.00 nuL 0.91219 nuH 0.92694 Tt4  1475.3 mf 0.02341/0.02341 smL  0.6323 smH  0.7308 F,Tt5    568.17   1143.6 Choked
+    1.50 w0.00 nuL 0.93731 nuH 0.94894 Tt4  1422.5 mf 0.02341/0.02341 smL  0.7012 smH  0.7758 F,Tt5    597.54   1102.7 Choked
+    2.00 w0.00 nuL 0.94552 nuH 0.95593 Tt4  1407.0 mf 0.02341/0.02341 smL  0.7227 smH  0.7896 F,Tt5    607.09   1090.7 Choked
+    2.50 w0.00 nuL 0.94821 nuH 0.95811 Tt4  1402.2 mf 0.02341/0.02341 smL  0.7295 smH  0.7939 F,Tt5    610.15   1087.0 Choked
+    3.00 w0.00 nuL 0.94909 nuH 0.95879 Tt4  1400.7 mf 0.02341/0.02341 smL  0.7316 smH  0.7952 F,Tt5    611.13   1085.8 Choked
+    3.50 w1.00 nuL 0.94938 nuH 0.95899 Tt4  1400.2 mf 0.02341/0.02341 smL  0.7322 smH  0.7956 F,Tt5    947.15   1085.4 Choked
+    4.00 w1.00 nuL 0.94947 nuH 0.95904 Tt4  1400.1 mf 0.02341/0.02341 smL  0.7324 smH  0.7957 F,Tt5    947.37   1085.3 Choked
+    4.50 w1.00 nuL 0.94950 nuH 0.95906 Tt4  1400.0 mf 0.02341/0.02341 smL  0.7324 smH  0.7957 F,Tt5    947.43   1085.3 Choked
+    5.00 w1.00 nuL 0.94951 nuH 0.95906 Tt4  1400.0 mf 0.02341/0.02341 smL  0.7324 smH  0.7957 F,Tt5    947.45   1085.3 Choked
+    5.50 w1.00 nuL 0.94952 nuH 0.95906 Tt4  1400.0 mf 0.02341/0.02341 smL  0.7324 smH  0.7957 F,Tt5    947.46   1085.3 Choked
+    6.00 w1.00 nuL 0.94952 nuH 0.95906 Tt4  1400.0 mf 0.02341/0.02341 smL  0.7324 smH  0.7957 F,Tt5    947.46   1085.3 Choked
+    6.50 w1.00 nuL 0.94952 nuH 0.95906 Tt4  1400.0 mf 0.02341/0.02341 smL  0.7324 smH  0.7957 F,Tt5    947.46   1085.3 Choked
+######## dt
+== held mid-ramp DS  (126 of 126 points, 13 ms; LP calls 535, burn trials 5009); start Choked M9 1.000
+   min sm_lp 0.3372@0.24  min sm_hp 0.5538@0.42  max Tt4 1827.1@0.50  max nu_hp 1.0522@2.50
+    0.00 w0.00 nuL 0.75574 nuH 0.78979 Tt4  1000.0 mf 0.00954/0.00954 smL  0.4057 smH  0.7152 F,Tt5    251.20    775.2 Choked
+    2.50 w1.00 nuL 0.61683 nuH 1.05224 Tt4  1616.6 mf 0.02341/0.02341 smL  1.0541 smH  0.9320 F,Tt5    742.06   1323.6 Choked
+== held mid-ramp DS/2  (251 of 251 points, 26 ms; LP calls 1035, burn trials 10019); start Choked M9 1.000
+   min sm_lp 0.3372@0.23  min sm_hp 0.5538@0.43  max Tt4 1827.2@0.50  max nu_hp 1.0522@2.50
+    0.00 w0.00 nuL 0.75574 nuH 0.78979 Tt4  1000.0 mf 0.00954/0.00954 smL  0.4057 smH  0.7152 F,Tt5    251.20    775.2 Choked
+    2.50 w1.00 nuL 0.61683 nuH 1.05225 Tt4  1616.6 mf 0.02341/0.02341 smL  1.0541 smH  0.9320 F,Tt5    742.06   1323.6 Choked
+   DS vs DS/2 worst |d nu| at shared times: 1.486e-4
+######## redline
+== redline, unlit  (126 of 126 points, 40 ms; LP calls 2293, burn trials 0); start Choked M9 1.000
+   min sm_lp 0.3372@0.24  min sm_hp 0.5754@0.28  max Tt4 1480.0@0.60  max nu_hp 0.9575@2.50
+    0.00 w0.00 nuL 0.75574 nuH 0.78979 Tt4  1000.0 mf 0.00954/0.00954 smL  0.4057 smH  0.7152 F,Tt5    251.20    775.2 Choked
+    0.20 w0.00 nuL 0.77133 nuH 0.80296 Tt4  1350.4 mf 0.01508/0.01508 smL  0.3385 smH  0.5965 F,Tt5    329.64   1046.8 Choked
+    0.40 w0.00 nuL 0.80694 nuH 0.83383 Tt4  1480.0 mf 0.01849/0.02063 smL  0.3863 smH  0.5993 F,Tt5    399.75   1147.3 Choked
+    0.60 w0.00 nuL 0.83982 nuH 0.86279 Tt4  1480.0 mf 0.02001/0.02341 smL  0.4619 smH  0.6407 F,Tt5    449.88   1147.3 Choked
+    0.80 w0.00 nuL 0.86774 nuH 0.88758 Tt4  1480.0 mf 0.02134/0.02341 smL  0.5273 smH  0.6755 F,Tt5    494.66   1147.3 Choked
+    1.00 w0.00 nuL 0.89114 nuH 0.90838 Tt4  1480.0 mf 0.02248/0.02341 smL  0.5823 smH  0.7042 F,Tt5    533.55   1147.3 Choked
+    1.20 w0.00 nuL 0.91053 nuH 0.92555 Tt4  1478.9 mf 0.02341/0.02341 smL  0.6278 smH  0.7279 F,Tt5    566.29   1146.5 Choked
+    1.40 w0.00 nuL 0.92459 nuH 0.93792 Tt4  1448.2 mf 0.02341/0.02341 smL  0.6669 smH  0.7536 F,Tt5    582.70   1122.6 Choked
+    1.60 w0.00 nuL 0.93357 nuH 0.94575 Tt4  1429.8 mf 0.02341/0.02341 smL  0.6913 smH  0.7694 F,Tt5    593.21   1108.4 Choked
+    1.80 w0.00 nuL 0.93932 nuH 0.95070 Tt4  1418.6 mf 0.02341/0.02341 smL  0.7066 smH  0.7793 F,Tt5    599.91   1099.7 Choked
+    2.00 w0.00 nuL 0.94299 nuH 0.95383 Tt4  1411.7 mf 0.02341/0.02341 smL  0.7163 smH  0.7855 F,Tt5    604.18   1094.3 Choked
+    2.20 w0.00 nuL 0.94535 nuH 0.95579 Tt4  1407.3 mf 0.02341/0.02341 smL  0.7223 smH  0.7893 F,Tt5    606.89   1090.9 Choked
+    2.40 w0.00 nuL 0.94685 nuH 0.95703 Tt4  1404.6 mf 0.02341/0.02341 smL  0.7261 smH  0.7918 F,Tt5    608.62   1088.8 Choked
+    2.50 w0.00 nuL 0.94739 nuH 0.95746 Tt4  1403.7 mf 0.02341/0.02341 smL  0.7275 smH  0.7926 F,Tt5    609.22   1088.1 Choked
+== redline, held mid-ramp  (16 of 126 points, 3 ms; LP calls 135, burn trials 661); start Choked M9 1.000
+   STOPPED at s=0.30: Some("rung-46 topping cannot reach Tt4_max=1480.0 at nu=(0.7794,0.8178) -- redline below the flow's floor Tt4.")
+   min sm_lp 0.3372@0.24  min sm_hp 0.5745@0.28  max Tt4 1480.0@0.30  max nu_hp 0.8178@0.30
+    0.00 w0.00 nuL 0.75574 nuH 0.78979 Tt4  1000.0 mf 0.00954/0.00954 smL  0.4057 smH  0.7152 F,Tt5    251.20    775.2 Choked
+    0.20 w0.00 nuL 0.77133 nuH 0.80296 Tt4  1350.4 mf 0.01508/0.01508 smL  0.3385 smH  0.5965 F,Tt5    329.64   1046.8 Choked
+    0.30 w0.50 nuL 0.77944 nuH 0.81779 Tt4  1480.0 mf 0.01750/0.01786 smL  0.3457 smH  0.5772 F,Tt5    492.35   1191.9 Choked
+== redline, match mid-ramp  (126 of 126 points, 43 ms; LP calls 2293, burn trials 2211); start Choked M9 1.000
+   min sm_lp 0.3372@0.24  min sm_hp 0.5754@0.28  max Tt4 1480.0@0.60  max nu_hp 0.9575@2.50
+    0.00 w0.00 nuL 0.75574 nuH 0.78979 Tt4  1000.0 mf 0.00954/0.00954 smL  0.4057 smH  0.7152 F,Tt5    251.20    775.2 Choked
+    0.20 w0.00 nuL 0.77133 nuH 0.80296 Tt4  1350.4 mf 0.01508/0.01508 smL  0.3385 smH  0.5965 F,Tt5    329.64   1046.8 Choked
+    0.40 w1.00 nuL 0.80694 nuH 0.83383 Tt4  1480.0 mf 0.01849/0.02063 smL  0.3863 smH  0.5993 F,Tt5    597.85   1147.3 Choked
+    0.60 w1.00 nuL 0.83982 nuH 0.86279 Tt4  1480.0 mf 0.02001/0.02341 smL  0.4619 smH  0.6407 F,Tt5    671.64   1147.3 Choked
+    0.80 w1.00 nuL 0.86774 nuH 0.88758 Tt4  1480.0 mf 0.02134/0.02341 smL  0.5273 smH  0.6755 F,Tt5    737.56   1147.3 Choked
+    1.00 w1.00 nuL 0.89114 nuH 0.90838 Tt4  1480.0 mf 0.02248/0.02341 smL  0.5823 smH  0.7042 F,Tt5    794.80   1147.3 Choked
+    1.20 w1.00 nuL 0.91053 nuH 0.92555 Tt4  1478.9 mf 0.02341/0.02341 smL  0.6278 smH  0.7279 F,Tt5    843.44   1146.5 Choked
+    1.40 w1.00 nuL 0.92459 nuH 0.93792 Tt4  1448.2 mf 0.02341/0.02341 smL  0.6669 smH  0.7536 F,Tt5    881.07   1122.6 Choked
+    1.60 w1.00 nuL 0.93357 nuH 0.94575 Tt4  1429.8 mf 0.02341/0.02341 smL  0.6913 smH  0.7694 F,Tt5    905.20   1108.4 Choked
+    1.80 w1.00 nuL 0.93932 nuH 0.95070 Tt4  1418.6 mf 0.02341/0.02341 smL  0.7066 smH  0.7793 F,Tt5    920.62   1099.7 Choked
+    2.00 w1.00 nuL 0.94299 nuH 0.95383 Tt4  1411.7 mf 0.02341/0.02341 smL  0.7163 smH  0.7855 F,Tt5    930.44   1094.3 Choked
+    2.20 w1.00 nuL 0.94535 nuH 0.95579 Tt4  1407.3 mf 0.02341/0.02341 smL  0.7223 smH  0.7893 F,Tt5    936.69   1090.9 Choked
+    2.40 w1.00 nuL 0.94685 nuH 0.95703 Tt4  1404.6 mf 0.02341/0.02341 smL  0.7261 smH  0.7918 F,Tt5    940.66   1088.8 Choked
+    2.50 w1.00 nuL 0.94739 nuH 0.95746 Tt4  1403.7 mf 0.02341/0.02341 smL  0.7275 smH  0.7926 F,Tt5    942.06   1088.1 Choked
+######## floor
+== LP floor, unlit  (126 of 126 points, 32 ms; LP calls 1935, burn trials 0); start Choked M9 1.000
+   min sm_lp 0.3636@0.16  min sm_hp 0.5469@0.52  max Tt4 1730.1@0.54  max nu_hp 0.9579@2.50
+    0.00 w0.00 nuL 0.75574 nuH 0.78979 Tt4  1000.0 mf 0.00954/0.00954 smL  0.4057 smH  0.7152 F,Tt5    251.20    775.2 Choked
+    0.20 w0.00 nuL 0.76807 nuH 0.80016 Tt4  1227.3 mf 0.01319/0.01508 smL  0.3636 smH  0.6362 F,Tt5    305.64    951.4 Choked
+    0.40 w0.00 nuL 0.79341 nuH 0.82199 Tt4  1445.9 mf 0.01737/0.02063 smL  0.3636 smH  0.5928 F,Tt5    374.57   1120.8 Choked
+    0.60 w0.00 nuL 0.84104 nuH 0.86388 Tt4  1673.9 mf 0.02341/0.02341 smL  0.4231 smH  0.5867 F,Tt5    486.47   1297.6 Choked
+    0.80 w0.00 nuL 0.88034 nuH 0.89870 Tt4  1554.2 mf 0.02341/0.02341 smL  0.5407 smH  0.6692 F,Tt5    531.22   1204.8 Choked
+    1.00 w0.00 nuL 0.90533 nuH 0.92086 Tt4  1491.1 mf 0.02341/0.02341 smL  0.6129 smH  0.7179 F,Tt5    560.17   1155.9 Choked
+    1.20 w0.00 nuL 0.92127 nuH 0.93493 Tt4  1455.3 mf 0.02341/0.02341 smL  0.6576 smH  0.7475 F,Tt5    578.77   1128.1 Choked
+    1.40 w0.00 nuL 0.93145 nuH 0.94386 Tt4  1434.1 mf 0.02341/0.02341 smL  0.6855 smH  0.7656 F,Tt5    590.69   1111.7 Choked
+    1.60 w0.00 nuL 0.93796 nuH 0.94950 Tt4  1421.3 mf 0.02341/0.02341 smL  0.7030 smH  0.7769 F,Tt5    598.30   1101.8 Choked
+    1.80 w0.00 nuL 0.94212 nuH 0.95307 Tt4  1413.3 mf 0.02341/0.02341 smL  0.7139 smH  0.7840 F,Tt5    603.15   1095.6 Choked
+    2.00 w0.00 nuL 0.94479 nuH 0.95531 Tt4  1408.4 mf 0.02341/0.02341 smL  0.7209 smH  0.7884 F,Tt5    606.24   1091.8 Choked
+    2.20 w0.00 nuL 0.94649 nuH 0.95673 Tt4  1405.3 mf 0.02341/0.02341 smL  0.7252 smH  0.7912 F,Tt5    608.20   1089.3 Choked
+    2.40 w0.00 nuL 0.94759 nuH 0.95761 Tt4  1403.3 mf 0.02341/0.02341 smL  0.7279 smH  0.7929 F,Tt5    609.44   1087.8 Choked
+    2.50 w0.00 nuL 0.94797 nuH 0.95792 Tt4  1402.6 mf 0.02341/0.02341 smL  0.7289 smH  0.7935 F,Tt5    609.88   1087.3 Choked
+== LP floor, held mid-ramp  (126 of 126 points, 47 ms; LP calls 1944, burn trials 16613); start Choked M9 1.000
+   min sm_lp 0.3636@0.32  min sm_hp 0.5293@0.54  max Tt4 1909.2@0.54  max nu_hp 1.0507@2.50
+    0.00 w0.00 nuL 0.75574 nuH 0.78979 Tt4  1000.0 mf 0.00954/0.00954 smL  0.4057 smH  0.7152 F,Tt5    251.20    775.2 Choked
+    0.20 w0.00 nuL 0.76807 nuH 0.80016 Tt4  1227.3 mf 0.01319/0.01508 smL  0.3636 smH  0.6362 F,Tt5    305.64    951.4 Choked
+    0.40 w1.00 nuL 0.73118 nuH 0.82237 Tt4  1492.8 mf 0.01698/0.02063 smL  0.3636 smH  0.5870 F,Tt5    559.21   1233.4 Choked
+    0.60 w1.00 nuL 0.71566 nuH 0.86870 Tt4  1855.0 mf 0.02341/0.02341 smL  0.4199 smH  0.5688 F,Tt5    574.04   1494.9 Choked
+    0.80 w1.00 nuL 0.71218 nuH 0.91223 Tt4  1749.7 mf 0.02341/0.02341 smL  0.5619 smH  0.6674 F,Tt5    638.48   1419.6 Choked
+    1.00 w1.00 nuL 0.69818 nuH 0.94470 Tt4  1700.1 mf 0.02341/0.02341 smL  0.6680 smH  0.7347 F,Tt5    673.48   1383.9 Choked
+    1.20 w1.00 nuL 0.68207 nuH 0.96989 Tt4  1672.9 mf 0.02341/0.02341 smL  0.7527 smH  0.7841 F,Tt5    694.15   1364.4 Choked
+    1.40 w1.00 nuL 0.66696 nuH 0.98997 Tt4  1656.2 mf 0.02341/0.02341 smL  0.8225 smH  0.8220 F,Tt5    707.60   1352.2 Choked
+    1.60 w1.00 nuL 0.65387 nuH 1.00626 Tt4  1644.6 mf 0.02341/0.02341 smL  0.8809 smH  0.8518 F,Tt5    717.21   1343.9 Choked
+    1.80 w1.00 nuL 0.64290 nuH 1.01961 Tt4  1636.1 mf 0.02341/0.02341 smL  0.9301 smH  0.8757 F,Tt5    724.56   1337.7 Choked
+    2.00 w1.00 nuL 0.63388 nuH 1.03065 Tt4  1629.4 mf 0.02341/0.02341 smL  0.9715 smH  0.8950 F,Tt5    730.46   1332.9 Choked
+    2.20 w1.00 nuL 0.62651 nuH 1.03980 Tt4  1623.9 mf 0.02341/0.02341 smL  1.0063 smH  0.9109 F,Tt5    735.32   1328.9 Choked
+    2.40 w1.00 nuL 0.62050 nuH 1.04742 Tt4  1619.5 mf 0.02341/0.02341 smL  1.0355 smH  0.9238 F,Tt5    739.40   1325.7 Choked
+    2.50 w1.00 nuL 0.61793 nuH 1.05074 Tt4  1617.5 mf 0.02341/0.02341 smL  1.0484 smH  0.9295 F,Tt5    741.19   1324.3 Choked
+######## govern
+== govern Thrust, unlit  (126 of 126 points, 103 ms; LP calls 6164, burn trials 0); start Choked M9 1.000
+   min sm_lp 0.2989@0.18  min sm_hp 0.5134@0.26  max Tt4 1927.4@0.50  max nu_hp 0.9591@2.20
+    0.00 w0.00 nuL 0.75574 nuH 0.78979 Tt4  1000.0 mf 0.00954/0.00954 smL  0.4057 smH  0.7152 F,Tt5    251.20    775.2 Choked
+    0.20 w0.00 nuL 0.78603 nuH 0.81574 Tt4  1658.4 mf 0.02012/0.02012 smL  0.3003 smH  0.5209 F,Tt5    395.34   1285.6 Choked
+    0.40 w0.00 nuL 0.85007 nuH 0.87219 Tt4  1896.9 mf 0.02777/0.02777 smL  0.4019 smH  0.5420 F,Tt5    539.49   1470.4 Choked
+    0.60 w0.00 nuL 0.91054 nuH 0.92580 Tt4  1674.0 mf 0.02757/0.02757 smL  0.5886 smH  0.6738 F,Tt5    611.57   1297.7 Choked
+    0.80 w0.00 nuL 0.93466 nuH 0.94684 Tt4  1491.6 mf 0.02489/0.02489 smL  0.6811 smH  0.7526 F,Tt5    611.57   1156.3 Choked
+    1.00 w0.00 nuL 0.94365 nuH 0.95452 Tt4  1433.8 mf 0.02396/0.02396 smL  0.7133 smH  0.7797 F,Tt5    611.57   1111.5 Choked
+    1.20 w0.00 nuL 0.94714 nuH 0.95742 Tt4  1412.8 mf 0.02362/0.02362 smL  0.7253 smH  0.7898 F,Tt5    611.57   1095.2 Choked
+    1.40 w0.00 nuL 0.94852 nuH 0.95851 Tt4  1404.9 mf 0.02349/0.02349 smL  0.7299 smH  0.7936 F,Tt5    611.57   1089.0 Choked
+    1.60 w0.00 nuL 0.94908 nuH 0.95891 Tt4  1401.8 mf 0.02344/0.02344 smL  0.7316 smH  0.7950 F,Tt5    611.57   1086.7 Choked
+    1.80 w0.00 nuL 0.94932 nuH 0.95905 Tt4  1400.7 mf 0.02342/0.02342 smL  0.7322 smH  0.7955 F,Tt5    611.57   1085.8 Choked
+    2.00 w0.00 nuL 0.94942 nuH 0.95909 Tt4  1400.2 mf 0.02341/0.02341 smL  0.7324 smH  0.7957 F,Tt5    611.57   1085.4 Choked
+    2.20 w0.00 nuL 0.94946 nuH 0.95909 Tt4  1400.1 mf 0.02341/0.02341 smL  0.7325 smH  0.7958 F,Tt5    611.57   1085.3 Choked
+    2.40 w0.00 nuL 0.94949 nuH 0.95909 Tt4  1400.0 mf 0.02341/0.02341 smL  0.7325 smH  0.7958 F,Tt5    611.57   1085.3 Choked
+    2.50 w0.00 nuL 0.94949 nuH 0.95909 Tt4  1400.0 mf 0.02341/0.02341 smL  0.7325 smH  0.7958 F,Tt5    611.57   1085.3 Choked
+== govern Thrust, held mid-ramp  (126 of 126 points, 575 ms; LP calls 21854, burn trials 250372); start Choked M9 1.000
+   min sm_lp 0.2306@0.44  min sm_hp 0.3778@0.44  max Tt4 2578.6@0.50  max nu_hp 1.0051@2.48
+    0.00 w0.00 nuL 0.75574 nuH 0.78979 Tt4  1000.0 mf 0.00954/0.00954 smL  0.4057 smH  0.7152 F,Tt5    251.20    775.2 Choked
+    0.20 w0.00 nuL 0.78603 nuH 0.81574 Tt4  1658.4 mf 0.02012/0.02012 smL  0.3003 smH  0.5209 F,Tt5    395.34   1285.6 Choked
+    0.40 w1.00 nuL 0.73818 nuH 0.83633 Tt4  1328.5 mf 0.01509/0.01509 smL  0.4390 smH  0.6609 F,Tt5    602.41   1112.3 Choked
+    0.60 w1.00 nuL 0.73388 nuH 0.88411 Tt4  1328.5 mf 0.01614/0.01614 smL  0.5686 smH  0.7372 F,Tt5    662.35   1112.3 Choked
+    0.80 w1.00 nuL 0.69213 nuH 0.90975 Tt4  1328.5 mf 0.01610/0.01610 smL  0.6573 smH  0.7838 F,Tt5    659.60   1112.3 Choked
+    1.00 w1.00 nuL 0.65722 nuH 0.93015 Tt4  1328.5 mf 0.01605/0.01605 smL  0.7377 smH  0.8210 F,Tt5    656.21   1112.3 Choked
+    1.20 w1.00 nuL 0.63094 nuH 0.94756 Tt4  1328.5 mf 0.01605/0.01605 smL  0.8103 smH  0.8519 F,Tt5    656.32   1112.3 Choked
+    1.40 w1.00 nuL 0.60819 nuH 0.96152 Tt4  1328.5 mf 0.01603/0.01603 smL  0.8752 smH  0.8766 F,Tt5    655.16   1112.3 Choked
+    1.60 w1.00 nuL 0.58568 nuH 0.97218 Tt4  1328.5 mf 0.01595/0.01595 smL  0.9356 smH  0.8961 F,Tt5    650.57   1112.3 Choked
+    1.80 w1.00 nuL 0.56813 nuH 0.98145 Tt4  1328.5 mf 0.01591/0.01591 smL  0.9894 smH  0.9126 F,Tt5    648.28   1112.3 Choked
+    2.00 w1.00 nuL 0.56704 nuH 0.99241 Tt4  1328.5 mf 0.01611/0.01611 smL  1.0232 smH  0.9287 F,Tt5    659.73   1112.3 Choked
+    2.20 w1.00 nuL 0.54602 nuH 0.99683 Tt4  1328.5 mf 0.01593/0.01593 smL  1.0738 smH  0.9384 F,Tt5    649.67   1112.3 Choked
+    2.40 w1.00 nuL 0.54703 nuH 1.00482 Tt4  1328.5 mf 0.01609/0.01609 smL  1.0956 smH  0.9497 F,Tt5    659.12   1112.3 Choked
+    2.50 w1.00 nuL 0.53009 nuH 1.00442 Tt4  1328.5 mf 0.01588/0.01588 smL  1.1286 smH  0.9517 F,Tt5    646.99   1112.3 Choked
+== govern Thrust, match mid-ramp  (126 of 126 points, 393 ms; LP calls 19560, burn trials 18817); start Choked M9 1.000
+   min sm_lp 0.1543@0.42  min sm_hp 0.3254@0.42  max Tt4 2580.0@0.48  max nu_hp 0.8586@2.46
+    0.00 w0.00 nuL 0.75574 nuH 0.78979 Tt4  1000.0 mf 0.00954/0.00954 smL  0.4057 smH  0.7152 F,Tt5    251.20    775.2 Choked
+    0.20 w0.00 nuL 0.78603 nuH 0.81574 Tt4  1658.4 mf 0.02012/0.02012 smL  0.3003 smH  0.5209 F,Tt5    395.34   1285.6 Choked
+    0.40 w1.00 nuL 0.78420 nuH 0.81696 Tt4   581.8 mf 0.00290/0.00290 smL  0.6378 smH  0.9937 F,Tt5    572.87    451.0 Choked
+    0.60 w1.00 nuL 0.82021 nuH 0.85179 Tt4   599.0 mf 0.00324/0.00324 smL  0.7110 smH  1.0232 F,Tt5    659.48    464.3 Choked
+    0.80 w1.00 nuL 0.81578 nuH 0.85136 Tt4   594.2 mf 0.00314/0.00314 smL  0.7124 smH  1.0264 F,Tt5    653.39    460.6 Choked
+    1.00 w1.00 nuL 0.81201 nuH 0.85068 Tt4   590.5 mf 0.00307/0.00307 smL  0.7127 smH  1.0283 F,Tt5    647.85    457.8 Choked
+    1.20 w1.00 nuL 0.81514 nuH 0.85519 Tt4   599.0 mf 0.00324/0.00324 smL  0.7194 smH  1.0278 F,Tt5    658.22    464.3 Choked
+    1.40 w1.00 nuL 0.81549 nuH 0.85690 Tt4   599.0 mf 0.00324/0.00324 smL  0.7234 smH  1.0299 F,Tt5    660.84    464.3 Choked
+    1.60 w1.00 nuL 0.81303 nuH 0.85588 Tt4   598.6 mf 0.00323/0.00323 smL  0.7213 smH  1.0290 F,Tt5    656.69    464.0 Choked
+    1.80 w1.00 nuL 0.81396 nuH 0.85746 Tt4   599.0 mf 0.00324/0.00324 smL  0.7248 smH  1.0307 F,Tt5    659.85    464.3 Choked
+    2.00 w1.00 nuL 0.80872 nuH 0.85366 Tt4   590.5 mf 0.00307/0.00307 smL  0.7201 smH  1.0323 F,Tt5    648.07    457.7 Choked
+    2.20 w1.00 nuL 0.80992 nuH 0.85512 Tt4   591.5 mf 0.00309/0.00309 smL  0.7230 smH  1.0333 F,Tt5    651.44    458.6 Choked
+    2.40 w1.00 nuL 0.80804 nuH 0.85388 Tt4   590.5 mf 0.00307/0.00307 smL  0.7207 smH  1.0326 F,Tt5    647.61    457.7 Choked
+    2.50 w1.00 nuL 0.81190 nuH 0.85725 Tt4   599.0 mf 0.00324/0.00324 smL  0.7245 smH  1.0305 F,Tt5    657.27    464.3 Choked
+== govern HpSpeed, unlit  (126 of 126 points, 101 ms; LP calls 5994, burn trials 0); start Choked M9 1.000
+   min sm_lp 0.2787@0.12  min sm_hp 0.4957@0.18  max Tt4 2022.8@0.50  max nu_hp 0.9591@2.50
+    0.00 w0.00 nuL 0.75574 nuH 0.78979 Tt4  1000.0 mf 0.00954/0.00954 smL  0.4057 smH  0.7152 F,Tt5    251.20    775.2 Choked
+    0.20 w0.00 nuL 0.80018 nuH 0.82823 Tt4  1821.8 mf 0.02328/0.02328 smL  0.2997 smH  0.4962 F,Tt5    440.15   1412.2 Choked
+    0.40 w0.00 nuL 0.87217 nuH 0.89198 Tt4  1977.9 mf 0.03083/0.03083 smL  0.4407 smH  0.5515 F,Tt5    595.69   1533.3 Choked
+    0.60 w0.00 nuL 0.93402 nuH 0.94669 Tt4  1618.4 mf 0.02776/0.02776 smL  0.6551 smH  0.7170 F,Tt5    642.86   1254.6 Choked
+    0.80 w0.00 nuL 0.94663 nuH 0.95739 Tt4  1428.9 mf 0.02399/0.02399 smL  0.7218 smH  0.7850 F,Tt5    615.61   1107.7 Choked
+    1.00 w0.00 nuL 0.94858 nuH 0.95884 Tt4  1403.8 mf 0.02347/0.02347 smL  0.7309 smH  0.7944 F,Tt5    611.63   1088.2 Choked
+    1.20 w0.00 nuL 0.94900 nuH 0.95903 Tt4  1400.5 mf 0.02340/0.02340 smL  0.7322 smH  0.7956 F,Tt5    611.23   1085.6 Choked
+    1.40 w0.00 nuL 0.94917 nuH 0.95906 Tt4  1400.0 mf 0.02340/0.02340 smL  0.7324 smH  0.7958 F,Tt5    611.27   1085.3 Choked
+    1.60 w0.00 nuL 0.94927 nuH 0.95906 Tt4  1400.0 mf 0.02340/0.02340 smL  0.7324 smH  0.7958 F,Tt5    611.35   1085.2 Choked
+    1.80 w0.00 nuL 0.94934 nuH 0.95906 Tt4  1400.0 mf 0.02340/0.02340 smL  0.7324 smH  0.7958 F,Tt5    611.41   1085.2 Choked
+    2.00 w0.00 nuL 0.94939 nuH 0.95906 Tt4  1400.0 mf 0.02340/0.02340 smL  0.7324 smH  0.7958 F,Tt5    611.46   1085.2 Choked
+    2.20 w0.00 nuL 0.94943 nuH 0.95906 Tt4  1400.0 mf 0.02340/0.02340 smL  0.7324 smH  0.7958 F,Tt5    611.49   1085.2 Choked
+    2.40 w0.00 nuL 0.94946 nuH 0.95906 Tt4  1400.0 mf 0.02340/0.02340 smL  0.7324 smH  0.7958 F,Tt5    611.51   1085.3 Choked
+    2.50 w0.00 nuL 0.94946 nuH 0.95906 Tt4  1400.0 mf 0.02340/0.02340 smL  0.7324 smH  0.7958 F,Tt5    611.52   1085.3 Choked
+== govern HpSpeed, held mid-ramp  (126 of 126 points, 405 ms; LP calls 19889, burn trials 139299); start Choked M9 1.000
+   min sm_lp 0.2787@0.12  min sm_hp 0.4957@0.18  max Tt4 2071.8@0.50  max nu_hp 0.9622@2.50
+    0.00 w0.00 nuL 0.75574 nuH 0.78979 Tt4  1000.0 mf 0.00954/0.00954 smL  0.4057 smH  0.7152 F,Tt5    251.20    775.2 Choked
+    0.20 w0.00 nuL 0.80018 nuH 0.82823 Tt4  1821.8 mf 0.02328/0.02328 smL  0.2997 smH  0.4962 F,Tt5    440.15   1412.2 Choked
+    0.40 w1.00 nuL 0.83331 nuH 0.89198 Tt4  2008.6 mf 0.03011/0.03011 smL  0.4334 smH  0.5513 F,Tt5    695.62   1603.8 Choked
+    0.60 w1.00 nuL 0.82617 nuH 0.94669 Tt4  1634.5 mf 0.02526/0.02526 smL  0.6452 smH  0.7313 F,Tt5    804.37   1336.6 Choked
+    0.80 w1.00 nuL 0.73827 nuH 0.95739 Tt4  1403.9 mf 0.01926/0.01926 smL  0.7430 smH  0.8267 F,Tt5    754.15   1168.1 Choked
+    1.00 w1.00 nuL 0.65243 nuH 0.95884 Tt4  1357.4 mf 0.01708/0.01708 smL  0.8140 smH  0.8569 F,Tt5    684.30   1133.7 Choked
+    1.20 w1.00 nuL 0.58077 nuH 0.95903 Tt4  1341.1 mf 0.01584/0.01584 smL  0.9014 smH  0.8735 F,Tt5    630.84   1121.6 Choked
+    1.40 w1.00 nuL 0.52128 nuH 0.95906 Tt4  1331.4 mf 0.01498/0.01498 smL  1.0070 smH  0.8855 F,Tt5    591.66   1114.4 Choked
+    1.60 w1.00 nuL 0.47154 nuH 0.95915 Tt4  1328.5 mf 0.01442/0.01442 smL  1.1268 smH  0.8937 F,Tt5    562.42   1112.3 Choked
+    1.80 w1.00 nuL 0.43046 nuH 0.95955 Tt4  1328.5 mf 0.01404/0.01404 smL  1.2561 smH  0.8999 F,Tt5    541.07   1112.3 Choked
+    2.00 w1.00 nuL 0.39632 nuH 0.96017 Tt4  1328.5 mf 0.01376/0.01376 smL  1.3919 smH  0.9051 F,Tt5    525.42   1112.3 Choked
+    2.20 w1.00 nuL 0.36781 nuH 0.96092 Tt4  1328.5 mf 0.01355/0.01355 smL  1.5307 smH  0.9096 F,Tt5    513.84   1112.3 Choked
+    2.40 w1.00 nuL 0.34391 nuH 0.96174 Tt4  1328.5 mf 0.01339/0.01339 smL  1.6695 smH  0.9135 F,Tt5    505.24   1112.3 Choked
+    2.50 w1.00 nuL 0.33345 nuH 0.96216 Tt4  1328.5 mf 0.01333/0.01333 smL  1.7380 smH  0.9152 F,Tt5    501.81   1112.3 Choked
+== govern HpSpeed, match mid-ramp  (126 of 126 points, 111 ms; LP calls 5994, burn trials 5292); start Choked M9 1.000
+   min sm_lp 0.2787@0.12  min sm_hp 0.4957@0.18  max Tt4 2022.8@0.50  max nu_hp 0.9591@2.50
+    0.00 w0.00 nuL 0.75574 nuH 0.78979 Tt4  1000.0 mf 0.00954/0.00954 smL  0.4057 smH  0.7152 F,Tt5    251.20    775.2 Choked
+    0.20 w0.00 nuL 0.80018 nuH 0.82823 Tt4  1821.8 mf 0.02328/0.02328 smL  0.2997 smH  0.4962 F,Tt5    440.15   1412.2 Choked
+    0.40 w1.00 nuL 0.87217 nuH 0.89198 Tt4  1977.9 mf 0.03083/0.03083 smL  0.4407 smH  0.5515 F,Tt5    719.08   1533.3 Choked
+    0.60 w1.00 nuL 0.93402 nuH 0.94669 Tt4  1618.4 mf 0.02776/0.02776 smL  0.6551 smH  0.7170 F,Tt5    895.66   1254.6 Choked
+    0.80 w1.00 nuL 0.94663 nuH 0.95739 Tt4  1428.9 mf 0.02399/0.02399 smL  0.7218 smH  0.7850 F,Tt5    939.46   1107.7 Choked
+    1.00 w1.00 nuL 0.94858 nuH 0.95884 Tt4  1403.8 mf 0.02347/0.02347 smL  0.7309 smH  0.7944 F,Tt5    945.67   1088.2 Choked
+    1.20 w1.00 nuL 0.94900 nuH 0.95903 Tt4  1400.5 mf 0.02340/0.02340 smL  0.7322 smH  0.7956 F,Tt5    946.71   1085.6 Choked
+    1.40 w1.00 nuL 0.94917 nuH 0.95906 Tt4  1400.0 mf 0.02340/0.02340 smL  0.7324 smH  0.7958 F,Tt5    947.00   1085.3 Choked
+    1.60 w1.00 nuL 0.94927 nuH 0.95906 Tt4  1400.0 mf 0.02340/0.02340 smL  0.7324 smH  0.7958 F,Tt5    947.14   1085.2 Choked
+    1.80 w1.00 nuL 0.94934 nuH 0.95906 Tt4  1400.0 mf 0.02340/0.02340 smL  0.7324 smH  0.7958 F,Tt5    947.23   1085.2 Choked
+    2.00 w1.00 nuL 0.94939 nuH 0.95906 Tt4  1400.0 mf 0.02340/0.02340 smL  0.7324 smH  0.7958 F,Tt5    947.30   1085.2 Choked
+    2.20 w1.00 nuL 0.94943 nuH 0.95906 Tt4  1400.0 mf 0.02340/0.02340 smL  0.7324 smH  0.7958 F,Tt5    947.35   1085.2 Choked
+    2.40 w1.00 nuL 0.94946 nuH 0.95906 Tt4  1400.0 mf 0.02340/0.02340 smL  0.7324 smH  0.7958 F,Tt5    947.38   1085.3 Choked
+    2.50 w1.00 nuL 0.94946 nuH 0.95906 Tt4  1400.0 mf 0.02340/0.02340 smL  0.7324 smH  0.7958 F,Tt5    947.39   1085.3 Choked
+######## hot
+== held Tt7 2200  (126 of 126 points, 17 ms; LP calls 535, burn trials 5444); start Choked M9 1.000
+   min sm_lp 0.3372@0.24  min sm_hp 0.5512@0.44  max Tt4 1858.5@0.50  max nu_hp 1.0719@2.50
+    0.00 w0.00 nuL 0.75574 nuH 0.78979 Tt4  1000.0 mf 0.00954/0.00954 smL  0.4057 smH  0.7152 F,Tt5    251.20    775.2 Choked
+    0.50 w1.00 nuL 0.72460 nuH 0.86237 Tt4  1858.5 mf 0.02341/0.02341 smL  0.3985 smH  0.5558 F,Tt5    618.41   1514.7 Choked
+    1.00 w1.00 nuL 0.65221 nuH 0.95803 Tt4  1732.4 mf 0.02341/0.02341 smL  0.7318 smH  0.7566 F,Tt5    701.51   1423.4 Choked
+    1.50 w1.00 nuL 0.59609 nuH 1.01352 Tt4  1697.5 mf 0.02341/0.02341 smL  0.9586 smH  0.8607 F,Tt5    728.67   1398.0 Choked
+    2.00 w1.00 nuL 0.56131 nuH 1.04882 Tt4  1678.5 mf 0.02341/0.02341 smL  1.1201 smH  0.9226 F,Tt5    744.77   1384.1 Choked
+    2.50 w1.00 nuL 0.54014 nuH 1.07193 Tt4  1665.8 mf 0.02341/0.02341 smL  1.2324 smH  0.9613 F,Tt5    756.00   1374.9 Choked
+== held Tt7 2400  (18 of 126 points, 2 ms; LP calls 101, burn trials 323); start Choked M9 1.000
+   STOPPED at s=0.34: Some("afterburner refused: the duct entry chokes")
+   min sm_lp 0.3372@0.24  min sm_hp 0.5593@0.34  max Tt4 1589.2@0.34  max nu_hp 0.8253@0.34
+    0.00 w0.00 nuL 0.75574 nuH 0.78979 Tt4  1000.0 mf 0.00954/0.00954 smL  0.4057 smH  0.7152 F,Tt5    251.20    775.2 Choked
+    0.34 w0.90 nuL 0.76115 nuH 0.82530 Tt4  1589.2 mf 0.01897/0.01897 smL  0.3435 smH  0.5593 F,Tt5    644.70   1325.3 Choked
+== held Tt7 2600  (17 of 126 points, 2 ms; LP calls 97, burn trials 270); start Choked M9 1.000
+   STOPPED at s=0.32: Some("afterburner refused: the duct entry chokes")
+   min sm_lp 0.3372@0.24  min sm_hp 0.5633@0.32  max Tt4 1551.9@0.32  max nu_hp 0.8215@0.32
+    0.00 w0.00 nuL 0.75574 nuH 0.78979 Tt4  1000.0 mf 0.00954/0.00954 smL  0.4057 smH  0.7152 F,Tt5    251.20    775.2 Choked
+    0.32 w0.70 nuL 0.76642 nuH 0.82150 Tt4  1551.9 mf 0.01841/0.01841 smL  0.3407 smH  0.5633 F,Tt5    628.69   1291.8 Choked
+######## unchoked 600 0.85
+== not fitted  (176 of 176 points, 12 ms; LP calls 0, burn trials 0); start Subsonic M9 0.969
+   min sm_lp -0.1179@0.26  min sm_hp 0.2035@0.34  max Tt4 2316.2@0.50  max nu_hp 0.9588@3.50
+    0.00 w0.00 nuL 0.56297 nuH 0.60855 Tt4   600.0 mf 0.00254/0.00254 smL  0.1812 smH  0.7126 F,Tt5     40.45    465.2 Subsonic
+    0.20 w0.00 nuL 0.59524 nuH 0.63533 Tt4  1613.1 mf 0.01089/0.01089 smL -0.1018 smH  0.2627 F,Tt5    150.01   1250.4 Choked
+    0.40 w0.00 nuL 0.67529 nuH 0.70588 Tt4  2232.4 mf 0.01923/0.01923 smL -0.0701 smH  0.2157 F,Tt5    275.63   1730.6 Choked
+    0.60 w0.00 nuL 0.77041 nuH 0.79230 Tt4  2010.9 mf 0.02341/0.02341 smL  0.1712 smH  0.3953 F,Tt5    405.17   1558.8 Choked
+    0.80 w0.00 nuL 0.83569 nuH 0.85249 Tt4  1708.1 mf 0.02341/0.02341 smL  0.3862 smH  0.5600 F,Tt5    479.13   1324.1 Choked
+    1.00 w0.00 nuL 0.87700 nuH 0.89102 Tt4  1571.6 mf 0.02341/0.02341 smL  0.5172 smH  0.6528 F,Tt5    527.55   1218.3 Choked
+    1.20 w0.00 nuL 0.90321 nuH 0.91565 Tt4  1500.9 mf 0.02341/0.02341 smL  0.5975 smH  0.7074 F,Tt5    558.89   1163.5 Choked
+    1.40 w0.00 nuL 0.91989 nuH 0.93138 Tt4  1461.3 mf 0.02341/0.02341 smL  0.6474 smH  0.7405 F,Tt5    579.06   1132.8 Choked
+    1.60 w0.00 nuL 0.93054 nuH 0.94142 Tt4  1438.0 mf 0.02341/0.02341 smL  0.6786 smH  0.7610 F,Tt5    592.02   1114.7 Choked
+    1.80 w0.00 nuL 0.93736 nuH 0.94783 Tt4  1423.8 mf 0.02341/0.02341 smL  0.6983 smH  0.7738 F,Tt5    600.33   1103.7 Choked
+    2.00 w0.00 nuL 0.94172 nuH 0.95192 Tt4  1415.0 mf 0.02341/0.02341 smL  0.7108 smH  0.7818 F,Tt5    605.66   1096.9 Choked
+    2.20 w0.00 nuL 0.94452 nuH 0.95452 Tt4  1409.5 mf 0.02341/0.02341 smL  0.7187 smH  0.7869 F,Tt5    609.06   1092.6 Choked
+    2.40 w0.00 nuL 0.94631 nuH 0.95618 Tt4  1406.0 mf 0.02341/0.02341 smL  0.7237 smH  0.7902 F,Tt5    611.24   1089.9 Choked
+    2.60 w0.00 nuL 0.94746 nuH 0.95724 Tt4  1403.8 mf 0.02341/0.02341 smL  0.7269 smH  0.7922 F,Tt5    612.63   1088.2 Choked
+    2.80 w0.00 nuL 0.94820 nuH 0.95791 Tt4  1402.4 mf 0.02341/0.02341 smL  0.7289 smH  0.7935 F,Tt5    613.52   1087.1 Choked
+    3.00 w0.00 nuL 0.94867 nuH 0.95833 Tt4  1401.5 mf 0.02341/0.02341 smL  0.7302 smH  0.7943 F,Tt5    614.09   1086.5 Choked
+    3.20 w0.00 nuL 0.94898 nuH 0.95860 Tt4  1401.0 mf 0.02341/0.02341 smL  0.7310 smH  0.7948 F,Tt5    614.45   1086.0 Choked
+    3.40 w0.00 nuL 0.94917 nuH 0.95877 Tt4  1400.6 mf 0.02341/0.02341 smL  0.7316 smH  0.7952 F,Tt5    614.68   1085.7 Choked
+    3.50 w0.00 nuL 0.94924 nuH 0.95883 Tt4  1400.5 mf 0.02341/0.02341 smL  0.7317 smH  0.7953 F,Tt5    614.77   1085.6 Choked
+== fitted unlit  (176 of 176 points, 13 ms; LP calls 738, burn trials 0); start Subsonic M9 0.942
+   min sm_lp -0.1178@0.26  min sm_hp 0.2030@0.34  max Tt4 2318.2@0.50  max nu_hp 0.9588@3.50
+    0.00 w0.00 nuL 0.56129 nuH 0.60852 Tt4   600.0 mf 0.00254/0.00254 smL  0.1825 smH  0.7125 F,Tt5     36.95    465.4 Subsonic
+    0.20 w0.00 nuL 0.59389 nuH 0.63531 Tt4  1615.1 mf 0.01089/0.01089 smL -0.1015 smH  0.2621 F,Tt5    146.20   1252.0 Choked
+    0.40 w0.00 nuL 0.67431 nuH 0.70589 Tt4  2234.8 mf 0.01923/0.01923 smL -0.0701 smH  0.2153 F,Tt5    271.82   1732.4 Choked
+    0.60 w0.00 nuL 0.76975 nuH 0.79234 Tt4  2012.1 mf 0.02341/0.02341 smL  0.1712 smH  0.3952 F,Tt5    401.40   1559.8 Choked
+    0.80 w0.00 nuL 0.83525 nuH 0.85255 Tt4  1708.6 mf 0.02341/0.02341 smL  0.3862 smH  0.5600 F,Tt5    475.44   1324.5 Choked
+    1.00 w0.00 nuL 0.87672 nuH 0.89108 Tt4  1571.8 mf 0.02341/0.02341 smL  0.5173 smH  0.6528 F,Tt5    523.93   1218.5 Choked
+    1.20 w0.00 nuL 0.90303 nuH 0.91571 Tt4  1501.1 mf 0.02341/0.02341 smL  0.5976 smH  0.7075 F,Tt5    555.31   1163.6 Choked
+    1.40 w0.00 nuL 0.91978 nuH 0.93143 Tt4  1461.4 mf 0.02341/0.02341 smL  0.6475 smH  0.7406 F,Tt5    575.52   1132.8 Choked
+    1.60 w0.00 nuL 0.93047 nuH 0.94147 Tt4  1438.0 mf 0.02341/0.02341 smL  0.6787 smH  0.7611 F,Tt5    588.50   1114.7 Choked
+    1.80 w0.00 nuL 0.93731 nuH 0.94787 Tt4  1423.8 mf 0.02341/0.02341 smL  0.6984 smH  0.7738 F,Tt5    596.81   1103.7 Choked
+    2.00 w0.00 nuL 0.94169 nuH 0.95195 Tt4  1415.0 mf 0.02341/0.02341 smL  0.7109 smH  0.7819 F,Tt5    602.14   1096.9 Choked
+    2.20 w0.00 nuL 0.94450 nuH 0.95455 Tt4  1409.5 mf 0.02341/0.02341 smL  0.7187 smH  0.7870 F,Tt5    605.55   1092.6 Choked
+    2.40 w0.00 nuL 0.94630 nuH 0.95620 Tt4  1406.0 mf 0.02341/0.02341 smL  0.7238 smH  0.7902 F,Tt5    607.73   1089.9 Choked
+    2.60 w0.00 nuL 0.94746 nuH 0.95725 Tt4  1403.8 mf 0.02341/0.02341 smL  0.7269 smH  0.7922 F,Tt5    609.12   1088.2 Choked
+    2.80 w0.00 nuL 0.94820 nuH 0.95792 Tt4  1402.4 mf 0.02341/0.02341 smL  0.7290 smH  0.7935 F,Tt5    610.01   1087.1 Choked
+    3.00 w0.00 nuL 0.94867 nuH 0.95834 Tt4  1401.5 mf 0.02341/0.02341 smL  0.7302 smH  0.7943 F,Tt5    610.58   1086.5 Choked
+    3.20 w0.00 nuL 0.94898 nuH 0.95861 Tt4  1401.0 mf 0.02341/0.02341 smL  0.7311 smH  0.7949 F,Tt5    610.94   1086.0 Choked
+    3.40 w0.00 nuL 0.94917 nuH 0.95878 Tt4  1400.6 mf 0.02341/0.02341 smL  0.7316 smH  0.7952 F,Tt5    611.17   1085.7 Choked
+    3.50 w0.00 nuL 0.94924 nuH 0.95884 Tt4  1400.5 mf 0.02341/0.02341 smL  0.7317 smH  0.7953 F,Tt5    611.25   1085.6 Choked
+== held lit at 0.1  (176 of 176 points, 19 ms; LP calls 738, burn trials 7773); start Subsonic M9 0.942
+   min sm_lp -0.1104@0.28  min sm_hp 0.1829@0.34  max Tt4 2443.8@0.50  max nu_hp 1.0680@3.50
+    0.00 w0.00 nuL 0.56129 nuH 0.60852 Tt4   600.0 mf 0.00254/0.00254 smL  0.1825 smH  0.7125 F,Tt5     36.95    465.4 Subsonic
+    0.20 w1.00 nuL 0.57129 nuH 0.63539 Tt4  1651.0 mf 0.01089/0.01089 smL -0.0960 smH  0.2523 F,Tt5    234.58   1348.5 Choked
+    0.40 w1.00 nuL 0.62171 nuH 0.70698 Tt4  2363.5 mf 0.01923/0.01923 smL -0.0665 smH  0.1959 F,Tt5    280.46   1851.4 Choked
+    0.60 w1.00 nuL 0.71123 nuH 0.79522 Tt4  2124.7 mf 0.02341/0.02341 smL  0.1704 smH  0.3830 F,Tt5    450.89   1685.4 Choked
+    0.80 w1.00 nuL 0.73328 nuH 0.85911 Tt4  1853.7 mf 0.02341/0.02341 smL  0.3877 smH  0.5500 F,Tt5    574.98   1494.0 Choked
+    1.00 w1.00 nuL 0.72487 nuH 0.90437 Tt4  1749.7 mf 0.02341/0.02341 smL  0.5349 smH  0.6522 F,Tt5    638.63   1419.6 Choked
+    1.20 w1.00 nuL 0.70745 nuH 0.93819 Tt4  1701.0 mf 0.02341/0.02341 smL  0.6449 smH  0.7224 F,Tt5    672.87   1384.6 Choked
+    1.40 w1.00 nuL 0.68894 nuH 0.96447 Tt4  1674.3 mf 0.02341/0.02341 smL  0.7329 smH  0.7740 F,Tt5    693.06   1365.4 Choked
+    1.60 w1.00 nuL 0.67213 nuH 0.98545 Tt4  1657.7 mf 0.02341/0.02341 smL  0.8056 smH  0.8137 F,Tt5    706.31   1353.4 Choked
+    1.80 w1.00 nuL 0.65781 nuH 1.00248 Tt4  1646.2 mf 0.02341/0.02341 smL  0.8666 smH  0.8450 F,Tt5    715.87   1345.0 Choked
+    2.00 w1.00 nuL 0.64595 nuH 1.01646 Tt4  1637.6 mf 0.02341/0.02341 smL  0.9180 smH  0.8701 F,Tt5    723.27   1338.8 Choked
+    2.20 w1.00 nuL 0.63627 nuH 1.02801 Tt4  1630.7 mf 0.02341/0.02341 smL  0.9613 smH  0.8905 F,Tt5    729.27   1333.8 Choked
+    2.40 w1.00 nuL 0.62840 nuH 1.03760 Tt4  1625.1 mf 0.02341/0.02341 smL  0.9978 smH  0.9071 F,Tt5    734.27   1329.8 Choked
+    2.60 w1.00 nuL 0.62201 nuH 1.04558 Tt4  1620.5 mf 0.02341/0.02341 smL  1.0284 smH  0.9207 F,Tt5    738.47   1326.4 Choked
+    2.80 w1.00 nuL 0.61682 nuH 1.05223 Tt4  1616.6 mf 0.02341/0.02341 smL  1.0541 smH  0.9320 F,Tt5    742.03   1323.6 Choked
+    3.00 w1.00 nuL 0.61259 nuH 1.05779 Tt4  1613.4 mf 0.02341/0.02341 smL  1.0756 smH  0.9413 F,Tt5    745.05   1321.3 Choked
+    3.20 w1.00 nuL 0.60914 nuH 1.06243 Tt4  1610.6 mf 0.02341/0.02341 smL  1.0937 smH  0.9490 F,Tt5    747.62   1319.3 Choked
+    3.40 w1.00 nuL 0.60631 nuH 1.06631 Tt4  1608.3 mf 0.02341/0.02341 smL  1.1088 smH  0.9554 F,Tt5    749.79   1317.6 Choked
+    3.50 w1.00 nuL 0.60509 nuH 1.06800 Tt4  1607.3 mf 0.02341/0.02341 smL  1.1154 smH  0.9582 F,Tt5    750.75   1316.9 Choked
+== match lit at 0.1  (176 of 176 points, 13 ms; LP calls 738, burn trials 683); start Subsonic M9 0.942
+   min sm_lp -0.1178@0.26  min sm_hp 0.2030@0.34  max Tt4 2318.2@0.50  max nu_hp 0.9588@3.50
+    0.00 w0.00 nuL 0.56129 nuH 0.60852 Tt4   600.0 mf 0.00254/0.00254 smL  0.1825 smH  0.7125 F,Tt5     36.95    465.4 Subsonic
+    0.20 w1.00 nuL 0.59389 nuH 0.63531 Tt4  1615.1 mf 0.01089/0.01089 smL -0.1015 smH  0.2621 F,Tt5    209.76   1252.0 Choked
+    0.40 w1.00 nuL 0.67431 nuH 0.70589 Tt4  2234.8 mf 0.01923/0.01923 smL -0.0701 smH  0.2153 F,Tt5    301.79   1732.4 Choked
+    0.60 w1.00 nuL 0.76975 nuH 0.79234 Tt4  2012.1 mf 0.02341/0.02341 smL  0.1712 smH  0.3952 F,Tt5    479.72   1559.8 Choked
+    0.80 w1.00 nuL 0.83525 nuH 0.85255 Tt4  1708.6 mf 0.02341/0.02341 smL  0.3862 smH  0.5600 F,Tt5    638.60   1324.5 Choked
+    1.00 w1.00 nuL 0.87672 nuH 0.89108 Tt4  1571.8 mf 0.02341/0.02341 smL  0.5173 smH  0.6528 F,Tt5    747.02   1218.5 Choked
+    1.20 w1.00 nuL 0.90303 nuH 0.91571 Tt4  1501.1 mf 0.02341/0.02341 smL  0.5976 smH  0.7075 F,Tt5    818.34   1163.6 Choked
+    1.40 w1.00 nuL 0.91978 nuH 0.93143 Tt4  1461.4 mf 0.02341/0.02341 smL  0.6475 smH  0.7406 F,Tt5    864.58   1132.8 Choked
+    1.60 w1.00 nuL 0.93047 nuH 0.94147 Tt4  1438.0 mf 0.02341/0.02341 smL  0.6787 smH  0.7611 F,Tt5    894.37   1114.7 Choked
+    1.80 w1.00 nuL 0.93731 nuH 0.94787 Tt4  1423.8 mf 0.02341/0.02341 smL  0.6984 smH  0.7738 F,Tt5    913.50   1103.7 Choked
+    2.00 w1.00 nuL 0.94169 nuH 0.95195 Tt4  1415.0 mf 0.02341/0.02341 smL  0.7109 smH  0.7819 F,Tt5    925.76   1096.9 Choked
+    2.20 w1.00 nuL 0.94450 nuH 0.95455 Tt4  1409.5 mf 0.02341/0.02341 smL  0.7187 smH  0.7870 F,Tt5    933.60   1092.6 Choked
+    2.40 w1.00 nuL 0.94630 nuH 0.95620 Tt4  1406.0 mf 0.02341/0.02341 smL  0.7238 smH  0.7902 F,Tt5    938.62   1089.9 Choked
+    2.60 w1.00 nuL 0.94746 nuH 0.95725 Tt4  1403.8 mf 0.02341/0.02341 smL  0.7269 smH  0.7922 F,Tt5    941.83   1088.2 Choked
+    2.80 w1.00 nuL 0.94820 nuH 0.95792 Tt4  1402.4 mf 0.02341/0.02341 smL  0.7290 smH  0.7935 F,Tt5    943.87   1087.1 Choked
+    3.00 w1.00 nuL 0.94867 nuH 0.95834 Tt4  1401.5 mf 0.02341/0.02341 smL  0.7302 smH  0.7943 F,Tt5    945.18   1086.5 Choked
+    3.20 w1.00 nuL 0.94898 nuH 0.95861 Tt4  1401.0 mf 0.02341/0.02341 smL  0.7311 smH  0.7949 F,Tt5    946.01   1086.0 Choked
+    3.40 w1.00 nuL 0.94917 nuH 0.95878 Tt4  1400.6 mf 0.02341/0.02341 smL  0.7316 smH  0.7952 F,Tt5    946.54   1085.7 Choked
+    3.50 w1.00 nuL 0.94924 nuH 0.95884 Tt4  1400.5 mf 0.02341/0.02341 smL  0.7317 smH  0.7953 F,Tt5    946.73   1085.6 Choked
+######## unchoked 600 0.3
+== not fitted  (17 of 176 points, 2 ms; LP calls 0, burn trials 0); start Subsonic M9 0.714
+   STOPPED at s=0.32: Some("rung-43 fuel closure does not bracket at nu=(0.5848,0.6690), mdot_fuel=0.01395 - off the modeled speed-line region.")
+   min sm_lp -0.1178@0.30  min sm_hp 0.1311@0.32  max Tt4 2446.9@0.32  max nu_hp 0.6656@0.32
+    0.00 w0.00 nuL 0.49717 nuH 0.60644 Tt4   600.0 mf 0.00207/0.00207 smL  0.2689 smH  0.6971 F,Tt5     50.76    474.1 Subsonic
+    0.20 w0.00 nuL 0.53264 nuH 0.63055 Tt4  1876.7 mf 0.00927/0.00927 smL -0.0883 smH  0.1950 F,Tt5    120.37   1455.0 Subsonic
+    0.32 w0.00 nuL 0.58025 nuH 0.66560 Tt4  2446.9 mf 0.01359/0.01359 smL -0.1152 smH  0.1311 F,Tt5    176.87   1896.8 Choked
+== fitted unlit  (16 of 176 points, 2 ms; LP calls 97, burn trials 0); start Subsonic M9 0.681
+   STOPPED at s=0.30: Some("rung-43 fuel closure does not bracket at nu=(0.5641,0.6658), mdot_fuel=0.01358 - off the modeled speed-line region.")
+   min sm_lp -0.1140@0.30  min sm_hp 0.1276@0.30  max Tt4 2418.5@0.30  max nu_hp 0.6590@0.30
+    0.00 w0.00 nuL 0.47696 nuH 0.60639 Tt4   600.0 mf 0.00204/0.00204 smL  0.2938 smH  0.6966 F,Tt5     46.70    476.6 Subsonic
+    0.20 w0.00 nuL 0.51378 nuH 0.63059 Tt4  1911.4 mf 0.00925/0.00925 smL -0.0801 smH  0.1880 F,Tt5    113.66   1483.2 Subsonic
+    0.30 w0.00 nuL 0.55475 nuH 0.65904 Tt4  2418.5 mf 0.01286/0.01286 smL -0.1140 smH  0.1276 F,Tt5    159.01   1874.8 Choked
+== held lit at 0.1  (15 of 176 points, 2 ms; LP calls 92, burn trials 609); start Subsonic M9 0.681
+   STOPPED at s=0.28: Some("afterburner refused: too hot")
+   min sm_lp -0.1057@0.28  min sm_hp 0.1242@0.28  max Tt4 2394.7@0.28  max nu_hp 0.6528@0.28
+    0.00 w0.00 nuL 0.47696 nuH 0.60639 Tt4   600.0 mf 0.00204/0.00204 smL  0.2938 smH  0.6966 F,Tt5     46.70    476.6 Subsonic
+    0.20 w1.00 nuL 0.50047 nuH 0.63063 Tt4  1938.4 mf 0.00925/0.00925 smL -0.0736 smH  0.1827 F,Tt5    152.53   1554.2 Choked
+    0.28 w1.00 nuL 0.52351 nuH 0.65279 Tt4  2394.7 mf 0.01214/0.01214 smL -0.1057 smH  0.1242 F,Tt5    156.19   1872.9 Choked
+== match lit at 0.1  (15 of 176 points, 2 ms; LP calls 92, burn trials 37); start Subsonic M9 0.681
+   STOPPED at s=0.28: Some("The afterburner cannot reach 2000 K: burning all the oxygen left in the gas gives at most 1994 K here.")
+   min sm_lp -0.1133@0.28  min sm_hp 0.1330@0.28  max Tt4 2335.4@0.28  max nu_hp 0.6526@0.28
+    0.00 w0.00 nuL 0.47696 nuH 0.60639 Tt4   600.0 mf 0.00204/0.00204 smL  0.2938 smH  0.6966 F,Tt5     46.70    476.6 Subsonic
+    0.20 w1.00 nuL 0.51378 nuH 0.63059 Tt4  1911.4 mf 0.00925/0.00925 smL -0.0801 smH  0.1880 F,Tt5    136.08   1483.2 Subsonic
+    0.28 w1.00 nuL 0.54577 nuH 0.65262 Tt4  2335.4 mf 0.01214/0.01214 smL -0.1133 smH  0.1330 F,Tt5    158.29   1810.4 Choked
