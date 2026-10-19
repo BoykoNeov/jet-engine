@@ -1,0 +1,8 @@
+Tt4 1500 stations ["0", "2", "25", "3", "4", "45", "5", "9"]
+  DRY n_lp 1.0000 n_hp 1.0000 sm_lp 0.2413 sm_hp 0.6895 piL 3.0000 piH 6.0000 Tt5 1162.8
+  Tt7 1600: k 0.8187  n_lp 0.6626 n_hp 1.1318  sm_lp 0.1522 sm_hp 0.9948  piL 1.6374 piH 7.8941 Tt5 1217.6
+  Tt7 1800: k 0.7725  n_lp 0.5294 n_hp 1.1829  sm_lp 0.1375 sm_hp 1.1376  piL 1.3324 piH 8.7005 Tt5 1234.0
+
+thread 'main' (35844) panicked at W:\Claude_projects\jet engine\rust\src\two_spool.rs:936:9:
+rung-38 turbine choke-match bracket does not straddle the root
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace

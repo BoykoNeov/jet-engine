@@ -1,0 +1,8 @@
+== M0.85: DRY thrust 14916.2 N  mdot 20.000  sm 0.3953
+  Tt7 1600: HELD thrust 11656.6 N (x0.781 of dry)  fuel x0.976  sm 0.1175 | OPENED x1.1776 area: thrust 17586.1 N (x1.179)  fuel x1.414
+  Tt7 1800: HELD thrust 10651.8 N (x0.714 of dry)  fuel x0.988  sm 0.0583 | OPENED x1.2500 area: thrust 19167.7 N (x1.285)  fuel x1.671
+  Tt7 2000: HELD thrust 9681.6 N (x0.649 of dry)  fuel x0.986  sm 0.0198 | OPENED x1.3194 area: thrust 20694.3 N (x1.387)  fuel x1.935
+== M2: DRY thrust 13001.2 N  mdot 25.203  sm 0.1760
+  Tt7 1600: HELD thrust 12115.3 N (x0.932 of dry)  fuel x1.060  sm 0.0491 | OPENED x1.1775 area: thrust 16836.7 N (x1.295)  fuel x1.456
+  Tt7 1800: HELD thrust 11998.1 N (x0.923 of dry)  fuel x1.115  sm 0.0214 | OPENED x1.2500 area: thrust 19023.3 N (x1.463)  fuel x1.739
+  Tt7 2000: HELD thrust 11769.4 N (x0.905 of dry)  fuel x1.156  sm 0.0032 | OPENED x1.3194 area: thrust 21133.8 N (x1.626)  fuel x2.030

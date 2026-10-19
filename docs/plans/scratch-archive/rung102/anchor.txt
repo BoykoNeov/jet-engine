@@ -1,0 +1,10 @@
+SI: cpc 1004.83 Rc 287.095 cpt 1235.11 Rt 285.024 hPR 42798400 T0 288.167 Tt4 1777.78 Tt7 2000.00
+closed form: eta_c 0.8522 tau_c 2.58836 f 0.03581 tau_t 0.79676 pi_t 0.33490 fAB 0.01955 fo 0.05536
+  book: tau_tH*tau_tL 0.79680 pi_tH*pi_tL 0.33490 f 0.0358 fAB 0.0195 fo 0.0554
+  P0/P9 1.00: M9 1.8268  F/m0 1354.85 N.s/kg (138.156 lbf/(lbm/s))  S 40.859 mg/N.s (1.4425 (lbm/h)/lbf)
+  P0/P9 1.02: M9 1.8393  F/m0 1354.82 N.s/kg (138.153 lbf/(lbm/s))  S 40.860 mg/N.s (1.4425 (lbm/h)/lbf)
+  P0/P9 1.04: M9 1.8515  F/m0 1354.72 N.s/kg (138.143 lbf/(lbm/s))  S 40.863 mg/N.s (1.4426 (lbm/h)/lbf)
+  P0/P9 1.05: M9 1.8576  F/m0 1354.65 N.s/kg (138.136 lbf/(lbm/s))  S 40.865 mg/N.s (1.4427 (lbm/h)/lbf)
+  P0/P9 1.06: M9 1.8635  F/m0 1354.56 N.s/kg (138.127 lbf/(lbm/s))  S 40.867 mg/N.s (1.4428 (lbm/h)/lbf)
+  book: M9 1.85  F/m0 1350.26 N.s/kg (25000/181.57 = 137.688)  S 1.4473 (lbm/h)/lbf = 40.995 mg/N.s
+model (M0 1e-3, P0/P9 1): f 0.03581 tau_t 0.79676 pi_t 0.33490 fAB 0.01955 M9 1.8268 F/m0 1354.51 S 40.869 mg/N.s

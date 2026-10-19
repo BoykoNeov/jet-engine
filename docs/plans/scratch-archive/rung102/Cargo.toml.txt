@@ -1,0 +1,34 @@
+[package]
+name = "rung102-probe"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+turbojet = { path = "W:/Claude_projects/jet engine/rust" }
+
+[profile.release]
+opt-level = 3
+
+[[bin]]
+name = "design"
+path = "src/design.rs"
+
+[[bin]]
+name = "anchor"
+path = "src/anchor.rs"
+
+[[bin]]
+name = "fixed"
+path = "src/fixed.rs"
+
+[[bin]]
+name = "twospool"
+path = "src/twospool.rs"
+
+[[bin]]
+name = "held"
+path = "src/held.rs"
+
+[[bin]]
+name = "rayleigh"
+path = "src/rayleigh.rs"

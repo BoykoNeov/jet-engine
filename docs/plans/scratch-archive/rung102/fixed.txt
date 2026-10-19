@@ -1,0 +1,14 @@
+== design flight M0.85, Tt4 1500: DRY  pi_c 10.0000 nu 1.0000 mdot 20.000 Tt5 1263.5 sm 0.3953 branch Choked
+  Tt7 1600: HELD  eff.A8 x0.8492  pi_c 6.9223 (-30.78%)  nu 0.8459 (-15.41%)  mdot -30.88%  Tt5 1311.4  sm 0.1175 (dry 0.3953)  Choked
+            OPENED nozzle x1.2023: core pi_c 10.0000 nu 1.0000 sm 0.3953 (identical to dry by construction)
+  Tt7 1800: HELD  eff.A8 x0.8000  pi_c 5.9362 (-40.64%)  nu 0.7905 (-20.95%)  mdot -40.76%  Tt5 1329.3  sm 0.0583 (dry 0.3953)  Choked
+            OPENED nozzle x1.2860: core pi_c 10.0000 nu 1.0000 sm 0.3953 (identical to dry by construction)
+  Tt7 2000: HELD  eff.A8 x0.7579  pi_c 5.1219 (-48.78%)  nu 0.7405 (-25.95%)  mdot -48.91%  Tt5 1345.7  sm 0.0198 (dry 0.3953)  Choked
+            OPENED nozzle x1.3667: core pi_c 10.0000 nu 1.0000 sm 0.3953 (identical to dry by construction)
+== M2 11 km, Tt4 1500: DRY  pi_c 6.1371 nu 0.9524 mdot 25.203 Tt5 1263.5 sm 0.1760 branch Choked
+  Tt7 1600: HELD  eff.A8 x0.8492  pi_c 4.4831 (-26.95%)  nu 0.8212 (-13.78%)  mdot -27.06%  Tt5 1311.4  sm 0.0491 (dry 0.1760)  Choked
+            OPENED nozzle x1.2023: core pi_c 6.1371 nu 0.9524 sm 0.1760 (identical to dry by construction)
+  Tt7 1800: HELD  eff.A8 x0.8000  pi_c 3.9539 (-35.57%)  nu 0.7726 (-18.88%)  mdot -35.70%  Tt5 1329.3  sm 0.0214 (dry 0.1760)  Choked
+            OPENED nozzle x1.2860: core pi_c 6.1371 nu 0.9524 sm 0.1760 (identical to dry by construction)
+  Tt7 2000: HELD  eff.A8 x0.7579  pi_c 3.5125 (-42.77%)  nu 0.7279 (-23.57%)  mdot -42.91%  Tt5 1345.8  sm 0.0032 (dry 0.1760)  Choked
+            OPENED nozzle x1.3667: core pi_c 6.1371 nu 0.9524 sm 0.1760 (identical to dry by construction)

@@ -1,0 +1,55 @@
+=== gas cpg  (pi_c 10, Tt4 1500, pi_AB 0.95, eta_AB 0.95, fully expanded) ===
+  take-off M0.2: dry ST   827.8 N.s/kg  TSFC 26.782 g/kN.s  f 0.02217  Tt5 1196.4 K  V9 876.4  (CLI ST 827.8)
+    Tt7 1196.4: f 0.02217 (phi 0.328)  ST   813.6 (x0.983)  TSFC 27.249 (x1.017)  A8 x1.0526  [sqrt(Tt7/Tt5)/pi_AB 1.0526]
+    Tt7 1197.4: f 0.02220 (phi 0.328)  ST   814.0 (x0.983)  TSFC 27.268 (x1.018)  A8 x1.0531  [sqrt(Tt7/Tt5)/pi_AB 1.0531]
+    Tt7 1800.0: f 0.03811 (phi 0.563)  ST  1030.2 (x1.245)  TSFC 36.994 (x1.381)  A8 x1.3113  [sqrt(Tt7/Tt5)/pi_AB 1.2911]
+    Tt7 2000.0: f 0.04350 (phi 0.643)  ST  1095.6 (x1.324)  TSFC 39.708 (x1.483)  A8 x1.3894  [sqrt(Tt7/Tt5)/pi_AB 1.3610]
+    Tt7 2200.0: f 0.04895 (phi 0.723)  ST  1158.8 (x1.400)  TSFC 42.246 (x1.577)  A8 x1.4648  [sqrt(Tt7/Tt5)/pi_AB 1.4274]
+    Tt7 2300.0: f 0.05170 (phi 0.764)  ST  1189.7 (x1.437)  TSFC 43.458 (x1.623)  A8 x1.5016  [sqrt(Tt7/Tt5)/pi_AB 1.4595]
+  design M0.85: dry ST   739.2 N.s/kg  TSFC 30.288 g/kN.s  f 0.02239  Tt5 1201.0 K  V9 986.5  (CLI ST 739.2)
+    Tt7 1201.0: f 0.02239 (phi 0.331)  ST   728.1 (x0.985)  TSFC 30.749 (x1.015)  A8 x1.0526  [sqrt(Tt7/Tt5)/pi_AB 1.0526]
+    Tt7 1202.0: f 0.02241 (phi 0.331)  ST   728.5 (x0.986)  TSFC 30.766 (x1.016)  A8 x1.0531  [sqrt(Tt7/Tt5)/pi_AB 1.0531]
+    Tt7 1800.0: f 0.03821 (phi 0.565)  ST   970.7 (x1.313)  TSFC 39.368 (x1.300)  A8 x1.3086  [sqrt(Tt7/Tt5)/pi_AB 1.2887]
+    Tt7 2000.0: f 0.04361 (phi 0.644)  ST  1044.5 (x1.413)  TSFC 41.747 (x1.378)  A8 x1.3866  [sqrt(Tt7/Tt5)/pi_AB 1.3584]
+    Tt7 2200.0: f 0.04906 (phi 0.725)  ST  1115.9 (x1.510)  TSFC 43.963 (x1.451)  A8 x1.4618  [sqrt(Tt7/Tt5)/pi_AB 1.4247]
+    Tt7 2300.0: f 0.05180 (phi 0.765)  ST  1150.7 (x1.557)  TSFC 45.018 (x1.486)  A8 x1.4986  [sqrt(Tt7/Tt5)/pi_AB 1.4567]
+  M2 11km: dry ST   542.9 N.s/kg  TSFC 31.566 g/kN.s  f 0.01714  Tt5 1090.4 K  V9 1113.9  (CLI ST 542.9)
+    Tt7 1090.4: f 0.01714 (phi 0.253)  ST   536.5 (x0.988)  TSFC 31.943 (x1.012)  A8 x1.0526  [sqrt(Tt7/Tt5)/pi_AB 1.0526]
+    Tt7 1091.4: f 0.01716 (phi 0.254)  ST   537.1 (x0.989)  TSFC 31.959 (x1.012)  A8 x1.0531  [sqrt(Tt7/Tt5)/pi_AB 1.0531]
+    Tt7 1800.0: f 0.03579 (phi 0.529)  ST   883.9 (x1.628)  TSFC 40.488 (x1.283)  A8 x1.3772  [sqrt(Tt7/Tt5)/pi_AB 1.3524]
+    Tt7 2000.0: f 0.04117 (phi 0.608)  ST   971.7 (x1.790)  TSFC 42.367 (x1.342)  A8 x1.4593  [sqrt(Tt7/Tt5)/pi_AB 1.4256]
+    Tt7 2200.0: f 0.04661 (phi 0.689)  ST  1056.5 (x1.946)  TSFC 44.113 (x1.398)  A8 x1.5385  [sqrt(Tt7/Tt5)/pi_AB 1.4952]
+    Tt7 2300.0: f 0.04935 (phi 0.729)  ST  1097.9 (x2.022)  TSFC 44.945 (x1.424)  A8 x1.5772  [sqrt(Tt7/Tt5)/pi_AB 1.5288]
+=== gas tpg  (pi_c 10, Tt4 1500, pi_AB 0.95, eta_AB 0.95, fully expanded) ===
+  take-off M0.2: dry ST   880.1 N.s/kg  TSFC 30.746 g/kN.s  f 0.02706  Tt5 1260.1 K  V9 923.2  (CLI ST 880.1)
+    Tt7 1260.1: f 0.02706 (phi 0.400)  ST   865.0 (x0.983)  TSFC 31.283 (x1.017)  A8 x1.0526  [sqrt(Tt7/Tt5)/pi_AB 1.0526]
+    Tt7 1261.1: f 0.02709 (phi 0.400)  ST   865.4 (x0.983)  TSFC 31.306 (x1.018)  A8 x1.0531  [sqrt(Tt7/Tt5)/pi_AB 1.0530]
+    Tt7 1800.0: f 0.04547 (phi 0.672)  ST  1071.6 (x1.218)  TSFC 42.428 (x1.380)  A8 x1.2879  [sqrt(Tt7/Tt5)/pi_AB 1.2581]
+    Tt7 2000.0: f 0.05267 (phi 0.778)  ST  1142.7 (x1.298)  TSFC 46.089 (x1.499)  A8 x1.3688  [sqrt(Tt7/Tt5)/pi_AB 1.3261]
+    Tt7 2200.0: f 0.06005 (phi 0.887)  ST  1211.8 (x1.377)  TSFC 49.557 (x1.612)  A8 x1.4473  [sqrt(Tt7/Tt5)/pi_AB 1.3909]
+    Tt7 2300.0: f 0.06381 (phi 0.943)  ST  1245.6 (x1.415)  TSFC 51.227 (x1.666)  A8 x1.4857  [sqrt(Tt7/Tt5)/pi_AB 1.4221]
+  design M0.85: dry ST   798.6 N.s/kg  TSFC 34.140 g/kN.s  f 0.02727  Tt5 1263.5 K  V9 1040.0  (CLI ST 798.6)
+    Tt7 1263.5: f 0.02727 (phi 0.403)  ST   786.6 (x0.985)  TSFC 34.660 (x1.015)  A8 x1.0526  [sqrt(Tt7/Tt5)/pi_AB 1.0526]
+    Tt7 1264.5: f 0.02730 (phi 0.403)  ST   787.1 (x0.986)  TSFC 34.681 (x1.016)  A8 x1.0531  [sqrt(Tt7/Tt5)/pi_AB 1.0530]
+    Tt7 1800.0: f 0.04556 (phi 0.673)  ST  1020.5 (x1.278)  TSFC 44.649 (x1.308)  A8 x1.2860  [sqrt(Tt7/Tt5)/pi_AB 1.2564]
+    Tt7 2000.0: f 0.05276 (phi 0.780)  ST  1101.5 (x1.379)  TSFC 47.903 (x1.403)  A8 x1.3667  [sqrt(Tt7/Tt5)/pi_AB 1.3243]
+    Tt7 2200.0: f 0.06015 (phi 0.889)  ST  1180.1 (x1.478)  TSFC 50.970 (x1.493)  A8 x1.4451  [sqrt(Tt7/Tt5)/pi_AB 1.3890]
+    Tt7 2300.0: f 0.06391 (phi 0.944)  ST  1218.6 (x1.526)  TSFC 52.442 (x1.536)  A8 x1.4835  [sqrt(Tt7/Tt5)/pi_AB 1.4202]
+  M2 11km: dry ST   633.9 N.s/kg  TSFC 34.752 g/kN.s  f 0.02203  Tt5 1176.3 K  V9 1198.8  (CLI ST 633.9)
+    Tt7 1176.3: f 0.02203 (phi 0.326)  ST   626.9 (x0.989)  TSFC 35.144 (x1.011)  A8 x1.0526  [sqrt(Tt7/Tt5)/pi_AB 1.0526]
+    Tt7 1177.3: f 0.02206 (phi 0.326)  ST   627.5 (x0.990)  TSFC 35.162 (x1.012)  A8 x1.0531  [sqrt(Tt7/Tt5)/pi_AB 1.0531]
+    Tt7 1800.0: f 0.04310 (phi 0.637)  ST   963.9 (x1.520)  TSFC 44.712 (x1.287)  A8 x1.3383  [sqrt(Tt7/Tt5)/pi_AB 1.3022]
+    Tt7 2000.0: f 0.05028 (phi 0.743)  ST  1063.0 (x1.677)  TSFC 47.300 (x1.361)  A8 x1.4223  [sqrt(Tt7/Tt5)/pi_AB 1.3726]
+    Tt7 2200.0: f 0.05765 (phi 0.852)  ST  1159.2 (x1.829)  TSFC 49.731 (x1.431)  A8 x1.5038  [sqrt(Tt7/Tt5)/pi_AB 1.4396]
+    Tt7 2300.0: f 0.06140 (phi 0.907)  ST  1206.3 (x1.903)  TSFC 50.896 (x1.465)  A8 x1.5438  [sqrt(Tt7/Tt5)/pi_AB 1.4719]
+=== gas reacting  (pi_c 10, Tt4 1500, pi_AB 0.95, eta_AB 0.95, fully expanded) ===
+  take-off M0.2: dry ST   879.9 N.s/kg  TSFC 30.636 g/kN.s  f 0.02696  Tt5 1259.2 K  V9 923.1  (CLI ST 879.9)
+    Tt7 1259.2: f 0.02696 (phi 0.398)  ST   864.8 (x0.983)  TSFC 31.171 (x1.017)  A8 x1.0526  [sqrt(Tt7/Tt5)/pi_AB 1.0526]
+    Tt7 1260.2: f 0.02699 (phi 0.399)  ST   865.2 (x0.983)  TSFC 31.195 (x1.018)  A8 x1.0531  [sqrt(Tt7/Tt5)/pi_AB 1.0530]
+    Tt7 1800.0: f 0.04683 (phi 0.692)  ST  1076.6 (x1.224)  TSFC 43.497 (x1.420)  A8 x1.2951  [sqrt(Tt7/Tt5)/pi_AB 1.2586]
+    Tt7 2000.0: f 0.05501 (phi 0.813)  ST  1150.4 (x1.307)  TSFC 47.816 (x1.561)  A8 x1.3798  [sqrt(Tt7/Tt5)/pi_AB 1.3266]
+    Tt7 2200.0: f 0.06368 (phi 0.941)  ST  1222.9 (x1.390)  TSFC 52.071 (x1.700)  A8 x1.4628  [sqrt(Tt7/Tt5)/pi_AB 1.3914]
+
+thread 'main' (45456) panicked at W:\Claude_projects\jet engine\rust\src\gas.rs:264:5:
+rich mixture f=0.0677 >= f_stoich=0.0677: excess O2 <= 0 (rich combustion / dissociation is rung 5, out of rung-4 scope)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace

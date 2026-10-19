@@ -1,0 +1,44 @@
+=== gas reacting  (pi_c 10, Tt4 1500, pi_AB 0.95, eta_AB 0.95, fully expanded) ===
+  take-off M0.2: dry ST   879.9 N.s/kg  TSFC 30.636 g/kN.s  f 0.02696  Tt5 1259.2 K  V9 923.1  (CLI ST 879.9)
+    Tt7 1259.2: f 0.02696 (phi 0.398)  ST   864.8 (x0.983)  TSFC 31.171 (x1.017)  A8 x1.0526  [sqrt(Tt7/Tt5)/pi_AB 1.0526]
+    Tt7 1260.2: f 0.02699 (phi 0.399)  ST   865.2 (x0.983)  TSFC 31.195 (x1.018)  A8 x1.0531  [sqrt(Tt7/Tt5)/pi_AB 1.0530]
+    Tt7 1800.0: f 0.04683 (phi 0.692)  ST  1076.6 (x1.224)  TSFC 43.497 (x1.420)  A8 x1.2951  [sqrt(Tt7/Tt5)/pi_AB 1.2586]
+    Tt7 2000.0: f 0.05501 (phi 0.813)  ST  1150.4 (x1.307)  TSFC 47.816 (x1.561)  A8 x1.3798  [sqrt(Tt7/Tt5)/pi_AB 1.3266]
+    Tt7 2200.0: f 0.06368 (phi 0.941)  ST  1222.9 (x1.390)  TSFC 52.071 (x1.700)  A8 x1.4628  [sqrt(Tt7/Tt5)/pi_AB 1.3914]
+    Tt7 2300.0: REFUSED rich mixture f=0.0677 >= f_stoich=0.0677: excess O2 <= 0 (rich combustion / dissociation is rung 5, out of rung-4 scope)
+  design M0.85: dry ST   798.4 N.s/kg  TSFC 34.038 g/kN.s  f 0.02717  Tt5 1262.7 K  V9 1039.9  (CLI ST 798.4)
+    Tt7 1262.7: f 0.02717 (phi 0.402)  ST   786.4 (x0.985)  TSFC 34.555 (x1.015)  A8 x1.0526  [sqrt(Tt7/Tt5)/pi_AB 1.0526]
+    Tt7 1263.7: f 0.02721 (phi 0.402)  ST   786.9 (x0.986)  TSFC 34.578 (x1.016)  A8 x1.0531  [sqrt(Tt7/Tt5)/pi_AB 1.0530]
+    Tt7 1800.0: f 0.04693 (phi 0.693)  ST  1026.9 (x1.286)  TSFC 45.700 (x1.343)  A8 x1.2931  [sqrt(Tt7/Tt5)/pi_AB 1.2568]
+    Tt7 2000.0: f 0.05511 (phi 0.814)  ST  1111.5 (x1.392)  TSFC 49.584 (x1.457)  A8 x1.3776  [sqrt(Tt7/Tt5)/pi_AB 1.3248]
+    Tt7 2200.0: f 0.06378 (phi 0.942)  ST  1194.6 (x1.496)  TSFC 53.396 (x1.569)  A8 x1.4605  [sqrt(Tt7/Tt5)/pi_AB 1.3894]
+    Tt7 2300.0: REFUSED rich mixture f=0.0678 >= f_stoich=0.0677: excess O2 <= 0 (rich combustion / dissociation is rung 5, out of rung-4 scope)
+  M2 11km: dry ST   628.8 N.s/kg  TSFC 34.419 g/kN.s  f 0.02164  Tt5 1171.8 K  V9 1194.2  (CLI ST 628.8)
+    Tt7 1171.8: f 0.02164 (phi 0.320)  ST   621.8 (x0.989)  TSFC 34.807 (x1.011)  A8 x1.0526  [sqrt(Tt7/Tt5)/pi_AB 1.0526]
+    Tt7 1172.8: f 0.02167 (phi 0.320)  ST   622.4 (x0.990)  TSFC 34.826 (x1.012)  A8 x1.0531  [sqrt(Tt7/Tt5)/pi_AB 1.0531]
+    Tt7 1800.0: f 0.04428 (phi 0.654)  ST   972.3 (x1.546)  TSFC 45.541 (x1.323)  A8 x1.3487  [sqrt(Tt7/Tt5)/pi_AB 1.3046]
+    Tt7 2000.0: f 0.05240 (phi 0.774)  ST  1077.0 (x1.713)  TSFC 48.655 (x1.414)  A8 x1.4368  [sqrt(Tt7/Tt5)/pi_AB 1.3752]
+    Tt7 2200.0: f 0.06101 (phi 0.901)  ST  1180.0 (x1.877)  TSFC 51.703 (x1.502)  A8 x1.5233  [sqrt(Tt7/Tt5)/pi_AB 1.4423]
+    Tt7 2300.0: f 0.06550 (phi 0.968)  ST  1230.9 (x1.958)  TSFC 53.210 (x1.546)  A8 x1.5660  [sqrt(Tt7/Tt5)/pi_AB 1.4747]
+=== gas equilibrium  (pi_c 10, Tt4 1500, pi_AB 0.95, eta_AB 0.95, fully expanded) ===
+  take-off M0.2: dry ST   879.9 N.s/kg  TSFC 30.641 g/kN.s  f 0.02696  Tt5 1259.2 K  V9 923.1  (CLI ST 879.9)
+    Tt7 1259.2: REFUSED balance open at f=0.026962 (res 4.635e0; lo 0.026962 hi 0.026962)
+    Tt7 1260.2: f 0.02699 (phi 0.399)  ST   865.2 (x0.983)  TSFC 31.195 (x1.018)  A8 x1.0531  [sqrt(Tt7/Tt5)/pi_AB 1.0530]
+    Tt7 1800.0: f 0.04690 (phi 0.693)  ST  1076.7 (x1.224)  TSFC 43.562 (x1.422)  A8 x1.2953  [sqrt(Tt7/Tt5)/pi_AB 1.2586]
+    Tt7 2000.0: f 0.05533 (phi 0.818)  ST  1151.1 (x1.308)  TSFC 48.069 (x1.569)  A8 x1.3805  [sqrt(Tt7/Tt5)/pi_AB 1.3266]
+    Tt7 2200.0: f 0.06554 (phi 0.968)  ST  1227.1 (x1.395)  TSFC 53.409 (x1.743)  A8 x1.4675  [sqrt(Tt7/Tt5)/pi_AB 1.3914]
+    Tt7 2300.0: REFUSED balance open at f=0.067676 (res -4.523e3; lo 0.067676 hi 0.067676)
+  design M0.85: dry ST   798.4 N.s/kg  TSFC 34.043 g/kN.s  f 0.02718  Tt5 1262.7 K  V9 1039.9  (CLI ST 798.4)
+    Tt7 1262.7: REFUSED balance open at f=0.027179 (res 4.953e0; lo 0.027179 hi 0.027179)
+    Tt7 1263.7: f 0.02721 (phi 0.402)  ST   786.9 (x0.986)  TSFC 34.578 (x1.016)  A8 x1.0531  [sqrt(Tt7/Tt5)/pi_AB 1.0530]
+    Tt7 1800.0: f 0.04701 (phi 0.695)  ST  1027.1 (x1.287)  TSFC 45.772 (x1.345)  A8 x1.2932  [sqrt(Tt7/Tt5)/pi_AB 1.2568]
+    Tt7 2000.0: f 0.05547 (phi 0.820)  ST  1112.4 (x1.393)  TSFC 49.865 (x1.465)  A8 x1.3784  [sqrt(Tt7/Tt5)/pi_AB 1.3248]
+    Tt7 2200.0: f 0.06595 (phi 0.974)  ST  1200.1 (x1.503)  TSFC 54.950 (x1.614)  A8 x1.4660  [sqrt(Tt7/Tt5)/pi_AB 1.3894]
+    Tt7 2300.0: REFUSED balance open at f=0.067676 (res -4.972e3; lo 0.067676 hi 0.067676)
+  M2 11km: dry ST   628.8 N.s/kg  TSFC 34.424 g/kN.s  f 0.02165  Tt5 1171.8 K  V9 1194.2  (CLI ST 628.8)
+    Tt7 1171.8: REFUSED balance open at f=0.021646 (res 4.077e0; lo 0.021646 hi 0.021646)
+    Tt7 1172.8: f 0.02167 (phi 0.320)  ST   622.4 (x0.990)  TSFC 34.826 (x1.012)  A8 x1.0531  [sqrt(Tt7/Tt5)/pi_AB 1.0531]
+    Tt7 1800.0: f 0.04435 (phi 0.655)  ST   972.5 (x1.547)  TSFC 45.607 (x1.325)  A8 x1.3489  [sqrt(Tt7/Tt5)/pi_AB 1.3046]
+    Tt7 2000.0: f 0.05270 (phi 0.779)  ST  1077.9 (x1.714)  TSFC 48.893 (x1.420)  A8 x1.4376  [sqrt(Tt7/Tt5)/pi_AB 1.3752]
+    Tt7 2200.0: f 0.06238 (phi 0.922)  ST  1184.2 (x1.883)  TSFC 52.678 (x1.530)  A8 x1.5269  [sqrt(Tt7/Tt5)/pi_AB 1.4423]
+    Tt7 2300.0: REFUSED balance open at f=0.067676 (res -1.740e3; lo 0.067676 hi 0.067676)
