@@ -1,0 +1,56 @@
+
+running 1 test
+FULLNEG flow/press 0m dT0 M2 760 sp=-16.972
+FULLNEG flow/press 0m dT0 M2 780 sp=-5.263
+FULLNEG flow/press 0m dT40 M0.85 620 sp=-6.375
+FULLNEG flow/press 0m dT40 M1.6 740 sp=-8.503
+FULLNEG flow/press 0m dT40 M2 820 sp=-42.977
+FULLNEG flow/press 0m dT40 M2 840 sp=-31.732
+FULLNEG flow/press 0m dT40 M2 860 sp=-20.581
+FULLNEG flow/press 0m dT40 M2 880 sp=-9.521
+FULLNEG flow/press 0m dT-30 M2 700 sp=-4.669
+FULLNEG flow/press 5000m dT0 M2 700 sp=-0.559
+FULLNEG press/flow 0m dT0 M2 760 sp=-16.543
+FULLNEG press/flow 0m dT0 M2 780 sp=-4.827
+FULLNEG press/flow 0m dT40 M0.85 620 sp=-5.748
+FULLNEG press/flow 0m dT40 M1.6 740 sp=-7.752
+FULLNEG press/flow 0m dT40 M2 840 sp=-31.283
+FULLNEG press/flow 0m dT40 M2 860 sp=-20.123
+FULLNEG press/flow 0m dT40 M2 880 sp=-9.056
+FULLNEG press/flow 0m dT-30 M2 700 sp=-4.257
+FULLNEG press/flow 5000m dT0 M2 700 sp=-0.147
+FULLNEG tilted 0m dT0 M2 760 sp=-16.945
+FULLNEG tilted 0m dT0 M2 780 sp=-5.251
+FULLNEG tilted 0m dT40 M0.85 620 sp=-6.596
+FULLNEG tilted 0m dT40 M1.6 740 sp=-8.474
+FULLNEG tilted 0m dT40 M2 820 sp=-42.916
+FULLNEG tilted 0m dT40 M2 840 sp=-31.686
+FULLNEG tilted 0m dT40 M2 860 sp=-20.549
+FULLNEG tilted 0m dT40 M2 880 sp=-9.504
+FULLNEG tilted 5000m dT0 M2 700 sp=-0.553
+FULLNEG flat-lp 0m dT0 M2 740 sp=-27.230
+FULLNEG flat-lp 0m dT0 M2 760 sp=-15.390
+FULLNEG flat-lp 0m dT0 M2 780 sp=-3.665
+FULLNEG flat-lp 0m dT40 M0.85 620 sp=-2.380
+FULLNEG flat-lp 0m dT40 M1.6 720 sp=-18.711
+FULLNEG flat-lp 0m dT40 M1.6 740 sp=-5.746
+FULLNEG flat-lp 0m dT40 M2 800 sp=-52.694
+FULLNEG flat-lp 0m dT40 M2 820 sp=-41.330
+FULLNEG flat-lp 0m dT40 M2 840 sp=-30.064
+FULLNEG flat-lp 0m dT40 M2 860 sp=-18.894
+FULLNEG flat-lp 0m dT40 M2 880 sp=-7.819
+FULLNEG flat-lp 0m dT-30 M2 700 sp=-3.157
+FULLNEG flat-lp 5000m dT0 M2 680 sp=-11.398
+TALLY     41 full-speed solve below idle
+TALLY      5 rescue-candidate pos=false starts_solving=2
+TALLY     51 rescue-candidate pos=false starts_solving=3
+TALLY     90 rescue-candidate pos=false starts_solving=4
+TALLY    101 rescue-candidate pos=false starts_solving=5
+TALLY     78 rescue-candidate pos=false starts_solving=6
+TALLY     11 rescue-candidate pos=true starts_solving=5
+TALLY     41 rescue-candidate pos=true starts_solving=6
+worst spread across starts 1.51e-12; min full-speed sp_thrust -52.694
+test probe_unique ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.73s
+

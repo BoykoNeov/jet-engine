@@ -1269,6 +1269,11 @@ impl TwoSpoolTransientCore {
     pub const NOISE_FLOOR: f64 = 1e-8;
     /// The `_close` root's tolerance — a LITERAL `1e-12` at that call site, NOT `EQ_TOL`.
     pub const CLOSE_TOL: f64 = 1e-12;
+    /// The low starts tried, in order, where the full-speed start refused (both shafts at the same
+    /// fraction of design speed) — a search choice, like the closures' 0.02 march. Just above idle
+    /// the compressor exit at full speed is hotter than the burner's target, so that start has no
+    /// closure at all; a slower one does.
+    pub const LOW_STARTS: [f64; 6] = [0.9, 0.8, 0.7, 0.6, 0.5, 0.4];
 
     pub fn new(
         design_engine: TwoSpoolEngine, flight_design: FlightCondition, mdot_design: f64,
@@ -1481,17 +1486,52 @@ impl TwoSpoolTransientCore {
     ///
     /// Returns the instant, how the Newton left, and the pass count — the last two are DISCRETE
     /// oracle keys, because probe 4 measured them flipping between interpreters.
+    ///
+    /// **THE LOW START** (a solver repair, 2026-10-19, sandbox plan § 37): only where the
+    /// full-speed start (`start = None`) REFUSED, the Newton is re-run from [`Self::LOW_STARTS`]
+    /// and the first start that solves gives the answer — kept only if the engine is not below
+    /// idle (rung 103's words: more drag than thrust); otherwise the full-speed refusal stands,
+    /// with that reason added AFTER its own words (so every reader that sorts a refusal by its
+    /// words sorts it as before). A call that solved from full speed never reaches it, so it is
+    /// bit for bit what it was.
     pub fn try_equilibrium(
         &self, flight: &FlightCondition, tt4: f64, start: Option<(f64, f64)>,
     ) -> Result<(Instant2, EqExit, usize), Abort> {
         EQ_CALLS.with(|x| x.set(x.get() + 1));
+        let first = self.try_newton(flight, tt4, start.unwrap_or((1.0, 1.0)));
+        if first.is_ok() || start.is_some() {
+            return first;
+        }
+        for s in Self::LOW_STARTS {
+            if let Ok(r) = self.try_newton(flight, tt4, (s, s)) {
+                // The root is one root from every start that solves (spread ≤ 1.5e-12 measured), so
+                // a below-idle root here is the answer from all of them: stop. Judged on the thrust
+                // the steady matchers judge it on (rung 103): per INLET air where air is bled off.
+                let sp = r.0.sp_thrust_inlet.unwrap_or(r.0.sp_thrust);
+                if sp > 0.0 {
+                    LOW_START_RESCUES.with(|x| x.set(x.get() + 1));
+                    return Ok(r);
+                }
+                return Err(Abort(format!(
+                    "{}; and below idle at Tt4={tt4:.0}: from a lower start the one root, nu=({:.4},{:.4}), \
+                     gives more drag than thrust ({sp:.2} N per kg/s of inlet air)",
+                    first.err().map(|e| e.0).unwrap_or_default(), r.0.nu_lp, r.0.nu_hp)));
+            }
+        }
+        first
+    }
+
+    /// The Newton of [`try_equilibrium`](Self::try_equilibrium) from one start.
+    fn try_newton(
+        &self, flight: &FlightCondition, tt4: f64, start: (f64, f64),
+    ) -> Result<(Instant2, EqExit, usize), Abort> {
         let (tt2, pt2, _) = self.inlet(flight);
         let big_f = |a: f64, b: f64| -> Result<(f64, f64), Abort> {
             let c = self.try_close(a, b, tt4, tt2, pt2)?;
             self.powers(&c, flight, a, b, tt4)
         };
 
-        let (mut nl, mut nh) = start.unwrap_or((1.0, 1.0));
+        let (mut nl, mut nh) = start;
         let mut best: Option<(f64, f64, f64)> = None;
         for it in 0..Self::EQ_MAX {
             let (fl, fh) = big_f(nl, nh)?;
@@ -1933,11 +1973,18 @@ pub fn round3(x: f64) -> f64 {
 
 thread_local! {
     static HP_WALL_RESCUES: Cell<u64> = const { Cell::new(0) };
+    static LOW_START_RESCUES: Cell<u64> = const { Cell::new(0) };
 }
 
 /// How many closures the HP face's wall rescued on this thread since the last call; resets.
 pub fn take_hp_wall_rescues() -> u64 {
     HP_WALL_RESCUES.with(|x| x.replace(0))
+}
+
+/// How many equilibria the low start rescued on this thread since the last call; resets
+/// ([`TwoSpoolTransientCore::try_equilibrium`], sandbox plan § 37).
+pub fn take_low_start_rescues() -> u64 {
+    LOW_START_RESCUES.with(|x| x.replace(0))
 }
 
 /// The HP face's flow coefficient at the LP face flow `m_lp` — the pre-burner lines of the four

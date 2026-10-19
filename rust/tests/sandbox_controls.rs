@@ -442,25 +442,28 @@ fn every_kind_of_stop_the_crash_map_found_is_driven_and_worded() {
 fn an_endpoint_without_a_steady_point_is_refused_in_words() {
     let d = ControlsSettings::defaults();
     let flat = CONTROL_SHAPES.iter().position(|&k| k == "flat-lp").unwrap();
-    // 500 K: below the lowest throttle that solves at the design flight (520 K on this map since the
-    // HP-wall repair, 2026-10-19 — before it, 650 K was refused here too, wrongly).
-    let m = build(&ControlsSettings { shape: flat, from: 500.0, ..d }).err().expect("refused").0;
-    assert!(m.starts_with("At the starting throttle (500 K)") && m.contains("off the part of their maps"), "{m}");
-    let m = build(&ControlsSettings { shape: flat, to: 500.0, ..d }).err().expect("refused").0;
-    assert!(m.starts_with("At the final throttle (500 K)"), "{m}");
-    // A lever whose schedule does all its travel just below design speed: the steady search does not
-    // settle (crash map, typed past the slider's 0.8).
-    let steep = ControlsSettings { lever: LeverChoice::Stator, v_max: 0.188, v_n_lo: 0.936,
-                                   shape: CONTROL_SHAPES.iter().position(|&k| k == "press/flow").unwrap(),
-                                   from: 1033.0, to: 1349.0, ..d };
-    let m = build(&steep).err().expect("refused").0;
+    // 470 K: below idle at the design flight (480 K is the first that runs, on every map, since the
+    // low-start repair, plan § 37 — 520 K after the HP-wall repair, 650 K before it, both wrongly).
+    let m = build(&ControlsSettings { shape: flat, from: 470.0, ..d }).err().expect("refused").0;
+    assert!(m.starts_with("At the starting throttle (470 K)") && m.contains("more drag than thrust"), "{m}");
+    assert!(!m.contains("off the part of their maps"), "{m}");
+    let m = build(&ControlsSettings { shape: flat, to: 470.0, ..d }).err().expect("refused").0;
+    assert!(m.starts_with("At the final throttle (470 K)") && m.contains("below idle"), "{m}");
+    // The steady search does not settle: a lever and a generator load in other air (crash map seed 36,
+    // request 7 — still refused after the low start, plan § 37). The two lever cases this test held
+    // here before (a schedule doing all its travel just below design speed, and an acceleration
+    // schedule whose band crossed one) RUN since the low start: `tests/low_start_repair.rs`.
+    let unsettled = ControlsSettings { lever: LeverChoice::Stator, generator: GeneratorMode::Lp, shape: flat,
+                                       rho: 0.8304325451067305, from: 567.940360581383, to: 800.4278985277119,
+                                       ramp: 0.28, settle: 0.6288439235815497, t0: 260.67626447109853,
+                                       p0: 54176.47919085654, m0: 0.4490537266720129, ..d };
+    let m = build(&unsettled).err().expect("refused").0;
     assert!(m.contains("does not settle"), "{m}");
-    // ...and an acceleration schedule whose band crosses such a gap is refused, not crashed (crash map).
-    let gap = ControlsSettings { lever: LeverChoice::Stator, v_max: 0.346, v_n_lo: 0.926, accel_on: true, accel_margin: 0.11,
-                                 shape: CONTROL_SHAPES.iter().position(|&k| k == "press/flow").unwrap(),
-                                 from: 847.7, to: 1495.5, ..d };
-    let m = build(&gap).err().expect("refused").0;
-    assert!(m.contains("acceleration schedule") && m.contains("no steady point"), "{m}");
+    // ...and an acceleration schedule whose band has a throttle with no steady point is refused, not
+    // crashed (plan § 12.10): its lowest row below idle.
+    let sv = build(&ControlsSettings { shape: flat, ..d }).expect("the defaults run");
+    let m = accel_table(&sv.core, &sv.flight, 470.0, 1300.0, 0.11).err().expect("refused").0;
+    assert!(m.contains("acceleration schedule") && m.contains("no steady point") && m.contains("below idle"), "{m}");
 }
 
 #[test]

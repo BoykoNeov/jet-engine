@@ -1,0 +1,207 @@
+
+running 1 test
+B flow/press below=true design 500 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:1.0e-12 x1.03:1.0e-12 nu=(0.480,0.560)
+B flow/press below=true 0m dT0 M0.85 560 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:1.1e-12 x1.03:1.1e-12 nu=(0.498,0.593)
+B flow/press below=true 0m dT-30 M0.85 500 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:9.6e-13 x1.03:9.5e-13 nu=(0.469,0.561)
+B flow/press below=true 0m dT-30 M0.85 520 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:1.0e-12 x1.03:1.0e-12 nu=(0.492,0.571)
+B flow/press below=true 0m dT-30 M1.6 600 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:1.8e-13 x1.03:1.9e-13 nu=(0.562,0.620)
+B flow/press below=true 5000m dT0 M0.85 500 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:1.1e-12 x1.03:1.0e-12 nu=(0.473,0.561)
+B flow/press below=true 5000m dT0 M1.6 600 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:1.9e-13 x1.03:1.9e-13 nu=(0.562,0.620)
+B flow/press below=true 11000m dT0 M1.6 500 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:1.8e-13 x1.03:1.8e-13 nu=(0.513,0.566)
+B flow/press below=true 11000m dT0 M1.6 520 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:1.8e-13 x1.03:1.9e-13 nu=(0.523,0.576)
+B flow/press below=true 11000m dT0 M1.6 540 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:1.9e-13 x1.03:2.1e-13 nu=(0.533,0.585)
+B flow/press below=true 11000m dT0 M2 600 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:1.8e-13 x1.03:1.9e-13 nu=(0.562,0.620)
+B flow/press below=false 0m dT-30 M1.6 600 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:1.8e-13 x1.03:1.9e-13 nu=(0.562,0.620)
+B flow/press below=false 5000m dT0 M1.6 600 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:1.9e-13 x1.03:1.9e-13 nu=(0.562,0.620)
+B flow/press below=false 11000m dT0 M1.6 500 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:1.8e-13 x1.03:1.8e-13 nu=(0.513,0.566)
+B flow/press below=false 11000m dT0 M1.6 520 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:1.8e-13 x1.03:1.9e-13 nu=(0.523,0.576)
+B flow/press below=false 11000m dT0 M1.6 540 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:1.9e-13 x1.03:2.1e-13 nu=(0.533,0.585)
+B flow/press below=false 11000m dT0 M2 600 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:1.8e-13 x1.03:1.9e-13 nu=(0.562,0.620)
+B press/flow below=true design 500 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:1.1e-13 x1.03:7.9e-14 nu=(0.466,0.564)
+B press/flow below=true 0m dT0 M0.85 560 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:1.5e-13 x1.03:1.2e-13 nu=(0.484,0.598)
+B press/flow below=true 0m dT-30 M0.85 500 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:1.9e-13 x1.03:2.0e-13 nu=(0.456,0.565)
+B press/flow below=true 0m dT-30 M0.85 520 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:1.4e-13 x1.03:1.4e-13 nu=(0.477,0.575)
+B press/flow below=true 0m dT-30 M1.6 600 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:2.3e-13 x1.03:2.1e-13 nu=(0.543,0.623)
+B press/flow below=true 0m dT-30 M1.6 620 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:2.7e-13 x1.03:2.4e-13 nu=(0.552,0.632)
+B press/flow below=true 5000m dT0 M0.85 500 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:9.1e-14 x1.03:1.3e-13 nu=(0.459,0.564)
+B press/flow below=true 5000m dT0 M0.85 520 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:6.6e-14 x1.03:9.3e-14 nu=(0.480,0.575)
+B press/flow below=true 5000m dT0 M1.6 600 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:2.4e-13 x1.03:2.2e-13 nu=(0.543,0.623)
+B press/flow below=true 5000m dT0 M1.6 620 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:2.9e-13 x1.03:2.5e-13 nu=(0.552,0.632)
+B press/flow below=true 11000m dT0 M1.6 500 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:2.2e-13 x1.03:2.0e-13 nu=(0.496,0.569)
+B press/flow below=true 11000m dT0 M1.6 520 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:2.6e-13 x1.03:2.3e-13 nu=(0.505,0.579)
+B press/flow below=true 11000m dT0 M1.6 540 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:3.1e-13 x1.03:2.7e-13 nu=(0.515,0.589)
+B press/flow below=true 11000m dT0 M1.6 560 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:3.7e-13 x1.03:3.1e-13 nu=(0.525,0.598)
+B press/flow below=true 11000m dT0 M2 600 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:2.4e-13 x1.03:2.1e-13 nu=(0.543,0.623)
+B press/flow below=true 11000m dT0 M2 620 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:2.7e-13 x1.03:2.4e-13 nu=(0.552,0.632)
+B press/flow below=false 0m dT-30 M1.6 600 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:2.3e-13 x1.03:2.1e-13 nu=(0.543,0.623)
+B press/flow below=false 0m dT-30 M1.6 620 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:2.7e-13 x1.03:2.4e-13 nu=(0.552,0.632)
+B press/flow below=false 5000m dT0 M1.6 600 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:2.4e-13 x1.03:2.2e-13 nu=(0.543,0.623)
+B press/flow below=false 5000m dT0 M1.6 620 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:2.9e-13 x1.03:2.5e-13 nu=(0.552,0.632)
+B press/flow below=false 11000m dT0 M1.6 500 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:2.2e-13 x1.03:2.0e-13 nu=(0.496,0.569)
+B press/flow below=false 11000m dT0 M1.6 520 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:2.6e-13 x1.03:2.3e-13 nu=(0.505,0.579)
+B press/flow below=false 11000m dT0 M1.6 540 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:3.1e-13 x1.03:2.7e-13 nu=(0.515,0.589)
+B press/flow below=false 11000m dT0 M1.6 560 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:3.7e-13 x1.03:3.1e-13 nu=(0.525,0.598)
+B press/flow below=false 11000m dT0 M2 600 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:2.4e-13 x1.03:2.1e-13 nu=(0.543,0.623)
+B press/flow below=false 11000m dT0 M2 620 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:2.7e-13 x1.03:2.4e-13 nu=(0.552,0.632)
+B tilted below=true design 500 full:[does not bracket] seeded ok Primary it=1 d=3.2e-12 x0.97:3.2e-12 x1.03:3.2e-12 nu=(0.473,0.562)
+B tilted below=true 0m dT-30 M0.85 500 full:[does not bracket] seeded ok Primary it=1 d=3.2e-12 x0.97:3.2e-12 x1.03:3.2e-12 nu=(0.463,0.563)
+B tilted below=true 0m dT-30 M0.85 520 full:[does not bracket] seeded ok Primary it=1 d=3.1e-12 x0.97:3.2e-12 x1.03:3.2e-12 nu=(0.485,0.573)
+B tilted below=true 0m dT-30 M1.6 600 full:[does not bracket] seeded ok Primary it=1 d=7.9e-13 x0.97:5.5e-13 x1.03:5.7e-13 nu=(0.554,0.622)
+B tilted below=true 0m dT-30 M1.6 620 full:[does not bracket] seeded ok Primary it=1 d=9.0e-13 x0.97:6.2e-13 x1.03:6.5e-13 nu=(0.563,0.631)
+B tilted below=true 5000m dT0 M0.85 500 full:[does not bracket] seeded ok Primary it=1 d=3.1e-12 x0.97:3.1e-12 x1.03:3.2e-12 nu=(0.466,0.562)
+B tilted below=true 5000m dT0 M1.6 600 full:[does not bracket] seeded ok Primary it=1 d=8.1e-13 x0.97:5.6e-13 x1.03:5.9e-13 nu=(0.554,0.621)
+B tilted below=true 11000m dT0 M1.6 500 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:4.7e-13 x1.03:4.9e-13 nu=(0.505,0.568)
+B tilted below=true 11000m dT0 M1.6 520 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:5.5e-13 x1.03:5.8e-13 nu=(0.515,0.577)
+B tilted below=true 11000m dT0 M1.6 540 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:6.2e-13 x1.03:6.6e-13 nu=(0.525,0.587)
+B tilted below=true 11000m dT0 M2 600 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:5.5e-13 x1.03:5.7e-13 nu=(0.554,0.622)
+B tilted below=true 11000m dT0 M2 620 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:6.2e-13 x1.03:6.5e-13 nu=(0.563,0.631)
+B tilted below=false 0m dT-30 M1.6 600 full:[does not bracket] seeded ok Primary it=1 d=7.9e-13 x0.97:5.5e-13 x1.03:5.7e-13 nu=(0.554,0.622)
+B tilted below=false 0m dT-30 M1.6 620 full:[does not bracket] seeded ok Primary it=1 d=9.0e-13 x0.97:6.2e-13 x1.03:6.5e-13 nu=(0.563,0.631)
+B tilted below=false 5000m dT0 M1.6 600 full:[does not bracket] seeded ok Primary it=1 d=8.1e-13 x0.97:5.6e-13 x1.03:5.9e-13 nu=(0.554,0.621)
+B tilted below=false 11000m dT0 M1.6 500 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:4.7e-13 x1.03:4.9e-13 nu=(0.505,0.568)
+B tilted below=false 11000m dT0 M1.6 520 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:5.5e-13 x1.03:5.8e-13 nu=(0.515,0.577)
+B tilted below=false 11000m dT0 M1.6 540 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:6.2e-13 x1.03:6.6e-13 nu=(0.525,0.587)
+B tilted below=false 11000m dT0 M2 600 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:5.5e-13 x1.03:5.7e-13 nu=(0.554,0.622)
+B tilted below=false 11000m dT0 M2 620 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:6.2e-13 x1.03:6.5e-13 nu=(0.563,0.631)
+B flat-lp below=true design 500 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:7.2e-13 x1.03:6.8e-13 nu=(0.537,0.560)
+B flat-lp below=true 0m dT0 M0.85 560 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:7.8e-13 x1.03:7.9e-13 nu=(0.557,0.594)
+B flat-lp below=true 0m dT-30 M0.85 500 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:8.2e-13 x1.03:8.4e-13 nu=(0.524,0.561)
+B flat-lp below=true 0m dT-30 M0.85 520 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:6.2e-13 x1.03:7.0e-13 nu=(0.550,0.571)
+B flat-lp below=true 0m dT-30 M1.6 600 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:2.7e-13 x1.03:2.7e-13 nu=(0.625,0.620)
+B flat-lp below=true 5000m dT0 M0.85 500 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:7.8e-13 x1.03:7.5e-13 nu=(0.528,0.561)
+B flat-lp below=true 5000m dT0 M0.85 520 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:6.1e-13 x1.03:6.3e-13 nu=(0.553,0.571)
+B flat-lp below=true 5000m dT0 M1.6 600 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:5.4e-13 x1.03:4.9e-13 nu=(0.625,0.620)
+B flat-lp below=true 11000m dT0 M1.6 500 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:4.3e-13 x1.03:3.9e-13 nu=(0.570,0.566)
+B flat-lp below=true 11000m dT0 M1.6 520 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:5.9e-13 x1.03:5.3e-13 nu=(0.582,0.576)
+B flat-lp below=true 11000m dT0 M1.6 540 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:7.9e-13 x1.03:7.0e-13 nu=(0.593,0.585)
+B flat-lp below=true 11000m dT0 M1.6 560 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:1.0e-12 x1.03:9.0e-13 nu=(0.604,0.594)
+B flat-lp below=true 11000m dT0 M2 600 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:5.0e-13 x1.03:4.6e-13 nu=(0.625,0.620)
+B flat-lp below=false 0m dT-30 M1.6 600 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:2.7e-13 x1.03:2.7e-13 nu=(0.625,0.620)
+B flat-lp below=false 5000m dT0 M1.6 600 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:5.4e-13 x1.03:4.9e-13 nu=(0.625,0.620)
+B flat-lp below=false 11000m dT0 M1.6 500 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:4.3e-13 x1.03:3.9e-13 nu=(0.570,0.566)
+B flat-lp below=false 11000m dT0 M1.6 520 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:5.9e-13 x1.03:5.3e-13 nu=(0.582,0.576)
+B flat-lp below=false 11000m dT0 M1.6 540 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:7.9e-13 x1.03:7.0e-13 nu=(0.593,0.585)
+B flat-lp below=false 11000m dT0 M1.6 560 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:1.0e-12 x1.03:9.0e-13 nu=(0.604,0.594)
+B flat-lp below=false 11000m dT0 M2 600 full:[does not bracket] seeded ok Primary it=0 d=0.0e0 x0.97:5.0e-13 x1.03:4.6e-13 nu=(0.625,0.620)
+TALLY   5268 below=false A solves from full speed
+TALLY     31 below=false B full:[does not bracket] rescued
+TALLY      1 below=false D full:[cannot pass] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=100881 Pa]
+TALLY      1 below=false D full:[cannot pass] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=88949 Pa ]
+TALLY      1 below=false D full:[cannot pass] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=88995 Pa ]
+TALLY      1 below=false D full:[cannot pass] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=92251 Pa ]
+TALLY      1 below=false D full:[cannot pass] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=92314 Pa ]
+TALLY      1 below=false D full:[cannot pass] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=92706 Pa ]
+TALLY      1 below=false D full:[cannot pass] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=93799 Pa ]
+TALLY      1 below=false D full:[cannot pass] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=97292 Pa ]
+TALLY      1 below=false D full:[cannot pass] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=97984 Pa ]
+TALLY      1 below=false D full:[cannot pass] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=99884 Pa ]
+TALLY      3 below=false D full:[cannot pass] steady refuses:[rung-39 two-spool map match at Tt4=500, M0=0.00: nozzle UNCHOKED -- OU]
+TALLY      2 below=false D full:[cannot pass] steady refuses:[rung-39 two-spool map match at Tt4=520, M0=0.00: nozzle UNCHOKED -- OU]
+TALLY      1 below=false D full:[cannot pass] steady refuses:[rung-39 two-spool map match at Tt4=540, M0=0.30: nozzle UNCHOKED -- OU]
+TALLY      1 below=false D full:[cannot pass] steady refuses:[rung-39 two-spool map match at Tt4=560, M0=0.00: nozzle UNCHOKED -- OU]
+TALLY      4 below=false D full:[cannot pass] steady refuses:[rung-39 two-spool map match at Tt4=580, M0=0.00: nozzle UNCHOKED -- OU]
+TALLY      1 below=false D full:[cannot pass] steady refuses:[rung-39 two-spool map match at Tt4=600, M0=0.30: nozzle UNCHOKED -- OU]
+TALLY      1 below=false D full:[cannot pass] steady refuses:[rung-39 two-spool map match at Tt4=620, M0=0.30: nozzle UNCHOKED -- OU]
+TALLY      1 below=false D full:[cannot pass] steady refuses:[rung-39 two-spool map match at Tt4=640, M0=0.00: nozzle UNCHOKED -- OU]
+TALLY      1 below=false D full:[cannot pass] steady refuses:[rung-39 two-spool map match at Tt4=640, M0=0.30: nozzle UNCHOKED -- OU]
+TALLY      1 below=false D full:[cannot pass] steady refuses:[rung-39 two-spool map match at Tt4=660, M0=0.00: nozzle UNCHOKED -- OU]
+TALLY      1 below=false D full:[did not converge] steady refuses:[rung-39 two-spool map match at Tt4=640, M0=0.30: nozzle UNCHOKED -- OU]
+TALLY     48 below=false D full:[does not bracket] steady refuses:[did not converge]
+TALLY    289 below=false D full:[does not bracket] steady refuses:[efficiency]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=100095 Pa]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=100392 Pa]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=79588 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=79593 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=79902 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=80754 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=82622 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=82634 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=82970 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=83318 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=83330 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=83641 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=83880 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=84522 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=85740 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=85769 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=86125 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=86457 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=86462 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=86809 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=87094 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=87749 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=89370 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=89675 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=89696 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=90066 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=90400 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=90433 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=90486 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=90868 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=91067 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=91926 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=92985 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=93024 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=93414 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=94241 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=94314 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=94478 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=94517 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=94564 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=94714 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=94961 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=95648 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=95728 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=95844 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=96055 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=96136 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=96389 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=96447 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=96855 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=98172 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=98265 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=98442 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=98510 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=98682 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=98928 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=99141 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=99239 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=99661 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=99890 Pa ]
+TALLY      1 below=false D full:[does not bracket] steady refuses:[nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=99966 Pa ]
+TALLY      5 below=false D full:[does not bracket] steady refuses:[rung-39 two-spool map match at Tt4=500, M0=0.00: nozzle UNCHOKED -- OU]
+TALLY      8 below=false D full:[does not bracket] steady refuses:[rung-39 two-spool map match at Tt4=500, M0=0.30: nozzle UNCHOKED -- OU]
+TALLY     20 below=false D full:[does not bracket] steady refuses:[rung-39 two-spool map match at Tt4=500, M0=0.85: nozzle UNCHOKED -- OU]
+TALLY      6 below=false D full:[does not bracket] steady refuses:[rung-39 two-spool map match at Tt4=520, M0=0.00: nozzle UNCHOKED -- OU]
+TALLY     14 below=false D full:[does not bracket] steady refuses:[rung-39 two-spool map match at Tt4=520, M0=0.85: nozzle UNCHOKED -- OU]
+TALLY      3 below=false D full:[does not bracket] steady refuses:[rung-39 two-spool map match at Tt4=540, M0=0.30: nozzle UNCHOKED -- OU]
+TALLY      8 below=false D full:[does not bracket] steady refuses:[rung-39 two-spool map match at Tt4=540, M0=0.85: nozzle UNCHOKED -- OU]
+TALLY      3 below=false D full:[does not bracket] steady refuses:[rung-39 two-spool map match at Tt4=560, M0=0.00: nozzle UNCHOKED -- OU]
+TALLY      4 below=false D full:[does not bracket] steady refuses:[rung-39 two-spool map match at Tt4=560, M0=0.30: nozzle UNCHOKED -- OU]
+TALLY      7 below=false D full:[does not bracket] steady refuses:[rung-39 two-spool map match at Tt4=560, M0=0.85: nozzle UNCHOKED -- OU]
+TALLY      4 below=false D full:[does not bracket] steady refuses:[rung-39 two-spool map match at Tt4=580, M0=0.85: nozzle UNCHOKED -- OU]
+TALLY      4 below=false D full:[does not bracket] steady refuses:[rung-39 two-spool map match at Tt4=600, M0=0.85: nozzle UNCHOKED -- OU]
+TALLY      3 below=false D full:[does not bracket] steady refuses:[rung-39 two-spool map match at Tt4=620, M0=0.30: nozzle UNCHOKED -- OU]
+TALLY      3 below=false D full:[does not bracket] steady refuses:[rung-39 two-spool map match at Tt4=640, M0=0.00: nozzle UNCHOKED -- OU]
+TALLY      2 below=false D full:[does not bracket] steady refuses:[rung-39 two-spool map match at Tt4=640, M0=0.30: nozzle UNCHOKED -- OU]
+TALLY      3 below=false D full:[does not bracket] steady refuses:[rung-39 two-spool map match at Tt4=660, M0=0.00: nozzle UNCHOKED -- OU]
+TALLY      3 below=false D full:[does not bracket] steady refuses:[rung-39 two-spool map match at Tt4=680, M0=0.00: nozzle UNCHOKED -- OU]
+TALLY   5268 below=true A solves from full speed
+TALLY     52 below=true B full:[does not bracket] rescued
+TALLY     23 below=true D full:[cannot pass] steady refuses:[cannot pass]
+TALLY      1 below=true D full:[cannot pass] steady refuses:[speed-line bracket fails for (m=0.2523856050367082, tau_c=1.0021695249]
+TALLY      1 below=true D full:[cannot pass] steady refuses:[speed-line bracket fails for (m=0.2578646751654241, tau_c=1.0011897898]
+TALLY      1 below=true D full:[cannot pass] steady refuses:[speed-line bracket fails for (m=0.25972285733749784, tau_c=1.003797480]
+TALLY      1 below=true D full:[did not converge] steady refuses:[cannot pass]
+TALLY     36 below=true D full:[does not bracket] steady refuses:[below idle]
+TALLY     99 below=true D full:[does not bracket] steady refuses:[cannot pass]
+TALLY     48 below=true D full:[does not bracket] steady refuses:[did not converge]
+TALLY    290 below=true D full:[does not bracket] steady refuses:[efficiency]
+TALLY      1 below=true D full:[does not bracket] steady refuses:[speed-line bracket fails for (m=0.25638043192023763, tau_c=1.000685096]
+TALLY      1 below=true D full:[does not bracket] steady refuses:[speed-line bracket fails for (m=0.2568943689088363, tau_c=1.0027196813]
+TALLY      1 below=true D full:[does not bracket] steady refuses:[speed-line bracket fails for (m=0.2636012850211418, tau_c=1.0023716891]
+TALLY      1 below=true D full:[does not bracket] steady refuses:[speed-line bracket fails for (m=0.2663504087925656, tau_c=1.0033402103]
+test probe ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.50s
+

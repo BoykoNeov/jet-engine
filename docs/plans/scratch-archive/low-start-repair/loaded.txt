@@ -1,0 +1,55 @@
+
+running 1 test
+M1.6 500: steady Err("efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE definition")
+  start 1: ERR rung-90 two-shaft closure with the customer bleed does not bracket at nu=(1.0000,1.0000), Tt4=500, b=0.0000 — off the mo
+  start 0.9: ERR rung-90 two-shaft closure with the customer bleed does not bracket at nu=(0.9000,0.9000), Tt4=500, b=0.0000 — off the mo
+  start 0.8: (0.5560,0.5598) sp=-4.303 sp_in=Some(-27.692464630837915) Primary it=5
+  start 0.7: (0.5560,0.5598) sp=-4.303 sp_in=Some(-27.692464630840437) Primary it=5
+  start 0.6: (0.5560,0.5598) sp=-4.303 sp_in=Some(-27.692464630840302) Primary it=4
+  start 0.5: (0.5560,0.5598) sp=-4.303 sp_in=Some(-27.692464630839886) Primary it=4
+  start 0.4: (0.5560,0.5598) sp=-4.303 sp_in=Some(-27.692464630840437) Primary it=5
+  start 0.3: (0.5560,0.5598) sp=-4.303 sp_in=Some(-27.692464630840437) Primary it=5
+M1.6 510: steady Ok((0.5615913416905541, 0.5642289528344437, -6.942034818499035))
+  start 1: ERR rung-90 two-shaft closure with the customer bleed does not bracket at nu=(1.0000,1.0000), Tt4=510, b=0.0000 — off the mo
+  start 0.9: (0.5616,0.5642) sp=3.415 sp_in=Some(-20.359528301020703) Primary it=6
+  start 0.8: (0.5616,0.5642) sp=3.415 sp_in=Some(-20.359528301019015) Primary it=5
+  start 0.7: (0.5616,0.5642) sp=3.415 sp_in=Some(-20.359528301020703) Primary it=5
+  start 0.6: (0.5616,0.5642) sp=3.415 sp_in=Some(-20.359528301020895) Primary it=4
+  start 0.5: (0.5616,0.5642) sp=3.415 sp_in=Some(-20.35952830101988) Primary it=4
+  start 0.4: (0.5616,0.5642) sp=3.415 sp_in=Some(-20.359528301020703) Primary it=5
+  start 0.3: (0.5616,0.5642) sp=3.415 sp_in=Some(-20.359528301020703) Primary it=5
+  start steady: sp=3.415 sp_in=Some(-20.35952830095898)
+M1.6 520: steady Ok((0.5671365794901047, 0.5686710875869824, -4.495738347741818))
+  start 1: ERR rung-90 two-shaft closure with the customer bleed does not bracket at nu=(1.0000,1.0000), Tt4=520, b=0.0000 — off the mo
+  start 0.9: (0.5671,0.5687) sp=11.083 sp_in=Some(-13.075748148700407) Primary it=6
+  start 0.8: (0.5671,0.5687) sp=11.083 sp_in=Some(-13.07574814869876) Primary it=5
+  start 0.7: (0.5671,0.5687) sp=11.083 sp_in=Some(-13.075748148700193) Primary it=5
+  start 0.6: (0.5671,0.5687) sp=11.083 sp_in=Some(-13.075748148700383) Primary it=4
+  start 0.5: (0.5671,0.5687) sp=11.083 sp_in=Some(-13.075748148698626) Primary it=4
+  start 0.4: (0.5671,0.5687) sp=11.083 sp_in=Some(-13.075748148700463) Primary it=5
+  start 0.3: (0.5671,0.5687) sp=11.083 sp_in=Some(-13.075748148700193) Primary it=5
+  start steady: sp=11.083 sp_in=Some(-13.075748148635526)
+M1.6 540: steady Ok((0.5780750797883014, 0.577529366849131, 0.4705769150232798))
+  start 1: ERR rung-90 two-shaft closure with the customer bleed does not bracket at nu=(1.0000,1.0000), Tt4=540, b=0.0000 — off the mo
+  start 0.9: (0.5781,0.5775) sp=26.263 sp_in=Some(1.3456614828057205) Primary it=6
+  start 0.8: (0.5781,0.5775) sp=26.263 sp_in=Some(1.345661482806694) Primary it=5
+  start 0.7: (0.5781,0.5775) sp=26.263 sp_in=Some(1.3456614828057205) Primary it=5
+  start 0.6: (0.5781,0.5775) sp=26.263 sp_in=Some(1.345661482806019) Primary it=4
+  start 0.5: (0.5781,0.5775) sp=26.263 sp_in=Some(1.3456614828141475) Primary it=4
+  start 0.4: (0.5781,0.5775) sp=26.263 sp_in=Some(1.3456614828057205) Primary it=5
+  start 0.3: (0.5781,0.5775) sp=26.263 sp_in=Some(1.3456614828075004) Primary it=5
+  start steady: sp=26.263 sp_in=Some(1.3456614828775706)
+M2 600: steady Ok((0.6093172006703765, 0.6128149806921059, -16.119516992305517))
+  start 1: ERR rung-90 two-shaft closure with the customer bleed does not bracket at nu=(1.0000,1.0000), Tt4=600, b=0.0000 — off the mo
+  start 0.9: (0.6093,0.6128) sp=0.218 sp_in=Some(-29.298639456136367) Primary it=5
+  start 0.8: (0.6093,0.6128) sp=0.218 sp_in=Some(-29.29863945614188) Primary it=5
+  start 0.7: (0.6093,0.6128) sp=0.218 sp_in=Some(-29.298639456138453) Primary it=4
+  start 0.6: (0.6093,0.6128) sp=0.218 sp_in=Some(-29.29863945613752) Primary it=3
+  start 0.5: (0.6093,0.6128) sp=0.218 sp_in=Some(-29.29863945609046) Primary it=4
+  start 0.4: (0.6093,0.6128) sp=0.218 sp_in=Some(-29.29863945614188) Primary it=5
+  start 0.3: (0.6093,0.6128) sp=0.218 sp_in=Some(-29.298639456141434) Primary it=5
+  start steady: sp=0.218 sp_in=Some(-29.298639456106255)
+test probe_loaded ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.22s
+

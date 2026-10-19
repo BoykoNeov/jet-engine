@@ -1,0 +1,8 @@
+[229/231] ok         0.4 s  rung5
+[230/231] ok         0.3 s  rung2
+[231/231] ok         0.2 s  slice_v_carrier
+231 programs: 2913 passed, 2 failed, 0 ignored; run 897 s, total 1 360 s (build included)
+FAILED: sandbox-browser (exit 1) - log W:\Claude_projects\jet engine\rust\target\test-all\sandbox-browser.out
+    test the_committed_page_is_current ... FAILED
+FAILED: sandbox_controls (exit 101) - log W:\Claude_projects\jet engine\rust\target\test-all\sandbox_controls.out
+    test an_endpoint_without_a_steady_point_is_refused_in_words ... FAILED

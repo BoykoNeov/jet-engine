@@ -187,6 +187,8 @@ where the nozzle first unchokes.
 steady matcher finds one clean root with positive thrust (`probe1_census.txt`). The cause was not the Newton's start —
 seeded AT the steady root it still failed — but the closure's search: with no LP wall on a flat map it ran to the bare
 2.5, past the HP map's own wall, where the residual turns back negative. Capping it at the HP wall, only where the old
-bracket failed, solves every such point at the steady matcher's speeds (≤ 6e-13). Still open: one cell (550 K, standard
-day, M 0.85, barely above idle) whose full-speed START has no closure root. Rung 97 § 3's "no steady point" is
-corrected in place.
+bracket failed, solves every such point at the steady matcher's speeds (≤ 6e-13). The one cell left (550 K, standard
+day, M 0.85, barely above idle) whose full-speed START has no closure root — **REPAIRED 2026-10-19** too (sandbox plan
+§ 37, `tests/low_start_repair.rs`): where full speed refuses, the Newton re-starts lower and keeps the root only if it
+runs. Rung 97 § 3's "no steady point" is corrected in place. **Not one rule yet** (the user's choice, § 37): the
+full-speed start still returns choked below-idle points, as this rung's matchers do.

@@ -1,0 +1,44 @@
+440 K
+  steady Err("rung-103: below idle at Tt4=440: with the nozzle unchoked th")
+  eq     Err("rung-40 two-shaft closure does not bracket at nu=(1.0000,1.0")
+  page   Err("At the starting throttle (440 K): the engine has no steady operating point: the compressor")
+450 K
+  steady Err("rung-103: below idle at Tt4=450: with the nozzle unchoked th")
+  eq     Err("rung-40 two-shaft closure does not bracket at nu=(1.0000,1.0")
+  page   Err("At the starting throttle (450 K): the engine has no steady operating point: the compressor")
+460 K
+  steady Err("rung-103: below idle at Tt4=460: with the nozzle unchoked th")
+  eq     Err("rung-40 two-shaft closure does not bracket at nu=(1.0000,1.0")
+  page   Err("At the starting throttle (460 K): the engine has no steady operating point: the compressor")
+470 K
+  steady Err("rung-103: below idle at Tt4=470: with the nozzle unchoked th")
+  eq     Err("rung-40 two-shaft closure does not bracket at nu=(1.0000,1.0")
+  page   Err("At the starting throttle (470 K): the engine has no steady operating point: the compressor")
+480 K
+  steady Ok("(0.5100,0.5498) F=1.27 N")
+  eq     Ok("(0.5100,0.5498) sp_in=None sp=4.10")
+  page   Ok("runs")
+490 K
+  steady Ok("(0.5238,0.5549) F=4.17 N")
+  eq     Ok("(0.5238,0.5549) sp_in=None sp=13.19")
+  page   Ok("runs")
+500 K
+  steady Ok("(0.5368,0.5599) F=7.19 N")
+  eq     Ok("(0.5368,0.5599) sp_in=None sp=22.34")
+  page   Ok("runs")
+510 K
+  steady Ok("(0.5489,0.5649) F=10.33 N")
+  eq     Ok("(0.5489,0.5649) sp_in=None sp=31.56")
+  page   Ok("runs")
+520 K
+  steady Ok("(0.5602,0.5698) F=13.59 N")
+  eq     Ok("(0.5602,0.5698) sp_in=None sp=40.82")
+  page   Ok("runs")
+530 K
+  steady Ok("(0.5708,0.5748) F=16.95 N")
+  eq     Ok("(0.5708,0.5748) sp_in=None sp=50.13")
+  page   Ok("runs")
+540 K
+  steady Ok("(0.5806,0.5797) F=20.42 N")
+  eq     Ok("(0.5806,0.5797) sp_in=None sp=59.46")
+  page   Ok("runs")

@@ -1945,3 +1945,44 @@ physical root sat well inside. At 11 km and high power the same happens on the c
 - **Still open:** the Newton starts at full speed. Just above idle (556–562 K in the crash map; 550 K standard day,
   M 0.85 in the gate) the compressor exit there is hotter than the burner target, so the closure has no root AT THE
   START, while the running point has one (seeded there it solves). A start from the steady matcher would close it.
+  **Closed by § 37** (a fixed lower start instead — the steady matchers panic on loaded cores).
+
+## 37. Rung 40's equilibrium starts lower where full speed fails (2026-10-19) — a solver repair, not a slice
+
+§ 36's open cell. Just above idle the full-speed start `(1, 1)` has no closure root at all (the compressor exit there
+is hotter than the burner's target), while the running point has one.
+- **The repair** (`TwoSpoolTransientCore::try_equilibrium`, the Newton itself moved to `try_newton`): only where the
+  default start (`start = None`) FAILED, re-run the Newton from `LOW_STARTS` (equal speeds 0.9 … 0.4, a search choice
+  like the closures' 0.02 march); the first start that solves gives the root, **kept only if the engine is not below
+  idle** (rung 103's words, judged on thrust per INLET air, as the steady matchers judge it). A below-idle root is
+  refused with the full-speed refusal's own words FIRST and "; and below idle … more drag than thrust (… N per kg/s)"
+  after — so every reader that sorts refusals by their words (`classify`, the oracles' `abort_kind`, the page) sorts
+  them as before. A call that solved from full speed never reaches it: bit for bit. Counter `take_low_start_rescues`.
+- **Why the filter:** on a 26-flight probe grid the low start also lands on 650 below-idle roots (down to −149 N/(kg/s))
+  that every steady matcher refuses. **Why the first start:** every low start that solves lands on one root (spread
+  ≤ 1.5e-12 measured), so the order is a choice, not a selection.
+- **Not one rule (the user's choice, 2026-10-19 — asked in plain terms after a side agent raised it):** the full-speed
+  start still returns choked below-idle points (41 on the probe grid, hot or fast flights; the Controls page starts at
+  −64 to −80 N/(kg/s) at Mach 2.6, and at Mach 2 on two maps), and the steady matchers refuse below idle only on the
+  unchoked branch. Kept as it was, honest words on the new refusals; **open**: one below-idle rule everywhere (it would
+  move existing results, likely Python-held).
+- **The census:** the whole gate with the repair on — no Python-held key moved (2913 passed); the 2 failures were the
+  stale page and `sandbox_controls`' refused endpoint (500 K now runs). Rewritten: that endpoint (470 K, the new words),
+  its "does not settle" case (crash-map request 7, a lever with a generator in other air) and its acceleration-gap case
+  (`accel_table` driven directly from 470 K) — the two lever cases it held refused there **run now** (the full-speed
+  Newton cycled on the schedule; every start that settles lands on the rescued root): `low_start_repair.rs`.
+  `hp_wall_repair.rs`' 550 K skip removed, its open-seam test deleted.
+- **The gate:** `tests/low_start_repair.rs` — 4 shapes × 7 flights × 500–700 K: a rescued point always has a steady
+  point with positive thrust at its speeds (≤ 1e-10; the steady matcher shares no closure code), every running steady
+  point is solved; the same for the customer-bleed and cooled engines against rung 90/91's matchers; the open cell;
+  one root from every start; a below-idle root's reason; the lever cases; the Controls page from 560 K through all
+  four closures. Red check (an env flag, then removed): 4 of the first 5 red plus `hp_wall_repair`'s flat-LP test.
+- **What moved on the page** (crash map seed 36, 1 200 requests, against a worktree of `534f69e`): 1 185 byte-equal;
+  2 refusals now run (560–562 K, just above idle); 13 change words, each "off the maps" → below idle (−13 to −90 N/(kg/s));
+  no panic. 3 low-throttle "off the maps" stay (575–598 K, each with a load or the bleed, the search slowing the LP
+  shaft to ~0). Slowest reply: noise on this machine — two runs of the same code put different requests on top (175,
+  then 655 ms), the first run's slowest at 15–19 ms the second time. The page's lowest start, re-measured: 480 K at the
+  design flight on every map (was 510–520), 580 K at Mach 1.6 (610–620), 690 K at Mach 2 and 800–820 K at Mach 2.6
+  unchanged (there the full-speed start already accepts below-idle points); standard sea-level day 550–560 K, +40 K
+  610–620 K. The refusal words carry the running floors; "off the maps" no longer quotes a low-throttle floor.
+- Probes archived: `docs/plans/scratch-archive/low-start-repair/`.

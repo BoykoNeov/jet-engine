@@ -1,0 +1,1 @@
+1200 requests: 1157 byte-equal runs, 28 byte-equal refusals, 2 refusals now run (#640, #909), 13 refusals change words (all 'off the maps' -> below idle); 0 panics. Slowest reply old 65 ms; new 175 ms, re-run 655 ms on different requests (machine noise: the first run's slowest were 15-19 ms on re-run).

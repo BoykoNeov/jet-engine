@@ -1,0 +1,61 @@
+
+running 4 tests
+test the_top_of_the_range_at_altitude_solves ... ok
+test flat_lp_equilibrium_lands_on_the_steady_point ... FAILED
+test curved_maps_never_enter_the_repair ... ok
+test the_controls_page_runs_flat_lp_from_low_throttles ... ok
+
+failures:
+
+---- flat_lp_equilibrium_lands_on_the_steady_point stdout ----
+
+thread 'flat_lp_equilibrium_lands_on_the_steady_point' (22972) panicked at tests\hp_wall_repair.rs:61:41:
+SL std M0.85 550 K: steady point exists, equilibrium refused: rung-40 two-shaft closure does not bracket at nu=(1.0000,1.0000), Tt4=550 — off the modeled speed-line region.
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    flat_lp_equilibrium_lands_on_the_steady_point
+
+test result: FAILED. 3 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.24s
+
+
+running 5 tests
+test the_controls_page_starts_just_above_idle ... FAILED
+test the_open_cell_solves ... FAILED
+test the_low_start_rescues_exactly_the_steady_points ... FAILED
+test the_loaded_engines_land_on_their_own_steady_points ... FAILED
+test every_low_start_lands_on_one_root ... ok
+
+failures:
+
+---- the_controls_page_starts_just_above_idle stdout ----
+
+thread 'the_controls_page_starts_just_above_idle' (22900) panicked at tests\low_start_repair.rs:207:51:
+flat-lp plain from 560 K: At the starting throttle (560 K): the engine has no steady operating point: the compressors would have to run off the part of their maps the model covers. Mostly this is a throttle too low for the air (at the design flight, below about 510–520 K on every map; warmer air raises that, and so does flying faster, which warms the air before it reaches the engine — about 610 K at Mach 1.6, 670–690 K at Mach 2, 800–820 K at Mach 2.6; colder air lowers it), or a large fixed load or amount of air in thin air, or a lever whose schedule does nearly all its travel just below the design speed. Move this throttle toward the middle of its range, or start the lever's schedule lower. (The model says: rung-40 two-shaft closure does not bracket at nu=(1.0000,1.0000), Tt4=560 — off the modeled speed-line region.)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- the_open_cell_solves stdout ----
+
+thread 'the_open_cell_solves' (21476) panicked at tests\low_start_repair.rs:108:58:
+solved from a low start: Abort("rung-40 two-shaft closure does not bracket at nu=(1.0000,1.0000), Tt4=550 — off the modeled speed-line region.")
+
+---- the_low_start_rescues_exactly_the_steady_points stdout ----
+
+thread 'the_low_start_rescues_exactly_the_steady_points' (47192) panicked at tests\low_start_repair.rs:91:23:
+flow/press SL std M0.85 560 K: the steady point runs (3.7568194535452606 N), equilibrium refused: rung-40 two-shaft closure does not bracket at nu=(1.0000,1.0000), Tt4=560 — off the modeled speed-line region.
+
+---- the_loaded_engines_land_on_their_own_steady_points stdout ----
+
+thread 'the_loaded_engines_land_on_their_own_steady_points' (8752) panicked at tests\low_start_repair.rs:91:23:
+customer 5 km M0.85 520 K: the steady point runs (0.17350210850184736 N), equilibrium refused: rung-90 two-shaft closure with the customer bleed does not bracket at nu=(1.0000,1.0000), Tt4=520, b=0.0000 — off the modeled speed-line region.
+
+
+failures:
+    the_controls_page_starts_just_above_idle
+    the_loaded_engines_land_on_their_own_steady_points
+    the_low_start_rescues_exactly_the_steady_points
+    the_open_cell_solves
+
+test result: FAILED. 1 passed; 4 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.17s
+

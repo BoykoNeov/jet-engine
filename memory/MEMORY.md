@@ -25,6 +25,7 @@ new slices and step links go THERE, not here.
 - [Sandbox slice 5](sandbox-slice5.md) — the error path had its own error (non-ASCII message hung the page since slice 1); every await on an external process needs a ceiling
 - [Solver walls repair](solver-walls-repair.md) — a fix to failing cases moved 1 416 oracle keys (failure was control flow); a continuation crashed a diagnostic, so it ships default-OFF
 - [HP-wall repair](hp-wall-repair.md) — 2026-10-19: seed at the true root to test a "bad start"; a finite non-physical branch slips past a NaN guard
+- [Low-start repair](low-start-repair.md) — 2026-10-19: a filter on a fallback only makes a rule depend on the solver's start; append a refusal's new reason after its old words
 - [Back-pressure repair](back-pressure-repair.md) — 2026-10-16: a census logger in a threaded test process must write each record in ONE call; red-check by stashing src only
 - [Sandbox altitude](sandbox-altitude.md) — a step-checked limit holds only at its flight; a ×2 similarity cannot see a re-capture; empty-vs-empty cmp says IDENTICAL
 - [Sandbox Mach](sandbox-mach.md) — "refused at every throttle" written from ONE throttle tried there; an archived probe source was a copy of another (equal output sizes)

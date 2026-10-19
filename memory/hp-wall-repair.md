@@ -5,13 +5,13 @@ metadata:
   node_type: memory
   type: project
   originSessionId: cd29b06a-e475-4741-8e63-7c477860dce7
-  modified: 2026-10-19T14:36:42.355Z
+  modified: 2026-10-19T18:02:46.505Z
 ---
 
 Repair (not a rung), 2026-10-19: rung 40's equilibrium refused running engines (flat-LP map, low throttle; 11 km top of
 range on curved maps). Fix: `two_spool_transient::hp_wall_rescue` in the four Tt4 closures (40/62/90/91), only on the
 failing branch. Gate `rust/tests/hp_wall_repair.rs`. User decision: **on everywhere** (not a switch), 4 Python-held
-`slice_v` march lengths licensed by a rule. Still open: the Newton's full-speed START just above idle.
+`slice_v` march lengths licensed by a rule. The Newton's full-speed START just above idle: closed by [[low-start-repair]].
 
 **Lesson 1 — test a "bad starting guess" hypothesis by seeding AT the true root.** Rung 103's notes proposed "start
 from the steady matcher"; one probe seeding the Newton at the steady root still failed, which moved the search from
@@ -31,4 +31,5 @@ was the user's call, asked with plain consequences. Related: [[solver-walls-repa
 
 **Hazard hit again:** a stray `python -` in a bash line hung (the Store stub) — see [[windows-tooling-file-hazards]];
 and `cmd //c` cannot take a manifest path with a space (`jet engine`) — launch cargo via PowerShell `Start-Process` with
-`PriorityClass = 'BelowNormal'` instead.
+`PriorityClass = 'BelowNormal'` instead — WRONG: setting it after launch misses child processes; the right form is in
+[[low-start-repair]].

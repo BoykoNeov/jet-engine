@@ -45,8 +45,9 @@ fn plant(shape: &str) -> TwoSpoolTransientCore {
     tr
 }
 
-/// Every flat-LP point the steady matcher solves, the equilibrium solves too, at the same speeds —
-/// except the one cell whose trouble is the Newton's full-speed START (see the next test).
+/// Every flat-LP point the steady matcher solves, the equilibrium solves too, at the same speeds.
+/// (The one cell whose trouble was the Newton's full-speed START — 550 K, standard sea-level day,
+/// Mach 0.85 — was held out here until the low-start repair, `tests/low_start_repair.rs`.)
 #[test]
 fn flat_lp_equilibrium_lands_on_the_steady_point() {
     let tr = plant("flat-lp");
@@ -56,14 +57,12 @@ fn flat_lp_equilibrium_lands_on_the_steady_point() {
         let mut tt4 = 550.0;
         while tt4 <= 1500.0 + 1e-9 {
             if let Ok(m) = tr.inner.try_match_point(&fl, tt4) {
-                if !(name == "SL std M0.85" && tt4 == 550.0) {
-                    let (i, _, _) = tr.try_equilibrium(&fl, tt4, None)
-                        .unwrap_or_else(|e| panic!("{name} {tt4} K: steady point exists, equilibrium refused: {}", e.0));
-                    let (dl, dh) = (i.nu_lp - m.n_lp_ratio, i.nu_hp - m.n_hp_ratio);
-                    assert!(dl.abs() < SAME_SPEED && dh.abs() < SAME_SPEED,
-                            "{name} {tt4} K: equilibrium ({}, {}) vs steady ({}, {})", i.nu_lp, i.nu_hp, m.n_lp_ratio, m.n_hp_ratio);
-                    checked += 1;
-                }
+                let (i, _, _) = tr.try_equilibrium(&fl, tt4, None)
+                    .unwrap_or_else(|e| panic!("{name} {tt4} K: steady point exists, equilibrium refused: {}", e.0));
+                let (dl, dh) = (i.nu_lp - m.n_lp_ratio, i.nu_hp - m.n_hp_ratio);
+                assert!(dl.abs() < SAME_SPEED && dh.abs() < SAME_SPEED,
+                        "{name} {tt4} K: equilibrium ({}, {}) vs steady ({}, {})", i.nu_lp, i.nu_hp, m.n_lp_ratio, m.n_hp_ratio);
+                checked += 1;
             }
             tt4 += 50.0;
         }
@@ -71,21 +70,6 @@ fn flat_lp_equilibrium_lands_on_the_steady_point() {
     // 21 of these refused before the repair; the rest were choked points it never touched.
     assert!(checked >= 50, "only {checked} steady points on the grid");
     assert!(take_hp_wall_rescues() > 0, "the repair was never exercised");
-}
-
-/// What the repair does NOT reach, stated so it cannot drift silently: the Newton starts at full
-/// speed, and at 550 K on a standard sea-level day the compressor exit there is already hotter than
-/// 550 K — the burner cannot cool the gas, so the closure has no root AT THE START, while the
-/// running point (54 % / 59 % speed, barely above idle) has one. A start problem, still open.
-#[test]
-fn the_full_speed_start_stays_an_open_seam() {
-    let tr = plant("flat-lp");
-    let fl = flights()[1].1;
-    let m = tr.inner.try_match_point(&fl, 550.0).expect("the steady point exists");
-    let e = tr.try_equilibrium(&fl, 550.0, None).expect_err("still refused from full speed");
-    assert!(e.0.contains("does not bracket"), "{}", e.0);
-    let (i, _, _) = tr.try_equilibrium(&fl, 550.0, Some((m.n_lp_ratio, m.n_hp_ratio))).expect("solves from the running point");
-    assert!((i.nu_lp - m.n_lp_ratio).abs() < SAME_SPEED && (i.nu_hp - m.n_hp_ratio).abs() < SAME_SPEED);
 }
 
 /// On the three curved LP maps the LP wall binds first over this grid, so the new path is never

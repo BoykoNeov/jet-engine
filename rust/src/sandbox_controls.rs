@@ -1449,7 +1449,13 @@ fn speed_json(s: &ControlsSettings, t: Option<&Tables>) -> Json {
 /// Plain words for an endpoint's failed steady solve — the four messages the crash map found
 /// (plan § 12.10), each driven by a test.
 pub fn endpoint_words(message: &str) -> String {
-    let why = if message.contains("customer bleed takes") {
+    // Plan § 37: the equilibrium's low start found the one root, and it is below idle (first: the
+    // full-speed refusal's own words come before it in the message).
+    let why = if message.contains("below idle") {
+        "at this throttle the engine is below idle: it makes more drag than thrust. Raise the throttle (at the \
+         design flight the first one that runs is about 480 K on every map; flying faster raises it — about 580 K \
+         at Mach 1.6, 690 K at Mach 2 — and so does warmer air: on a standard sea-level day about 550–560 K)"
+    } else if message.contains("customer bleed takes") {
         "the aircraft's customer bleed would take more than half of the HP compressor's air here, which starves the \
          burner. A fixed amount of air is a larger share at low power: raise the throttle, or ask for less air"
     } else if message.contains("turbine cooling") && message.contains("together take") {
@@ -1462,9 +1468,10 @@ pub fn endpoint_words(message: &str) -> String {
          the less air the engine takes: raise the throttle, or ask for less power"
     } else if message.contains("did not converge") {
         // Plan § 27: off the design flight, all 14 such refusals in the crash map had a lever AND a generator load.
-        "the search for the steady shaft speeds does not settle. Measured only with an airflow lever on: at the design \
-         flight, one whose schedule does nearly all its travel just below the design speed (start the lever's schedule \
-         lower); in other air, every case met also carried a generator load"
+        // Plan § 37: the design-flight case (a schedule doing all its travel just below design speed) runs since the
+        // low start; the 6 left in its crash map are all a lever with a generator on the LP shaft, in other air.
+        "the search for the steady shaft speeds does not settle. Measured only with an airflow lever on and a \
+         generator load, away from the design flight: ask for less power, or switch the lever off"
     } else if message.contains("rung-97:") {
         // Rung 97: the unchoked nozzle cannot pass the flow even with the LP turbine doing almost no work.
         "at this low a throttle the gas leaving the turbines has too little pressure to be pushed out against the air \
@@ -1476,13 +1483,13 @@ pub fn endpoint_words(message: &str) -> String {
          throttle"
     } else if message.contains("does not bracket") || message.contains("off-map compressor trial") {
         // Plan § 27: away from the design flight the TOP of the range can be off the maps too, so the words do not say
-        // which way to move.
-        "the compressors would have to run off the part of their maps the model covers. Mostly this is a throttle too \
-         low for the air (at the design flight, below about 510–520 K on every map; warmer air raises that, and so \
-         does flying faster, which warms the air before it reaches the engine — about 610 K at Mach 1.6, 670–690 K at \
-         Mach 2, 800–820 K at Mach 2.6; colder air lowers it), or a large fixed load or amount of air in thin air, or \
-         a lever whose schedule does nearly all its travel just below the design speed. Move this throttle toward the \
-         middle of its range, or start the lever's schedule lower"
+        // which way to move. Plan § 37: a throttle below idle has its own words now (above); in the crash map the low
+        // ones left here (3 of 1 200, 575–598 K) all carried a load or the bleed, the search slowing the LP shaft to ~0.
+        "the compressors would have to run off the part of their maps the model covers. Mostly this is a low throttle \
+         with a fixed load or the bleed valve open (the search slows the low-pressure shaft almost to a stop), or a \
+         large fixed load or amount of air in thin air, or a lever whose schedule does nearly all its travel just \
+         below the design speed. Move this throttle toward the middle of its range, ask for less load, or start the \
+         lever's schedule lower"
     } else {
         "the model's steady solve fails"
     };

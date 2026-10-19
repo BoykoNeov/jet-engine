@@ -1,0 +1,17 @@
+[package]
+name = "eqcrash-new"
+version = "0.1.0"
+edition = "2021"
+[dependencies]
+turbojet = { path = "W:/Claude_projects/jet engine/rust" }
+[profile.release]
+opt-level = 3
+[[bin]]
+name = "crash"
+path = "../src/crash.rs"
+[[bin]]
+name = "probe500"
+path = "../src/probe500.rs"
+[[bin]]
+name = "floors"
+path = "../src/floors.rs"

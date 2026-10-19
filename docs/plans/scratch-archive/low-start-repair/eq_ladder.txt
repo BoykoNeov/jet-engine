@@ -1,0 +1,1520 @@
+
+running 1 test
+T flow/press below=true design 500 sp_thrust=18.25 steady_ok=true
+L flow/press below=true design 500 start=0.9 tries=1 it=6 d_vs_steady=1.1e-12
+T flow/press below=true 0m dT0 M0.85 500 sp_thrust=-41.64 steady_ok=false
+N flow/press below=true 0m dT0 M0.85 500 start=0.8 nu=(0.421,0.565) steady refuses
+T flow/press below=true 0m dT0 M0.85 520 sp_thrust=-26.01 steady_ok=false
+N flow/press below=true 0m dT0 M0.85 520 start=0.9 nu=(0.449,0.574) steady refuses
+T flow/press below=true 0m dT0 M0.85 540 sp_thrust=-9.96 steady_ok=false
+N flow/press below=true 0m dT0 M0.85 540 start=0.9 nu=(0.475,0.584) steady refuses
+T flow/press below=true 0m dT0 M0.85 560 sp_thrust=6.45 steady_ok=true
+L flow/press below=true 0m dT0 M0.85 560 start=0.9 tries=1 it=6 d_vs_steady=1.1e-12
+T flow/press below=true 0m dT0 M1.6 500 sp_thrust=-114.82 steady_ok=false
+N flow/press below=true 0m dT0 M1.6 500 start=0.6 nu=(0.515,0.586) steady refuses
+T flow/press below=true 0m dT0 M1.6 520 sp_thrust=-100.16 steady_ok=false
+N flow/press below=true 0m dT0 M1.6 520 start=0.6 nu=(0.525,0.594) steady refuses
+T flow/press below=true 0m dT0 M1.6 540 sp_thrust=-85.64 steady_ok=false
+N flow/press below=true 0m dT0 M1.6 540 start=0.7 nu=(0.534,0.602) steady refuses
+T flow/press below=true 0m dT0 M1.6 560 sp_thrust=-71.26 steady_ok=false
+N flow/press below=true 0m dT0 M1.6 560 start=0.7 nu=(0.544,0.611) steady refuses
+T flow/press below=true 0m dT0 M1.6 580 sp_thrust=-57.02 steady_ok=false
+N flow/press below=true 0m dT0 M1.6 580 start=0.8 nu=(0.553,0.619) steady refuses
+T flow/press below=true 0m dT0 M1.6 600 sp_thrust=-42.92 steady_ok=false
+N flow/press below=true 0m dT0 M1.6 600 start=0.8 nu=(0.562,0.627) steady refuses
+T flow/press below=true 0m dT0 M1.6 620 sp_thrust=-28.96 steady_ok=false
+N flow/press below=true 0m dT0 M1.6 620 start=0.8 nu=(0.571,0.635) steady refuses
+T flow/press below=true 0m dT0 M1.6 640 sp_thrust=-15.13 steady_ok=false
+N flow/press below=true 0m dT0 M1.6 640 start=0.9 nu=(0.580,0.643) steady refuses
+T flow/press below=true 0m dT0 M1.6 660 sp_thrust=-1.45 steady_ok=false
+N flow/press below=true 0m dT0 M1.6 660 start=0.9 nu=(0.589,0.651) steady refuses
+T flow/press below=true 0m dT0 M2 560 sp_thrust=-140.75 steady_ok=false
+N flow/press below=true 0m dT0 M2 560 start=0.6 nu=(0.547,0.626) steady refuses
+T flow/press below=true 0m dT0 M2 580 sp_thrust=-127.77 steady_ok=false
+N flow/press below=true 0m dT0 M2 580 start=0.6 nu=(0.556,0.634) steady refuses
+T flow/press below=true 0m dT0 M2 600 sp_thrust=-114.94 steady_ok=false
+N flow/press below=true 0m dT0 M2 600 start=0.7 nu=(0.565,0.641) steady refuses
+T flow/press below=true 0m dT0 M2 620 sp_thrust=-102.25 steady_ok=false
+N flow/press below=true 0m dT0 M2 620 start=0.7 nu=(0.573,0.649) steady refuses
+T flow/press below=true 0m dT0 M2 640 sp_thrust=-89.69 steady_ok=false
+N flow/press below=true 0m dT0 M2 640 start=0.8 nu=(0.582,0.656) steady refuses
+T flow/press below=true 0m dT0 M2 660 sp_thrust=-77.26 steady_ok=false
+N flow/press below=true 0m dT0 M2 660 start=0.8 nu=(0.591,0.664) steady refuses
+T flow/press below=true 0m dT0 M2 680 sp_thrust=-64.96 steady_ok=false
+N flow/press below=true 0m dT0 M2 680 start=0.8 nu=(0.599,0.671) steady refuses
+T flow/press below=true 0m dT0 M2 700 sp_thrust=-52.79 steady_ok=false
+N flow/press below=true 0m dT0 M2 700 start=0.9 nu=(0.608,0.679) steady refuses
+T flow/press below=true 0m dT0 M2 720 sp_thrust=-40.73 steady_ok=false
+N flow/press below=true 0m dT0 M2 720 start=0.9 nu=(0.616,0.686) steady refuses
+T flow/press below=true 0m dT0 M2 740 sp_thrust=-28.79 steady_ok=false
+N flow/press below=true 0m dT0 M2 740 start=0.9 nu=(0.624,0.694) steady refuses
+T flow/press below=true 0m dT40 M0.85 500 sp_thrust=-91.81 steady_ok=false
+N flow/press below=true 0m dT40 M0.85 500 start=0.7 nu=(0.337,0.570) steady refuses
+T flow/press below=true 0m dT40 M0.85 520 sp_thrust=-78.63 steady_ok=false
+N flow/press below=true 0m dT40 M0.85 520 start=0.8 nu=(0.373,0.580) steady refuses
+T flow/press below=true 0m dT40 M0.85 540 sp_thrust=-64.99 steady_ok=false
+N flow/press below=true 0m dT40 M0.85 540 start=0.8 nu=(0.406,0.589) steady refuses
+T flow/press below=true 0m dT40 M0.85 560 sp_thrust=-50.91 steady_ok=false
+N flow/press below=true 0m dT40 M0.85 560 start=0.8 nu=(0.436,0.598) steady refuses
+T flow/press below=true 0m dT40 M0.85 580 sp_thrust=-36.42 steady_ok=false
+N flow/press below=true 0m dT40 M0.85 580 start=0.9 nu=(0.464,0.608) steady refuses
+T flow/press below=true 0m dT40 M0.85 600 sp_thrust=-21.57 steady_ok=false
+N flow/press below=true 0m dT40 M0.85 600 start=0.9 nu=(0.489,0.617) steady refuses
+T flow/press below=true 0m dT40 M1.6 540 sp_thrust=-142.92 steady_ok=false
+N flow/press below=true 0m dT40 M1.6 540 start=0.6 nu=(0.537,0.614) steady refuses
+T flow/press below=true 0m dT40 M1.6 560 sp_thrust=-128.97 steady_ok=false
+N flow/press below=true 0m dT40 M1.6 560 start=0.6 nu=(0.546,0.622) steady refuses
+T flow/press below=true 0m dT40 M1.6 580 sp_thrust=-115.13 steady_ok=false
+N flow/press below=true 0m dT40 M1.6 580 start=0.7 nu=(0.555,0.629) steady refuses
+T flow/press below=true 0m dT40 M1.6 600 sp_thrust=-101.40 steady_ok=false
+N flow/press below=true 0m dT40 M1.6 600 start=0.7 nu=(0.564,0.637) steady refuses
+T flow/press below=true 0m dT40 M1.6 620 sp_thrust=-87.79 steady_ok=false
+N flow/press below=true 0m dT40 M1.6 620 start=0.8 nu=(0.573,0.645) steady refuses
+T flow/press below=true 0m dT40 M1.6 640 sp_thrust=-74.29 steady_ok=false
+N flow/press below=true 0m dT40 M1.6 640 start=0.8 nu=(0.581,0.653) steady refuses
+T flow/press below=true 0m dT40 M1.6 660 sp_thrust=-60.91 steady_ok=false
+N flow/press below=true 0m dT40 M1.6 660 start=0.8 nu=(0.590,0.660) steady refuses
+T flow/press below=true 0m dT40 M1.6 680 sp_thrust=-47.64 steady_ok=false
+N flow/press below=true 0m dT40 M1.6 680 start=0.9 nu=(0.599,0.668) steady refuses
+T flow/press below=true 0m dT40 M1.6 700 sp_thrust=-34.48 steady_ok=false
+N flow/press below=true 0m dT40 M1.6 700 start=0.9 nu=(0.607,0.676) steady refuses
+T flow/press below=true 0m dT40 M1.6 720 sp_thrust=-21.44 steady_ok=false
+N flow/press below=true 0m dT40 M1.6 720 start=0.9 nu=(0.616,0.683) steady refuses
+T flow/press below=true 0m dT40 M2 640 sp_thrust=-148.77 steady_ok=false
+N flow/press below=true 0m dT40 M2 640 start=0.6 nu=(0.584,0.669) steady refuses
+T flow/press below=true 0m dT40 M2 660 sp_thrust=-136.58 steady_ok=false
+N flow/press below=true 0m dT40 M2 660 start=0.7 nu=(0.593,0.676) steady refuses
+T flow/press below=true 0m dT40 M2 680 sp_thrust=-124.50 steady_ok=false
+N flow/press below=true 0m dT40 M2 680 start=0.7 nu=(0.601,0.683) steady refuses
+T flow/press below=true 0m dT40 M2 700 sp_thrust=-112.54 steady_ok=false
+N flow/press below=true 0m dT40 M2 700 start=0.8 nu=(0.609,0.690) steady refuses
+T flow/press below=true 0m dT40 M2 720 sp_thrust=-100.68 steady_ok=false
+N flow/press below=true 0m dT40 M2 720 start=0.8 nu=(0.618,0.697) steady refuses
+T flow/press below=true 0m dT40 M2 740 sp_thrust=-88.94 steady_ok=false
+N flow/press below=true 0m dT40 M2 740 start=0.8 nu=(0.626,0.704) steady refuses
+T flow/press below=true 0m dT40 M2 760 sp_thrust=-77.30 steady_ok=false
+N flow/press below=true 0m dT40 M2 760 start=0.9 nu=(0.634,0.711) steady refuses
+T flow/press below=true 0m dT40 M2 780 sp_thrust=-65.76 steady_ok=false
+N flow/press below=true 0m dT40 M2 780 start=0.9 nu=(0.642,0.718) steady refuses
+T flow/press below=true 0m dT40 M2 800 sp_thrust=-54.32 steady_ok=false
+N flow/press below=true 0m dT40 M2 800 start=0.9 nu=(0.650,0.726) steady refuses
+T flow/press below=true 0m dT-30 M0.85 500 sp_thrust=4.32 steady_ok=true
+L flow/press below=true 0m dT-30 M0.85 500 start=0.9 tries=1 it=6 d_vs_steady=9.5e-13
+T flow/press below=true 0m dT-30 M0.85 520 sp_thrust=21.92 steady_ok=true
+L flow/press below=true 0m dT-30 M0.85 520 start=0.9 tries=1 it=6 d_vs_steady=9.7e-13
+T flow/press below=true 0m dT-30 M1.6 500 sp_thrust=-68.88 steady_ok=false
+N flow/press below=true 0m dT-30 M1.6 500 start=0.7 nu=(0.514,0.577) steady refuses
+T flow/press below=true 0m dT-30 M1.6 520 sp_thrust=-53.87 steady_ok=false
+N flow/press below=true 0m dT-30 M1.6 520 start=0.7 nu=(0.524,0.586) steady refuses
+T flow/press below=true 0m dT-30 M1.6 540 sp_thrust=-39.02 steady_ok=false
+N flow/press below=true 0m dT-30 M1.6 540 start=0.8 nu=(0.533,0.594) steady refuses
+T flow/press below=true 0m dT-30 M1.6 560 sp_thrust=-24.34 steady_ok=false
+N flow/press below=true 0m dT-30 M1.6 560 start=0.8 nu=(0.543,0.603) steady refuses
+T flow/press below=true 0m dT-30 M1.6 580 sp_thrust=-9.82 steady_ok=false
+N flow/press below=true 0m dT-30 M1.6 580 start=0.9 nu=(0.552,0.612) steady refuses
+T flow/press below=true 0m dT-30 M1.6 600 sp_thrust=4.53 steady_ok=true
+L flow/press below=true 0m dT-30 M1.6 600 start=0.9 tries=1 it=5 d_vs_steady=2.6e-13
+T flow/press below=true 0m dT-30 M2 500 sp_thrust=-134.41 steady_ok=false
+N flow/press below=true 0m dT-30 M2 500 start=0.5 nu=(0.517,0.592) steady refuses
+T flow/press below=true 0m dT-30 M2 520 sp_thrust=-120.74 steady_ok=false
+N flow/press below=true 0m dT-30 M2 520 start=0.6 nu=(0.526,0.600) steady refuses
+T flow/press below=true 0m dT-30 M2 540 sp_thrust=-107.23 steady_ok=false
+N flow/press below=true 0m dT-30 M2 540 start=0.6 nu=(0.535,0.608) steady refuses
+T flow/press below=true 0m dT-30 M2 560 sp_thrust=-93.88 steady_ok=false
+N flow/press below=true 0m dT-30 M2 560 start=0.7 nu=(0.545,0.616) steady refuses
+T flow/press below=true 0m dT-30 M2 580 sp_thrust=-80.69 steady_ok=false
+N flow/press below=true 0m dT-30 M2 580 start=0.7 nu=(0.554,0.624) steady refuses
+T flow/press below=true 0m dT-30 M2 600 sp_thrust=-67.66 steady_ok=false
+N flow/press below=true 0m dT-30 M2 600 start=0.8 nu=(0.563,0.632) steady refuses
+T flow/press below=true 0m dT-30 M2 620 sp_thrust=-54.78 steady_ok=false
+N flow/press below=true 0m dT-30 M2 620 start=0.8 nu=(0.572,0.640) steady refuses
+T flow/press below=true 0m dT-30 M2 640 sp_thrust=-42.04 steady_ok=false
+N flow/press below=true 0m dT-30 M2 640 start=0.9 nu=(0.581,0.648) steady refuses
+T flow/press below=true 0m dT-30 M2 660 sp_thrust=-29.45 steady_ok=false
+N flow/press below=true 0m dT-30 M2 660 start=0.9 nu=(0.589,0.655) steady refuses
+T flow/press below=true 0m dT-30 M2 680 sp_thrust=-16.99 steady_ok=false
+N flow/press below=true 0m dT-30 M2 680 start=0.9 nu=(0.598,0.663) steady refuses
+T flow/press below=true 5000m dT0 M0.85 500 sp_thrust=8.48 steady_ok=true
+L flow/press below=true 5000m dT0 M0.85 500 start=0.9 tries=1 it=6 d_vs_steady=1.0e-12
+T flow/press below=true 5000m dT0 M1.6 500 sp_thrust=-64.93 steady_ok=false
+N flow/press below=true 5000m dT0 M1.6 500 start=0.7 nu=(0.514,0.577) steady refuses
+T flow/press below=true 5000m dT0 M1.6 520 sp_thrust=-49.89 steady_ok=false
+N flow/press below=true 5000m dT0 M1.6 520 start=0.7 nu=(0.523,0.585) steady refuses
+T flow/press below=true 5000m dT0 M1.6 540 sp_thrust=-35.02 steady_ok=false
+N flow/press below=true 5000m dT0 M1.6 540 start=0.8 nu=(0.533,0.594) steady refuses
+T flow/press below=true 5000m dT0 M1.6 560 sp_thrust=-20.31 steady_ok=false
+N flow/press below=true 5000m dT0 M1.6 560 start=0.8 nu=(0.543,0.603) steady refuses
+T flow/press below=true 5000m dT0 M1.6 580 sp_thrust=-5.77 steady_ok=false
+N flow/press below=true 5000m dT0 M1.6 580 start=0.9 nu=(0.552,0.611) steady refuses
+T flow/press below=true 5000m dT0 M1.6 600 sp_thrust=8.60 steady_ok=true
+L flow/press below=true 5000m dT0 M1.6 600 start=0.9 tries=1 it=5 d_vs_steady=2.7e-13
+T flow/press below=true 5000m dT0 M2 500 sp_thrust=-130.46 steady_ok=false
+N flow/press below=true 5000m dT0 M2 500 start=0.5 nu=(0.516,0.591) steady refuses
+T flow/press below=true 5000m dT0 M2 520 sp_thrust=-116.76 steady_ok=false
+N flow/press below=true 5000m dT0 M2 520 start=0.6 nu=(0.526,0.599) steady refuses
+T flow/press below=true 5000m dT0 M2 540 sp_thrust=-103.23 steady_ok=false
+N flow/press below=true 5000m dT0 M2 540 start=0.6 nu=(0.535,0.607) steady refuses
+T flow/press below=true 5000m dT0 M2 560 sp_thrust=-89.87 steady_ok=false
+N flow/press below=true 5000m dT0 M2 560 start=0.7 nu=(0.545,0.615) steady refuses
+T flow/press below=true 5000m dT0 M2 580 sp_thrust=-76.67 steady_ok=false
+N flow/press below=true 5000m dT0 M2 580 start=0.7 nu=(0.554,0.623) steady refuses
+T flow/press below=true 5000m dT0 M2 600 sp_thrust=-63.62 steady_ok=false
+N flow/press below=true 5000m dT0 M2 600 start=0.8 nu=(0.563,0.631) steady refuses
+T flow/press below=true 5000m dT0 M2 620 sp_thrust=-50.72 steady_ok=false
+N flow/press below=true 5000m dT0 M2 620 start=0.8 nu=(0.572,0.639) steady refuses
+T flow/press below=true 5000m dT0 M2 640 sp_thrust=-37.97 steady_ok=false
+N flow/press below=true 5000m dT0 M2 640 start=0.9 nu=(0.581,0.647) steady refuses
+T flow/press below=true 5000m dT0 M2 660 sp_thrust=-25.36 steady_ok=false
+N flow/press below=true 5000m dT0 M2 660 start=0.9 nu=(0.589,0.655) steady refuses
+T flow/press below=true 5000m dT0 M2 680 sp_thrust=-12.89 steady_ok=false
+N flow/press below=true 5000m dT0 M2 680 start=0.9 nu=(0.598,0.663) steady refuses
+T flow/press below=true 11000m dT0 M1.6 500 sp_thrust=0.74 steady_ok=true
+L flow/press below=true 11000m dT0 M1.6 500 start=0.8 tries=2 it=5 d_vs_steady=2.4e-13
+T flow/press below=true 11000m dT0 M1.6 520 sp_thrust=16.18 steady_ok=true
+L flow/press below=true 11000m dT0 M1.6 520 start=0.9 tries=1 it=5 d_vs_steady=4.3e-13
+T flow/press below=true 11000m dT0 M1.6 540 sp_thrust=31.41 steady_ok=true
+L flow/press below=true 11000m dT0 M1.6 540 start=0.9 tries=1 it=5 d_vs_steady=1.6e-13
+T flow/press below=true 11000m dT0 M2 500 sp_thrust=-64.97 steady_ok=false
+N flow/press below=true 11000m dT0 M2 500 start=0.7 nu=(0.514,0.577) steady refuses
+T flow/press below=true 11000m dT0 M2 520 sp_thrust=-50.95 steady_ok=false
+N flow/press below=true 11000m dT0 M2 520 start=0.7 nu=(0.524,0.586) steady refuses
+T flow/press below=true 11000m dT0 M2 540 sp_thrust=-37.12 steady_ok=false
+N flow/press below=true 11000m dT0 M2 540 start=0.8 nu=(0.533,0.594) steady refuses
+T flow/press below=true 11000m dT0 M2 560 sp_thrust=-23.48 steady_ok=false
+N flow/press below=true 11000m dT0 M2 560 start=0.8 nu=(0.543,0.603) steady refuses
+T flow/press below=true 11000m dT0 M2 580 sp_thrust=-10.02 steady_ok=false
+N flow/press below=true 11000m dT0 M2 580 start=0.9 nu=(0.552,0.612) steady refuses
+T flow/press below=true 11000m dT0 M2 600 sp_thrust=3.26 steady_ok=true
+L flow/press below=true 11000m dT0 M2 600 start=0.9 tries=1 it=5 d_vs_steady=2.6e-13
+T flow/press below=false design 500 sp_thrust=18.25 steady_ok=false
+N flow/press below=false design 500 start=0.9 nu=(0.480,0.560) steady refuses
+T flow/press below=false 0m dT0 M0.85 500 sp_thrust=-41.64 steady_ok=false
+N flow/press below=false 0m dT0 M0.85 500 start=0.8 nu=(0.421,0.565) steady refuses
+T flow/press below=false 0m dT0 M0.85 520 sp_thrust=-26.01 steady_ok=false
+N flow/press below=false 0m dT0 M0.85 520 start=0.9 nu=(0.449,0.574) steady refuses
+T flow/press below=false 0m dT0 M0.85 540 sp_thrust=-9.96 steady_ok=false
+N flow/press below=false 0m dT0 M0.85 540 start=0.9 nu=(0.475,0.584) steady refuses
+T flow/press below=false 0m dT0 M0.85 560 sp_thrust=6.45 steady_ok=false
+N flow/press below=false 0m dT0 M0.85 560 start=0.9 nu=(0.498,0.593) steady refuses
+T flow/press below=false 0m dT0 M1.6 500 sp_thrust=-114.82 steady_ok=false
+N flow/press below=false 0m dT0 M1.6 500 start=0.6 nu=(0.515,0.586) steady refuses
+T flow/press below=false 0m dT0 M1.6 520 sp_thrust=-100.16 steady_ok=false
+N flow/press below=false 0m dT0 M1.6 520 start=0.6 nu=(0.525,0.594) steady refuses
+T flow/press below=false 0m dT0 M1.6 540 sp_thrust=-85.64 steady_ok=false
+N flow/press below=false 0m dT0 M1.6 540 start=0.7 nu=(0.534,0.602) steady refuses
+T flow/press below=false 0m dT0 M1.6 560 sp_thrust=-71.26 steady_ok=false
+N flow/press below=false 0m dT0 M1.6 560 start=0.7 nu=(0.544,0.611) steady refuses
+T flow/press below=false 0m dT0 M1.6 580 sp_thrust=-57.02 steady_ok=false
+N flow/press below=false 0m dT0 M1.6 580 start=0.8 nu=(0.553,0.619) steady refuses
+T flow/press below=false 0m dT0 M1.6 600 sp_thrust=-42.92 steady_ok=false
+N flow/press below=false 0m dT0 M1.6 600 start=0.8 nu=(0.562,0.627) steady refuses
+T flow/press below=false 0m dT0 M1.6 620 sp_thrust=-28.96 steady_ok=false
+N flow/press below=false 0m dT0 M1.6 620 start=0.8 nu=(0.571,0.635) steady refuses
+T flow/press below=false 0m dT0 M1.6 640 sp_thrust=-15.13 steady_ok=false
+N flow/press below=false 0m dT0 M1.6 640 start=0.9 nu=(0.580,0.643) steady refuses
+T flow/press below=false 0m dT0 M1.6 660 sp_thrust=-1.45 steady_ok=false
+N flow/press below=false 0m dT0 M1.6 660 start=0.9 nu=(0.589,0.651) steady refuses
+T flow/press below=false 0m dT0 M2 560 sp_thrust=-140.75 steady_ok=false
+N flow/press below=false 0m dT0 M2 560 start=0.6 nu=(0.547,0.626) steady refuses
+T flow/press below=false 0m dT0 M2 580 sp_thrust=-127.77 steady_ok=false
+N flow/press below=false 0m dT0 M2 580 start=0.6 nu=(0.556,0.634) steady refuses
+T flow/press below=false 0m dT0 M2 600 sp_thrust=-114.94 steady_ok=false
+N flow/press below=false 0m dT0 M2 600 start=0.7 nu=(0.565,0.641) steady refuses
+T flow/press below=false 0m dT0 M2 620 sp_thrust=-102.25 steady_ok=false
+N flow/press below=false 0m dT0 M2 620 start=0.7 nu=(0.573,0.649) steady refuses
+T flow/press below=false 0m dT0 M2 640 sp_thrust=-89.69 steady_ok=false
+N flow/press below=false 0m dT0 M2 640 start=0.8 nu=(0.582,0.656) steady refuses
+T flow/press below=false 0m dT0 M2 660 sp_thrust=-77.26 steady_ok=false
+N flow/press below=false 0m dT0 M2 660 start=0.8 nu=(0.591,0.664) steady refuses
+T flow/press below=false 0m dT0 M2 680 sp_thrust=-64.96 steady_ok=false
+N flow/press below=false 0m dT0 M2 680 start=0.8 nu=(0.599,0.671) steady refuses
+T flow/press below=false 0m dT0 M2 700 sp_thrust=-52.79 steady_ok=false
+N flow/press below=false 0m dT0 M2 700 start=0.9 nu=(0.608,0.679) steady refuses
+T flow/press below=false 0m dT0 M2 720 sp_thrust=-40.73 steady_ok=false
+N flow/press below=false 0m dT0 M2 720 start=0.9 nu=(0.616,0.686) steady refuses
+T flow/press below=false 0m dT0 M2 740 sp_thrust=-28.79 steady_ok=false
+N flow/press below=false 0m dT0 M2 740 start=0.9 nu=(0.624,0.694) steady refuses
+T flow/press below=false 0m dT40 M0.85 500 sp_thrust=-91.81 steady_ok=false
+N flow/press below=false 0m dT40 M0.85 500 start=0.7 nu=(0.337,0.570) steady refuses
+T flow/press below=false 0m dT40 M0.85 520 sp_thrust=-78.63 steady_ok=false
+N flow/press below=false 0m dT40 M0.85 520 start=0.8 nu=(0.373,0.580) steady refuses
+T flow/press below=false 0m dT40 M0.85 540 sp_thrust=-64.99 steady_ok=false
+N flow/press below=false 0m dT40 M0.85 540 start=0.8 nu=(0.406,0.589) steady refuses
+T flow/press below=false 0m dT40 M0.85 560 sp_thrust=-50.91 steady_ok=false
+N flow/press below=false 0m dT40 M0.85 560 start=0.8 nu=(0.436,0.598) steady refuses
+T flow/press below=false 0m dT40 M0.85 580 sp_thrust=-36.42 steady_ok=false
+N flow/press below=false 0m dT40 M0.85 580 start=0.9 nu=(0.464,0.608) steady refuses
+T flow/press below=false 0m dT40 M0.85 600 sp_thrust=-21.57 steady_ok=false
+N flow/press below=false 0m dT40 M0.85 600 start=0.9 nu=(0.489,0.617) steady refuses
+T flow/press below=false 0m dT40 M1.6 540 sp_thrust=-142.92 steady_ok=false
+N flow/press below=false 0m dT40 M1.6 540 start=0.6 nu=(0.537,0.614) steady refuses
+T flow/press below=false 0m dT40 M1.6 560 sp_thrust=-128.97 steady_ok=false
+N flow/press below=false 0m dT40 M1.6 560 start=0.6 nu=(0.546,0.622) steady refuses
+T flow/press below=false 0m dT40 M1.6 580 sp_thrust=-115.13 steady_ok=false
+N flow/press below=false 0m dT40 M1.6 580 start=0.7 nu=(0.555,0.629) steady refuses
+T flow/press below=false 0m dT40 M1.6 600 sp_thrust=-101.40 steady_ok=false
+N flow/press below=false 0m dT40 M1.6 600 start=0.7 nu=(0.564,0.637) steady refuses
+T flow/press below=false 0m dT40 M1.6 620 sp_thrust=-87.79 steady_ok=false
+N flow/press below=false 0m dT40 M1.6 620 start=0.8 nu=(0.573,0.645) steady refuses
+T flow/press below=false 0m dT40 M1.6 640 sp_thrust=-74.29 steady_ok=false
+N flow/press below=false 0m dT40 M1.6 640 start=0.8 nu=(0.581,0.653) steady refuses
+T flow/press below=false 0m dT40 M1.6 660 sp_thrust=-60.91 steady_ok=false
+N flow/press below=false 0m dT40 M1.6 660 start=0.8 nu=(0.590,0.660) steady refuses
+T flow/press below=false 0m dT40 M1.6 680 sp_thrust=-47.64 steady_ok=false
+N flow/press below=false 0m dT40 M1.6 680 start=0.9 nu=(0.599,0.668) steady refuses
+T flow/press below=false 0m dT40 M1.6 700 sp_thrust=-34.48 steady_ok=false
+N flow/press below=false 0m dT40 M1.6 700 start=0.9 nu=(0.607,0.676) steady refuses
+T flow/press below=false 0m dT40 M1.6 720 sp_thrust=-21.44 steady_ok=false
+N flow/press below=false 0m dT40 M1.6 720 start=0.9 nu=(0.616,0.683) steady refuses
+T flow/press below=false 0m dT40 M2 640 sp_thrust=-148.77 steady_ok=false
+N flow/press below=false 0m dT40 M2 640 start=0.6 nu=(0.584,0.669) steady refuses
+T flow/press below=false 0m dT40 M2 660 sp_thrust=-136.58 steady_ok=false
+N flow/press below=false 0m dT40 M2 660 start=0.7 nu=(0.593,0.676) steady refuses
+T flow/press below=false 0m dT40 M2 680 sp_thrust=-124.50 steady_ok=false
+N flow/press below=false 0m dT40 M2 680 start=0.7 nu=(0.601,0.683) steady refuses
+T flow/press below=false 0m dT40 M2 700 sp_thrust=-112.54 steady_ok=false
+N flow/press below=false 0m dT40 M2 700 start=0.8 nu=(0.609,0.690) steady refuses
+T flow/press below=false 0m dT40 M2 720 sp_thrust=-100.68 steady_ok=false
+N flow/press below=false 0m dT40 M2 720 start=0.8 nu=(0.618,0.697) steady refuses
+T flow/press below=false 0m dT40 M2 740 sp_thrust=-88.94 steady_ok=false
+N flow/press below=false 0m dT40 M2 740 start=0.8 nu=(0.626,0.704) steady refuses
+T flow/press below=false 0m dT40 M2 760 sp_thrust=-77.30 steady_ok=false
+N flow/press below=false 0m dT40 M2 760 start=0.9 nu=(0.634,0.711) steady refuses
+T flow/press below=false 0m dT40 M2 780 sp_thrust=-65.76 steady_ok=false
+N flow/press below=false 0m dT40 M2 780 start=0.9 nu=(0.642,0.718) steady refuses
+T flow/press below=false 0m dT40 M2 800 sp_thrust=-54.32 steady_ok=false
+N flow/press below=false 0m dT40 M2 800 start=0.9 nu=(0.650,0.726) steady refuses
+T flow/press below=false 0m dT-30 M0.85 500 sp_thrust=4.32 steady_ok=false
+N flow/press below=false 0m dT-30 M0.85 500 start=0.9 nu=(0.469,0.561) steady refuses
+T flow/press below=false 0m dT-30 M0.85 520 sp_thrust=21.92 steady_ok=false
+N flow/press below=false 0m dT-30 M0.85 520 start=0.9 nu=(0.492,0.571) steady refuses
+T flow/press below=false 0m dT-30 M1.6 500 sp_thrust=-68.88 steady_ok=false
+N flow/press below=false 0m dT-30 M1.6 500 start=0.7 nu=(0.514,0.577) steady refuses
+T flow/press below=false 0m dT-30 M1.6 520 sp_thrust=-53.87 steady_ok=false
+N flow/press below=false 0m dT-30 M1.6 520 start=0.7 nu=(0.524,0.586) steady refuses
+T flow/press below=false 0m dT-30 M1.6 540 sp_thrust=-39.02 steady_ok=false
+N flow/press below=false 0m dT-30 M1.6 540 start=0.8 nu=(0.533,0.594) steady refuses
+T flow/press below=false 0m dT-30 M1.6 560 sp_thrust=-24.34 steady_ok=false
+N flow/press below=false 0m dT-30 M1.6 560 start=0.8 nu=(0.543,0.603) steady refuses
+T flow/press below=false 0m dT-30 M1.6 580 sp_thrust=-9.82 steady_ok=false
+N flow/press below=false 0m dT-30 M1.6 580 start=0.9 nu=(0.552,0.612) steady refuses
+T flow/press below=false 0m dT-30 M1.6 600 sp_thrust=4.53 steady_ok=true
+L flow/press below=false 0m dT-30 M1.6 600 start=0.9 tries=1 it=5 d_vs_steady=2.6e-13
+T flow/press below=false 0m dT-30 M2 500 sp_thrust=-134.41 steady_ok=false
+N flow/press below=false 0m dT-30 M2 500 start=0.5 nu=(0.517,0.592) steady refuses
+T flow/press below=false 0m dT-30 M2 520 sp_thrust=-120.74 steady_ok=false
+N flow/press below=false 0m dT-30 M2 520 start=0.6 nu=(0.526,0.600) steady refuses
+T flow/press below=false 0m dT-30 M2 540 sp_thrust=-107.23 steady_ok=false
+N flow/press below=false 0m dT-30 M2 540 start=0.6 nu=(0.535,0.608) steady refuses
+T flow/press below=false 0m dT-30 M2 560 sp_thrust=-93.88 steady_ok=false
+N flow/press below=false 0m dT-30 M2 560 start=0.7 nu=(0.545,0.616) steady refuses
+T flow/press below=false 0m dT-30 M2 580 sp_thrust=-80.69 steady_ok=false
+N flow/press below=false 0m dT-30 M2 580 start=0.7 nu=(0.554,0.624) steady refuses
+T flow/press below=false 0m dT-30 M2 600 sp_thrust=-67.66 steady_ok=false
+N flow/press below=false 0m dT-30 M2 600 start=0.8 nu=(0.563,0.632) steady refuses
+T flow/press below=false 0m dT-30 M2 620 sp_thrust=-54.78 steady_ok=false
+N flow/press below=false 0m dT-30 M2 620 start=0.8 nu=(0.572,0.640) steady refuses
+T flow/press below=false 0m dT-30 M2 640 sp_thrust=-42.04 steady_ok=false
+N flow/press below=false 0m dT-30 M2 640 start=0.9 nu=(0.581,0.648) steady refuses
+T flow/press below=false 0m dT-30 M2 660 sp_thrust=-29.45 steady_ok=false
+N flow/press below=false 0m dT-30 M2 660 start=0.9 nu=(0.589,0.655) steady refuses
+T flow/press below=false 0m dT-30 M2 680 sp_thrust=-16.99 steady_ok=false
+N flow/press below=false 0m dT-30 M2 680 start=0.9 nu=(0.598,0.663) steady refuses
+T flow/press below=false 5000m dT0 M0.85 500 sp_thrust=8.48 steady_ok=false
+N flow/press below=false 5000m dT0 M0.85 500 start=0.9 nu=(0.473,0.561) steady refuses
+T flow/press below=false 5000m dT0 M1.6 500 sp_thrust=-64.93 steady_ok=false
+N flow/press below=false 5000m dT0 M1.6 500 start=0.7 nu=(0.514,0.577) steady refuses
+T flow/press below=false 5000m dT0 M1.6 520 sp_thrust=-49.89 steady_ok=false
+N flow/press below=false 5000m dT0 M1.6 520 start=0.7 nu=(0.523,0.585) steady refuses
+T flow/press below=false 5000m dT0 M1.6 540 sp_thrust=-35.02 steady_ok=false
+N flow/press below=false 5000m dT0 M1.6 540 start=0.8 nu=(0.533,0.594) steady refuses
+T flow/press below=false 5000m dT0 M1.6 560 sp_thrust=-20.31 steady_ok=false
+N flow/press below=false 5000m dT0 M1.6 560 start=0.8 nu=(0.543,0.603) steady refuses
+T flow/press below=false 5000m dT0 M1.6 580 sp_thrust=-5.77 steady_ok=false
+N flow/press below=false 5000m dT0 M1.6 580 start=0.9 nu=(0.552,0.611) steady refuses
+T flow/press below=false 5000m dT0 M1.6 600 sp_thrust=8.60 steady_ok=true
+L flow/press below=false 5000m dT0 M1.6 600 start=0.9 tries=1 it=5 d_vs_steady=2.7e-13
+T flow/press below=false 5000m dT0 M2 500 sp_thrust=-130.46 steady_ok=false
+N flow/press below=false 5000m dT0 M2 500 start=0.5 nu=(0.516,0.591) steady refuses
+T flow/press below=false 5000m dT0 M2 520 sp_thrust=-116.76 steady_ok=false
+N flow/press below=false 5000m dT0 M2 520 start=0.6 nu=(0.526,0.599) steady refuses
+T flow/press below=false 5000m dT0 M2 540 sp_thrust=-103.23 steady_ok=false
+N flow/press below=false 5000m dT0 M2 540 start=0.6 nu=(0.535,0.607) steady refuses
+T flow/press below=false 5000m dT0 M2 560 sp_thrust=-89.87 steady_ok=false
+N flow/press below=false 5000m dT0 M2 560 start=0.7 nu=(0.545,0.615) steady refuses
+T flow/press below=false 5000m dT0 M2 580 sp_thrust=-76.67 steady_ok=false
+N flow/press below=false 5000m dT0 M2 580 start=0.7 nu=(0.554,0.623) steady refuses
+T flow/press below=false 5000m dT0 M2 600 sp_thrust=-63.62 steady_ok=false
+N flow/press below=false 5000m dT0 M2 600 start=0.8 nu=(0.563,0.631) steady refuses
+T flow/press below=false 5000m dT0 M2 620 sp_thrust=-50.72 steady_ok=false
+N flow/press below=false 5000m dT0 M2 620 start=0.8 nu=(0.572,0.639) steady refuses
+T flow/press below=false 5000m dT0 M2 640 sp_thrust=-37.97 steady_ok=false
+N flow/press below=false 5000m dT0 M2 640 start=0.9 nu=(0.581,0.647) steady refuses
+T flow/press below=false 5000m dT0 M2 660 sp_thrust=-25.36 steady_ok=false
+N flow/press below=false 5000m dT0 M2 660 start=0.9 nu=(0.589,0.655) steady refuses
+T flow/press below=false 5000m dT0 M2 680 sp_thrust=-12.89 steady_ok=false
+N flow/press below=false 5000m dT0 M2 680 start=0.9 nu=(0.598,0.663) steady refuses
+T flow/press below=false 11000m dT0 M1.6 500 sp_thrust=0.74 steady_ok=true
+L flow/press below=false 11000m dT0 M1.6 500 start=0.8 tries=2 it=5 d_vs_steady=2.4e-13
+T flow/press below=false 11000m dT0 M1.6 520 sp_thrust=16.18 steady_ok=true
+L flow/press below=false 11000m dT0 M1.6 520 start=0.9 tries=1 it=5 d_vs_steady=4.3e-13
+T flow/press below=false 11000m dT0 M1.6 540 sp_thrust=31.41 steady_ok=true
+L flow/press below=false 11000m dT0 M1.6 540 start=0.9 tries=1 it=5 d_vs_steady=1.6e-13
+T flow/press below=false 11000m dT0 M2 500 sp_thrust=-64.97 steady_ok=false
+N flow/press below=false 11000m dT0 M2 500 start=0.7 nu=(0.514,0.577) steady refuses
+T flow/press below=false 11000m dT0 M2 520 sp_thrust=-50.95 steady_ok=false
+N flow/press below=false 11000m dT0 M2 520 start=0.7 nu=(0.524,0.586) steady refuses
+T flow/press below=false 11000m dT0 M2 540 sp_thrust=-37.12 steady_ok=false
+N flow/press below=false 11000m dT0 M2 540 start=0.8 nu=(0.533,0.594) steady refuses
+T flow/press below=false 11000m dT0 M2 560 sp_thrust=-23.48 steady_ok=false
+N flow/press below=false 11000m dT0 M2 560 start=0.8 nu=(0.543,0.603) steady refuses
+T flow/press below=false 11000m dT0 M2 580 sp_thrust=-10.02 steady_ok=false
+N flow/press below=false 11000m dT0 M2 580 start=0.9 nu=(0.552,0.612) steady refuses
+T flow/press below=false 11000m dT0 M2 600 sp_thrust=3.26 steady_ok=true
+L flow/press below=false 11000m dT0 M2 600 start=0.9 tries=1 it=5 d_vs_steady=2.6e-13
+T press/flow below=true design 500 sp_thrust=19.00 steady_ok=true
+L press/flow below=true design 500 start=0.9 tries=1 it=6 d_vs_steady=3.8e-14
+T press/flow below=true 0m dT0 M0.85 500 sp_thrust=-41.21 steady_ok=false
+N press/flow below=true 0m dT0 M0.85 500 start=0.8 nu=(0.410,0.568) steady refuses
+T press/flow below=true 0m dT0 M0.85 520 sp_thrust=-25.55 steady_ok=false
+N press/flow below=true 0m dT0 M0.85 520 start=0.9 nu=(0.437,0.578) steady refuses
+T press/flow below=true 0m dT0 M0.85 540 sp_thrust=-9.40 steady_ok=false
+N press/flow below=true 0m dT0 M0.85 540 start=0.9 nu=(0.461,0.588) steady refuses
+T press/flow below=true 0m dT0 M0.85 560 sp_thrust=7.13 steady_ok=true
+L press/flow below=true 0m dT0 M0.85 560 start=0.9 tries=1 it=6 d_vs_steady=1.0e-13
+T press/flow below=true 0m dT0 M1.6 500 sp_thrust=-114.39 steady_ok=false
+N press/flow below=true 0m dT0 M1.6 500 start=0.6 nu=(0.500,0.584) steady refuses
+T press/flow below=true 0m dT0 M1.6 520 sp_thrust=-99.67 steady_ok=false
+N press/flow below=true 0m dT0 M1.6 520 start=0.6 nu=(0.509,0.593) steady refuses
+T press/flow below=true 0m dT0 M1.6 540 sp_thrust=-85.09 steady_ok=false
+N press/flow below=true 0m dT0 M1.6 540 start=0.7 nu=(0.518,0.602) steady refuses
+T press/flow below=true 0m dT0 M1.6 560 sp_thrust=-70.67 steady_ok=false
+N press/flow below=true 0m dT0 M1.6 560 start=0.7 nu=(0.527,0.611) steady refuses
+T press/flow below=true 0m dT0 M1.6 580 sp_thrust=-56.39 steady_ok=false
+N press/flow below=true 0m dT0 M1.6 580 start=0.8 nu=(0.535,0.620) steady refuses
+T press/flow below=true 0m dT0 M1.6 600 sp_thrust=-42.26 steady_ok=false
+N press/flow below=true 0m dT0 M1.6 600 start=0.8 nu=(0.544,0.629) steady refuses
+T press/flow below=true 0m dT0 M1.6 620 sp_thrust=-28.28 steady_ok=false
+N press/flow below=true 0m dT0 M1.6 620 start=0.8 nu=(0.553,0.637) steady refuses
+T press/flow below=true 0m dT0 M1.6 640 sp_thrust=-14.44 steady_ok=false
+N press/flow below=true 0m dT0 M1.6 640 start=0.9 nu=(0.561,0.646) steady refuses
+T press/flow below=true 0m dT0 M1.6 660 sp_thrust=-0.74 steady_ok=false
+N press/flow below=true 0m dT0 M1.6 660 start=0.9 nu=(0.570,0.654) steady refuses
+T press/flow below=true 0m dT0 M2 560 sp_thrust=-140.55 steady_ok=false
+N press/flow below=true 0m dT0 M2 560 start=0.6 nu=(0.530,0.623) steady refuses
+T press/flow below=true 0m dT0 M2 580 sp_thrust=-127.53 steady_ok=false
+N press/flow below=true 0m dT0 M2 580 start=0.6 nu=(0.539,0.631) steady refuses
+T press/flow below=true 0m dT0 M2 600 sp_thrust=-114.67 steady_ok=false
+N press/flow below=true 0m dT0 M2 600 start=0.7 nu=(0.547,0.640) steady refuses
+T press/flow below=true 0m dT0 M2 620 sp_thrust=-101.94 steady_ok=false
+N press/flow below=true 0m dT0 M2 620 start=0.7 nu=(0.555,0.648) steady refuses
+T press/flow below=true 0m dT0 M2 640 sp_thrust=-89.36 steady_ok=false
+N press/flow below=true 0m dT0 M2 640 start=0.7 nu=(0.564,0.656) steady refuses
+T press/flow below=true 0m dT0 M2 660 sp_thrust=-76.90 steady_ok=false
+N press/flow below=true 0m dT0 M2 660 start=0.8 nu=(0.572,0.664) steady refuses
+T press/flow below=true 0m dT0 M2 680 sp_thrust=-64.58 steady_ok=false
+N press/flow below=true 0m dT0 M2 680 start=0.8 nu=(0.580,0.672) steady refuses
+T press/flow below=true 0m dT0 M2 700 sp_thrust=-52.39 steady_ok=false
+N press/flow below=true 0m dT0 M2 700 start=0.8 nu=(0.588,0.680) steady refuses
+T press/flow below=true 0m dT0 M2 720 sp_thrust=-40.32 steady_ok=false
+N press/flow below=true 0m dT0 M2 720 start=0.9 nu=(0.596,0.688) steady refuses
+T press/flow below=true 0m dT0 M2 740 sp_thrust=-28.37 steady_ok=false
+N press/flow below=true 0m dT0 M2 740 start=0.9 nu=(0.604,0.696) steady refuses
+T press/flow below=true 0m dT40 M0.85 500 sp_thrust=-90.88 steady_ok=false
+N press/flow below=true 0m dT40 M0.85 500 start=0.7 nu=(0.336,0.572) steady refuses
+T press/flow below=true 0m dT40 M0.85 520 sp_thrust=-77.95 steady_ok=false
+N press/flow below=true 0m dT40 M0.85 520 start=0.8 nu=(0.368,0.582) steady refuses
+T press/flow below=true 0m dT40 M0.85 540 sp_thrust=-64.46 steady_ok=false
+N press/flow below=true 0m dT40 M0.85 540 start=0.8 nu=(0.398,0.592) steady refuses
+T press/flow below=true 0m dT40 M0.85 560 sp_thrust=-50.45 steady_ok=false
+N press/flow below=true 0m dT40 M0.85 560 start=0.8 nu=(0.426,0.602) steady refuses
+T press/flow below=true 0m dT40 M0.85 580 sp_thrust=-35.96 steady_ok=false
+N press/flow below=true 0m dT40 M0.85 580 start=0.9 nu=(0.452,0.611) steady refuses
+T press/flow below=true 0m dT40 M0.85 600 sp_thrust=-21.04 steady_ok=false
+N press/flow below=true 0m dT40 M0.85 600 start=0.9 nu=(0.476,0.620) steady refuses
+T press/flow below=true 0m dT40 M1.6 540 sp_thrust=-142.56 steady_ok=false
+N press/flow below=true 0m dT40 M1.6 540 start=0.6 nu=(0.521,0.611) steady refuses
+T press/flow below=true 0m dT40 M1.6 560 sp_thrust=-128.54 steady_ok=false
+N press/flow below=true 0m dT40 M1.6 560 start=0.6 nu=(0.529,0.620) steady refuses
+T press/flow below=true 0m dT40 M1.6 580 sp_thrust=-114.63 steady_ok=false
+N press/flow below=true 0m dT40 M1.6 580 start=0.7 nu=(0.538,0.628) steady refuses
+T press/flow below=true 0m dT40 M1.6 600 sp_thrust=-100.85 steady_ok=false
+N press/flow below=true 0m dT40 M1.6 600 start=0.7 nu=(0.546,0.637) steady refuses
+T press/flow below=true 0m dT40 M1.6 620 sp_thrust=-87.20 steady_ok=false
+N press/flow below=true 0m dT40 M1.6 620 start=0.7 nu=(0.555,0.645) steady refuses
+T press/flow below=true 0m dT40 M1.6 640 sp_thrust=-73.66 steady_ok=false
+N press/flow below=true 0m dT40 M1.6 640 start=0.8 nu=(0.563,0.653) steady refuses
+T press/flow below=true 0m dT40 M1.6 660 sp_thrust=-60.24 steady_ok=false
+N press/flow below=true 0m dT40 M1.6 660 start=0.8 nu=(0.571,0.661) steady refuses
+T press/flow below=true 0m dT40 M1.6 680 sp_thrust=-46.94 steady_ok=false
+N press/flow below=true 0m dT40 M1.6 680 start=0.8 nu=(0.579,0.670) steady refuses
+T press/flow below=true 0m dT40 M1.6 700 sp_thrust=-33.76 steady_ok=false
+N press/flow below=true 0m dT40 M1.6 700 start=0.9 nu=(0.587,0.678) steady refuses
+T press/flow below=true 0m dT40 M1.6 720 sp_thrust=-20.70 steady_ok=false
+N press/flow below=true 0m dT40 M1.6 720 start=0.9 nu=(0.596,0.686) steady refuses
+T press/flow below=true 0m dT40 M2 640 sp_thrust=-148.55 steady_ok=false
+N press/flow below=true 0m dT40 M2 640 start=0.6 nu=(0.567,0.666) steady refuses
+T press/flow below=true 0m dT40 M2 660 sp_thrust=-136.32 steady_ok=false
+N press/flow below=true 0m dT40 M2 660 start=0.6 nu=(0.575,0.674) steady refuses
+T press/flow below=true 0m dT40 M2 680 sp_thrust=-124.21 steady_ok=false
+N press/flow below=true 0m dT40 M2 680 start=0.7 nu=(0.583,0.681) steady refuses
+T press/flow below=true 0m dT40 M2 700 sp_thrust=-112.22 steady_ok=false
+N press/flow below=true 0m dT40 M2 700 start=0.7 nu=(0.590,0.689) steady refuses
+T press/flow below=true 0m dT40 M2 720 sp_thrust=-100.34 steady_ok=false
+N press/flow below=true 0m dT40 M2 720 start=0.8 nu=(0.598,0.697) steady refuses
+T press/flow below=true 0m dT40 M2 740 sp_thrust=-88.57 steady_ok=false
+N press/flow below=true 0m dT40 M2 740 start=0.8 nu=(0.606,0.704) steady refuses
+T press/flow below=true 0m dT40 M2 760 sp_thrust=-76.91 steady_ok=false
+N press/flow below=true 0m dT40 M2 760 start=0.8 nu=(0.614,0.712) steady refuses
+T press/flow below=true 0m dT40 M2 780 sp_thrust=-65.35 steady_ok=false
+N press/flow below=true 0m dT40 M2 780 start=0.9 nu=(0.621,0.720) steady refuses
+T press/flow below=true 0m dT40 M2 800 sp_thrust=-53.89 steady_ok=false
+N press/flow below=true 0m dT40 M2 800 start=0.9 nu=(0.629,0.727) steady refuses
+T press/flow below=true 0m dT40 M2 820 sp_thrust=-42.54 steady_ok=false
+N press/flow below=true 0m dT40 M2 820 start=0.9 nu=(0.636,0.735) steady refuses
+T press/flow below=true 0m dT-30 M0.85 500 sp_thrust=4.95 steady_ok=true
+L press/flow below=true 0m dT-30 M0.85 500 start=0.9 tries=1 it=6 d_vs_steady=3.0e-14
+T press/flow below=true 0m dT-30 M0.85 520 sp_thrust=22.70 steady_ok=true
+L press/flow below=true 0m dT-30 M0.85 520 start=0.9 tries=1 it=6 d_vs_steady=9.8e-14
+T press/flow below=true 0m dT-30 M1.6 500 sp_thrust=-68.33 steady_ok=false
+N press/flow below=true 0m dT-30 M1.6 500 start=0.7 nu=(0.498,0.578) steady refuses
+T press/flow below=true 0m dT-30 M1.6 520 sp_thrust=-53.28 steady_ok=false
+N press/flow below=true 0m dT-30 M1.6 520 start=0.7 nu=(0.507,0.587) steady refuses
+T press/flow below=true 0m dT-30 M1.6 540 sp_thrust=-38.40 steady_ok=false
+N press/flow below=true 0m dT-30 M1.6 540 start=0.8 nu=(0.516,0.596) steady refuses
+T press/flow below=true 0m dT-30 M1.6 560 sp_thrust=-23.69 steady_ok=false
+N press/flow below=true 0m dT-30 M1.6 560 start=0.8 nu=(0.525,0.605) steady refuses
+T press/flow below=true 0m dT-30 M1.6 580 sp_thrust=-9.16 steady_ok=false
+N press/flow below=true 0m dT-30 M1.6 580 start=0.9 nu=(0.534,0.614) steady refuses
+T press/flow below=true 0m dT-30 M1.6 600 sp_thrust=5.21 steady_ok=true
+L press/flow below=true 0m dT-30 M1.6 600 start=0.9 tries=1 it=5 d_vs_steady=6.3e-14
+T press/flow below=true 0m dT-30 M1.6 620 sp_thrust=19.41 steady_ok=true
+L press/flow below=true 0m dT-30 M1.6 620 start=0.9 tries=1 it=5 d_vs_steady=4.6e-14
+T press/flow below=true 0m dT-30 M2 500 sp_thrust=-134.23 steady_ok=false
+N press/flow below=true 0m dT-30 M2 500 start=0.5 nu=(0.501,0.589) steady refuses
+T press/flow below=true 0m dT-30 M2 520 sp_thrust=-120.51 steady_ok=false
+N press/flow below=true 0m dT-30 M2 520 start=0.6 nu=(0.510,0.598) steady refuses
+T press/flow below=true 0m dT-30 M2 540 sp_thrust=-106.96 steady_ok=false
+N press/flow below=true 0m dT-30 M2 540 start=0.6 nu=(0.519,0.607) steady refuses
+T press/flow below=true 0m dT-30 M2 560 sp_thrust=-93.58 steady_ok=false
+N press/flow below=true 0m dT-30 M2 560 start=0.7 nu=(0.528,0.615) steady refuses
+T press/flow below=true 0m dT-30 M2 580 sp_thrust=-80.37 steady_ok=false
+N press/flow below=true 0m dT-30 M2 580 start=0.7 nu=(0.536,0.624) steady refuses
+T press/flow below=true 0m dT-30 M2 600 sp_thrust=-67.31 steady_ok=false
+N press/flow below=true 0m dT-30 M2 600 start=0.7 nu=(0.545,0.632) steady refuses
+T press/flow below=true 0m dT-30 M2 620 sp_thrust=-54.41 steady_ok=false
+N press/flow below=true 0m dT-30 M2 620 start=0.8 nu=(0.553,0.641) steady refuses
+T press/flow below=true 0m dT-30 M2 640 sp_thrust=-41.66 steady_ok=false
+N press/flow below=true 0m dT-30 M2 640 start=0.8 nu=(0.562,0.649) steady refuses
+T press/flow below=true 0m dT-30 M2 660 sp_thrust=-29.05 steady_ok=false
+N press/flow below=true 0m dT-30 M2 660 start=0.9 nu=(0.570,0.658) steady refuses
+T press/flow below=true 0m dT-30 M2 680 sp_thrust=-16.59 steady_ok=false
+N press/flow below=true 0m dT-30 M2 680 start=0.9 nu=(0.579,0.666) steady refuses
+T press/flow below=true 5000m dT0 M0.85 500 sp_thrust=9.15 steady_ok=true
+L press/flow below=true 5000m dT0 M0.85 500 start=0.9 tries=1 it=6 d_vs_steady=4.1e-14
+T press/flow below=true 5000m dT0 M0.85 520 sp_thrust=27.06 steady_ok=true
+L press/flow below=true 5000m dT0 M0.85 520 start=0.9 tries=1 it=6 d_vs_steady=6.6e-14
+T press/flow below=true 5000m dT0 M1.6 500 sp_thrust=-64.37 steady_ok=false
+N press/flow below=true 5000m dT0 M1.6 500 start=0.7 nu=(0.497,0.577) steady refuses
+T press/flow below=true 5000m dT0 M1.6 520 sp_thrust=-49.29 steady_ok=false
+N press/flow below=true 5000m dT0 M1.6 520 start=0.7 nu=(0.507,0.586) steady refuses
+T press/flow below=true 5000m dT0 M1.6 540 sp_thrust=-34.39 steady_ok=false
+N press/flow below=true 5000m dT0 M1.6 540 start=0.8 nu=(0.516,0.596) steady refuses
+T press/flow below=true 5000m dT0 M1.6 560 sp_thrust=-19.67 steady_ok=false
+N press/flow below=true 5000m dT0 M1.6 560 start=0.8 nu=(0.525,0.605) steady refuses
+T press/flow below=true 5000m dT0 M1.6 580 sp_thrust=-5.11 steady_ok=false
+N press/flow below=true 5000m dT0 M1.6 580 start=0.9 nu=(0.534,0.614) steady refuses
+T press/flow below=true 5000m dT0 M1.6 600 sp_thrust=9.27 steady_ok=true
+L press/flow below=true 5000m dT0 M1.6 600 start=0.9 tries=1 it=5 d_vs_steady=6.5e-14
+T press/flow below=true 5000m dT0 M1.6 620 sp_thrust=23.49 steady_ok=true
+L press/flow below=true 5000m dT0 M1.6 620 start=0.9 tries=1 it=5 d_vs_steady=4.4e-14
+T press/flow below=true 5000m dT0 M2 500 sp_thrust=-130.27 steady_ok=false
+N press/flow below=true 5000m dT0 M2 500 start=0.5 nu=(0.501,0.588) steady refuses
+T press/flow below=true 5000m dT0 M2 520 sp_thrust=-116.52 steady_ok=false
+N press/flow below=true 5000m dT0 M2 520 start=0.6 nu=(0.510,0.597) steady refuses
+T press/flow below=true 5000m dT0 M2 540 sp_thrust=-102.96 steady_ok=false
+N press/flow below=true 5000m dT0 M2 540 start=0.6 nu=(0.519,0.606) steady refuses
+T press/flow below=true 5000m dT0 M2 560 sp_thrust=-89.57 steady_ok=false
+N press/flow below=true 5000m dT0 M2 560 start=0.7 nu=(0.527,0.615) steady refuses
+T press/flow below=true 5000m dT0 M2 580 sp_thrust=-76.34 steady_ok=false
+N press/flow below=true 5000m dT0 M2 580 start=0.7 nu=(0.536,0.623) steady refuses
+T press/flow below=true 5000m dT0 M2 600 sp_thrust=-63.27 steady_ok=false
+N press/flow below=true 5000m dT0 M2 600 start=0.8 nu=(0.545,0.632) steady refuses
+T press/flow below=true 5000m dT0 M2 620 sp_thrust=-50.35 steady_ok=false
+N press/flow below=true 5000m dT0 M2 620 start=0.8 nu=(0.553,0.640) steady refuses
+T press/flow below=true 5000m dT0 M2 640 sp_thrust=-37.58 steady_ok=false
+N press/flow below=true 5000m dT0 M2 640 start=0.8 nu=(0.562,0.649) steady refuses
+T press/flow below=true 5000m dT0 M2 660 sp_thrust=-24.96 steady_ok=false
+N press/flow below=true 5000m dT0 M2 660 start=0.9 nu=(0.570,0.657) steady refuses
+T press/flow below=true 5000m dT0 M2 680 sp_thrust=-12.49 steady_ok=false
+N press/flow below=true 5000m dT0 M2 680 start=0.9 nu=(0.579,0.666) steady refuses
+T press/flow below=true 11000m dT0 M1.6 500 sp_thrust=1.35 steady_ok=true
+L press/flow below=true 11000m dT0 M1.6 500 start=0.8 tries=2 it=5 d_vs_steady=9.4e-15
+T press/flow below=true 11000m dT0 M1.6 520 sp_thrust=16.80 steady_ok=true
+L press/flow below=true 11000m dT0 M1.6 520 start=0.9 tries=1 it=6 d_vs_steady=1.6e-14
+T press/flow below=true 11000m dT0 M1.6 540 sp_thrust=32.04 steady_ok=true
+L press/flow below=true 11000m dT0 M1.6 540 start=0.9 tries=1 it=6 d_vs_steady=2.2e-14
+T press/flow below=true 11000m dT0 M1.6 560 sp_thrust=47.06 steady_ok=true
+L press/flow below=true 11000m dT0 M1.6 560 start=0.9 tries=1 it=5 d_vs_steady=1.1e-12
+T press/flow below=true 11000m dT0 M2 500 sp_thrust=-64.65 steady_ok=false
+N press/flow below=true 11000m dT0 M2 500 start=0.7 nu=(0.497,0.578) steady refuses
+T press/flow below=true 11000m dT0 M2 520 sp_thrust=-50.61 steady_ok=false
+N press/flow below=true 11000m dT0 M2 520 start=0.7 nu=(0.507,0.587) steady refuses
+T press/flow below=true 11000m dT0 M2 540 sp_thrust=-36.77 steady_ok=false
+N press/flow below=true 11000m dT0 M2 540 start=0.8 nu=(0.516,0.596) steady refuses
+T press/flow below=true 11000m dT0 M2 560 sp_thrust=-23.12 steady_ok=false
+N press/flow below=true 11000m dT0 M2 560 start=0.8 nu=(0.525,0.605) steady refuses
+T press/flow below=true 11000m dT0 M2 580 sp_thrust=-9.65 steady_ok=false
+N press/flow below=true 11000m dT0 M2 580 start=0.9 nu=(0.534,0.614) steady refuses
+T press/flow below=true 11000m dT0 M2 600 sp_thrust=3.64 steady_ok=true
+L press/flow below=true 11000m dT0 M2 600 start=0.9 tries=1 it=5 d_vs_steady=6.4e-14
+T press/flow below=true 11000m dT0 M2 620 sp_thrust=16.76 steady_ok=true
+L press/flow below=true 11000m dT0 M2 620 start=0.9 tries=1 it=5 d_vs_steady=4.6e-14
+T press/flow below=false design 500 sp_thrust=19.00 steady_ok=false
+N press/flow below=false design 500 start=0.9 nu=(0.466,0.564) steady refuses
+T press/flow below=false 0m dT0 M0.85 500 sp_thrust=-41.21 steady_ok=false
+N press/flow below=false 0m dT0 M0.85 500 start=0.8 nu=(0.410,0.568) steady refuses
+T press/flow below=false 0m dT0 M0.85 520 sp_thrust=-25.55 steady_ok=false
+N press/flow below=false 0m dT0 M0.85 520 start=0.9 nu=(0.437,0.578) steady refuses
+T press/flow below=false 0m dT0 M0.85 540 sp_thrust=-9.40 steady_ok=false
+N press/flow below=false 0m dT0 M0.85 540 start=0.9 nu=(0.461,0.588) steady refuses
+T press/flow below=false 0m dT0 M0.85 560 sp_thrust=7.13 steady_ok=false
+N press/flow below=false 0m dT0 M0.85 560 start=0.9 nu=(0.484,0.598) steady refuses
+T press/flow below=false 0m dT0 M1.6 500 sp_thrust=-114.39 steady_ok=false
+N press/flow below=false 0m dT0 M1.6 500 start=0.6 nu=(0.500,0.584) steady refuses
+T press/flow below=false 0m dT0 M1.6 520 sp_thrust=-99.67 steady_ok=false
+N press/flow below=false 0m dT0 M1.6 520 start=0.6 nu=(0.509,0.593) steady refuses
+T press/flow below=false 0m dT0 M1.6 540 sp_thrust=-85.09 steady_ok=false
+N press/flow below=false 0m dT0 M1.6 540 start=0.7 nu=(0.518,0.602) steady refuses
+T press/flow below=false 0m dT0 M1.6 560 sp_thrust=-70.67 steady_ok=false
+N press/flow below=false 0m dT0 M1.6 560 start=0.7 nu=(0.527,0.611) steady refuses
+T press/flow below=false 0m dT0 M1.6 580 sp_thrust=-56.39 steady_ok=false
+N press/flow below=false 0m dT0 M1.6 580 start=0.8 nu=(0.535,0.620) steady refuses
+T press/flow below=false 0m dT0 M1.6 600 sp_thrust=-42.26 steady_ok=false
+N press/flow below=false 0m dT0 M1.6 600 start=0.8 nu=(0.544,0.629) steady refuses
+T press/flow below=false 0m dT0 M1.6 620 sp_thrust=-28.28 steady_ok=false
+N press/flow below=false 0m dT0 M1.6 620 start=0.8 nu=(0.553,0.637) steady refuses
+T press/flow below=false 0m dT0 M1.6 640 sp_thrust=-14.44 steady_ok=false
+N press/flow below=false 0m dT0 M1.6 640 start=0.9 nu=(0.561,0.646) steady refuses
+T press/flow below=false 0m dT0 M1.6 660 sp_thrust=-0.74 steady_ok=false
+N press/flow below=false 0m dT0 M1.6 660 start=0.9 nu=(0.570,0.654) steady refuses
+T press/flow below=false 0m dT0 M2 560 sp_thrust=-140.55 steady_ok=false
+N press/flow below=false 0m dT0 M2 560 start=0.6 nu=(0.530,0.623) steady refuses
+T press/flow below=false 0m dT0 M2 580 sp_thrust=-127.53 steady_ok=false
+N press/flow below=false 0m dT0 M2 580 start=0.6 nu=(0.539,0.631) steady refuses
+T press/flow below=false 0m dT0 M2 600 sp_thrust=-114.67 steady_ok=false
+N press/flow below=false 0m dT0 M2 600 start=0.7 nu=(0.547,0.640) steady refuses
+T press/flow below=false 0m dT0 M2 620 sp_thrust=-101.94 steady_ok=false
+N press/flow below=false 0m dT0 M2 620 start=0.7 nu=(0.555,0.648) steady refuses
+T press/flow below=false 0m dT0 M2 640 sp_thrust=-89.36 steady_ok=false
+N press/flow below=false 0m dT0 M2 640 start=0.7 nu=(0.564,0.656) steady refuses
+T press/flow below=false 0m dT0 M2 660 sp_thrust=-76.90 steady_ok=false
+N press/flow below=false 0m dT0 M2 660 start=0.8 nu=(0.572,0.664) steady refuses
+T press/flow below=false 0m dT0 M2 680 sp_thrust=-64.58 steady_ok=false
+N press/flow below=false 0m dT0 M2 680 start=0.8 nu=(0.580,0.672) steady refuses
+T press/flow below=false 0m dT0 M2 700 sp_thrust=-52.39 steady_ok=false
+N press/flow below=false 0m dT0 M2 700 start=0.8 nu=(0.588,0.680) steady refuses
+T press/flow below=false 0m dT0 M2 720 sp_thrust=-40.32 steady_ok=false
+N press/flow below=false 0m dT0 M2 720 start=0.9 nu=(0.596,0.688) steady refuses
+T press/flow below=false 0m dT0 M2 740 sp_thrust=-28.37 steady_ok=false
+N press/flow below=false 0m dT0 M2 740 start=0.9 nu=(0.604,0.696) steady refuses
+T press/flow below=false 0m dT40 M0.85 500 sp_thrust=-90.88 steady_ok=false
+N press/flow below=false 0m dT40 M0.85 500 start=0.7 nu=(0.336,0.572) steady refuses
+T press/flow below=false 0m dT40 M0.85 520 sp_thrust=-77.95 steady_ok=false
+N press/flow below=false 0m dT40 M0.85 520 start=0.8 nu=(0.368,0.582) steady refuses
+T press/flow below=false 0m dT40 M0.85 540 sp_thrust=-64.46 steady_ok=false
+N press/flow below=false 0m dT40 M0.85 540 start=0.8 nu=(0.398,0.592) steady refuses
+T press/flow below=false 0m dT40 M0.85 560 sp_thrust=-50.45 steady_ok=false
+N press/flow below=false 0m dT40 M0.85 560 start=0.8 nu=(0.426,0.602) steady refuses
+T press/flow below=false 0m dT40 M0.85 580 sp_thrust=-35.96 steady_ok=false
+N press/flow below=false 0m dT40 M0.85 580 start=0.9 nu=(0.452,0.611) steady refuses
+T press/flow below=false 0m dT40 M0.85 600 sp_thrust=-21.04 steady_ok=false
+N press/flow below=false 0m dT40 M0.85 600 start=0.9 nu=(0.476,0.620) steady refuses
+T press/flow below=false 0m dT40 M1.6 540 sp_thrust=-142.56 steady_ok=false
+N press/flow below=false 0m dT40 M1.6 540 start=0.6 nu=(0.521,0.611) steady refuses
+T press/flow below=false 0m dT40 M1.6 560 sp_thrust=-128.54 steady_ok=false
+N press/flow below=false 0m dT40 M1.6 560 start=0.6 nu=(0.529,0.620) steady refuses
+T press/flow below=false 0m dT40 M1.6 580 sp_thrust=-114.63 steady_ok=false
+N press/flow below=false 0m dT40 M1.6 580 start=0.7 nu=(0.538,0.628) steady refuses
+T press/flow below=false 0m dT40 M1.6 600 sp_thrust=-100.85 steady_ok=false
+N press/flow below=false 0m dT40 M1.6 600 start=0.7 nu=(0.546,0.637) steady refuses
+T press/flow below=false 0m dT40 M1.6 620 sp_thrust=-87.20 steady_ok=false
+N press/flow below=false 0m dT40 M1.6 620 start=0.7 nu=(0.555,0.645) steady refuses
+T press/flow below=false 0m dT40 M1.6 640 sp_thrust=-73.66 steady_ok=false
+N press/flow below=false 0m dT40 M1.6 640 start=0.8 nu=(0.563,0.653) steady refuses
+T press/flow below=false 0m dT40 M1.6 660 sp_thrust=-60.24 steady_ok=false
+N press/flow below=false 0m dT40 M1.6 660 start=0.8 nu=(0.571,0.661) steady refuses
+T press/flow below=false 0m dT40 M1.6 680 sp_thrust=-46.94 steady_ok=false
+N press/flow below=false 0m dT40 M1.6 680 start=0.8 nu=(0.579,0.670) steady refuses
+T press/flow below=false 0m dT40 M1.6 700 sp_thrust=-33.76 steady_ok=false
+N press/flow below=false 0m dT40 M1.6 700 start=0.9 nu=(0.587,0.678) steady refuses
+T press/flow below=false 0m dT40 M1.6 720 sp_thrust=-20.70 steady_ok=false
+N press/flow below=false 0m dT40 M1.6 720 start=0.9 nu=(0.596,0.686) steady refuses
+T press/flow below=false 0m dT40 M2 640 sp_thrust=-148.55 steady_ok=false
+N press/flow below=false 0m dT40 M2 640 start=0.6 nu=(0.567,0.666) steady refuses
+T press/flow below=false 0m dT40 M2 660 sp_thrust=-136.32 steady_ok=false
+N press/flow below=false 0m dT40 M2 660 start=0.6 nu=(0.575,0.674) steady refuses
+T press/flow below=false 0m dT40 M2 680 sp_thrust=-124.21 steady_ok=false
+N press/flow below=false 0m dT40 M2 680 start=0.7 nu=(0.583,0.681) steady refuses
+T press/flow below=false 0m dT40 M2 700 sp_thrust=-112.22 steady_ok=false
+N press/flow below=false 0m dT40 M2 700 start=0.7 nu=(0.590,0.689) steady refuses
+T press/flow below=false 0m dT40 M2 720 sp_thrust=-100.34 steady_ok=false
+N press/flow below=false 0m dT40 M2 720 start=0.8 nu=(0.598,0.697) steady refuses
+T press/flow below=false 0m dT40 M2 740 sp_thrust=-88.57 steady_ok=false
+N press/flow below=false 0m dT40 M2 740 start=0.8 nu=(0.606,0.704) steady refuses
+T press/flow below=false 0m dT40 M2 760 sp_thrust=-76.91 steady_ok=false
+N press/flow below=false 0m dT40 M2 760 start=0.8 nu=(0.614,0.712) steady refuses
+T press/flow below=false 0m dT40 M2 780 sp_thrust=-65.35 steady_ok=false
+N press/flow below=false 0m dT40 M2 780 start=0.9 nu=(0.621,0.720) steady refuses
+T press/flow below=false 0m dT40 M2 800 sp_thrust=-53.89 steady_ok=false
+N press/flow below=false 0m dT40 M2 800 start=0.9 nu=(0.629,0.727) steady refuses
+T press/flow below=false 0m dT40 M2 820 sp_thrust=-42.54 steady_ok=false
+N press/flow below=false 0m dT40 M2 820 start=0.9 nu=(0.636,0.735) steady refuses
+T press/flow below=false 0m dT-30 M0.85 500 sp_thrust=4.95 steady_ok=false
+N press/flow below=false 0m dT-30 M0.85 500 start=0.9 nu=(0.456,0.565) steady refuses
+T press/flow below=false 0m dT-30 M0.85 520 sp_thrust=22.70 steady_ok=false
+N press/flow below=false 0m dT-30 M0.85 520 start=0.9 nu=(0.477,0.575) steady refuses
+T press/flow below=false 0m dT-30 M1.6 500 sp_thrust=-68.33 steady_ok=false
+N press/flow below=false 0m dT-30 M1.6 500 start=0.7 nu=(0.498,0.578) steady refuses
+T press/flow below=false 0m dT-30 M1.6 520 sp_thrust=-53.28 steady_ok=false
+N press/flow below=false 0m dT-30 M1.6 520 start=0.7 nu=(0.507,0.587) steady refuses
+T press/flow below=false 0m dT-30 M1.6 540 sp_thrust=-38.40 steady_ok=false
+N press/flow below=false 0m dT-30 M1.6 540 start=0.8 nu=(0.516,0.596) steady refuses
+T press/flow below=false 0m dT-30 M1.6 560 sp_thrust=-23.69 steady_ok=false
+N press/flow below=false 0m dT-30 M1.6 560 start=0.8 nu=(0.525,0.605) steady refuses
+T press/flow below=false 0m dT-30 M1.6 580 sp_thrust=-9.16 steady_ok=false
+N press/flow below=false 0m dT-30 M1.6 580 start=0.9 nu=(0.534,0.614) steady refuses
+T press/flow below=false 0m dT-30 M1.6 600 sp_thrust=5.21 steady_ok=true
+L press/flow below=false 0m dT-30 M1.6 600 start=0.9 tries=1 it=5 d_vs_steady=6.3e-14
+T press/flow below=false 0m dT-30 M1.6 620 sp_thrust=19.41 steady_ok=true
+L press/flow below=false 0m dT-30 M1.6 620 start=0.9 tries=1 it=5 d_vs_steady=4.6e-14
+T press/flow below=false 0m dT-30 M2 500 sp_thrust=-134.23 steady_ok=false
+N press/flow below=false 0m dT-30 M2 500 start=0.5 nu=(0.501,0.589) steady refuses
+T press/flow below=false 0m dT-30 M2 520 sp_thrust=-120.51 steady_ok=false
+N press/flow below=false 0m dT-30 M2 520 start=0.6 nu=(0.510,0.598) steady refuses
+T press/flow below=false 0m dT-30 M2 540 sp_thrust=-106.96 steady_ok=false
+N press/flow below=false 0m dT-30 M2 540 start=0.6 nu=(0.519,0.607) steady refuses
+T press/flow below=false 0m dT-30 M2 560 sp_thrust=-93.58 steady_ok=false
+N press/flow below=false 0m dT-30 M2 560 start=0.7 nu=(0.528,0.615) steady refuses
+T press/flow below=false 0m dT-30 M2 580 sp_thrust=-80.37 steady_ok=false
+N press/flow below=false 0m dT-30 M2 580 start=0.7 nu=(0.536,0.624) steady refuses
+T press/flow below=false 0m dT-30 M2 600 sp_thrust=-67.31 steady_ok=false
+N press/flow below=false 0m dT-30 M2 600 start=0.7 nu=(0.545,0.632) steady refuses
+T press/flow below=false 0m dT-30 M2 620 sp_thrust=-54.41 steady_ok=false
+N press/flow below=false 0m dT-30 M2 620 start=0.8 nu=(0.553,0.641) steady refuses
+T press/flow below=false 0m dT-30 M2 640 sp_thrust=-41.66 steady_ok=false
+N press/flow below=false 0m dT-30 M2 640 start=0.8 nu=(0.562,0.649) steady refuses
+T press/flow below=false 0m dT-30 M2 660 sp_thrust=-29.05 steady_ok=false
+N press/flow below=false 0m dT-30 M2 660 start=0.9 nu=(0.570,0.658) steady refuses
+T press/flow below=false 0m dT-30 M2 680 sp_thrust=-16.59 steady_ok=false
+N press/flow below=false 0m dT-30 M2 680 start=0.9 nu=(0.579,0.666) steady refuses
+T press/flow below=false 5000m dT0 M0.85 500 sp_thrust=9.15 steady_ok=false
+N press/flow below=false 5000m dT0 M0.85 500 start=0.9 nu=(0.459,0.564) steady refuses
+T press/flow below=false 5000m dT0 M0.85 520 sp_thrust=27.06 steady_ok=false
+N press/flow below=false 5000m dT0 M0.85 520 start=0.9 nu=(0.480,0.575) steady refuses
+T press/flow below=false 5000m dT0 M1.6 500 sp_thrust=-64.37 steady_ok=false
+N press/flow below=false 5000m dT0 M1.6 500 start=0.7 nu=(0.497,0.577) steady refuses
+T press/flow below=false 5000m dT0 M1.6 520 sp_thrust=-49.29 steady_ok=false
+N press/flow below=false 5000m dT0 M1.6 520 start=0.7 nu=(0.507,0.586) steady refuses
+T press/flow below=false 5000m dT0 M1.6 540 sp_thrust=-34.39 steady_ok=false
+N press/flow below=false 5000m dT0 M1.6 540 start=0.8 nu=(0.516,0.596) steady refuses
+T press/flow below=false 5000m dT0 M1.6 560 sp_thrust=-19.67 steady_ok=false
+N press/flow below=false 5000m dT0 M1.6 560 start=0.8 nu=(0.525,0.605) steady refuses
+T press/flow below=false 5000m dT0 M1.6 580 sp_thrust=-5.11 steady_ok=false
+N press/flow below=false 5000m dT0 M1.6 580 start=0.9 nu=(0.534,0.614) steady refuses
+T press/flow below=false 5000m dT0 M1.6 600 sp_thrust=9.27 steady_ok=true
+L press/flow below=false 5000m dT0 M1.6 600 start=0.9 tries=1 it=5 d_vs_steady=6.5e-14
+T press/flow below=false 5000m dT0 M1.6 620 sp_thrust=23.49 steady_ok=true
+L press/flow below=false 5000m dT0 M1.6 620 start=0.9 tries=1 it=5 d_vs_steady=4.4e-14
+T press/flow below=false 5000m dT0 M2 500 sp_thrust=-130.27 steady_ok=false
+N press/flow below=false 5000m dT0 M2 500 start=0.5 nu=(0.501,0.588) steady refuses
+T press/flow below=false 5000m dT0 M2 520 sp_thrust=-116.52 steady_ok=false
+N press/flow below=false 5000m dT0 M2 520 start=0.6 nu=(0.510,0.597) steady refuses
+T press/flow below=false 5000m dT0 M2 540 sp_thrust=-102.96 steady_ok=false
+N press/flow below=false 5000m dT0 M2 540 start=0.6 nu=(0.519,0.606) steady refuses
+T press/flow below=false 5000m dT0 M2 560 sp_thrust=-89.57 steady_ok=false
+N press/flow below=false 5000m dT0 M2 560 start=0.7 nu=(0.527,0.615) steady refuses
+T press/flow below=false 5000m dT0 M2 580 sp_thrust=-76.34 steady_ok=false
+N press/flow below=false 5000m dT0 M2 580 start=0.7 nu=(0.536,0.623) steady refuses
+T press/flow below=false 5000m dT0 M2 600 sp_thrust=-63.27 steady_ok=false
+N press/flow below=false 5000m dT0 M2 600 start=0.8 nu=(0.545,0.632) steady refuses
+T press/flow below=false 5000m dT0 M2 620 sp_thrust=-50.35 steady_ok=false
+N press/flow below=false 5000m dT0 M2 620 start=0.8 nu=(0.553,0.640) steady refuses
+T press/flow below=false 5000m dT0 M2 640 sp_thrust=-37.58 steady_ok=false
+N press/flow below=false 5000m dT0 M2 640 start=0.8 nu=(0.562,0.649) steady refuses
+T press/flow below=false 5000m dT0 M2 660 sp_thrust=-24.96 steady_ok=false
+N press/flow below=false 5000m dT0 M2 660 start=0.9 nu=(0.570,0.657) steady refuses
+T press/flow below=false 5000m dT0 M2 680 sp_thrust=-12.49 steady_ok=false
+N press/flow below=false 5000m dT0 M2 680 start=0.9 nu=(0.579,0.666) steady refuses
+T press/flow below=false 11000m dT0 M1.6 500 sp_thrust=1.35 steady_ok=true
+L press/flow below=false 11000m dT0 M1.6 500 start=0.8 tries=2 it=5 d_vs_steady=9.4e-15
+T press/flow below=false 11000m dT0 M1.6 520 sp_thrust=16.80 steady_ok=true
+L press/flow below=false 11000m dT0 M1.6 520 start=0.9 tries=1 it=6 d_vs_steady=1.6e-14
+T press/flow below=false 11000m dT0 M1.6 540 sp_thrust=32.04 steady_ok=true
+L press/flow below=false 11000m dT0 M1.6 540 start=0.9 tries=1 it=6 d_vs_steady=2.2e-14
+T press/flow below=false 11000m dT0 M1.6 560 sp_thrust=47.06 steady_ok=true
+L press/flow below=false 11000m dT0 M1.6 560 start=0.9 tries=1 it=5 d_vs_steady=1.1e-12
+T press/flow below=false 11000m dT0 M2 500 sp_thrust=-64.65 steady_ok=false
+N press/flow below=false 11000m dT0 M2 500 start=0.7 nu=(0.497,0.578) steady refuses
+T press/flow below=false 11000m dT0 M2 520 sp_thrust=-50.61 steady_ok=false
+N press/flow below=false 11000m dT0 M2 520 start=0.7 nu=(0.507,0.587) steady refuses
+T press/flow below=false 11000m dT0 M2 540 sp_thrust=-36.77 steady_ok=false
+N press/flow below=false 11000m dT0 M2 540 start=0.8 nu=(0.516,0.596) steady refuses
+T press/flow below=false 11000m dT0 M2 560 sp_thrust=-23.12 steady_ok=false
+N press/flow below=false 11000m dT0 M2 560 start=0.8 nu=(0.525,0.605) steady refuses
+T press/flow below=false 11000m dT0 M2 580 sp_thrust=-9.65 steady_ok=false
+N press/flow below=false 11000m dT0 M2 580 start=0.9 nu=(0.534,0.614) steady refuses
+T press/flow below=false 11000m dT0 M2 600 sp_thrust=3.64 steady_ok=true
+L press/flow below=false 11000m dT0 M2 600 start=0.9 tries=1 it=5 d_vs_steady=6.4e-14
+T press/flow below=false 11000m dT0 M2 620 sp_thrust=16.76 steady_ok=true
+L press/flow below=false 11000m dT0 M2 620 start=0.9 tries=1 it=5 d_vs_steady=4.6e-14
+T tilted below=true design 500 sp_thrust=17.97 steady_ok=true
+L tilted below=true design 500 start=0.9 tries=1 it=6 d_vs_steady=3.1e-12
+T tilted below=true 0m dT0 M0.85 500 sp_thrust=-41.58 steady_ok=false
+N tilted below=true 0m dT0 M0.85 500 start=0.8 nu=(0.416,0.566) steady refuses
+T tilted below=true 0m dT0 M0.85 520 sp_thrust=-26.09 steady_ok=false
+N tilted below=true 0m dT0 M0.85 520 start=0.8 nu=(0.443,0.576) steady refuses
+T tilted below=true 0m dT0 M0.85 540 sp_thrust=-10.15 steady_ok=false
+N tilted below=true 0m dT0 M0.85 540 start=0.9 nu=(0.468,0.586) steady refuses
+T tilted below=true 0m dT0 M1.6 500 sp_thrust=-114.56 steady_ok=false
+N tilted below=true 0m dT0 M1.6 500 start=0.6 nu=(0.509,0.586) steady refuses
+T tilted below=true 0m dT0 M1.6 520 sp_thrust=-99.93 steady_ok=false
+N tilted below=true 0m dT0 M1.6 520 start=0.6 nu=(0.518,0.594) steady refuses
+T tilted below=true 0m dT0 M1.6 540 sp_thrust=-85.44 steady_ok=false
+N tilted below=true 0m dT0 M1.6 540 start=0.7 nu=(0.527,0.603) steady refuses
+T tilted below=true 0m dT0 M1.6 560 sp_thrust=-71.09 steady_ok=false
+N tilted below=true 0m dT0 M1.6 560 start=0.7 nu=(0.537,0.611) steady refuses
+T tilted below=true 0m dT0 M1.6 580 sp_thrust=-56.88 steady_ok=false
+N tilted below=true 0m dT0 M1.6 580 start=0.8 nu=(0.546,0.620) steady refuses
+T tilted below=true 0m dT0 M1.6 600 sp_thrust=-42.82 steady_ok=false
+N tilted below=true 0m dT0 M1.6 600 start=0.8 nu=(0.555,0.628) steady refuses
+T tilted below=true 0m dT0 M1.6 620 sp_thrust=-28.88 steady_ok=false
+N tilted below=true 0m dT0 M1.6 620 start=0.9 nu=(0.564,0.636) steady refuses
+T tilted below=true 0m dT0 M1.6 640 sp_thrust=-15.09 steady_ok=false
+N tilted below=true 0m dT0 M1.6 640 start=0.9 nu=(0.572,0.645) steady refuses
+T tilted below=true 0m dT0 M1.6 660 sp_thrust=-1.43 steady_ok=false
+N tilted below=true 0m dT0 M1.6 660 start=0.9 nu=(0.581,0.653) steady refuses
+T tilted below=true 0m dT0 M2 560 sp_thrust=-140.56 steady_ok=false
+N tilted below=true 0m dT0 M2 560 start=0.6 nu=(0.540,0.625) steady refuses
+T tilted below=true 0m dT0 M2 580 sp_thrust=-127.60 steady_ok=false
+N tilted below=true 0m dT0 M2 580 start=0.6 nu=(0.549,0.633) steady refuses
+T tilted below=true 0m dT0 M2 600 sp_thrust=-114.78 steady_ok=false
+N tilted below=true 0m dT0 M2 600 start=0.7 nu=(0.557,0.641) steady refuses
+T tilted below=true 0m dT0 M2 620 sp_thrust=-102.11 steady_ok=false
+N tilted below=true 0m dT0 M2 620 start=0.7 nu=(0.566,0.649) steady refuses
+T tilted below=true 0m dT0 M2 640 sp_thrust=-89.57 steady_ok=false
+N tilted below=true 0m dT0 M2 640 start=0.7 nu=(0.574,0.657) steady refuses
+T tilted below=true 0m dT0 M2 660 sp_thrust=-77.15 steady_ok=false
+N tilted below=true 0m dT0 M2 660 start=0.8 nu=(0.583,0.664) steady refuses
+T tilted below=true 0m dT0 M2 680 sp_thrust=-64.87 steady_ok=false
+N tilted below=true 0m dT0 M2 680 start=0.8 nu=(0.591,0.672) steady refuses
+T tilted below=true 0m dT0 M2 700 sp_thrust=-52.71 steady_ok=false
+N tilted below=true 0m dT0 M2 700 start=0.9 nu=(0.599,0.680) steady refuses
+T tilted below=true 0m dT0 M2 720 sp_thrust=-40.67 steady_ok=false
+N tilted below=true 0m dT0 M2 720 start=0.9 nu=(0.608,0.688) steady refuses
+T tilted below=true 0m dT0 M2 740 sp_thrust=-28.75 steady_ok=false
+N tilted below=true 0m dT0 M2 740 start=0.9 nu=(0.616,0.695) steady refuses
+T tilted below=true 0m dT40 M0.85 500 sp_thrust=-91.04 steady_ok=false
+N tilted below=true 0m dT40 M0.85 500 start=0.7 nu=(0.338,0.572) steady refuses
+T tilted below=true 0m dT40 M0.85 520 sp_thrust=-78.11 steady_ok=false
+N tilted below=true 0m dT40 M0.85 520 start=0.7 nu=(0.372,0.581) steady refuses
+T tilted below=true 0m dT40 M0.85 540 sp_thrust=-64.67 steady_ok=false
+N tilted below=true 0m dT40 M0.85 540 start=0.8 nu=(0.403,0.591) steady refuses
+T tilted below=true 0m dT40 M0.85 560 sp_thrust=-50.77 steady_ok=false
+N tilted below=true 0m dT40 M0.85 560 start=0.9 nu=(0.431,0.600) steady refuses
+T tilted below=true 0m dT40 M0.85 580 sp_thrust=-36.43 steady_ok=false
+N tilted below=true 0m dT40 M0.85 580 start=0.9 nu=(0.458,0.609) steady refuses
+T tilted below=true 0m dT40 M0.85 600 sp_thrust=-21.69 steady_ok=false
+N tilted below=true 0m dT40 M0.85 600 start=0.9 nu=(0.483,0.619) steady refuses
+T tilted below=true 0m dT40 M1.6 540 sp_thrust=-142.60 steady_ok=false
+N tilted below=true 0m dT40 M1.6 540 start=0.6 nu=(0.530,0.613) steady refuses
+T tilted below=true 0m dT40 M1.6 560 sp_thrust=-128.67 steady_ok=false
+N tilted below=true 0m dT40 M1.6 560 start=0.6 nu=(0.539,0.621) steady refuses
+T tilted below=true 0m dT40 M1.6 580 sp_thrust=-114.86 steady_ok=false
+N tilted below=true 0m dT40 M1.6 580 start=0.6 nu=(0.548,0.629) steady refuses
+T tilted below=true 0m dT40 M1.6 600 sp_thrust=-101.17 steady_ok=false
+N tilted below=true 0m dT40 M1.6 600 start=0.7 nu=(0.556,0.637) steady refuses
+T tilted below=true 0m dT40 M1.6 620 sp_thrust=-87.59 steady_ok=false
+N tilted below=true 0m dT40 M1.6 620 start=0.7 nu=(0.565,0.645) steady refuses
+T tilted below=true 0m dT40 M1.6 640 sp_thrust=-74.12 steady_ok=false
+N tilted below=true 0m dT40 M1.6 640 start=0.8 nu=(0.574,0.653) steady refuses
+T tilted below=true 0m dT40 M1.6 660 sp_thrust=-60.77 steady_ok=false
+N tilted below=true 0m dT40 M1.6 660 start=0.8 nu=(0.582,0.661) steady refuses
+T tilted below=true 0m dT40 M1.6 680 sp_thrust=-47.53 steady_ok=false
+N tilted below=true 0m dT40 M1.6 680 start=0.9 nu=(0.591,0.669) steady refuses
+T tilted below=true 0m dT40 M1.6 700 sp_thrust=-34.40 steady_ok=false
+N tilted below=true 0m dT40 M1.6 700 start=0.9 nu=(0.599,0.677) steady refuses
+T tilted below=true 0m dT40 M1.6 720 sp_thrust=-21.38 steady_ok=false
+N tilted below=true 0m dT40 M1.6 720 start=0.9 nu=(0.607,0.685) steady refuses
+T tilted below=true 0m dT40 M2 640 sp_thrust=-148.57 steady_ok=false
+N tilted below=true 0m dT40 M2 640 start=0.6 nu=(0.577,0.668) steady refuses
+T tilted below=true 0m dT40 M2 660 sp_thrust=-136.39 steady_ok=false
+N tilted below=true 0m dT40 M2 660 start=0.7 nu=(0.585,0.676) steady refuses
+T tilted below=true 0m dT40 M2 680 sp_thrust=-124.33 steady_ok=false
+N tilted below=true 0m dT40 M2 680 start=0.7 nu=(0.593,0.683) steady refuses
+T tilted below=true 0m dT40 M2 700 sp_thrust=-112.38 steady_ok=false
+N tilted below=true 0m dT40 M2 700 start=0.7 nu=(0.601,0.690) steady refuses
+T tilted below=true 0m dT40 M2 720 sp_thrust=-100.54 steady_ok=false
+N tilted below=true 0m dT40 M2 720 start=0.8 nu=(0.609,0.698) steady refuses
+T tilted below=true 0m dT40 M2 740 sp_thrust=-88.81 steady_ok=false
+N tilted below=true 0m dT40 M2 740 start=0.8 nu=(0.617,0.705) steady refuses
+T tilted below=true 0m dT40 M2 760 sp_thrust=-77.19 steady_ok=false
+N tilted below=true 0m dT40 M2 760 start=0.9 nu=(0.625,0.712) steady refuses
+T tilted below=true 0m dT40 M2 780 sp_thrust=-65.67 steady_ok=false
+N tilted below=true 0m dT40 M2 780 start=0.9 nu=(0.633,0.719) steady refuses
+T tilted below=true 0m dT40 M2 800 sp_thrust=-54.24 steady_ok=false
+N tilted below=true 0m dT40 M2 800 start=0.9 nu=(0.641,0.727) steady refuses
+T tilted below=true 0m dT-30 M0.85 500 sp_thrust=4.08 steady_ok=true
+L tilted below=true 0m dT-30 M0.85 500 start=0.9 tries=1 it=6 d_vs_steady=3.2e-12
+T tilted below=true 0m dT-30 M0.85 520 sp_thrust=21.62 steady_ok=true
+L tilted below=true 0m dT-30 M0.85 520 start=0.9 tries=1 it=6 d_vs_steady=3.2e-12
+T tilted below=true 0m dT-30 M1.6 500 sp_thrust=-68.72 steady_ok=false
+N tilted below=true 0m dT-30 M1.6 500 start=0.7 nu=(0.507,0.578) steady refuses
+T tilted below=true 0m dT-30 M1.6 520 sp_thrust=-53.74 steady_ok=false
+N tilted below=true 0m dT-30 M1.6 520 start=0.7 nu=(0.517,0.587) steady refuses
+T tilted below=true 0m dT-30 M1.6 540 sp_thrust=-38.93 steady_ok=false
+N tilted below=true 0m dT-30 M1.6 540 start=0.8 nu=(0.526,0.596) steady refuses
+T tilted below=true 0m dT-30 M1.6 560 sp_thrust=-24.28 steady_ok=false
+N tilted below=true 0m dT-30 M1.6 560 start=0.8 nu=(0.535,0.604) steady refuses
+T tilted below=true 0m dT-30 M1.6 580 sp_thrust=-9.79 steady_ok=false
+N tilted below=true 0m dT-30 M1.6 580 start=0.9 nu=(0.545,0.613) steady refuses
+T tilted below=true 0m dT-30 M1.6 600 sp_thrust=4.53 steady_ok=true
+L tilted below=true 0m dT-30 M1.6 600 start=0.9 tries=1 it=5 d_vs_steady=7.6e-13
+T tilted below=true 0m dT-30 M1.6 620 sp_thrust=18.70 steady_ok=true
+L tilted below=true 0m dT-30 M1.6 620 start=0.9 tries=1 it=5 d_vs_steady=8.9e-13
+T tilted below=true 0m dT-30 M2 500 sp_thrust=-134.23 steady_ok=false
+N tilted below=true 0m dT-30 M2 500 start=0.5 nu=(0.510,0.591) steady refuses
+T tilted below=true 0m dT-30 M2 520 sp_thrust=-120.57 steady_ok=false
+N tilted below=true 0m dT-30 M2 520 start=0.6 nu=(0.519,0.599) steady refuses
+T tilted below=true 0m dT-30 M2 540 sp_thrust=-107.08 steady_ok=false
+N tilted below=true 0m dT-30 M2 540 start=0.6 nu=(0.529,0.608) steady refuses
+T tilted below=true 0m dT-30 M2 560 sp_thrust=-93.75 steady_ok=false
+N tilted below=true 0m dT-30 M2 560 start=0.7 nu=(0.538,0.616) steady refuses
+T tilted below=true 0m dT-30 M2 580 sp_thrust=-80.58 steady_ok=false
+N tilted below=true 0m dT-30 M2 580 start=0.7 nu=(0.547,0.624) steady refuses
+T tilted below=true 0m dT-30 M2 600 sp_thrust=-67.57 steady_ok=false
+N tilted below=true 0m dT-30 M2 600 start=0.8 nu=(0.555,0.632) steady refuses
+T tilted below=true 0m dT-30 M2 620 sp_thrust=-54.70 steady_ok=false
+N tilted below=true 0m dT-30 M2 620 start=0.8 nu=(0.564,0.641) steady refuses
+T tilted below=true 0m dT-30 M2 640 sp_thrust=-41.98 steady_ok=false
+N tilted below=true 0m dT-30 M2 640 start=0.8 nu=(0.573,0.649) steady refuses
+T tilted below=true 0m dT-30 M2 660 sp_thrust=-29.41 steady_ok=false
+N tilted below=true 0m dT-30 M2 660 start=0.9 nu=(0.581,0.657) steady refuses
+T tilted below=true 0m dT-30 M2 680 sp_thrust=-16.96 steady_ok=false
+N tilted below=true 0m dT-30 M2 680 start=0.9 nu=(0.590,0.665) steady refuses
+T tilted below=true 0m dT-30 M2 700 sp_thrust=-4.66 steady_ok=false
+N tilted below=true 0m dT-30 M2 700 start=0.9 nu=(0.599,0.673) steady refuses
+T tilted below=true 5000m dT0 M0.85 500 sp_thrust=8.22 steady_ok=true
+L tilted below=true 5000m dT0 M0.85 500 start=0.9 tries=1 it=6 d_vs_steady=3.1e-12
+T tilted below=true 5000m dT0 M1.6 500 sp_thrust=-64.78 steady_ok=false
+N tilted below=true 5000m dT0 M1.6 500 start=0.7 nu=(0.507,0.577) steady refuses
+T tilted below=true 5000m dT0 M1.6 520 sp_thrust=-49.77 steady_ok=false
+N tilted below=true 5000m dT0 M1.6 520 start=0.7 nu=(0.516,0.586) steady refuses
+T tilted below=true 5000m dT0 M1.6 540 sp_thrust=-34.93 steady_ok=false
+N tilted below=true 5000m dT0 M1.6 540 start=0.8 nu=(0.526,0.595) steady refuses
+T tilted below=true 5000m dT0 M1.6 560 sp_thrust=-20.26 steady_ok=false
+N tilted below=true 5000m dT0 M1.6 560 start=0.8 nu=(0.535,0.604) steady refuses
+T tilted below=true 5000m dT0 M1.6 580 sp_thrust=-5.75 steady_ok=false
+N tilted below=true 5000m dT0 M1.6 580 start=0.9 nu=(0.545,0.613) steady refuses
+T tilted below=true 5000m dT0 M1.6 600 sp_thrust=8.59 steady_ok=true
+L tilted below=true 5000m dT0 M1.6 600 start=0.9 tries=1 it=5 d_vs_steady=7.8e-13
+T tilted below=true 5000m dT0 M2 500 sp_thrust=-130.28 steady_ok=false
+N tilted below=true 5000m dT0 M2 500 start=0.6 nu=(0.510,0.590) steady refuses
+T tilted below=true 5000m dT0 M2 520 sp_thrust=-116.60 steady_ok=false
+N tilted below=true 5000m dT0 M2 520 start=0.6 nu=(0.519,0.599) steady refuses
+T tilted below=true 5000m dT0 M2 540 sp_thrust=-103.09 steady_ok=false
+N tilted below=true 5000m dT0 M2 540 start=0.6 nu=(0.528,0.607) steady refuses
+T tilted below=true 5000m dT0 M2 560 sp_thrust=-89.74 steady_ok=false
+N tilted below=true 5000m dT0 M2 560 start=0.7 nu=(0.537,0.615) steady refuses
+T tilted below=true 5000m dT0 M2 580 sp_thrust=-76.56 steady_ok=false
+N tilted below=true 5000m dT0 M2 580 start=0.7 nu=(0.546,0.623) steady refuses
+T tilted below=true 5000m dT0 M2 600 sp_thrust=-63.53 steady_ok=false
+N tilted below=true 5000m dT0 M2 600 start=0.8 nu=(0.555,0.632) steady refuses
+T tilted below=true 5000m dT0 M2 620 sp_thrust=-50.65 steady_ok=false
+N tilted below=true 5000m dT0 M2 620 start=0.8 nu=(0.564,0.640) steady refuses
+T tilted below=true 5000m dT0 M2 640 sp_thrust=-37.92 steady_ok=false
+N tilted below=true 5000m dT0 M2 640 start=0.8 nu=(0.573,0.648) steady refuses
+T tilted below=true 5000m dT0 M2 660 sp_thrust=-25.32 steady_ok=false
+N tilted below=true 5000m dT0 M2 660 start=0.9 nu=(0.581,0.656) steady refuses
+T tilted below=true 5000m dT0 M2 680 sp_thrust=-12.87 steady_ok=false
+N tilted below=true 5000m dT0 M2 680 start=0.9 nu=(0.590,0.664) steady refuses
+T tilted below=true 11000m dT0 M1.6 500 sp_thrust=0.74 steady_ok=true
+L tilted below=true 11000m dT0 M1.6 500 start=0.8 tries=2 it=5 d_vs_steady=6.8e-13
+T tilted below=true 11000m dT0 M1.6 520 sp_thrust=16.16 steady_ok=true
+L tilted below=true 11000m dT0 M1.6 520 start=0.9 tries=1 it=6 d_vs_steady=8.2e-13
+T tilted below=true 11000m dT0 M1.6 540 sp_thrust=31.36 steady_ok=true
+L tilted below=true 11000m dT0 M1.6 540 start=0.9 tries=1 it=5 d_vs_steady=3.4e-13
+T tilted below=true 11000m dT0 M2 500 sp_thrust=-64.88 steady_ok=false
+N tilted below=true 11000m dT0 M2 500 start=0.7 nu=(0.507,0.578) steady refuses
+T tilted below=true 11000m dT0 M2 520 sp_thrust=-50.88 steady_ok=false
+N tilted below=true 11000m dT0 M2 520 start=0.7 nu=(0.517,0.587) steady refuses
+T tilted below=true 11000m dT0 M2 540 sp_thrust=-37.07 steady_ok=false
+N tilted below=true 11000m dT0 M2 540 start=0.8 nu=(0.526,0.595) steady refuses
+T tilted below=true 11000m dT0 M2 560 sp_thrust=-23.45 steady_ok=false
+N tilted below=true 11000m dT0 M2 560 start=0.8 nu=(0.535,0.604) steady refuses
+T tilted below=true 11000m dT0 M2 580 sp_thrust=-10.01 steady_ok=false
+N tilted below=true 11000m dT0 M2 580 start=0.9 nu=(0.545,0.613) steady refuses
+T tilted below=true 11000m dT0 M2 600 sp_thrust=3.26 steady_ok=true
+L tilted below=true 11000m dT0 M2 600 start=0.9 tries=1 it=5 d_vs_steady=7.6e-13
+T tilted below=true 11000m dT0 M2 620 sp_thrust=16.36 steady_ok=true
+L tilted below=true 11000m dT0 M2 620 start=0.9 tries=1 it=5 d_vs_steady=8.9e-13
+T tilted below=false design 500 sp_thrust=17.97 steady_ok=false
+N tilted below=false design 500 start=0.9 nu=(0.473,0.562) steady refuses
+T tilted below=false 0m dT0 M0.85 500 sp_thrust=-41.58 steady_ok=false
+N tilted below=false 0m dT0 M0.85 500 start=0.8 nu=(0.416,0.566) steady refuses
+T tilted below=false 0m dT0 M0.85 520 sp_thrust=-26.09 steady_ok=false
+N tilted below=false 0m dT0 M0.85 520 start=0.8 nu=(0.443,0.576) steady refuses
+T tilted below=false 0m dT0 M0.85 540 sp_thrust=-10.15 steady_ok=false
+N tilted below=false 0m dT0 M0.85 540 start=0.9 nu=(0.468,0.586) steady refuses
+T tilted below=false 0m dT0 M1.6 500 sp_thrust=-114.56 steady_ok=false
+N tilted below=false 0m dT0 M1.6 500 start=0.6 nu=(0.509,0.586) steady refuses
+T tilted below=false 0m dT0 M1.6 520 sp_thrust=-99.93 steady_ok=false
+N tilted below=false 0m dT0 M1.6 520 start=0.6 nu=(0.518,0.594) steady refuses
+T tilted below=false 0m dT0 M1.6 540 sp_thrust=-85.44 steady_ok=false
+N tilted below=false 0m dT0 M1.6 540 start=0.7 nu=(0.527,0.603) steady refuses
+T tilted below=false 0m dT0 M1.6 560 sp_thrust=-71.09 steady_ok=false
+N tilted below=false 0m dT0 M1.6 560 start=0.7 nu=(0.537,0.611) steady refuses
+T tilted below=false 0m dT0 M1.6 580 sp_thrust=-56.88 steady_ok=false
+N tilted below=false 0m dT0 M1.6 580 start=0.8 nu=(0.546,0.620) steady refuses
+T tilted below=false 0m dT0 M1.6 600 sp_thrust=-42.82 steady_ok=false
+N tilted below=false 0m dT0 M1.6 600 start=0.8 nu=(0.555,0.628) steady refuses
+T tilted below=false 0m dT0 M1.6 620 sp_thrust=-28.88 steady_ok=false
+N tilted below=false 0m dT0 M1.6 620 start=0.9 nu=(0.564,0.636) steady refuses
+T tilted below=false 0m dT0 M1.6 640 sp_thrust=-15.09 steady_ok=false
+N tilted below=false 0m dT0 M1.6 640 start=0.9 nu=(0.572,0.645) steady refuses
+T tilted below=false 0m dT0 M1.6 660 sp_thrust=-1.43 steady_ok=false
+N tilted below=false 0m dT0 M1.6 660 start=0.9 nu=(0.581,0.653) steady refuses
+T tilted below=false 0m dT0 M2 560 sp_thrust=-140.56 steady_ok=false
+N tilted below=false 0m dT0 M2 560 start=0.6 nu=(0.540,0.625) steady refuses
+T tilted below=false 0m dT0 M2 580 sp_thrust=-127.60 steady_ok=false
+N tilted below=false 0m dT0 M2 580 start=0.6 nu=(0.549,0.633) steady refuses
+T tilted below=false 0m dT0 M2 600 sp_thrust=-114.78 steady_ok=false
+N tilted below=false 0m dT0 M2 600 start=0.7 nu=(0.557,0.641) steady refuses
+T tilted below=false 0m dT0 M2 620 sp_thrust=-102.11 steady_ok=false
+N tilted below=false 0m dT0 M2 620 start=0.7 nu=(0.566,0.649) steady refuses
+T tilted below=false 0m dT0 M2 640 sp_thrust=-89.57 steady_ok=false
+N tilted below=false 0m dT0 M2 640 start=0.7 nu=(0.574,0.657) steady refuses
+T tilted below=false 0m dT0 M2 660 sp_thrust=-77.15 steady_ok=false
+N tilted below=false 0m dT0 M2 660 start=0.8 nu=(0.583,0.664) steady refuses
+T tilted below=false 0m dT0 M2 680 sp_thrust=-64.87 steady_ok=false
+N tilted below=false 0m dT0 M2 680 start=0.8 nu=(0.591,0.672) steady refuses
+T tilted below=false 0m dT0 M2 700 sp_thrust=-52.71 steady_ok=false
+N tilted below=false 0m dT0 M2 700 start=0.9 nu=(0.599,0.680) steady refuses
+T tilted below=false 0m dT0 M2 720 sp_thrust=-40.67 steady_ok=false
+N tilted below=false 0m dT0 M2 720 start=0.9 nu=(0.608,0.688) steady refuses
+T tilted below=false 0m dT0 M2 740 sp_thrust=-28.75 steady_ok=false
+N tilted below=false 0m dT0 M2 740 start=0.9 nu=(0.616,0.695) steady refuses
+T tilted below=false 0m dT40 M0.85 500 sp_thrust=-91.04 steady_ok=false
+N tilted below=false 0m dT40 M0.85 500 start=0.7 nu=(0.338,0.572) steady refuses
+T tilted below=false 0m dT40 M0.85 520 sp_thrust=-78.11 steady_ok=false
+N tilted below=false 0m dT40 M0.85 520 start=0.7 nu=(0.372,0.581) steady refuses
+T tilted below=false 0m dT40 M0.85 540 sp_thrust=-64.67 steady_ok=false
+N tilted below=false 0m dT40 M0.85 540 start=0.8 nu=(0.403,0.591) steady refuses
+T tilted below=false 0m dT40 M0.85 560 sp_thrust=-50.77 steady_ok=false
+N tilted below=false 0m dT40 M0.85 560 start=0.9 nu=(0.431,0.600) steady refuses
+T tilted below=false 0m dT40 M0.85 580 sp_thrust=-36.43 steady_ok=false
+N tilted below=false 0m dT40 M0.85 580 start=0.9 nu=(0.458,0.609) steady refuses
+T tilted below=false 0m dT40 M0.85 600 sp_thrust=-21.69 steady_ok=false
+N tilted below=false 0m dT40 M0.85 600 start=0.9 nu=(0.483,0.619) steady refuses
+T tilted below=false 0m dT40 M1.6 540 sp_thrust=-142.60 steady_ok=false
+N tilted below=false 0m dT40 M1.6 540 start=0.6 nu=(0.530,0.613) steady refuses
+T tilted below=false 0m dT40 M1.6 560 sp_thrust=-128.67 steady_ok=false
+N tilted below=false 0m dT40 M1.6 560 start=0.6 nu=(0.539,0.621) steady refuses
+T tilted below=false 0m dT40 M1.6 580 sp_thrust=-114.86 steady_ok=false
+N tilted below=false 0m dT40 M1.6 580 start=0.6 nu=(0.548,0.629) steady refuses
+T tilted below=false 0m dT40 M1.6 600 sp_thrust=-101.17 steady_ok=false
+N tilted below=false 0m dT40 M1.6 600 start=0.7 nu=(0.556,0.637) steady refuses
+T tilted below=false 0m dT40 M1.6 620 sp_thrust=-87.59 steady_ok=false
+N tilted below=false 0m dT40 M1.6 620 start=0.7 nu=(0.565,0.645) steady refuses
+T tilted below=false 0m dT40 M1.6 640 sp_thrust=-74.12 steady_ok=false
+N tilted below=false 0m dT40 M1.6 640 start=0.8 nu=(0.574,0.653) steady refuses
+T tilted below=false 0m dT40 M1.6 660 sp_thrust=-60.77 steady_ok=false
+N tilted below=false 0m dT40 M1.6 660 start=0.8 nu=(0.582,0.661) steady refuses
+T tilted below=false 0m dT40 M1.6 680 sp_thrust=-47.53 steady_ok=false
+N tilted below=false 0m dT40 M1.6 680 start=0.9 nu=(0.591,0.669) steady refuses
+T tilted below=false 0m dT40 M1.6 700 sp_thrust=-34.40 steady_ok=false
+N tilted below=false 0m dT40 M1.6 700 start=0.9 nu=(0.599,0.677) steady refuses
+T tilted below=false 0m dT40 M1.6 720 sp_thrust=-21.38 steady_ok=false
+N tilted below=false 0m dT40 M1.6 720 start=0.9 nu=(0.607,0.685) steady refuses
+T tilted below=false 0m dT40 M2 640 sp_thrust=-148.57 steady_ok=false
+N tilted below=false 0m dT40 M2 640 start=0.6 nu=(0.577,0.668) steady refuses
+T tilted below=false 0m dT40 M2 660 sp_thrust=-136.39 steady_ok=false
+N tilted below=false 0m dT40 M2 660 start=0.7 nu=(0.585,0.676) steady refuses
+T tilted below=false 0m dT40 M2 680 sp_thrust=-124.33 steady_ok=false
+N tilted below=false 0m dT40 M2 680 start=0.7 nu=(0.593,0.683) steady refuses
+T tilted below=false 0m dT40 M2 700 sp_thrust=-112.38 steady_ok=false
+N tilted below=false 0m dT40 M2 700 start=0.7 nu=(0.601,0.690) steady refuses
+T tilted below=false 0m dT40 M2 720 sp_thrust=-100.54 steady_ok=false
+N tilted below=false 0m dT40 M2 720 start=0.8 nu=(0.609,0.698) steady refuses
+T tilted below=false 0m dT40 M2 740 sp_thrust=-88.81 steady_ok=false
+N tilted below=false 0m dT40 M2 740 start=0.8 nu=(0.617,0.705) steady refuses
+T tilted below=false 0m dT40 M2 760 sp_thrust=-77.19 steady_ok=false
+N tilted below=false 0m dT40 M2 760 start=0.9 nu=(0.625,0.712) steady refuses
+T tilted below=false 0m dT40 M2 780 sp_thrust=-65.67 steady_ok=false
+N tilted below=false 0m dT40 M2 780 start=0.9 nu=(0.633,0.719) steady refuses
+T tilted below=false 0m dT40 M2 800 sp_thrust=-54.24 steady_ok=false
+N tilted below=false 0m dT40 M2 800 start=0.9 nu=(0.641,0.727) steady refuses
+T tilted below=false 0m dT-30 M0.85 500 sp_thrust=4.08 steady_ok=false
+N tilted below=false 0m dT-30 M0.85 500 start=0.9 nu=(0.463,0.563) steady refuses
+T tilted below=false 0m dT-30 M0.85 520 sp_thrust=21.62 steady_ok=false
+N tilted below=false 0m dT-30 M0.85 520 start=0.9 nu=(0.485,0.573) steady refuses
+T tilted below=false 0m dT-30 M1.6 500 sp_thrust=-68.72 steady_ok=false
+N tilted below=false 0m dT-30 M1.6 500 start=0.7 nu=(0.507,0.578) steady refuses
+T tilted below=false 0m dT-30 M1.6 520 sp_thrust=-53.74 steady_ok=false
+N tilted below=false 0m dT-30 M1.6 520 start=0.7 nu=(0.517,0.587) steady refuses
+T tilted below=false 0m dT-30 M1.6 540 sp_thrust=-38.93 steady_ok=false
+N tilted below=false 0m dT-30 M1.6 540 start=0.8 nu=(0.526,0.596) steady refuses
+T tilted below=false 0m dT-30 M1.6 560 sp_thrust=-24.28 steady_ok=false
+N tilted below=false 0m dT-30 M1.6 560 start=0.8 nu=(0.535,0.604) steady refuses
+T tilted below=false 0m dT-30 M1.6 580 sp_thrust=-9.79 steady_ok=false
+N tilted below=false 0m dT-30 M1.6 580 start=0.9 nu=(0.545,0.613) steady refuses
+T tilted below=false 0m dT-30 M1.6 600 sp_thrust=4.53 steady_ok=true
+L tilted below=false 0m dT-30 M1.6 600 start=0.9 tries=1 it=5 d_vs_steady=7.6e-13
+T tilted below=false 0m dT-30 M1.6 620 sp_thrust=18.70 steady_ok=true
+L tilted below=false 0m dT-30 M1.6 620 start=0.9 tries=1 it=5 d_vs_steady=8.9e-13
+T tilted below=false 0m dT-30 M2 500 sp_thrust=-134.23 steady_ok=false
+N tilted below=false 0m dT-30 M2 500 start=0.5 nu=(0.510,0.591) steady refuses
+T tilted below=false 0m dT-30 M2 520 sp_thrust=-120.57 steady_ok=false
+N tilted below=false 0m dT-30 M2 520 start=0.6 nu=(0.519,0.599) steady refuses
+T tilted below=false 0m dT-30 M2 540 sp_thrust=-107.08 steady_ok=false
+N tilted below=false 0m dT-30 M2 540 start=0.6 nu=(0.529,0.608) steady refuses
+T tilted below=false 0m dT-30 M2 560 sp_thrust=-93.75 steady_ok=false
+N tilted below=false 0m dT-30 M2 560 start=0.7 nu=(0.538,0.616) steady refuses
+T tilted below=false 0m dT-30 M2 580 sp_thrust=-80.58 steady_ok=false
+N tilted below=false 0m dT-30 M2 580 start=0.7 nu=(0.547,0.624) steady refuses
+T tilted below=false 0m dT-30 M2 600 sp_thrust=-67.57 steady_ok=false
+N tilted below=false 0m dT-30 M2 600 start=0.8 nu=(0.555,0.632) steady refuses
+T tilted below=false 0m dT-30 M2 620 sp_thrust=-54.70 steady_ok=false
+N tilted below=false 0m dT-30 M2 620 start=0.8 nu=(0.564,0.641) steady refuses
+T tilted below=false 0m dT-30 M2 640 sp_thrust=-41.98 steady_ok=false
+N tilted below=false 0m dT-30 M2 640 start=0.8 nu=(0.573,0.649) steady refuses
+T tilted below=false 0m dT-30 M2 660 sp_thrust=-29.41 steady_ok=false
+N tilted below=false 0m dT-30 M2 660 start=0.9 nu=(0.581,0.657) steady refuses
+T tilted below=false 0m dT-30 M2 680 sp_thrust=-16.96 steady_ok=false
+N tilted below=false 0m dT-30 M2 680 start=0.9 nu=(0.590,0.665) steady refuses
+T tilted below=false 0m dT-30 M2 700 sp_thrust=-4.66 steady_ok=false
+N tilted below=false 0m dT-30 M2 700 start=0.9 nu=(0.599,0.673) steady refuses
+T tilted below=false 5000m dT0 M0.85 500 sp_thrust=8.22 steady_ok=false
+N tilted below=false 5000m dT0 M0.85 500 start=0.9 nu=(0.466,0.562) steady refuses
+T tilted below=false 5000m dT0 M1.6 500 sp_thrust=-64.78 steady_ok=false
+N tilted below=false 5000m dT0 M1.6 500 start=0.7 nu=(0.507,0.577) steady refuses
+T tilted below=false 5000m dT0 M1.6 520 sp_thrust=-49.77 steady_ok=false
+N tilted below=false 5000m dT0 M1.6 520 start=0.7 nu=(0.516,0.586) steady refuses
+T tilted below=false 5000m dT0 M1.6 540 sp_thrust=-34.93 steady_ok=false
+N tilted below=false 5000m dT0 M1.6 540 start=0.8 nu=(0.526,0.595) steady refuses
+T tilted below=false 5000m dT0 M1.6 560 sp_thrust=-20.26 steady_ok=false
+N tilted below=false 5000m dT0 M1.6 560 start=0.8 nu=(0.535,0.604) steady refuses
+T tilted below=false 5000m dT0 M1.6 580 sp_thrust=-5.75 steady_ok=false
+N tilted below=false 5000m dT0 M1.6 580 start=0.9 nu=(0.545,0.613) steady refuses
+T tilted below=false 5000m dT0 M1.6 600 sp_thrust=8.59 steady_ok=true
+L tilted below=false 5000m dT0 M1.6 600 start=0.9 tries=1 it=5 d_vs_steady=7.8e-13
+T tilted below=false 5000m dT0 M2 500 sp_thrust=-130.28 steady_ok=false
+N tilted below=false 5000m dT0 M2 500 start=0.6 nu=(0.510,0.590) steady refuses
+T tilted below=false 5000m dT0 M2 520 sp_thrust=-116.60 steady_ok=false
+N tilted below=false 5000m dT0 M2 520 start=0.6 nu=(0.519,0.599) steady refuses
+T tilted below=false 5000m dT0 M2 540 sp_thrust=-103.09 steady_ok=false
+N tilted below=false 5000m dT0 M2 540 start=0.6 nu=(0.528,0.607) steady refuses
+T tilted below=false 5000m dT0 M2 560 sp_thrust=-89.74 steady_ok=false
+N tilted below=false 5000m dT0 M2 560 start=0.7 nu=(0.537,0.615) steady refuses
+T tilted below=false 5000m dT0 M2 580 sp_thrust=-76.56 steady_ok=false
+N tilted below=false 5000m dT0 M2 580 start=0.7 nu=(0.546,0.623) steady refuses
+T tilted below=false 5000m dT0 M2 600 sp_thrust=-63.53 steady_ok=false
+N tilted below=false 5000m dT0 M2 600 start=0.8 nu=(0.555,0.632) steady refuses
+T tilted below=false 5000m dT0 M2 620 sp_thrust=-50.65 steady_ok=false
+N tilted below=false 5000m dT0 M2 620 start=0.8 nu=(0.564,0.640) steady refuses
+T tilted below=false 5000m dT0 M2 640 sp_thrust=-37.92 steady_ok=false
+N tilted below=false 5000m dT0 M2 640 start=0.8 nu=(0.573,0.648) steady refuses
+T tilted below=false 5000m dT0 M2 660 sp_thrust=-25.32 steady_ok=false
+N tilted below=false 5000m dT0 M2 660 start=0.9 nu=(0.581,0.656) steady refuses
+T tilted below=false 5000m dT0 M2 680 sp_thrust=-12.87 steady_ok=false
+N tilted below=false 5000m dT0 M2 680 start=0.9 nu=(0.590,0.664) steady refuses
+T tilted below=false 11000m dT0 M1.6 500 sp_thrust=0.74 steady_ok=true
+L tilted below=false 11000m dT0 M1.6 500 start=0.8 tries=2 it=5 d_vs_steady=6.8e-13
+T tilted below=false 11000m dT0 M1.6 520 sp_thrust=16.16 steady_ok=true
+L tilted below=false 11000m dT0 M1.6 520 start=0.9 tries=1 it=6 d_vs_steady=8.2e-13
+T tilted below=false 11000m dT0 M1.6 540 sp_thrust=31.36 steady_ok=true
+L tilted below=false 11000m dT0 M1.6 540 start=0.9 tries=1 it=5 d_vs_steady=3.4e-13
+T tilted below=false 11000m dT0 M2 500 sp_thrust=-64.88 steady_ok=false
+N tilted below=false 11000m dT0 M2 500 start=0.7 nu=(0.507,0.578) steady refuses
+T tilted below=false 11000m dT0 M2 520 sp_thrust=-50.88 steady_ok=false
+N tilted below=false 11000m dT0 M2 520 start=0.7 nu=(0.517,0.587) steady refuses
+T tilted below=false 11000m dT0 M2 540 sp_thrust=-37.07 steady_ok=false
+N tilted below=false 11000m dT0 M2 540 start=0.8 nu=(0.526,0.595) steady refuses
+T tilted below=false 11000m dT0 M2 560 sp_thrust=-23.45 steady_ok=false
+N tilted below=false 11000m dT0 M2 560 start=0.8 nu=(0.535,0.604) steady refuses
+T tilted below=false 11000m dT0 M2 580 sp_thrust=-10.01 steady_ok=false
+N tilted below=false 11000m dT0 M2 580 start=0.9 nu=(0.545,0.613) steady refuses
+T tilted below=false 11000m dT0 M2 600 sp_thrust=3.26 steady_ok=true
+L tilted below=false 11000m dT0 M2 600 start=0.9 tries=1 it=5 d_vs_steady=7.6e-13
+T tilted below=false 11000m dT0 M2 620 sp_thrust=16.36 steady_ok=true
+L tilted below=false 11000m dT0 M2 620 start=0.9 tries=1 it=5 d_vs_steady=8.9e-13
+T flat-lp below=true design 500 sp_thrust=22.34 steady_ok=true
+L flat-lp below=true design 500 start=0.9 tries=1 it=6 d_vs_steady=7.1e-13
+T flat-lp below=true 0m dT0 M0.85 500 sp_thrust=-39.04 steady_ok=false
+N flat-lp below=true 0m dT0 M0.85 500 start=0.8 nu=(0.465,0.565) steady refuses
+T flat-lp below=true 0m dT0 M0.85 520 sp_thrust=-22.88 steady_ok=false
+N flat-lp below=true 0m dT0 M0.85 520 start=0.9 nu=(0.499,0.575) steady refuses
+T flat-lp below=true 0m dT0 M0.85 540 sp_thrust=-6.33 steady_ok=false
+N flat-lp below=true 0m dT0 M0.85 540 start=0.9 nu=(0.530,0.584) steady refuses
+T flat-lp below=true 0m dT0 M0.85 560 sp_thrust=10.53 steady_ok=true
+L flat-lp below=true 0m dT0 M0.85 560 start=0.9 tries=1 it=6 d_vs_steady=8.2e-13
+T flat-lp below=true 0m dT0 M1.6 500 sp_thrust=-112.65 steady_ok=false
+N flat-lp below=true 0m dT0 M1.6 500 start=0.6 nu=(0.570,0.586) steady refuses
+T flat-lp below=true 0m dT0 M1.6 520 sp_thrust=-97.91 steady_ok=false
+N flat-lp below=true 0m dT0 M1.6 520 start=0.7 nu=(0.581,0.594) steady refuses
+T flat-lp below=true 0m dT0 M1.6 540 sp_thrust=-83.32 steady_ok=false
+N flat-lp below=true 0m dT0 M1.6 540 start=0.7 nu=(0.592,0.602) steady refuses
+T flat-lp below=true 0m dT0 M1.6 560 sp_thrust=-68.88 steady_ok=false
+N flat-lp below=true 0m dT0 M1.6 560 start=0.7 nu=(0.603,0.611) steady refuses
+T flat-lp below=true 0m dT0 M1.6 580 sp_thrust=-54.58 steady_ok=false
+N flat-lp below=true 0m dT0 M1.6 580 start=0.8 nu=(0.614,0.619) steady refuses
+T flat-lp below=true 0m dT0 M1.6 600 sp_thrust=-40.43 steady_ok=false
+N flat-lp below=true 0m dT0 M1.6 600 start=0.8 nu=(0.625,0.627) steady refuses
+T flat-lp below=true 0m dT0 M1.6 620 sp_thrust=-26.43 steady_ok=false
+N flat-lp below=true 0m dT0 M1.6 620 start=0.9 nu=(0.635,0.635) steady refuses
+T flat-lp below=true 0m dT0 M1.6 640 sp_thrust=-12.57 steady_ok=false
+N flat-lp below=true 0m dT0 M1.6 640 start=0.9 nu=(0.646,0.643) steady refuses
+T flat-lp below=true 0m dT0 M2 560 sp_thrust=-139.48 steady_ok=false
+N flat-lp below=true 0m dT0 M2 560 start=0.6 nu=(0.603,0.626) steady refuses
+T flat-lp below=true 0m dT0 M2 580 sp_thrust=-126.46 steady_ok=false
+N flat-lp below=true 0m dT0 M2 580 start=0.6 nu=(0.613,0.634) steady refuses
+T flat-lp below=true 0m dT0 M2 600 sp_thrust=-113.59 steady_ok=false
+N flat-lp below=true 0m dT0 M2 600 start=0.7 nu=(0.624,0.641) steady refuses
+T flat-lp below=true 0m dT0 M2 620 sp_thrust=-100.86 steady_ok=false
+N flat-lp below=true 0m dT0 M2 620 start=0.7 nu=(0.635,0.649) steady refuses
+T flat-lp below=true 0m dT0 M2 640 sp_thrust=-88.26 steady_ok=false
+N flat-lp below=true 0m dT0 M2 640 start=0.8 nu=(0.645,0.656) steady refuses
+T flat-lp below=true 0m dT0 M2 660 sp_thrust=-75.80 steady_ok=false
+N flat-lp below=true 0m dT0 M2 660 start=0.8 nu=(0.655,0.664) steady refuses
+T flat-lp below=true 0m dT0 M2 680 sp_thrust=-63.47 steady_ok=false
+N flat-lp below=true 0m dT0 M2 680 start=0.9 nu=(0.665,0.671) steady refuses
+T flat-lp below=true 0m dT0 M2 700 sp_thrust=-51.27 steady_ok=false
+N flat-lp below=true 0m dT0 M2 700 start=0.9 nu=(0.675,0.679) steady refuses
+T flat-lp below=true 0m dT0 M2 720 sp_thrust=-39.19 steady_ok=false
+N flat-lp below=true 0m dT0 M2 720 start=0.9 nu=(0.685,0.686) steady refuses
+T flat-lp below=true 0m dT40 M0.85 500 sp_thrust=-90.69 steady_ok=false
+N flat-lp below=true 0m dT40 M0.85 500 start=0.7 nu=(0.358,0.570) steady refuses
+T flat-lp below=true 0m dT40 M0.85 520 sp_thrust=-77.08 steady_ok=false
+N flat-lp below=true 0m dT40 M0.85 520 start=0.8 nu=(0.404,0.580) steady refuses
+T flat-lp below=true 0m dT40 M0.85 540 sp_thrust=-62.95 steady_ok=false
+N flat-lp below=true 0m dT40 M0.85 540 start=0.8 nu=(0.444,0.589) steady refuses
+T flat-lp below=true 0m dT40 M0.85 560 sp_thrust=-48.37 steady_ok=false
+N flat-lp below=true 0m dT40 M0.85 560 start=0.9 nu=(0.481,0.598) steady refuses
+T flat-lp below=true 0m dT40 M0.85 580 sp_thrust=-33.37 steady_ok=false
+N flat-lp below=true 0m dT40 M0.85 580 start=0.9 nu=(0.515,0.608) steady refuses
+T flat-lp below=true 0m dT40 M0.85 600 sp_thrust=-18.03 steady_ok=false
+N flat-lp below=true 0m dT40 M0.85 600 start=0.9 nu=(0.545,0.617) steady refuses
+T flat-lp below=true 0m dT40 M1.6 540 sp_thrust=-140.72 steady_ok=false
+N flat-lp below=true 0m dT40 M1.6 540 start=0.6 nu=(0.592,0.614) steady refuses
+T flat-lp below=true 0m dT40 M1.6 560 sp_thrust=-126.68 steady_ok=false
+N flat-lp below=true 0m dT40 M1.6 560 start=0.6 nu=(0.603,0.622) steady refuses
+T flat-lp below=true 0m dT40 M1.6 580 sp_thrust=-112.77 steady_ok=false
+N flat-lp below=true 0m dT40 M1.6 580 start=0.7 nu=(0.614,0.629) steady refuses
+T flat-lp below=true 0m dT40 M1.6 600 sp_thrust=-98.97 steady_ok=false
+N flat-lp below=true 0m dT40 M1.6 600 start=0.7 nu=(0.624,0.637) steady refuses
+T flat-lp below=true 0m dT40 M1.6 620 sp_thrust=-85.30 steady_ok=false
+N flat-lp below=true 0m dT40 M1.6 620 start=0.8 nu=(0.635,0.645) steady refuses
+T flat-lp below=true 0m dT40 M1.6 640 sp_thrust=-71.74 steady_ok=false
+N flat-lp below=true 0m dT40 M1.6 640 start=0.8 nu=(0.645,0.653) steady refuses
+T flat-lp below=true 0m dT40 M1.6 660 sp_thrust=-58.31 steady_ok=false
+N flat-lp below=true 0m dT40 M1.6 660 start=0.9 nu=(0.655,0.660) steady refuses
+T flat-lp below=true 0m dT40 M1.6 680 sp_thrust=-44.99 steady_ok=false
+N flat-lp below=true 0m dT40 M1.6 680 start=0.9 nu=(0.665,0.668) steady refuses
+T flat-lp below=true 0m dT40 M1.6 700 sp_thrust=-31.79 steady_ok=false
+N flat-lp below=true 0m dT40 M1.6 700 start=0.9 nu=(0.675,0.676) steady refuses
+T flat-lp below=true 0m dT40 M2 640 sp_thrust=-147.42 steady_ok=false
+N flat-lp below=true 0m dT40 M2 640 start=0.7 nu=(0.644,0.669) steady refuses
+T flat-lp below=true 0m dT40 M2 660 sp_thrust=-135.18 steady_ok=false
+N flat-lp below=true 0m dT40 M2 660 start=0.7 nu=(0.654,0.676) steady refuses
+T flat-lp below=true 0m dT40 M2 680 sp_thrust=-123.07 steady_ok=false
+N flat-lp below=true 0m dT40 M2 680 start=0.7 nu=(0.664,0.683) steady refuses
+T flat-lp below=true 0m dT40 M2 700 sp_thrust=-111.06 steady_ok=false
+N flat-lp below=true 0m dT40 M2 700 start=0.8 nu=(0.674,0.690) steady refuses
+T flat-lp below=true 0m dT40 M2 720 sp_thrust=-99.18 steady_ok=false
+N flat-lp below=true 0m dT40 M2 720 start=0.8 nu=(0.684,0.697) steady refuses
+T flat-lp below=true 0m dT40 M2 740 sp_thrust=-87.40 steady_ok=false
+N flat-lp below=true 0m dT40 M2 740 start=0.8 nu=(0.694,0.704) steady refuses
+T flat-lp below=true 0m dT40 M2 760 sp_thrust=-75.72 steady_ok=false
+N flat-lp below=true 0m dT40 M2 760 start=0.9 nu=(0.703,0.711) steady refuses
+T flat-lp below=true 0m dT40 M2 780 sp_thrust=-64.16 steady_ok=false
+N flat-lp below=true 0m dT40 M2 780 start=0.9 nu=(0.712,0.718) steady refuses
+T flat-lp below=true 0m dT-30 M0.85 500 sp_thrust=8.13 steady_ok=true
+L flat-lp below=true 0m dT-30 M0.85 500 start=0.9 tries=1 it=6 d_vs_steady=7.5e-13
+T flat-lp below=true 0m dT-30 M0.85 520 sp_thrust=26.15 steady_ok=true
+L flat-lp below=true 0m dT-30 M0.85 520 start=0.9 tries=1 it=6 d_vs_steady=6.9e-13
+T flat-lp below=true 0m dT-30 M1.6 500 sp_thrust=-66.63 steady_ok=false
+N flat-lp below=true 0m dT-30 M1.6 500 start=0.7 nu=(0.570,0.577) steady refuses
+T flat-lp below=true 0m dT-30 M1.6 520 sp_thrust=-51.56 steady_ok=false
+N flat-lp below=true 0m dT-30 M1.6 520 start=0.8 nu=(0.581,0.586) steady refuses
+T flat-lp below=true 0m dT-30 M1.6 540 sp_thrust=-36.66 steady_ok=false
+N flat-lp below=true 0m dT-30 M1.6 540 start=0.8 nu=(0.593,0.594) steady refuses
+T flat-lp below=true 0m dT-30 M1.6 560 sp_thrust=-21.94 steady_ok=false
+N flat-lp below=true 0m dT-30 M1.6 560 start=0.8 nu=(0.604,0.603) steady refuses
+T flat-lp below=true 0m dT-30 M1.6 580 sp_thrust=-7.39 steady_ok=false
+N flat-lp below=true 0m dT-30 M1.6 580 start=0.9 nu=(0.614,0.612) steady refuses
+T flat-lp below=true 0m dT-30 M1.6 600 sp_thrust=7.00 steady_ok=true
+L flat-lp below=true 0m dT-30 M1.6 600 start=0.9 tries=1 it=5 d_vs_steady=2.4e-13
+T flat-lp below=true 0m dT-30 M2 500 sp_thrust=-133.22 steady_ok=false
+N flat-lp below=true 0m dT-30 M2 500 start=0.6 nu=(0.569,0.592) steady refuses
+T flat-lp below=true 0m dT-30 M2 520 sp_thrust=-119.50 steady_ok=false
+N flat-lp below=true 0m dT-30 M2 520 start=0.6 nu=(0.581,0.600) steady refuses
+T flat-lp below=true 0m dT-30 M2 540 sp_thrust=-105.94 steady_ok=false
+N flat-lp below=true 0m dT-30 M2 540 start=0.6 nu=(0.592,0.608) steady refuses
+T flat-lp below=true 0m dT-30 M2 560 sp_thrust=-92.56 steady_ok=false
+N flat-lp below=true 0m dT-30 M2 560 start=0.7 nu=(0.603,0.616) steady refuses
+T flat-lp below=true 0m dT-30 M2 580 sp_thrust=-79.33 steady_ok=false
+N flat-lp below=true 0m dT-30 M2 580 start=0.7 nu=(0.614,0.624) steady refuses
+T flat-lp below=true 0m dT-30 M2 600 sp_thrust=-66.27 steady_ok=false
+N flat-lp below=true 0m dT-30 M2 600 start=0.8 nu=(0.625,0.632) steady refuses
+T flat-lp below=true 0m dT-30 M2 620 sp_thrust=-53.35 steady_ok=false
+N flat-lp below=true 0m dT-30 M2 620 start=0.8 nu=(0.635,0.640) steady refuses
+T flat-lp below=true 0m dT-30 M2 640 sp_thrust=-40.59 steady_ok=false
+N flat-lp below=true 0m dT-30 M2 640 start=0.9 nu=(0.645,0.648) steady refuses
+T flat-lp below=true 0m dT-30 M2 660 sp_thrust=-27.97 steady_ok=false
+N flat-lp below=true 0m dT-30 M2 660 start=0.9 nu=(0.655,0.655) steady refuses
+T flat-lp below=true 0m dT-30 M2 680 sp_thrust=-15.50 steady_ok=false
+N flat-lp below=true 0m dT-30 M2 680 start=0.9 nu=(0.665,0.663) steady refuses
+T flat-lp below=true 5000m dT0 M0.85 500 sp_thrust=12.38 steady_ok=true
+L flat-lp below=true 5000m dT0 M0.85 500 start=0.9 tries=1 it=6 d_vs_steady=6.4e-13
+T flat-lp below=true 5000m dT0 M0.85 520 sp_thrust=30.54 steady_ok=true
+L flat-lp below=true 5000m dT0 M0.85 520 start=0.9 tries=1 it=6 d_vs_steady=5.8e-13
+T flat-lp below=true 5000m dT0 M1.6 500 sp_thrust=-62.68 steady_ok=false
+N flat-lp below=true 5000m dT0 M1.6 500 start=0.7 nu=(0.570,0.577) steady refuses
+T flat-lp below=true 5000m dT0 M1.6 520 sp_thrust=-47.58 steady_ok=false
+N flat-lp below=true 5000m dT0 M1.6 520 start=0.8 nu=(0.581,0.585) steady refuses
+T flat-lp below=true 5000m dT0 M1.6 540 sp_thrust=-32.66 steady_ok=false
+N flat-lp below=true 5000m dT0 M1.6 540 start=0.8 nu=(0.593,0.594) steady refuses
+T flat-lp below=true 5000m dT0 M1.6 560 sp_thrust=-17.91 steady_ok=false
+N flat-lp below=true 5000m dT0 M1.6 560 start=0.8 nu=(0.604,0.603) steady refuses
+T flat-lp below=true 5000m dT0 M1.6 580 sp_thrust=-3.34 steady_ok=false
+N flat-lp below=true 5000m dT0 M1.6 580 start=0.9 nu=(0.614,0.611) steady refuses
+T flat-lp below=true 5000m dT0 M1.6 600 sp_thrust=11.06 steady_ok=true
+L flat-lp below=true 5000m dT0 M1.6 600 start=0.9 tries=1 it=5 d_vs_steady=2.5e-13
+T flat-lp below=true 5000m dT0 M2 500 sp_thrust=-129.26 steady_ok=false
+N flat-lp below=true 5000m dT0 M2 500 start=0.6 nu=(0.569,0.591) steady refuses
+T flat-lp below=true 5000m dT0 M2 520 sp_thrust=-115.52 steady_ok=false
+N flat-lp below=true 5000m dT0 M2 520 start=0.6 nu=(0.581,0.599) steady refuses
+T flat-lp below=true 5000m dT0 M2 540 sp_thrust=-101.94 steady_ok=false
+N flat-lp below=true 5000m dT0 M2 540 start=0.7 nu=(0.592,0.607) steady refuses
+T flat-lp below=true 5000m dT0 M2 560 sp_thrust=-88.54 steady_ok=false
+N flat-lp below=true 5000m dT0 M2 560 start=0.7 nu=(0.603,0.615) steady refuses
+T flat-lp below=true 5000m dT0 M2 580 sp_thrust=-75.30 steady_ok=false
+N flat-lp below=true 5000m dT0 M2 580 start=0.7 nu=(0.614,0.623) steady refuses
+T flat-lp below=true 5000m dT0 M2 600 sp_thrust=-62.22 steady_ok=false
+N flat-lp below=true 5000m dT0 M2 600 start=0.8 nu=(0.625,0.631) steady refuses
+T flat-lp below=true 5000m dT0 M2 620 sp_thrust=-49.29 steady_ok=false
+N flat-lp below=true 5000m dT0 M2 620 start=0.8 nu=(0.635,0.639) steady refuses
+T flat-lp below=true 5000m dT0 M2 640 sp_thrust=-36.52 steady_ok=false
+N flat-lp below=true 5000m dT0 M2 640 start=0.9 nu=(0.645,0.647) steady refuses
+T flat-lp below=true 5000m dT0 M2 660 sp_thrust=-23.89 steady_ok=false
+N flat-lp below=true 5000m dT0 M2 660 start=0.9 nu=(0.655,0.655) steady refuses
+T flat-lp below=true 11000m dT0 M1.6 500 sp_thrust=2.98 steady_ok=true
+L flat-lp below=true 11000m dT0 M1.6 500 start=0.8 tries=2 it=5 d_vs_steady=2.3e-13
+T flat-lp below=true 11000m dT0 M1.6 520 sp_thrust=18.45 steady_ok=true
+L flat-lp below=true 11000m dT0 M1.6 520 start=0.9 tries=1 it=6 d_vs_steady=2.7e-13
+T flat-lp below=true 11000m dT0 M1.6 540 sp_thrust=33.70 steady_ok=true
+L flat-lp below=true 11000m dT0 M1.6 540 start=0.9 tries=1 it=6 d_vs_steady=3.0e-13
+T flat-lp below=true 11000m dT0 M1.6 560 sp_thrust=48.74 steady_ok=true
+L flat-lp below=true 11000m dT0 M1.6 560 start=0.9 tries=1 it=5 d_vs_steady=9.9e-13
+T flat-lp below=true 11000m dT0 M2 500 sp_thrust=-63.70 steady_ok=false
+N flat-lp below=true 11000m dT0 M2 500 start=0.7 nu=(0.570,0.577) steady refuses
+T flat-lp below=true 11000m dT0 M2 520 sp_thrust=-49.64 steady_ok=false
+N flat-lp below=true 11000m dT0 M2 520 start=0.8 nu=(0.581,0.586) steady refuses
+T flat-lp below=true 11000m dT0 M2 540 sp_thrust=-35.79 steady_ok=false
+N flat-lp below=true 11000m dT0 M2 540 start=0.8 nu=(0.593,0.594) steady refuses
+T flat-lp below=true 11000m dT0 M2 560 sp_thrust=-22.13 steady_ok=false
+N flat-lp below=true 11000m dT0 M2 560 start=0.8 nu=(0.604,0.603) steady refuses
+T flat-lp below=true 11000m dT0 M2 580 sp_thrust=-8.65 steady_ok=false
+N flat-lp below=true 11000m dT0 M2 580 start=0.9 nu=(0.614,0.612) steady refuses
+T flat-lp below=true 11000m dT0 M2 600 sp_thrust=4.65 steady_ok=true
+L flat-lp below=true 11000m dT0 M2 600 start=0.9 tries=1 it=5 d_vs_steady=2.5e-13
+T flat-lp below=false design 500 sp_thrust=22.34 steady_ok=false
+N flat-lp below=false design 500 start=0.9 nu=(0.537,0.560) steady refuses
+T flat-lp below=false 0m dT0 M0.85 500 sp_thrust=-39.04 steady_ok=false
+N flat-lp below=false 0m dT0 M0.85 500 start=0.8 nu=(0.465,0.565) steady refuses
+T flat-lp below=false 0m dT0 M0.85 520 sp_thrust=-22.88 steady_ok=false
+N flat-lp below=false 0m dT0 M0.85 520 start=0.9 nu=(0.499,0.575) steady refuses
+T flat-lp below=false 0m dT0 M0.85 540 sp_thrust=-6.33 steady_ok=false
+N flat-lp below=false 0m dT0 M0.85 540 start=0.9 nu=(0.530,0.584) steady refuses
+T flat-lp below=false 0m dT0 M0.85 560 sp_thrust=10.53 steady_ok=false
+N flat-lp below=false 0m dT0 M0.85 560 start=0.9 nu=(0.557,0.594) steady refuses
+T flat-lp below=false 0m dT0 M1.6 500 sp_thrust=-112.65 steady_ok=false
+N flat-lp below=false 0m dT0 M1.6 500 start=0.6 nu=(0.570,0.586) steady refuses
+T flat-lp below=false 0m dT0 M1.6 520 sp_thrust=-97.91 steady_ok=false
+N flat-lp below=false 0m dT0 M1.6 520 start=0.7 nu=(0.581,0.594) steady refuses
+T flat-lp below=false 0m dT0 M1.6 540 sp_thrust=-83.32 steady_ok=false
+N flat-lp below=false 0m dT0 M1.6 540 start=0.7 nu=(0.592,0.602) steady refuses
+T flat-lp below=false 0m dT0 M1.6 560 sp_thrust=-68.88 steady_ok=false
+N flat-lp below=false 0m dT0 M1.6 560 start=0.7 nu=(0.603,0.611) steady refuses
+T flat-lp below=false 0m dT0 M1.6 580 sp_thrust=-54.58 steady_ok=false
+N flat-lp below=false 0m dT0 M1.6 580 start=0.8 nu=(0.614,0.619) steady refuses
+T flat-lp below=false 0m dT0 M1.6 600 sp_thrust=-40.43 steady_ok=false
+N flat-lp below=false 0m dT0 M1.6 600 start=0.8 nu=(0.625,0.627) steady refuses
+T flat-lp below=false 0m dT0 M1.6 620 sp_thrust=-26.43 steady_ok=false
+N flat-lp below=false 0m dT0 M1.6 620 start=0.9 nu=(0.635,0.635) steady refuses
+T flat-lp below=false 0m dT0 M1.6 640 sp_thrust=-12.57 steady_ok=false
+N flat-lp below=false 0m dT0 M1.6 640 start=0.9 nu=(0.646,0.643) steady refuses
+T flat-lp below=false 0m dT0 M2 560 sp_thrust=-139.48 steady_ok=false
+N flat-lp below=false 0m dT0 M2 560 start=0.6 nu=(0.603,0.626) steady refuses
+T flat-lp below=false 0m dT0 M2 580 sp_thrust=-126.46 steady_ok=false
+N flat-lp below=false 0m dT0 M2 580 start=0.6 nu=(0.613,0.634) steady refuses
+T flat-lp below=false 0m dT0 M2 600 sp_thrust=-113.59 steady_ok=false
+N flat-lp below=false 0m dT0 M2 600 start=0.7 nu=(0.624,0.641) steady refuses
+T flat-lp below=false 0m dT0 M2 620 sp_thrust=-100.86 steady_ok=false
+N flat-lp below=false 0m dT0 M2 620 start=0.7 nu=(0.635,0.649) steady refuses
+T flat-lp below=false 0m dT0 M2 640 sp_thrust=-88.26 steady_ok=false
+N flat-lp below=false 0m dT0 M2 640 start=0.8 nu=(0.645,0.656) steady refuses
+T flat-lp below=false 0m dT0 M2 660 sp_thrust=-75.80 steady_ok=false
+N flat-lp below=false 0m dT0 M2 660 start=0.8 nu=(0.655,0.664) steady refuses
+T flat-lp below=false 0m dT0 M2 680 sp_thrust=-63.47 steady_ok=false
+N flat-lp below=false 0m dT0 M2 680 start=0.9 nu=(0.665,0.671) steady refuses
+T flat-lp below=false 0m dT0 M2 700 sp_thrust=-51.27 steady_ok=false
+N flat-lp below=false 0m dT0 M2 700 start=0.9 nu=(0.675,0.679) steady refuses
+T flat-lp below=false 0m dT0 M2 720 sp_thrust=-39.19 steady_ok=false
+N flat-lp below=false 0m dT0 M2 720 start=0.9 nu=(0.685,0.686) steady refuses
+T flat-lp below=false 0m dT40 M0.85 500 sp_thrust=-90.69 steady_ok=false
+N flat-lp below=false 0m dT40 M0.85 500 start=0.7 nu=(0.358,0.570) steady refuses
+T flat-lp below=false 0m dT40 M0.85 520 sp_thrust=-77.08 steady_ok=false
+N flat-lp below=false 0m dT40 M0.85 520 start=0.8 nu=(0.404,0.580) steady refuses
+T flat-lp below=false 0m dT40 M0.85 540 sp_thrust=-62.95 steady_ok=false
+N flat-lp below=false 0m dT40 M0.85 540 start=0.8 nu=(0.444,0.589) steady refuses
+T flat-lp below=false 0m dT40 M0.85 560 sp_thrust=-48.37 steady_ok=false
+N flat-lp below=false 0m dT40 M0.85 560 start=0.9 nu=(0.481,0.598) steady refuses
+T flat-lp below=false 0m dT40 M0.85 580 sp_thrust=-33.37 steady_ok=false
+N flat-lp below=false 0m dT40 M0.85 580 start=0.9 nu=(0.515,0.608) steady refuses
+T flat-lp below=false 0m dT40 M0.85 600 sp_thrust=-18.03 steady_ok=false
+N flat-lp below=false 0m dT40 M0.85 600 start=0.9 nu=(0.545,0.617) steady refuses
+T flat-lp below=false 0m dT40 M1.6 540 sp_thrust=-140.72 steady_ok=false
+N flat-lp below=false 0m dT40 M1.6 540 start=0.6 nu=(0.592,0.614) steady refuses
+T flat-lp below=false 0m dT40 M1.6 560 sp_thrust=-126.68 steady_ok=false
+N flat-lp below=false 0m dT40 M1.6 560 start=0.6 nu=(0.603,0.622) steady refuses
+T flat-lp below=false 0m dT40 M1.6 580 sp_thrust=-112.77 steady_ok=false
+N flat-lp below=false 0m dT40 M1.6 580 start=0.7 nu=(0.614,0.629) steady refuses
+T flat-lp below=false 0m dT40 M1.6 600 sp_thrust=-98.97 steady_ok=false
+N flat-lp below=false 0m dT40 M1.6 600 start=0.7 nu=(0.624,0.637) steady refuses
+T flat-lp below=false 0m dT40 M1.6 620 sp_thrust=-85.30 steady_ok=false
+N flat-lp below=false 0m dT40 M1.6 620 start=0.8 nu=(0.635,0.645) steady refuses
+T flat-lp below=false 0m dT40 M1.6 640 sp_thrust=-71.74 steady_ok=false
+N flat-lp below=false 0m dT40 M1.6 640 start=0.8 nu=(0.645,0.653) steady refuses
+T flat-lp below=false 0m dT40 M1.6 660 sp_thrust=-58.31 steady_ok=false
+N flat-lp below=false 0m dT40 M1.6 660 start=0.9 nu=(0.655,0.660) steady refuses
+T flat-lp below=false 0m dT40 M1.6 680 sp_thrust=-44.99 steady_ok=false
+N flat-lp below=false 0m dT40 M1.6 680 start=0.9 nu=(0.665,0.668) steady refuses
+T flat-lp below=false 0m dT40 M1.6 700 sp_thrust=-31.79 steady_ok=false
+N flat-lp below=false 0m dT40 M1.6 700 start=0.9 nu=(0.675,0.676) steady refuses
+T flat-lp below=false 0m dT40 M2 640 sp_thrust=-147.42 steady_ok=false
+N flat-lp below=false 0m dT40 M2 640 start=0.7 nu=(0.644,0.669) steady refuses
+T flat-lp below=false 0m dT40 M2 660 sp_thrust=-135.18 steady_ok=false
+N flat-lp below=false 0m dT40 M2 660 start=0.7 nu=(0.654,0.676) steady refuses
+T flat-lp below=false 0m dT40 M2 680 sp_thrust=-123.07 steady_ok=false
+N flat-lp below=false 0m dT40 M2 680 start=0.7 nu=(0.664,0.683) steady refuses
+T flat-lp below=false 0m dT40 M2 700 sp_thrust=-111.06 steady_ok=false
+N flat-lp below=false 0m dT40 M2 700 start=0.8 nu=(0.674,0.690) steady refuses
+T flat-lp below=false 0m dT40 M2 720 sp_thrust=-99.18 steady_ok=false
+N flat-lp below=false 0m dT40 M2 720 start=0.8 nu=(0.684,0.697) steady refuses
+T flat-lp below=false 0m dT40 M2 740 sp_thrust=-87.40 steady_ok=false
+N flat-lp below=false 0m dT40 M2 740 start=0.8 nu=(0.694,0.704) steady refuses
+T flat-lp below=false 0m dT40 M2 760 sp_thrust=-75.72 steady_ok=false
+N flat-lp below=false 0m dT40 M2 760 start=0.9 nu=(0.703,0.711) steady refuses
+T flat-lp below=false 0m dT40 M2 780 sp_thrust=-64.16 steady_ok=false
+N flat-lp below=false 0m dT40 M2 780 start=0.9 nu=(0.712,0.718) steady refuses
+T flat-lp below=false 0m dT-30 M0.85 500 sp_thrust=8.13 steady_ok=false
+N flat-lp below=false 0m dT-30 M0.85 500 start=0.9 nu=(0.524,0.561) steady refuses
+T flat-lp below=false 0m dT-30 M0.85 520 sp_thrust=26.15 steady_ok=false
+N flat-lp below=false 0m dT-30 M0.85 520 start=0.9 nu=(0.550,0.571) steady refuses
+T flat-lp below=false 0m dT-30 M1.6 500 sp_thrust=-66.63 steady_ok=false
+N flat-lp below=false 0m dT-30 M1.6 500 start=0.7 nu=(0.570,0.577) steady refuses
+T flat-lp below=false 0m dT-30 M1.6 520 sp_thrust=-51.56 steady_ok=false
+N flat-lp below=false 0m dT-30 M1.6 520 start=0.8 nu=(0.581,0.586) steady refuses
+T flat-lp below=false 0m dT-30 M1.6 540 sp_thrust=-36.66 steady_ok=false
+N flat-lp below=false 0m dT-30 M1.6 540 start=0.8 nu=(0.593,0.594) steady refuses
+T flat-lp below=false 0m dT-30 M1.6 560 sp_thrust=-21.94 steady_ok=false
+N flat-lp below=false 0m dT-30 M1.6 560 start=0.8 nu=(0.604,0.603) steady refuses
+T flat-lp below=false 0m dT-30 M1.6 580 sp_thrust=-7.39 steady_ok=false
+N flat-lp below=false 0m dT-30 M1.6 580 start=0.9 nu=(0.614,0.612) steady refuses
+T flat-lp below=false 0m dT-30 M1.6 600 sp_thrust=7.00 steady_ok=true
+L flat-lp below=false 0m dT-30 M1.6 600 start=0.9 tries=1 it=5 d_vs_steady=2.4e-13
+T flat-lp below=false 0m dT-30 M2 500 sp_thrust=-133.22 steady_ok=false
+N flat-lp below=false 0m dT-30 M2 500 start=0.6 nu=(0.569,0.592) steady refuses
+T flat-lp below=false 0m dT-30 M2 520 sp_thrust=-119.50 steady_ok=false
+N flat-lp below=false 0m dT-30 M2 520 start=0.6 nu=(0.581,0.600) steady refuses
+T flat-lp below=false 0m dT-30 M2 540 sp_thrust=-105.94 steady_ok=false
+N flat-lp below=false 0m dT-30 M2 540 start=0.6 nu=(0.592,0.608) steady refuses
+T flat-lp below=false 0m dT-30 M2 560 sp_thrust=-92.56 steady_ok=false
+N flat-lp below=false 0m dT-30 M2 560 start=0.7 nu=(0.603,0.616) steady refuses
+T flat-lp below=false 0m dT-30 M2 580 sp_thrust=-79.33 steady_ok=false
+N flat-lp below=false 0m dT-30 M2 580 start=0.7 nu=(0.614,0.624) steady refuses
+T flat-lp below=false 0m dT-30 M2 600 sp_thrust=-66.27 steady_ok=false
+N flat-lp below=false 0m dT-30 M2 600 start=0.8 nu=(0.625,0.632) steady refuses
+T flat-lp below=false 0m dT-30 M2 620 sp_thrust=-53.35 steady_ok=false
+N flat-lp below=false 0m dT-30 M2 620 start=0.8 nu=(0.635,0.640) steady refuses
+T flat-lp below=false 0m dT-30 M2 640 sp_thrust=-40.59 steady_ok=false
+N flat-lp below=false 0m dT-30 M2 640 start=0.9 nu=(0.645,0.648) steady refuses
+T flat-lp below=false 0m dT-30 M2 660 sp_thrust=-27.97 steady_ok=false
+N flat-lp below=false 0m dT-30 M2 660 start=0.9 nu=(0.655,0.655) steady refuses
+T flat-lp below=false 0m dT-30 M2 680 sp_thrust=-15.50 steady_ok=false
+N flat-lp below=false 0m dT-30 M2 680 start=0.9 nu=(0.665,0.663) steady refuses
+T flat-lp below=false 5000m dT0 M0.85 500 sp_thrust=12.38 steady_ok=false
+N flat-lp below=false 5000m dT0 M0.85 500 start=0.9 nu=(0.528,0.561) steady refuses
+T flat-lp below=false 5000m dT0 M0.85 520 sp_thrust=30.54 steady_ok=false
+N flat-lp below=false 5000m dT0 M0.85 520 start=0.9 nu=(0.553,0.571) steady refuses
+T flat-lp below=false 5000m dT0 M1.6 500 sp_thrust=-62.68 steady_ok=false
+N flat-lp below=false 5000m dT0 M1.6 500 start=0.7 nu=(0.570,0.577) steady refuses
+T flat-lp below=false 5000m dT0 M1.6 520 sp_thrust=-47.58 steady_ok=false
+N flat-lp below=false 5000m dT0 M1.6 520 start=0.8 nu=(0.581,0.585) steady refuses
+T flat-lp below=false 5000m dT0 M1.6 540 sp_thrust=-32.66 steady_ok=false
+N flat-lp below=false 5000m dT0 M1.6 540 start=0.8 nu=(0.593,0.594) steady refuses
+T flat-lp below=false 5000m dT0 M1.6 560 sp_thrust=-17.91 steady_ok=false
+N flat-lp below=false 5000m dT0 M1.6 560 start=0.8 nu=(0.604,0.603) steady refuses
+T flat-lp below=false 5000m dT0 M1.6 580 sp_thrust=-3.34 steady_ok=false
+N flat-lp below=false 5000m dT0 M1.6 580 start=0.9 nu=(0.614,0.611) steady refuses
+T flat-lp below=false 5000m dT0 M1.6 600 sp_thrust=11.06 steady_ok=true
+L flat-lp below=false 5000m dT0 M1.6 600 start=0.9 tries=1 it=5 d_vs_steady=2.5e-13
+T flat-lp below=false 5000m dT0 M2 500 sp_thrust=-129.26 steady_ok=false
+N flat-lp below=false 5000m dT0 M2 500 start=0.6 nu=(0.569,0.591) steady refuses
+T flat-lp below=false 5000m dT0 M2 520 sp_thrust=-115.52 steady_ok=false
+N flat-lp below=false 5000m dT0 M2 520 start=0.6 nu=(0.581,0.599) steady refuses
+T flat-lp below=false 5000m dT0 M2 540 sp_thrust=-101.94 steady_ok=false
+N flat-lp below=false 5000m dT0 M2 540 start=0.7 nu=(0.592,0.607) steady refuses
+T flat-lp below=false 5000m dT0 M2 560 sp_thrust=-88.54 steady_ok=false
+N flat-lp below=false 5000m dT0 M2 560 start=0.7 nu=(0.603,0.615) steady refuses
+T flat-lp below=false 5000m dT0 M2 580 sp_thrust=-75.30 steady_ok=false
+N flat-lp below=false 5000m dT0 M2 580 start=0.7 nu=(0.614,0.623) steady refuses
+T flat-lp below=false 5000m dT0 M2 600 sp_thrust=-62.22 steady_ok=false
+N flat-lp below=false 5000m dT0 M2 600 start=0.8 nu=(0.625,0.631) steady refuses
+T flat-lp below=false 5000m dT0 M2 620 sp_thrust=-49.29 steady_ok=false
+N flat-lp below=false 5000m dT0 M2 620 start=0.8 nu=(0.635,0.639) steady refuses
+T flat-lp below=false 5000m dT0 M2 640 sp_thrust=-36.52 steady_ok=false
+N flat-lp below=false 5000m dT0 M2 640 start=0.9 nu=(0.645,0.647) steady refuses
+T flat-lp below=false 5000m dT0 M2 660 sp_thrust=-23.89 steady_ok=false
+N flat-lp below=false 5000m dT0 M2 660 start=0.9 nu=(0.655,0.655) steady refuses
+T flat-lp below=false 11000m dT0 M1.6 500 sp_thrust=2.98 steady_ok=true
+L flat-lp below=false 11000m dT0 M1.6 500 start=0.8 tries=2 it=5 d_vs_steady=2.3e-13
+T flat-lp below=false 11000m dT0 M1.6 520 sp_thrust=18.45 steady_ok=true
+L flat-lp below=false 11000m dT0 M1.6 520 start=0.9 tries=1 it=6 d_vs_steady=2.7e-13
+T flat-lp below=false 11000m dT0 M1.6 540 sp_thrust=33.70 steady_ok=true
+L flat-lp below=false 11000m dT0 M1.6 540 start=0.9 tries=1 it=6 d_vs_steady=3.0e-13
+T flat-lp below=false 11000m dT0 M1.6 560 sp_thrust=48.74 steady_ok=true
+L flat-lp below=false 11000m dT0 M1.6 560 start=0.9 tries=1 it=5 d_vs_steady=9.9e-13
+T flat-lp below=false 11000m dT0 M2 500 sp_thrust=-63.70 steady_ok=false
+N flat-lp below=false 11000m dT0 M2 500 start=0.7 nu=(0.570,0.577) steady refuses
+T flat-lp below=false 11000m dT0 M2 520 sp_thrust=-49.64 steady_ok=false
+N flat-lp below=false 11000m dT0 M2 520 start=0.8 nu=(0.581,0.586) steady refuses
+T flat-lp below=false 11000m dT0 M2 540 sp_thrust=-35.79 steady_ok=false
+N flat-lp below=false 11000m dT0 M2 540 start=0.8 nu=(0.593,0.594) steady refuses
+T flat-lp below=false 11000m dT0 M2 560 sp_thrust=-22.13 steady_ok=false
+N flat-lp below=false 11000m dT0 M2 560 start=0.8 nu=(0.604,0.603) steady refuses
+T flat-lp below=false 11000m dT0 M2 580 sp_thrust=-8.65 steady_ok=false
+N flat-lp below=false 11000m dT0 M2 580 start=0.9 nu=(0.614,0.612) steady refuses
+T flat-lp below=false 11000m dT0 M2 600 sp_thrust=4.65 steady_ok=true
+L flat-lp below=false 11000m dT0 M2 600 start=0.9 tries=1 it=5 d_vs_steady=2.5e-13
+TALLY    179 below=false both fail
+TALLY     31 below=false ladder solves = steady
+TALLY    346 below=false ladder solves, steady refuses
+TALLY    179 below=true both fail
+TALLY     52 below=true ladder solves = steady
+TALLY    325 below=true ladder solves, steady refuses
+test probe_ladder ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 8.05s
+
