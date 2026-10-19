@@ -1,0 +1,60 @@
+plain SL+40 M0.85 650 unchoked : indep pi 0.727294813923 ON pi 0.727294813923 diff -1.33e-14 | pin 0.688447913523 rlo +5.67e-2
+plain SL+40 M0.85 700 unchoked : indep pi 0.705307106052 ON pi 0.705307106052 diff +2.20e-14 | pin 0.688447913523 rlo +2.35e-2
+plain SL+40 M0.85 750 unchoked : indep pi 0.692989816895 ON pi 0.692989816895 diff +2.20e-14 | pin 0.688447913523 rlo +6.11e-3
+plain SL+40 M0.85 800 unchoked : indep pi 0.688539213003 ON pi 0.688539213003 diff +4.44e-15 | pin 0.688447913523 rlo +1.19e-4
+plain SL+40 M0.85 1000 CHOKED : no sign change (rlo -4.20e-16, rhi -3.97e-1); ON pi 0.688447913523
+plain SL std M0.30 650 unchoked : indep pi 0.807746948760 ON pi 0.807746948760 diff +6.62e-14 | pin 0.688447913523 rlo +1.61e-1
+plain SL std M0.30 700 unchoked : indep pi 0.746797316603 ON pi 0.746797316603 diff +4.86e-14 | pin 0.688447913523 rlo +7.73e-2
+plain SL std M0.30 750 unchoked : indep pi 0.711697637136 ON pi 0.711697637136 diff +4.86e-14 | pin 0.688447913523 rlo +3.05e-2
+plain SL std M0.30 800 unchoked : indep pi 0.694066658253 ON pi 0.694066658253 diff +3.09e-14 | pin 0.688447913523 rlo +7.35e-3
+plain SL std M0.30 1000 CHOKED : no sign change (rlo -7.24e-16, rhi -3.97e-1); ON pi 0.688447913523
+bleed.05 SL+40 M0.85 650: pin or ON refused, skipped
+bleed.05 SL+40 M0.85 700 unchoked : indep pi 0.707885329210 ON pi 0.707885329210 diff -2.20e-14 | pin 0.688447913523 rlo +2.75e-2
+bleed.05 SL+40 M0.85 750 unchoked : indep pi 0.694413636958 ON pi 0.694413636958 diff +3.09e-14 | pin 0.688447913523 rlo +8.10e-3
+bleed.05 SL+40 M0.85 800 unchoked : indep pi 0.688824238523 ON pi 0.688824238523 diff -4.44e-15 | pin 0.688447913523 rlo +4.95e-4
+bleed.05 SL+40 M0.85 1000 CHOKED : no sign change (rlo -8.52e-16, rhi -3.97e-1); ON pi 0.688447913523
+bleed.05 SL std M0.30 650 unchoked : indep pi 0.815088705842 ON pi 0.815088705842 diff +4.86e-14 | pin 0.688447913523 rlo +1.77e-1
+bleed.05 SL std M0.30 700 unchoked : indep pi 0.752846756528 ON pi 0.752846756528 diff +3.97e-14 | pin 0.688447913523 rlo +8.74e-2
+bleed.05 SL std M0.30 750 unchoked : indep pi 0.715757840212 ON pi 0.715757840212 diff +2.22e-14 | pin 0.688447913523 rlo +3.64e-2
+bleed.05 SL std M0.30 800 unchoked : indep pi 0.696129552944 ON pi 0.696129552944 diff -4.44e-15 | pin 0.688447913523 rlo +1.01e-2
+bleed.05 SL std M0.30 1000 CHOKED : no sign change (rlo -4.43e-16, rhi -3.97e-1); ON pi 0.688447913523
+cust.05 SL+40 M0.85 650: pin or ON refused, skipped
+cust.05 SL+40 M0.85 700 unchoked : indep pi 0.718820656950 ON pi 0.718820656950 diff +2.22e-14 | pin 0.688447913523 rlo +4.36e-2
+cust.05 SL+40 M0.85 750 unchoked : indep pi 0.700888371539 ON pi 0.700888371539 diff +1.33e-14 | pin 0.688447913523 rlo +1.71e-2
+cust.05 SL+40 M0.85 800 unchoked : indep pi 0.691272560859 ON pi 0.691272560859 diff +2.20e-14 | pin 0.688447913523 rlo +3.77e-3
+cust.05 SL+40 M0.85 1000 CHOKED : indep pi 0.688447913523 ON pi 0.688447913523 diff +4.33e-15 | pin 0.688447913523 rlo +0.00e0
+cust.05 SL std M0.30 650 unchoked : indep pi 0.865215292629 ON pi 0.865215292629 diff +1.73e-13 | pin 0.688447913523 rlo +2.43e-1
+cust.05 SL std M0.30 700 unchoked : indep pi 0.784150953512 ON pi 0.784150953512 diff +8.42e-14 | pin 0.688447913523 rlo +1.28e-1
+cust.05 SL std M0.30 750 unchoked : indep pi 0.734647812565 ON pi 0.734647812565 diff +3.97e-14 | pin 0.688447913523 rlo +6.09e-2
+cust.05 SL std M0.30 800 unchoked : indep pi 0.706160426491 ON pi 0.706160426491 diff +3.97e-14 | pin 0.688447913523 rlo +2.32e-2
+cust.05 SL std M0.30 1000 CHOKED : no sign change (rlo -6.27e-16, rhi -3.97e-1); ON pi 0.688447913523
+cool.03 SL+40 M0.85 650: pin or ON refused, skipped
+cool.03 SL+40 M0.85 700 unchoked : indep pi 0.711397986365 ON pi 0.711397986365 diff +4.44e-15 | pin 0.688447913523 rlo +3.20e-2
+cool.03 SL+40 M0.85 750 unchoked : indep pi 0.696897476370 ON pi 0.696897476370 diff -4.44e-15 | pin 0.688447913523 rlo +1.14e-2
+cool.03 SL+40 M0.85 800 unchoked : indep pi 0.689783112660 ON pi 0.689783112660 diff +5.75e-14 | pin 0.688447913523 rlo +1.76e-3
+cool.03 SL+40 M0.85 1000 CHOKED : indep pi 0.688447913523 ON pi 0.688447913523 diff +1.32e-14 | pin 0.688447913523 rlo +2.11e-14
+cool.03 SL std M0.30 650 unchoked : indep pi 0.853332426587 ON pi 0.853332426587 diff +1.10e-13 | pin 0.688447913523 rlo +2.12e-1
+cool.03 SL std M0.30 700 unchoked : indep pi 0.776281115585 ON pi 0.776281115585 diff +2.22e-14 | pin 0.688447913523 rlo +1.12e-1
+cool.03 SL std M0.30 750 unchoked : indep pi 0.730032662813 ON pi 0.730032662813 diff +8.42e-14 | pin 0.688447913523 rlo +5.34e-2
+cool.03 SL std M0.30 800 unchoked : indep pi 0.703896050125 ON pi 0.703896050125 diff -3.11e-14 | pin 0.688447913523 rlo +1.99e-2
+cool.03 SL std M0.30 1000 CHOKED : no sign change (rlo -4.65e-16, rhi -3.97e-1); ON pi 0.688447913523
+genHP.05 SL+40 M0.85 650: pin or ON refused, skipped
+genHP.05 SL+40 M0.85 700: pin or ON refused, skipped
+genHP.05 SL+40 M0.85 750: bracket end not evaluable
+genHP.05 SL+40 M0.85 800: bracket end not evaluable
+genHP.05 SL+40 M0.85 1000 CHOKED : no sign change (rlo -4.73e-16, rhi -3.97e-1); ON pi 0.688447913523
+genHP.05 SL std M0.30 650: pin or ON refused, skipped
+genHP.05 SL std M0.30 700: pin or ON refused, skipped
+genHP.05 SL std M0.30 750: pin or ON refused, skipped
+genHP.05 SL std M0.30 800: pin or ON refused, skipped
+genHP.05 SL std M0.30 1000 CHOKED : no sign change (rlo -8.39e-16, rhi -3.82e-1); ON pi 0.688447913523
+genLP.05 SL+40 M0.85 650: pin or ON refused, skipped
+genLP.05 SL+40 M0.85 700: pin or ON refused, skipped
+genLP.05 SL+40 M0.85 750: pin or ON refused, skipped
+genLP.05 SL+40 M0.85 800: bracket end not evaluable
+genLP.05 SL+40 M0.85 1000: bracket end not evaluable
+genLP.05 SL std M0.30 650: pin or ON refused, skipped
+genLP.05 SL std M0.30 700: pin or ON refused, skipped
+genLP.05 SL std M0.30 750: pin or ON refused, skipped
+genLP.05 SL std M0.30 800: pin or ON refused, skipped
+genLP.05 SL std M0.30 1000: bracket end not evaluable

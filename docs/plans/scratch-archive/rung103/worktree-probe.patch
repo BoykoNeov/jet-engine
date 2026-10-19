@@ -1,0 +1,342 @@
+diff --git a/rust/src/bleed.rs b/rust/src/bleed.rs
+index 0e0aada..8c9a860 100644
+--- a/rust/src/bleed.rs
++++ b/rust/src/bleed.rs
+@@ -240,8 +240,8 @@ pub fn try_cascade_bleed(
+     for turb_pass in 0..TwoSpoolMapCore::TURB_MAX {
+         let (pi_hpt, tau_hpt, tt45) = base.try_solve_choked_turbine(
+             wgas, tt4, f, base.a4, base.a45, 1.0, eta_hpt)?;
+-        let (pi_lpt, tau_lpt, tt5) = base.try_solve_choked_turbine(
+-            wgas, tt45, f, base.a45, base.a8, base.pi_n, eta_lpt)?;
++        let (pi_lpt, tau_lpt, tt5) = base.try_lp_steady(
++            wgas, tt45, f, eta_lpt, pi_hpt)?;
+ 
+         // ENERGY. (1) the LP balance: the LPT drives mdot_2 with (1-b)*mdot_2*(1+f) of gas.
+         // `(1-b)` sits BETWEEN eta_m and (1+f), which is not rung 39's product with a factor
+@@ -331,6 +331,7 @@ pub fn try_match_bleed(
+         (base.f_design, base.pi_b * base.pi_hpc_design * base.pi_lpc_design * pt2);
+     let mut c: Option<CascadeMap> = None;
+     for _ in 0..TwoSpoolCore::MAX {
++        base.track_pt4(pt4);
+         let owned = base.try_working_gas(f, tt4, pt4)?;
+         let wgas = owned.as_ref().unwrap_or(base.gas());
+         let cm = try_cascade_bleed(core, wgas, tt2, pt2, tt4, f)?;
+@@ -384,10 +385,15 @@ pub fn try_match_bleed(
+     // SCOPE GUARD (inherited). Bleed lowers pi_LPC hence pt4, so this bites SOONER — 23 cells of
+     // the dump grid at b = 0, 25 at b = 0.10. An `Err` and not a panic: module note § 3.
+     if exit.p9 <= flight.p0 + 1e-6 {
++        if let Some(res) = base.below_choke_resolve(flight.p0, tt4, || try_match_bleed(core, flight, tt4), |x| x.base.base.thrust) { return res; }
++        base.check_sub_idle(tt4, (1.0 + s4.far) * exit.v9 - v0)?;
++        if !base.in_branch() {
++        crate::two_spool::census_unchoke("r42", tt4, flight.m0, flight.p0);
+         return Err(Abort(format!(
+             "rung-42 bleed match at Tt4={tt4:.0}, b={b:.3}, M0={:.2}: nozzle UNCHOKED -- OUT OF \
+              SCOPE (docs/rung38-spec.md 'Scope'). Opening the valve shrinks the choked envelope; \
+              the LP spool's own subsonic branch is still a follow-on.", flight.m0)));
++        }
+     }
+ 
+     // --- the SEPARATE result assembly (module note § 1) -----------------------------------
+diff --git a/rust/src/customer_bleed.rs b/rust/src/customer_bleed.rs
+index 467a29c..e58d417 100644
+--- a/rust/src/customer_bleed.rs
++++ b/rust/src/customer_bleed.rs
+@@ -246,8 +246,8 @@ pub fn try_cascade_customer(
+     for _ in 0..TwoSpoolMapCore::TURB_MAX {
+         let (pi_hpt, tau_hpt, tt45) = base.try_solve_choked_turbine(
+             wgas, tt4, f, base.a4, base.a45, 1.0, eta_hpt)?;
+-        let (pi_lpt, tau_lpt, tt5) = base.try_solve_choked_turbine(
+-            wgas, tt45, f, base.a45, base.a8, base.pi_n, eta_lpt)?;
++        let (pi_lpt, tau_lpt, tt5) = base.try_lp_steady(
++            wgas, tt45, f, eta_lpt, pi_hpt)?;
+ 
+         // (3) the LP balance: the LPT drives the face air with (1-b)(1-c)(1+f) of gas.
+         let dh_lpt = base.eta_m * (1.0 - b) * (1.0 - c) * (1.0 + f)
+@@ -356,6 +356,7 @@ pub fn try_match_customer(
+     };
+     let mut cm: Option<CascadeMap> = None;
+     for _ in 0..TwoSpoolCore::MAX {
++        base.track_pt4(pt4);
+         let owned = base.try_working_gas(f, tt4, pt4)?;
+         let wgas = owned.as_ref().unwrap_or(base.gas());
+         let x = try_cascade_customer(core, wgas, tt2, tt4, f, c)?;
+@@ -417,9 +418,14 @@ pub fn try_match_customer(
+     let s5 = Turbine::new(x.eta_lpt, None).apply(&s45, &rgas, dh_lpt_reb);
+     let exit = Nozzle::convergent(flight.p0, base.pi_n).try_apply(&s5, &rgas)?;
+     if exit.p9 <= flight.p0 + 1e-6 {
++        if let Some(res) = base.below_choke_resolve(flight.p0, tt4, || try_match_customer(core, flight, tt4), |x| x.base.base.thrust) { return res; }
++        base.check_sub_idle(tt4, (1.0 + s4.far) * exit.v9 - v0)?;
++        if !base.in_branch() {
++        crate::two_spool::census_unchoke("r90", tt4, flight.m0, flight.p0);
+         return Err(Abort(format!(
+             "rung-90 customer-bleed match at Tt4={tt4:.0}, c={c:.3}, M0={:.2}: nozzle UNCHOKED -- \
+              OUT OF SCOPE (docs/rung38-spec.md 'Scope').", flight.m0)));
++        }
+     }
+ 
+     let stations = vec![
+diff --git a/rust/src/shaft_offtake.rs b/rust/src/shaft_offtake.rs
+index c52f95b..debd38b 100644
+--- a/rust/src/shaft_offtake.rs
++++ b/rust/src/shaft_offtake.rs
+@@ -268,8 +268,8 @@ fn try_cascade_loaded(
+     let (mut eta_hpt, mut eta_lpt, mut tt3) = (base.eta_hpt, base.eta_lpt, tt3_seed);
+     for _ in 0..TwoSpoolCore::MAX {
+         let hpt = try_solve_cooled_hpt(base, wgas, tt4, f, burner, e1, e2, tt3, eta_hpt)?;
+-        let (pi_lpt, tau_lpt, tt5) = base.try_solve_choked_turbine(
+-            wgas, hpt.tt45, hpt.f45, base.a45, base.a8, base.pi_n, eta_lpt)?;
++        let (pi_lpt, tau_lpt, tt5) = base.try_lp_steady(
++            wgas, hpt.tt45, hpt.f45, eta_lpt, hpt.pi_hpt)?;
+ 
+         // The LP balance, per FACE air: the LPT passes (1-b)(G + eps) of gas; the LP load comes off.
+         let g = burner * (1.0 + f);
+@@ -422,6 +422,7 @@ pub fn try_match_loaded(
+     let mut tt3_seed = base.reference.station("3").tt;
+     let mut lc: Option<LoadedCascade> = None;
+     for _ in 0..TwoSpoolCore::MAX {
++        base.track_pt4(pt4);
+         let owned = base.try_working_gas(f, tt4, pt4)?;
+         let wgas = owned.as_ref().unwrap_or(base.gas());
+         let x = try_cascade_loaded(core, wgas, tt2, tt4, f, c, cool, tt3_seed,
+@@ -496,9 +497,14 @@ pub fn try_match_loaded(
+     let s5 = Turbine::new(m.eta_lpt, None).apply(&s45, &rgas, dh_lpt_reb);
+     let exit = Nozzle::convergent(flight.p0, base.pi_n).try_apply(&s5, &rgas)?;
+     if exit.p9 <= flight.p0 + 1e-6 {
++        if let Some(res) = base.below_choke_resolve(flight.p0, tt4, || try_match_loaded(core, flight, tt4), |x| x.base.base.thrust) { return res; }
++        base.check_sub_idle(tt4, (1.0 + s45.far) * exit.v9 - v0)?;
++        if !base.in_branch() {
++        crate::two_spool::census_unchoke("r92", tt4, flight.m0, flight.p0);
+         return Err(Abort(format!(
+             "rung-92 loaded match at Tt4={tt4:.0}, M0={:.2}: nozzle UNCHOKED -- OUT OF SCOPE \
+              (docs/rung38-spec.md 'Scope').", flight.m0)));
++        }
+     }
+ 
+     let stations = vec![
+diff --git a/rust/src/turbine_cooling.rs b/rust/src/turbine_cooling.rs
+index daee438..0997a77 100644
+--- a/rust/src/turbine_cooling.rs
++++ b/rust/src/turbine_cooling.rs
+@@ -310,8 +310,8 @@ pub fn try_cascade_cooled(
+     let (mut eta_hpt, mut eta_lpt, mut tt3) = (base.eta_hpt, base.eta_lpt, tt3_seed);
+     for _ in 0..TwoSpoolCore::MAX {
+         let hpt = try_solve_cooled_hpt(base, wgas, tt4, f, burner, e1, e2, tt3, eta_hpt)?;
+-        let (pi_lpt, tau_lpt, tt5) = base.try_solve_choked_turbine(
+-            wgas, hpt.tt45, hpt.f45, base.a45, base.a8, base.pi_n, eta_lpt)?;
++        let (pi_lpt, tau_lpt, tt5) = base.try_lp_steady(
++            wgas, hpt.tt45, hpt.f45, eta_lpt, hpt.pi_hpt)?;
+ 
+         // The LP balance, per FACE air: the LPT passes (1-b)(G + eps) of gas.
+         let g = burner * (1.0 + f);
+@@ -459,6 +459,7 @@ pub fn try_match_cooled(
+     let mut tt3_seed = base.reference.station("3").tt;
+     let mut cc: Option<CooledCascade> = None;
+     for _ in 0..TwoSpoolCore::MAX {
++        base.track_pt4(pt4);
+         let owned = base.try_working_gas(f, tt4, pt4)?;
+         let wgas = owned.as_ref().unwrap_or(base.gas());
+         let x = try_cascade_cooled(core, wgas, tt2, tt4, f, c, cool, tt3_seed)?;
+@@ -519,9 +520,14 @@ pub fn try_match_cooled(
+     let s5 = Turbine::new(m.eta_lpt, None).apply(&s45, &rgas, dh_lpt_reb);
+     let exit = Nozzle::convergent(flight.p0, base.pi_n).try_apply(&s5, &rgas)?;
+     if exit.p9 <= flight.p0 + 1e-6 {
++        if let Some(res) = base.below_choke_resolve(flight.p0, tt4, || try_match_cooled(core, flight, tt4), |x| x.base.base.thrust) { return res; }
++        base.check_sub_idle(tt4, (1.0 + s45.far) * exit.v9 - v0)?;
++        if !base.in_branch() {
++        crate::two_spool::census_unchoke("r91", tt4, flight.m0, flight.p0);
+         return Err(Abort(format!(
+             "rung-91 cooled match at Tt4={tt4:.0}, vane={e1:.3}, blade={e2:.3}, M0={:.2}: nozzle \
+              UNCHOKED -- OUT OF SCOPE (docs/rung38-spec.md 'Scope').", flight.m0)));
++        }
+     }
+ 
+     let stations = vec![
+diff --git a/rust/src/two_spool.rs b/rust/src/two_spool.rs
+index 7fc355c..5feb14f 100644
+--- a/rust/src/two_spool.rs
++++ b/rust/src/two_spool.rs
+@@ -696,9 +696,55 @@ pub struct TwoSpoolCore {
+     pub ab_out: std::cell::Cell<bool>,
+     /// What the lit afterburner did at the last thrust tail solved (a readout's source; cleared by each re-read).
+     pub ab_last: std::cell::Cell<Option<crate::afterburner::AbAt>>,
++    /// RUNG 103 (probe): the steady matchers re-solve below choke instead of refusing.
++    pub below_choke: std::cell::Cell<bool>,
++    /// RUNG 103 (probe): `(pt4, p0)` while a below-choke re-solve runs; `None` = rung 38's pin.
++    pub lp_ctx: std::cell::Cell<Option<(f64, f64)>>,
++    /// RUNG 103 (probe): skip the unchoked refusal entirely — the old pin's numbers, for the baseline.
++    pub guard_off: std::cell::Cell<bool>,
++    pub retry_any: std::cell::Cell<bool>,
++    /// probe: hold the LP turbine at this pressure ratio (the independent outer search).
++    pub fixed_pi: std::cell::Cell<Option<f64>>,
++}
++
++/// RUNG 103 (probe): clears `lp_ctx` on every exit, panics included.
++pub struct BranchGuard<'a>(pub &'a TwoSpoolCore);
++impl Drop for BranchGuard<'_> {
++    fn drop(&mut self) { self.0.lp_ctx.set(None) }
+ }
+ 
+ impl TwoSpoolCore {
++    /// RUNG 103 (probe): the LP turbine in a steady cascade — rung 38's pin unless a below-choke re-solve runs.
++    pub fn try_lp_steady(
++        &self, gas: &Gas, tt45: f64, f45: f64, eta_lpt: f64, pi_hpt: f64,
++    ) -> Result<(f64, f64, f64), Abort> {
++        if let Some(pi) = self.fixed_pi.get() { let (t, t5) = self.try_tau_of(gas, tt45, f45, pi, eta_lpt)?; return Ok((pi, t, t5)); }
++        match self.lp_ctx.get() {
++            None => self.try_solve_choked_turbine(gas, tt45, f45, self.a45, self.a8, self.pi_n, eta_lpt),
++            Some((pt4, p0)) => crate::unchoked_lp::try_lp_turbine(self, gas, tt45, f45, eta_lpt, pi_hpt * pt4, p0),
++        }
++    }
++    /// RUNG 103 (probe): a joint loop's pass records its `pt4` while a re-solve runs.
++    pub fn track_pt4(&self, pt4: f64) {
++        if let Some((_, p0)) = self.lp_ctx.get() { self.lp_ctx.set(Some((pt4, p0))) }
++    }
++    /// RUNG 103 (probe): at an unchoked guard — `Some(result)` of the re-solve when the switch is on and none runs yet.
++    pub fn below_choke_resolve<T>(
++        &self, p0: f64, tt4: f64, rerun: impl FnOnce() -> Result<T, Abort>, thrust: impl Fn(&T) -> f64,
++    ) -> Option<Result<T, Abort>> {
++        if !self.below_choke.get() || self.lp_ctx.get().is_some() { return None }
++        self.lp_ctx.set(Some((f64::NAN, p0)));
++        let g = BranchGuard(self);
++        let r = rerun();
++        drop(g);
++        Some(r.and_then(|x| { let t = thrust(&x); if t > 0.0 { Ok(x) } else { Err(sub_idle(tt4, t)) } }))
++    }
++    /// RUNG 103 (probe): inside a re-solve, the core's own specific thrust must be positive before scoring.
++    pub fn check_sub_idle(&self, tt4: f64, sp: f64) -> Result<(), Abort> {
++        if self.lp_ctx.get().is_some() && !(sp > 0.0) { Err(sub_idle(tt4, sp)) } else { Ok(()) }
++    }
++    pub fn in_branch(&self) -> bool { self.lp_ctx.get().is_some() || self.guard_off.get() || self.fixed_pi.get().is_some() }
++
+     pub const TOL: f64 = 1e-13;
+     pub const MAX: usize = 200;
+ 
+@@ -856,6 +902,11 @@ impl TwoSpoolCore {
+             ab_w: std::cell::Cell::new(0.0),
+             ab_out: std::cell::Cell::new(false),
+             ab_last: std::cell::Cell::new(None),
++            below_choke: std::cell::Cell::new(false),
++            lp_ctx: std::cell::Cell::new(None),
++            guard_off: std::cell::Cell::new(false),
++            retry_any: std::cell::Cell::new(false),
++            fixed_pi: std::cell::Cell::new(None),
+         }
+     }
+ 
+@@ -1054,8 +1105,8 @@ impl TwoSpoolCore {
+         let (pi_hpt, tau_hpt, tt45) =
+             self.try_solve_choked_turbine(wgas, tt4, f, self.a4, self.a45, 1.0, self.eta_hpt)?;
+         // Step 2 (★-LP): tau_LPT from (A45, A8) alone — needs the nozzle choked.
+-        let (pi_lpt, tau_lpt, tt5) = self.try_solve_choked_turbine(
+-            wgas, tt45, f, self.a45, self.a8, self.pi_n, self.eta_lpt)?;
++        let (pi_lpt, tau_lpt, tt5) = self.try_lp_steady(
++            wgas, tt45, f, self.eta_lpt, pi_hpt)?;
+ 
+         // Step 3: LP shaft balance -> pi_LPC. NO reference to the HP spool.
+         let dh_lpt = self.eta_m * (1.0 + f) * (wgas.h_t(tt45, f) - wgas.h_t(tt5, f));
+@@ -1103,6 +1154,7 @@ impl TwoSpoolCore {
+                               pi_lpc: f64::NAN, tt25: f64::NAN, pi_hpc: f64::NAN,
+                               tt3: f64::NAN };
+         for _ in 0..Self::MAX {
++            self.track_pt4(pt4);
+             let owned = self.working_gas(f, tt4, pt4);
+             let wgas = owned.as_ref().unwrap_or(self.gas());
+             c = self.cascade(wgas, tt2, tt4, f);
+@@ -1134,12 +1186,17 @@ impl TwoSpoolCore {
+                                  self.eta_lpc, self.eta_hpc, self.eta_hpt, self.eta_lpt)
+             .unwrap_or_else(|e| panic!("{}", e.0));
+         let nozzle_choked = r.exit_p9 > flight.p0 + 1e-6;
++        if !nozzle_choked {
++            if let Some(res) = self.below_choke_resolve(flight.p0, tt4, || Ok(self.match_point(flight, tt4)), |x| x.thrust) { return res.unwrap_or_else(|e| panic!("{}", e.0)); }
++            if let Err(e) = self.check_sub_idle(tt4, (1.0 + r.s4.far) * r.exit_v9 - r.v0) { panic!("{}", e.0) }
++            if !self.in_branch() { census_unchoke("r38", tt4, flight.m0, flight.p0); }
++        }
+ 
+         // SCOPE GUARD (`docs/rung38-spec.md` § Scope). Unchoke relocates rung 33's inversion one
+         // throat upstream onto the LP spool — a genuinely different solve, not built here. FLAG,
+         // DON'T LIE, where rung 33 could DISPATCH. It fires on 23 of the 147-cell dump grid, so
+         // it is a live band along the cold/slow edge and not a corner (§ 5.7 (e)).
+-        assert!(nozzle_choked,
++        assert!(nozzle_choked || self.in_branch(),
+                 "rung-38 two-spool match at Tt4={tt4:.0}, M0={:.2}: nozzle UNCHOKED -- OUT OF \
+                  SCOPE (docs/rung38-spec.md 'Scope'). The LP turbine's geometric tau_LPT pin \
+                  (*-LP) is only valid while the nozzle stays choked; a rung-33-shaped follow-on \
+@@ -1509,7 +1566,17 @@ impl TwoSpoolMapCore {
+     pub fn try_match_point(
+         &self, flight: &FlightCondition, tt4: f64,
+     ) -> Result<TwoSpoolMapResult, Abort> {
+-        (self.hooks.try_match_point)(self, flight, tt4)
++        let r = (self.hooks.try_match_point)(self, flight, tt4);
++        // RUNG 103 (probe): any failure of the PINNED path gets one below-choke attempt.
++        let b = &self.base;
++        if r.is_err() && b.below_choke.get() && !b.in_branch() && b.retry_any.get() {
++            if let Some(x) = b.below_choke_resolve(flight.p0, tt4, || (self.hooks.try_match_point)(self, flight, tt4),
++                                                   |x| x.base.thrust) {
++                RETRIED.with(|c| c.set(c.get() + 1));
++                return x;
++            }
++        }
++        r
+     }
+ 
+     // --- the triangular map cascade at a FIXED (Tt2, pt2, Tt4, f) --------------------------
+@@ -1548,8 +1615,8 @@ impl TwoSpoolMapCore {
+             // Steps 1–2: both turbines pinned by geometry, at the current turbine efficiencies.
+             let (pi_hpt, tau_hpt, tt45) = self.base.try_solve_choked_turbine(
+                 wgas, tt4, f, self.base.a4, self.base.a45, 1.0, eta_hpt)?;
+-            let (pi_lpt, tau_lpt, tt5) = self.base.try_solve_choked_turbine(
+-                wgas, tt45, f, self.base.a45, self.base.a8, self.base.pi_n, eta_lpt)?;
++            let (pi_lpt, tau_lpt, tt5) = self.base.try_lp_steady(
++                wgas, tt45, f, eta_lpt, pi_hpt)?;
+ 
+             // ENERGY (map-free): the LP balance fixes Tt25, the HP balance fixes Tt3 onto it.
+             let dh_lpt = self.base.eta_m * (1.0 + f) * (wgas.h_t(tt45, f) - wgas.h_t(tt5, f));
+@@ -1730,6 +1797,7 @@ fn r39_try_match_point(
+     let (mut f, mut pt4) = (b.f_design, b.pi_b * b.pi_hpc_design * b.pi_lpc_design * pt2);
+     let mut c: Option<CascadeMap> = None;
+     for _ in 0..TwoSpoolCore::MAX {
++        b.track_pt4(pt4);
+         let owned = b.try_working_gas(f, tt4, pt4)?;
+         let wgas = owned.as_ref().unwrap_or(b.gas());
+         let cm = core.try_cascade_map(wgas, tt2, pt2, tt4, f)?;
+@@ -1764,10 +1832,15 @@ fn r39_try_match_point(
+     // `b = 0`, rising to 25 at `b = 0.10`, which IS rung 42 gate 6's shrinking envelope, as a
+     // count.
+     if r.exit_p9 <= flight.p0 + 1e-6 {
++        if let Some(res) = b.below_choke_resolve(flight.p0, tt4, || r39_try_match_point(core, flight, tt4), |x| x.base.thrust) { return res; }
++        b.check_sub_idle(tt4, (1.0 + r.s4.far) * r.exit_v9 - r.v0)?;
++        if !b.in_branch() {
++        census_unchoke("r39", tt4, flight.m0, flight.p0);
+         return Err(Abort(format!(
+             "rung-39 two-spool map match at Tt4={tt4:.0}, M0={:.2}: nozzle UNCHOKED -- OUT \
+              OF SCOPE (docs/rung38-spec.md 'Scope'). The LP turbine's geometric tau_LPT pin \
+              (*-LP) is only valid while the nozzle stays choked.", flight.m0)));
++        }
+     }
+ 
+     let base = r.try_into_result(b, flight, tt4, mdot_air, &c.c)?;
+@@ -2261,3 +2334,24 @@ impl TwoSpoolMapCore {
+         }
+     }
+ }
++
++/// RUNG-103 CENSUS (scratch worktree only): one line per unchoked refusal, written in ONE call.
++pub fn census_unchoke(site: &str, tt4: f64, m0: f64, p0: f64) {
++    if let Ok(path) = std::env::var("R103_CENSUS") {
++        use std::io::Write;
++        let exe = std::env::current_exe().ok().and_then(|p| p.file_stem().map(|s| s.to_string_lossy().into_owned()))
++            .unwrap_or_default();
++        let th = std::thread::current().name().unwrap_or("?").to_string();
++        let line = format!("{site}\t{tt4:.3}\t{m0:.4}\t{p0:.1}\t{exe}\t{th}\n");
++        if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(path) {
++            let _ = f.write_all(line.as_bytes());
++        }
++    }
++}
++
++/// RUNG 103 (probe): the below-idle refusal.
++pub fn sub_idle(tt4: f64, sp: f64) -> Abort {
++    Abort(format!("rung-103: below idle at Tt4={tt4:.0}: with the nozzle unchoked the engine makes more drag than \
++                   thrust here (net {sp:.1} N per kg/s of air)"))
++}
++thread_local! { pub static RETRIED: std::cell::Cell<u64> = const { std::cell::Cell::new(0) }; }

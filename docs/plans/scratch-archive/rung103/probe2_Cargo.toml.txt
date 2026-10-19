@@ -1,0 +1,26 @@
+[package]
+name = "rung103-probe2"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+turbojet = { path = "W:/temp/claude/rung103-census/rust" }
+
+[profile.release]
+opt-level = 3
+
+[[bin]]
+name = "variants"
+path = "src/variants.rs"
+
+[[bin]]
+name = "arrow"
+path = "src/arrow.rs"
+
+[[bin]]
+name = "indep"
+path = "src/indep.rs"
+
+[[bin]]
+name = "preflight"
+path = "src/preflight.rs"
