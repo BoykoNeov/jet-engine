@@ -34,6 +34,13 @@ pub const PI_TOP: f64 = 0.9995;
 pub fn try_lp_turbine(
     base: &TwoSpoolCore, gas: &Gas, tt45: f64, f45: f64, eta_lpt: f64, pt45: f64, p0: f64,
 ) -> Result<(f64, f64, f64), Abort> {
+    // RUNG 102: lit with a held (or opened) throat, the nozzle relation reads station 7. Unlit, or lit with the throat
+    // matched, the LP turbine sits where the fitted engine sits unlit — this body, on the core's fitted throat.
+    if let Some(x) = base.lit_ab() {
+        if let Some(s) = x.s_now() {
+            return x.try_lp_turbine(base, gas, tt45, f45, eta_lpt, pt45, p0, s);
+        }
+    }
     let pin = base.try_solve_choked_turbine(gas, tt45, f45, base.a45, base.a8, base.pi_n, eta_lpt)?;
     if base.lp_pinned.get() {
         return Ok(pin);

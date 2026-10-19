@@ -320,13 +320,24 @@ pub struct TwoSpoolEngine {
     /// unloaded); it lives on the design engine so every sibling keeps it; every solver that
     /// cannot model it REFUSES an active one.
     pub offtake: Option<crate::shaft_offtake::ShaftOfftake>,
+    /// RUNG 102 (Part C): the AFTERBURNER fitted behind the LP turbine. [`run`](Self::run) never reads it (the core is
+    /// designed dry); rung 38's core opens its nozzle throat by `1/π_fh` and puts the flame holders in the nozzle's
+    /// loss when it is fitted, and lights it at the fit's moment of a march.
+    pub afterburner: Option<crate::afterburner::TwoShaftFit>,
 }
 
 impl TwoSpoolEngine {
     pub fn new(gas: Gas, components: Vec<(&'static str, Component)>, eta_m: f64) -> Self {
         let fs_engine = Engine::new(gas.clone(), Vec::new(), eta_m);
         TwoSpoolEngine { gas, components, eta_m, fs_engine, customer: None, cooling: None,
-                         offtake: None }
+                         offtake: None, afterburner: None }
+    }
+
+    /// RUNG 102 (Part C): the same engine with an afterburner fitted behind its LP turbine. The design run is unchanged
+    /// (see [`afterburner`](Self::afterburner)).
+    pub fn with_afterburner(mut self, fit: crate::afterburner::TwoShaftFit) -> Self {
+        self.afterburner = Some(fit);
+        self
     }
 
     /// RUNG 92: the same engine with the aircraft drawing shaft power `so` off design. The design
@@ -674,6 +685,17 @@ pub struct TwoSpoolCore {
     /// "the old model". For the rung's scoring and red check only; nothing on the page or the CLI sets it. Read by
     /// [`crate::unchoked_lp::try_lp_turbine`].
     pub lp_pinned: std::cell::Cell<bool>,
+    /// RUNG 102 (Part C): the afterburner, captured off the design engine — when fitted, `a8` and `pi_n` above are the
+    /// fitted engine's (`A8/π_fh`, `π_n·π_fh`), so every path runs it unlit unchanged.
+    pub afterburner: Option<crate::afterburner::TwoShaftAb>,
+    /// How far lit it is now (0–1), set from the march time by every march's derivative and every re-read
+    /// ([`light_at`](Self::light_at)); 0 while unfitted or before the light-off.
+    pub ab_w: std::cell::Cell<f64>,
+    /// The afterburner put out whatever `ab_w` says — the Controls view's cause test for a stop (does this step run
+    /// without it?). Never set during a march.
+    pub ab_out: std::cell::Cell<bool>,
+    /// What the lit afterburner did at the last thrust tail solved (a readout's source; cleared by each re-read).
+    pub ab_last: std::cell::Cell<Option<crate::afterburner::AbAt>>,
 }
 
 impl TwoSpoolCore {
@@ -811,6 +833,14 @@ impl TwoSpoolCore {
         let a45 = mdot4_r * powp(s45.tt, 0.5) / (s45.pt * choked_mfp(&gas, s45.tt, f_design));
         let (tt9_r, pt9_r) = (s5.tt, pi_n * s5.pt);     // Tt9 = Tt5; pt9 = pi_n * pt5
         let a8 = mdot4_r * powp(tt9_r, 0.5) / (pt9_r * choked_mfp(&gas, tt9_r, f_design));
+        // RUNG 102: fitted, the unlit duct costs the flame holders' loss, so the dry throat opens by 1/π_fh — the same
+        // choked flow, the core where the unfitted engine has it.
+        let afterburner = design_engine.afterburner
+            .map(|fit| crate::afterburner::TwoShaftAb::capture(&gas, &s5, a8, pi_n, fit));
+        let (a8, pi_n) = match afterburner {
+            Some(ab) => (ab.a8_dry, pi_n * ab.fit.ab.pi_fh),
+            None => (a8, pi_n),
+        };
 
         TwoSpoolCore {
             eta_m, flight_design, mdot_air_design: mdot_design, hf_fuel_molar,
@@ -822,7 +852,24 @@ impl TwoSpoolCore {
             cooling,
             offtake,
             lp_pinned: std::cell::Cell::new(false),
+            afterburner,
+            ab_w: std::cell::Cell::new(0.0),
+            ab_out: std::cell::Cell::new(false),
+            ab_last: std::cell::Cell::new(None),
         }
+    }
+
+    /// RUNG 102: set the afterburner's light-off fraction for march time `s` (a no-op unfitted).
+    pub fn light_at(&self, s: f64) {
+        if let Some(ab) = &self.afterburner {
+            self.ab_w.set(ab.w_at(s));
+        }
+    }
+
+    /// RUNG 102: the afterburner as lit now, or `None` (unfitted, or not yet lit).
+    pub fn lit_ab(&self) -> Option<crate::afterburner::LitAb> {
+        let w = self.ab_w.get();
+        self.afterburner.filter(|_| w > 0.0 && !self.ab_out.get()).map(|ab| crate::afterburner::LitAb { ab, w })
     }
 
     // --- a gas whose station-4 mixture is frozen at THIS trial burn condition --------------

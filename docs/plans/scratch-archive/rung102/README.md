@@ -46,3 +46,14 @@ light-off clock ticked in the march derivatives, `lp_exit` in the thrust tails, 
 - `reach_c.rs` → `reach_c.txt`: the 108 Controls check requests not fitted / fitted unlit / lit held / lit *match*
   (light-off 0.24), with lit-trial counts and the `guard()` traps.
 - `grid_dry.rs` → `grid_dry.txt`: the addendum's scored grid run FITTED-UNLIT only (no lit run on those cells).
+
+Part C, against the SHIPPED code (a third crate, `Cargo_cscore.toml.txt`, on the repo; the census's base side is
+`replay.rs` in Part A's second crate on a worktree of `9128307`):
+- `smoke_c.rs`: the view's runs (not fitted, fitted, held, ×1.15, *match*, the refusals, the stops).
+- `cost_c.rs` → `cost_c.txt`: § 5.4's trigger (the page's reply, best of 9, lit vs fitted-unlit); `census_c.rs`: lit LP
+  solves, burns, lean walls and engine instants per reply — why the one fired case (the held HP-speed governor) costs.
+- `score_c.rs` → `score_c.txt`: C1–C12 (360 cells) and the *match* gate on every grid cell.
+- `unlit_dump_ship.rs` + `unlit_dump_probe.rs`: the fitted-unlit gate (the swapped core against the probe's hooked
+  relation, and against not fitted) — compared to the last digit, printed in the session.
+- `crashctl.rs` (`gen`: every check request + 1 200 seeded Controls requests not fitted / fitted / lit; `cmp`) →
+  `census_c.txt`.

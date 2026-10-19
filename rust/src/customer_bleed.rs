@@ -772,9 +772,10 @@ pub fn r90_try_instant_tail(
     let burner = c.mdot_air;
     let face = c.mdot_face.expect("a rung-90 closure always sets mdot_face");
     let s5 = FlowState { tt: tt5, pt: pi_lpt * pi_hpt * c.pt4, mdot: burner, far: f };
-    let exit = Nozzle::convergent(flight.p0, core.base.pi_n).try_apply(&s5, wgas)?;
-    let press = (1.0 + f) * wgas.r_t_at(f) * exit.t9 * (1.0 - flight.p0 / exit.p9) / exit.v9;
-    let sp_thrust = (1.0 + f) * exit.v9 - v0 + press;
+    // RUNG 102: behind a lit afterburner the exit is station 7's, on the total fuel (the shipped nozzle otherwise).
+    let (exit, f9) = crate::afterburner::lp_exit(&core.base, wgas, &s5, flight.p0)?;
+    let press = (1.0 + f9) * wgas.r_t_at(f9) * exit.t9 * (1.0 - flight.p0 / exit.p9) / exit.v9;
+    let sp_thrust = (1.0 + f9) * exit.v9 - v0 + press;
     // (6): per INLET air, both extractions carrying full ram drag.
     let share = burner / face;
     Ok(Instant2 {

@@ -545,7 +545,10 @@ fn settings_round_trip_and_the_entry_point_answers() {
                                low_grid: false, formula_choked: true,
                                // Rung 101's three, off their defaults likewise.
                                airflow: turbojet::airflow_source::AirflowFrom::Exhaust, exhaust_lag: true,
-                               exhaust_tau: 0.75 };
+                               exhaust_tau: 0.75,
+                               // Rung 102's five, off their defaults likewise.
+                               ab: Some(turbojet::afterburner::AbMode::Lit), tt7: 1875.0, light_at: 1.24,
+                               a8_ratio: 1.35, a8_match: true };
     let back = ControlsSettings::from_json(&Json::parse(&s.to_json().dump_compact())).unwrap();
     assert_eq!(back, s);
     // At their defaults they are not written at all (every default reply keeps rung 99's shape), and read back.
@@ -553,6 +556,7 @@ fn settings_round_trip_and_the_entry_point_answers() {
     let j0 = d0.to_json().dump_compact();
     assert!(!j0.contains("low_grid") && !j0.contains("formula_choked"));
     assert!(!j0.contains("airflow") && !j0.contains("exhaust_lag") && !j0.contains("exhaust_tau"));
+    assert!(!j0.contains("\"ab\"") && !j0.contains("Tt7") && !j0.contains("light_at") && !j0.contains("a8_"));
     assert_eq!(ControlsSettings::from_json(&Json::parse(&j0)).unwrap(), d0);
     let d = Json::parse(&call(r#"{"op":"controls_defaults"}"#));
     assert!(d.get("controls").is_some() && d.get("shapes").is_some());

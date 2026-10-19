@@ -457,6 +457,7 @@ pub fn try_der_at(
     ft: &FuelTransientCore, flight: &FlightCondition, gov: &Governor, lim: &FuelLimiters<'_>,
     metal: Option<&dyn Fn(&Instant2) -> f64>, a: f64, b: f64, s: f64, tm: Option<f64>,
 ) -> Result<GovDer, GovFailure> {
+    ft.inner.inner.base.light_at(s);   // RUNG 102: the afterburner as lit at this march time
     assert!(lim.freeze.is_none() && lim.tau_gov.is_none() && lim.lag.is_none() && lim.s_off.is_none()
                 && lim.tau_rel.is_none(),
             "rung-95 governs rung 43's PLAIN min-select: no freeze, no lagged governor, no release lag or forced release");

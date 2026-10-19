@@ -73,7 +73,7 @@
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 
-use crate::components::{try_choked_mfp, ram_recovery, Nozzle};
+use crate::components::{try_choked_mfp, ram_recovery};
 use crate::engine::{Engine, FlightCondition};
 use crate::gas::{powp, Abort, FlowState, Gas};
 use crate::map::ComponentMap;
@@ -2087,9 +2087,10 @@ fn r40_try_instant_tail(
     let phi_lp_dot = (c.mdot_air * (pt_lp - pc_lp)) / (t.p_ref_lp * nu_lp);
 
     let s5 = FlowState { tt: tt5, pt: pi_lpt * pi_hpt * c.pt4, mdot: c.mdot_air, far: f };
-    let exit = Nozzle::convergent(flight.p0, core.base.pi_n).try_apply(&s5, wgas)?;
-    let press = (1.0 + f) * wgas.r_t_at(f) * exit.t9 * (1.0 - flight.p0 / exit.p9) / exit.v9;
-    let sp_thrust = (1.0 + f) * exit.v9 - v0 + press;
+    // RUNG 102: behind a lit afterburner the exit is station 7's, on the total fuel (the shipped nozzle otherwise).
+    let (exit, f9) = crate::afterburner::lp_exit(&core.base, wgas, &s5, flight.p0)?;
+    let press = (1.0 + f9) * wgas.r_t_at(f9) * exit.t9 * (1.0 - flight.p0 / exit.p9) / exit.v9;
+    let sp_thrust = (1.0 + f9) * exit.v9 - v0 + press;
 
     Ok(Instant2 {
         close: c.clone(),

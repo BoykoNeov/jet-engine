@@ -52,7 +52,8 @@ use crate::gas::{powp, Abort};
 use crate::jobj;
 use crate::map::ComponentMap;
 use crate::matcher::Branch;
-use crate::sandbox::DoesNotRun;
+use crate::sandbox::{ab_precheck, DoesNotRun};
+use crate::afterburner::{AbMode, Afterburner, Throat, TwoShaftFit};
 use crate::sandbox_blades::BladeSettings;
 use crate::stator_transient::{IncidenceLimiter, ScheduledStatorCore, ScheduledStatorTransient, StatorArm,
                               StatorSchedule};
@@ -64,6 +65,11 @@ use crate::visuals::Json;
 /// The march step, in HP spool time constants — rung 43's grid. (Rungs 57/62 ran at 0.01; the
 /// step is checked against it in the crash map, plan § 12.5.)
 pub const DS: f64 = 0.02;
+
+/// RUNG 102's defaults on this view: the afterburner's temperature (Fly it's), and the light-off at the ramp's end of
+/// the page's opening run (full throttle reached — where a pilot lights it).
+pub const AB_TT7: f64 = 2000.0;
+pub const AB_LIGHT_AT: f64 = 0.5;
 
 /// The longest run the page asks for, in spool time constants — a bound on one request's cost (the
 /// crash map's slowest requests, all long runs with limiters armed, took 1–3.7 s natively).
@@ -286,6 +292,15 @@ pub struct ControlsSettings {
     pub p0: f64,
     /// The flight Mach number FLOWN (plan § 29); the default is the design's 0.85.
     pub m0: f64,
+    /// RUNG 102 (Part C): the afterburner — not fitted (`None`, the default: every saved setting stays valid), fitted
+    /// and never lit (`Unlit`), or `Lit` at `light_at` (HP spool τ into the run, on the march grid) over
+    /// [`crate::afterburner::LIGHT_RAMP`]; its temperature `tt7`, and its throat as on *Fly it* (`a8_ratio` × the dry
+    /// throat, or opened by the rule with `a8_match`). Written to a reply only off their defaults.
+    pub ab: Option<AbMode>,
+    pub tt7: f64,
+    pub light_at: f64,
+    pub a8_ratio: f64,
+    pub a8_match: bool,
 }
 
 /// Rung 96's switch: where a governed thrust is read from.
@@ -406,6 +421,7 @@ impl ControlsSettings {
             low_grid: true, formula_choked: false,
             airflow: AirflowFrom::Table, exhaust_lag: false, exhaust_tau: 1.0,
             t0: fd.t0, p0: fd.p0, m0: fd.m0,
+            ab: None, tt7: AB_TT7, light_at: AB_LIGHT_AT, a8_ratio: 1.0, a8_match: false,
         }
     }
 
@@ -563,9 +579,30 @@ impl ControlsSettings {
             if self.airflow != AirflowFrom::Table { kv.push(("airflow".into(), Json::from(self.airflow.key()))); }
             if self.exhaust_lag { kv.push(("exhaust_lag".into(), b(true))); }
             if self.exhaust_tau != 1.0 { kv.push(("exhaust_tau".into(), Json::Float(self.exhaust_tau))); }
+            // Rung 102's five, likewise.
+            if let Some(m) = self.ab {
+                kv.push(("ab".into(), Json::from(if m == AbMode::Lit { "lit" } else { "unlit" })));
+            }
+            if self.tt7 != AB_TT7 { kv.push(("Tt7".into(), Json::Float(self.tt7))); }
+            if self.light_at != AB_LIGHT_AT { kv.push(("light_at".into(), Json::Float(self.light_at))); }
+            if self.a8_ratio != 1.0 { kv.push(("a8_ratio".into(), Json::Float(self.a8_ratio))); }
+            if self.a8_match { kv.push(("a8_match".into(), b(true))); }
         }
         j
     }
+
+    /// Rung 102: the afterburner as the model takes it (`None` when not fitted). Range-checked by the precheck first.
+    pub fn afterburner_fit(&self) -> Option<TwoShaftFit> {
+        let throat = if self.a8_match { Throat::Match } else { Throat::Held(self.a8_ratio) };
+        self.ab.map(|m| TwoShaftFit {
+            ab: Afterburner { tt7: self.tt7, ..Afterburner::default() },
+            throat,
+            light_at: (m == AbMode::Lit).then_some(self.light_at),
+        })
+    }
+
+    /// Rung 102: does this run light the afterburner?
+    pub fn lit(&self) -> bool { self.ab == Some(AbMode::Lit) }
 
     /// Read settings; a missing key keeps its default.
     pub fn from_json(j: &Json) -> Result<Self, String> {
@@ -611,7 +648,8 @@ impl ControlsSettings {
                           ("generator_power", &mut s.generator_power), ("metal_year", &mut s.metal_year),
                           ("metal_life", &mut s.metal_life), ("gov_tau", &mut s.gov_tau), ("gov_gain", &mut s.gov_gain),
                           ("exhaust_tau", &mut s.exhaust_tau),
-                          ("T0", &mut s.t0), ("p0", &mut s.p0), ("M0", &mut s.m0)] {
+                          ("T0", &mut s.t0), ("p0", &mut s.p0), ("M0", &mut s.m0),
+                          ("Tt7", &mut s.tt7), ("light_at", &mut s.light_at), ("a8_ratio", &mut s.a8_ratio)] {
             num(k, into)?;
         }
         if let Some(t) = text("customer")? {
@@ -631,8 +669,17 @@ impl ControlsSettings {
                           ("release_on", &mut s.release_on), ("metal_on", &mut s.metal_on), ("hold_cap", &mut s.hold_cap),
                           ("govern", &mut s.govern), ("table_clean", &mut s.table_clean),
                           ("corr_p", &mut s.corr_p), ("corr_t", &mut s.corr_t), ("low_grid", &mut s.low_grid),
-                          ("formula_choked", &mut s.formula_choked), ("exhaust_lag", &mut s.exhaust_lag)] {
+                          ("formula_choked", &mut s.formula_choked), ("exhaust_lag", &mut s.exhaust_lag),
+                          ("a8_match", &mut s.a8_match)] {
             flag(k, into)?;
+        }
+        if let Some(t) = text("ab")? {
+            s.ab = match t.as_str() {
+                "none" => None,
+                "unlit" => Some(AbMode::Unlit),
+                "lit" => Some(AbMode::Lit),
+                _ => return Err(format!("setting \"ab\" must be \"none\", \"unlit\" or \"lit\", got {t:?}")),
+            };
         }
         if let Some(t) = text("floor_spool")? { s.floor_spool = spool(&t)?; }
         if let Some(t) = text("stator_spool")? { s.stator_spool = spool(&t)?; }
@@ -791,6 +838,33 @@ pub fn controls_precheck(s: &ControlsSettings) -> Result<(), DoesNotRun> {
     }
     if s.m0 <= 0.0 {
         return no("The flight Mach number must be above zero.");
+    }
+    // Rung 102: the afterburner's knobs (Fly it's ranges), its light-off on the march's grid, and the one control that
+    // cannot run with it lit.
+    if let Some(fit) = s.afterburner_fit() {
+        ab_precheck(&fit.ab)?;
+        let named = [("Tt7", s.tt7), ("light_at", s.light_at), ("a8_ratio", s.a8_ratio)];
+        if let Some((k, _)) = named.iter().find(|(_, v)| !v.is_finite()) {
+            return Err(DoesNotRun(format!("Setting {k} is not a number.")));
+        }
+        if !s.a8_match && !(1.0..=2.0).contains(&s.a8_ratio) {
+            return no("The nozzle throat opens from its dry size (1) to twice it (2).");
+        }
+        if s.lit() {
+            let k = s.light_at / DS;
+            if !(s.light_at >= 0.0 && s.light_at < s.s_end()) || (k - k.round()).abs() > 1e-6 {
+                return Err(DoesNotRun(format!(
+                    "The afterburner lights at a moment of the run, on the march's {DS} step: from 0 to before the run \
+                     ends ({:.2}).", s.s_end())));
+            }
+            if s.govern && s.hold == Hold::Thrust {
+                return no("With the afterburner lit, the control cannot hold thrust with the main fuel: the afterburner \
+                           holds the exhaust temperature, so more main fuel squeezes the airflow down while the \
+                           afterburner simply burns less, and the thrust FALLS at that moment instead of rising. A \
+                           control that pushes the fuel the way it expects would push it the wrong way. Hold the HP \
+                           speed, or switch the afterburner to not lit.");
+            }
+        }
     }
     // Rung 101: the exhaust sensor's lag, where it acts — its reading is a march state, stepped by the march's RK4,
     // which is stable above 0.0072 τ at this step; the floor keeps a seventh of that edge.
@@ -1071,6 +1145,11 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
     // Rung 91: the turbine cooling rides there too, for the same reason.
     let design = match s.turbine_cooling() {
         Some(tc) => design.with_turbine_cooling(tc),
+        None => design,
+    };
+    // Rung 102: the afterburner is hardware on the design engine too — every sibling built below carries it.
+    let design = match s.afterburner_fit() {
+        Some(fit) => design.with_afterburner(fit),
         None => design,
     };
     // Rung 92: and the generator load. A load the engine cannot carry slows a spool until its compressor
@@ -1451,13 +1530,18 @@ impl ControlsSolver {
     /// The march and, when governed (rung 95), what the governor did at each point (empty otherwise).
     pub fn march_marked(&self) -> (Vec<FuelPoint>, Vec<GovMark>) {
         let nu0 = (self.start.nu_lp, self.start.nu_hp);
-        if let Some(g) = &self.governor {
+        let out = if let Some(g) = &self.governor {
             let over = |i: &Instant2| self.metal_over(i);
             let metal: Option<&dyn Fn(&Instant2) -> f64> = if self.settings.metal_leg() { Some(&over) } else { None };
-            return gv::march(&self.core.fuel, &self.flight, g, &self.limiters(), metal, nu0, self.settings.s_end(), DS);
-        }
-        let sched = self.settings.schedule(self.mf_lo, self.mf_hi);
-        (self.core.fuel.integrate_fuel(&self.flight, sched, nu0, self.settings.s_end(), DS, &self.limiters()), Vec::new())
+            gv::march(&self.core.fuel, &self.flight, g, &self.limiters(), metal, nu0, self.settings.s_end(), DS)
+        } else {
+            let sched = self.settings.schedule(self.mf_lo, self.mf_hi);
+            (self.core.fuel.integrate_fuel(&self.flight, sched, nu0, self.settings.s_end(), DS, &self.limiters()),
+             Vec::new())
+        };
+        // RUNG 102: the march leaves the afterburner as lit at its last evaluation; every later reader sets its own.
+        self.core.fuel.inner.inner.base.ab_w.set(0.0);
+        out
     }
 
     /// Rung 95's metal leg reads this: the hotter metal's excess over its limit at an instant, K (−∞ unread).
@@ -1521,6 +1605,10 @@ impl ControlsSolver {
             (Route::ValveLag, _) => unreachable!("a slow valve's march records the valve at every point"),
             _ => None,
         };
+        // RUNG 102: and the afterburner as lit at the point's time (it stays set for the rest of a [`Self::read`]).
+        let base = &self.core.fuel.inner.inner.base;
+        base.light_at(p.s);
+        base.ab_last.set(None);
         self.core.fuel.try_instant_fuel(&self.flight, p.nu_lp, p.nu_hp, p.mf)
     }
 }
@@ -1592,6 +1680,7 @@ pub struct Failure {
 /// Returns `(dν_L/ds, dν_H/ds)`.
 fn der_plain(sv: &ControlsSolver, a: f64, b: f64, mf_in: f64, s: f64) -> Result<(f64, f64), Failure> {
     let fail = |call: Call, mf: f64| move |e: Abort| Failure { message: e.0, call, mf, nu_lp: a, nu_hp: b, s };
+    sv.core.fuel.inner.inner.base.light_at(s);   // RUNG 102: the afterburner as lit at this march time
     let ft = &sv.core.fuel;
     let fl = &sv.flight;
     let lim = sv.limiters();
@@ -1643,6 +1732,7 @@ fn der_plain(sv: &ControlsSolver, a: f64, b: f64, mf_in: f64, s: f64) -> Result<
 /// order. Returns `(dν_L/ds, dν_H/ds, dg/ds)`.
 fn der_release(sv: &ControlsSolver, a: f64, b: f64, g: f64, s: f64) -> Result<(f64, f64, f64), Failure> {
     let fail = |call: Call, mf: f64| move |e: Abort| Failure { message: e.0, call, mf, nu_lp: a, nu_hp: b, s };
+    sv.core.fuel.inner.inner.base.light_at(s);   // RUNG 102: the afterburner as lit at this march time
     let ft = &sv.core.fuel;
     let fl = &sv.flight;
     let lim = sv.limiters();
@@ -1706,6 +1796,7 @@ fn der_release(sv: &ControlsSolver, a: f64, b: f64, g: f64, s: f64) -> Result<(f
 /// 64's root against the valve's own target (rung 88). Returns `(dν_L/ds, dν_H/ds, db/ds)`.
 fn der_valve_lag(sv: &ControlsSolver, a: f64, h: f64, q: f64, s: f64) -> Result<(f64, f64, f64), Failure> {
     let fail = |call: Call, mf: f64| move |e: Abort| Failure { message: e.0, call, mf, nu_lp: a, nu_hp: h, s };
+    sv.core.fuel.inner.inner.base.light_at(s);   // RUNG 102: the afterburner as lit at this march time
     let ft = &sv.core.fuel;
     let fl = &sv.flight;
     let lim = sv.limiters();
@@ -1835,7 +1926,12 @@ pub fn stop_reason(sv: &ControlsSolver, points: &[FuelPoint]) -> Option<Stop> {
     if points.len() >= sv.settings.expected_points() {
         return None;
     }
-    let Some(last) = points.last() else {
+    Some(stop_at(sv, points.last()))
+}
+
+/// [`stop_reason`]'s re-run from the last recorded point (`None`: the very first evaluation failed).
+fn stop_at(sv: &ControlsSolver, last: Option<&FuelPoint>) -> Stop {
+    let Some(last) = last else {
         // The very first evaluation failed: re-make it.
         let sched = sv.settings.schedule(sv.mf_lo, sv.mf_hi);
         let (a, b) = (sv.start.nu_lp, sv.start.nu_hp);
@@ -1849,7 +1945,7 @@ pub fn stop_reason(sv: &ControlsSolver, points: &[FuelPoint]) -> Option<Stop> {
             Route::ValveLag => valve_command(sv, a, b, sched(0.0))
                 .and_then(|q| der_valve_lag(sv, a, b, q, 0.0).map(|_| ())).err(),
         };
-        return Some(Stop { s_last: f64::NAN, failure });
+        return Stop { s_last: f64::NAN, failure };
     };
     let failure = match replay_step(sv, last) {
         None => None,
@@ -1867,7 +1963,24 @@ pub fn stop_reason(sv: &ControlsSolver, points: &[FuelPoint]) -> Option<Stop> {
                                         s: f64::NAN }))
         }
     };
-    Some(Stop { s_last: last.s, failure })
+    Stop { s_last: last.s, failure }
+}
+
+/// RUNG 102: did the lit afterburner stop this run? Lit at the failing call, and either the failure is the
+/// afterburner's own (its refusal in words, or the lean wall), or the same step runs with the afterburner put out.
+pub fn afterburner_stopped(sv: &ControlsSolver, stop: &Stop, last: Option<&FuelPoint>) -> bool {
+    let base = &sv.core.fuel.inner.inner.base;
+    let Some(f) = &stop.failure else { return false };
+    if !base.afterburner.is_some_and(|ab| ab.w_at(f.s) > 0.0) {
+        return false;
+    }
+    if crate::afterburner::is_lit_failure(&Abort(f.message.clone())) {
+        return true;
+    }
+    base.ab_out.set(true);
+    let without = stop_at(sv, last);
+    base.ab_out.set(false);
+    without.failure.is_none_or(|g| g.message.starts_with("the march stopped, but re-running"))
 }
 
 /// The geometric middle of rung 43's two fuel-air walls (`F_FLOOR` 0.004, `F_CAP` 0.065): a failed
@@ -1899,6 +2012,8 @@ pub enum StopKind {
     /// Rung 46: the temperature limiter met a point where even the least fuel that solves burns hotter than the redline
     /// (plan § 29: met flown fast, at a run's first step).
     RedlineFloor,
+    /// Rung 102: the lit afterburner — its own refusal, the lean wall, or a step that runs with it put out.
+    Afterburner,
     /// Anything else the model refused at this point of the run.
     Other,
 }
@@ -1914,6 +2029,7 @@ impl StopKind {
             StopKind::Generator => "generator",
             StopKind::MetalCap => "metal_cap",
             StopKind::RedlineFloor => "redline_floor",
+            StopKind::Afterburner => "afterburner",
             StopKind::Other => "other",
         }
     }
@@ -1959,6 +2075,13 @@ impl StopKind {
                 "With the temperature limiter's lag switched on, the model's march does not record the lag's own \
                  state, so the sandbox cannot re-run the failed step to say why the run stopped here. The points \
                  before the stop are the model's own.",
+            StopKind::Afterburner =>
+                "The lit afterburner stopped the run: with it put out, this step runs. Behind a held nozzle the \
+                 afterburner's hot gas needs engine pressure to get out, and a limiter cutting the main fuel, or the \
+                 shafts slowing, can take the engine below the point where it can — the model keeps both turbine \
+                 throats choked, so there it has no running point (a real engine would stall). Or the afterburner \
+                 cannot reach its temperature here (the model's words below say which). Open the nozzle, or let it \
+                 open by the rule; light the afterburner later in the run; or lower its temperature.",
             StopKind::Other =>
                 "The model stopped on one of its internal checks at this point of the run.",
         }
@@ -1980,7 +2103,11 @@ pub fn trial_mixture(f: &Failure, last: Option<&FuelPoint>) -> Option<f64> {
 /// 1 000-request sweep of the slider box (2026-10-10, same requests before and after) the 24 such stops
 /// went to none; overall 23 more runs completed and 4 more ended at a real floor-unreachable stop (one
 /// rich stop and two cause-unknown stops on the governor-lag route also ran on).
-pub fn classify(_sv: &ControlsSolver, stop: &Stop, last: Option<&FuelPoint>) -> StopKind {
+pub fn classify(sv: &ControlsSolver, stop: &Stop, last: Option<&FuelPoint>) -> StopKind {
+    // Rung 102 first: a lit afterburner names its own stops, whatever solve met them.
+    if afterburner_stopped(sv, stop, last) {
+        return StopKind::Afterburner;
+    }
     let Some(f) = &stop.failure else { return StopKind::Unknown };
     let m = &f.message;
     if m.contains("UNREACHABLE") {
@@ -2122,6 +2249,8 @@ pub struct PointRead {
     pub sensor: Option<f64>,
     /// Rung 101: under the exhaust sensor, the reading the control demands HERE (its belief depends on the instant).
     pub demand: Option<f64>,
+    /// Rung 102: what the lit afterburner did here (`None` unlit or not fitted).
+    pub ab: Option<crate::afterburner::AbAt>,
 }
 
 impl ControlsSolver {
@@ -2138,6 +2267,8 @@ impl ControlsSolver {
     pub fn read(&self, p: &FuelPoint) -> Result<PointRead, Abort> {
         let s = &self.settings;
         let inst = self.reread(p)?;
+        // Rung 102: what the lit afterburner did in that instant (read now: the readouts below solve more instants).
+        let ab = self.core.fuel.inner.inner.base.ab_last.get();
         let i = &inst.base;
         let (v_lp, stall_lp) = self.stall(Spool::Lp, p.nu_lp, p.nu_hp);
         let (v_hp, stall_hp) = self.stall(Spool::Hp, p.nu_lp, p.nu_hp);
@@ -2216,7 +2347,7 @@ impl ControlsSolver {
             bleed: i.close.bleed.unwrap_or(0.0), floor, valve, holder, customer: i.close.customer.unwrap_or(0.0),
             metal: s.metal_at(i),
             res_redline, res_accel, res_floor,
-            reading, inferred, gap_ram, gap_nozzle, tt5: i.tt5, sensor: tm, demand,
+            reading, inferred, gap_ram, gap_nozzle, tt5: i.tt5, sensor: tm, demand, ab,
         })
     }
 }
@@ -2370,6 +2501,19 @@ pub fn controls_json(sv: &ControlsSolver, o: &ControlsOutcome) -> Json {
     if let (Some(_), Json::Obj(kv)) = (sv.sensor_lag(), &mut j) {
         kv.push(("exhaust_tt5".into(), rcol(&|r| r.tt5)));
         kv.push(("exhaust_sensor".into(), rcol(&|r| r.sensor.unwrap_or(f64::NAN))));
+    }
+    // Rung 102: with the afterburner fitted, what it is, and through the run how far lit, its throat over the dry one,
+    // its own fuel-air ratio and its exit temperature (written only then).
+    if let (Some(fit), Json::Obj(kv)) = (o.settings.afterburner_fit(), &mut j) {
+        kv.push(("afterburner".into(), jobj! {
+            "mode" => if fit.light_at.is_some() { "lit" } else { "unlit" }, "Tt7" => fit.ab.tt7,
+            "light_at" => fit.light_at.map_or(Json::Null, Json::Float), "ramp" => crate::afterburner::LIGHT_RAMP,
+            "match" => Json::Int(o.settings.a8_match as i64), "a8_ratio" => o.settings.a8_ratio,
+        }));
+        kv.push(("ab_w".into(), rcol(&|r| r.ab.map_or(0.0, |a| a.w))));
+        kv.push(("ab_throat".into(), rcol(&|r| r.ab.map_or(1.0, |a| a.s))));
+        kv.push(("ab_far".into(), rcol(&|r| r.ab.map_or(0.0, |a| a.detail.f7 - a.detail.f5))));
+        kv.push(("Tt7".into(), rcol(&|r| r.ab.map_or(f64::NAN, |a| a.s7.tt))));
     }
     j
 }
@@ -2650,13 +2794,44 @@ pub fn check_requests() -> Vec<String> {
     out
 }
 
+/// RUNG 102 (Part C): the Controls requests with the afterburner fitted — appended LAST to the whole list
+/// ([`crate::sandbox::check_requests`]), so every earlier request keeps its index. Fitted and never lit; lit held, at
+/// ×1.15 and by the rule; mid-slam with the redline (the stop the afterburner causes); the slow valve and the HP-speed
+/// governor lit; and two refusals ("hold thrust" lit; a light-off off the march's grid).
+pub fn check_ab_requests() -> Vec<String> {
+    let d = ControlsSettings::defaults();
+    let req = |s: ControlsSettings| jobj! { "op" => "controls", "controls" => s.to_json() }.dump_compact();
+    let lit = |s: ControlsSettings| ControlsSettings { ab: Some(AbMode::Lit), ..s };
+    [
+        ControlsSettings { ab: Some(AbMode::Unlit), ..d },
+        lit(d),
+        lit(ControlsSettings { a8_ratio: 1.15, tt7: 1900.0, ..d }),
+        lit(ControlsSettings { a8_match: true, ..d }),
+        lit(ControlsSettings { light_at: 0.24, redline_on: true, ..d }),
+        lit(ControlsSettings { lever: LeverChoice::Bleed, bleed_mode: BleedMode::Valve, valve_lag_on: true, ..d }),
+        lit(ControlsSettings { govern: true, hold: Hold::HpSpeed, a8_ratio: 1.3, ..d }),
+        lit(ControlsSettings { govern: true, hold: Hold::Thrust, ..d }),
+        lit(ControlsSettings { light_at: 0.25, ..d }),
+    ].into_iter().map(req).collect()
+}
+
 /// `{"op":"controls_defaults"}` and `{"op":"controls","controls":{…}}` — the dispatcher
 /// `sandbox::call` falls to.
 pub fn call_op(op: &str, req: &Json) -> Option<Json> {
     let refusal = |m: &str| jobj! { "ok" => Json::Int(0), "reason" => m };
     Some(match op {
         "controls_defaults" => jobj! {
-            "controls" => ControlsSettings::defaults().to_json(), "ds" => DS, "max_run" => MAX_RUN,
+            "controls" => {
+                // Rung 102's five keys are written to a reply only off their defaults; the page's knobs need them here.
+                let mut j = ControlsSettings::defaults().to_json();
+                if let Json::Obj(kv) = &mut j {
+                    kv.extend([("ab".into(), Json::from("none")), ("Tt7".into(), Json::Float(AB_TT7)),
+                               ("light_at".into(), Json::Float(AB_LIGHT_AT)), ("a8_ratio".into(), Json::Float(1.0)),
+                               ("a8_match".into(), Json::Int(0))]);
+                }
+                j
+            },
+            "ds" => DS, "max_run" => MAX_RUN,
             "shapes" => Json::List(CONTROL_SHAPES.iter().map(|&s| Json::from(s)).collect()),
         },
         "controls" => {

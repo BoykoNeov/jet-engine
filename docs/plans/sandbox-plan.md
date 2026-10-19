@@ -1831,7 +1831,7 @@ constants; both readings. Anchor `604f6a2` (Status corrected `eab1563`); spec `d
   presses the sensor at Mach 1.4 from 700 K (the run matches native, the guess is nothing, the lag box shows) and then
   the slow checkbox (matches native, the results show the probe behind the gas).
 
-## 34. The afterburner — rung 102 (2026-10-19) — Part A on the Design view, Part B on Fly it; Part C (Controls) to come
+## 34. The afterburner — rung 102 (2026-10-19) — Part A on the Design view, Part B on Fly it, Part C on Controls
 
 CLAUDE.md's open item, scoped by the user on measured probes (memory `rung102-decisions`): one rung in three parts, the
 design half on the Design view, the built-engine half on Fly it AND Controls (a light-off at a chosen moment), the duct
@@ -1874,3 +1874,19 @@ spec `docs/rung102-spec.md`; scratch `scratch-archive/rung102/`.
   (`check_ab_fly_requests`, appended after Part A's); `browser.mjs` step 11c flies it lit (matches native; less thrust
   held; the panel, tiles and station 7 shown; more thrust by the rule at the dry speed; the slam refused; not fitted
   restores the plain engine bit for bit). `check.mjs`'s table bar re-measured: worst 4.84e−10 (a lit stall margin).
+- **Built (Part C)** — the Controls slam with the afterburner fitted, lit at a chosen moment. `ControlsSettings` gains
+  `ab` (`none` / `unlit` / `lit`), `Tt7` (2000), `light_at` (0.5 — the opening run's ramp end; on the 0.02 grid),
+  `a8_ratio` and `a8_match`, written only off their defaults; the `controls_defaults` op carries all five. The design
+  engine carries the fit (`TwoSpoolEngine::with_afterburner`), so every sibling the view builds has it; the core swaps its
+  throat and loss when fitted. The reply gains an `afterburner` block (mode, `Tt7`, light-off, ramp, throat setting) and
+  four columns (`ab_w` how far lit, `ab_throat` over the dry throat, `ab_far` its own fuel-air ratio, `Tt7` its exit).
+  A stop the afterburner causes is its own kind (`afterburner`: its own refusal or the lean wall, or a step that runs
+  with it put out), with words. "Holds thrust" governed while lit is refused in words (the user's decision: lit, main
+  fuel lowers thrust at the moment). The page: an *Afterburner* box at the foot of the Controls panel (the switch, the
+  temperature, the light-off, the throat, *open by the rule*, a note), an *Afterburner* chart (its exit temperature) and
+  a summary row.
+- **What Part C moved:** check requests 0–359 byte-equal against `9128307` except `controls_defaults` (the five keys);
+  a crash map of 1 200 random Controls requests, each not fitted / fitted / lit: not fitted all byte-equal, no panic in
+  3 600, every new lit stop named (spec Part C). `check_requests` adds 9 (`sandbox_controls::check_ab_requests`, last);
+  `browser.mjs` step 16b-ab (lit matches native; knobs, chart and row shown; "holds thrust" refused; not fitted restores
+  the opening run).

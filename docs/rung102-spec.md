@@ -6,8 +6,8 @@
 continuing `build_turbojet`'s own run from station 5). `gas.rs`: the equilibrium section's burn-condition guard kept PER
 fuel/air ratio, and `Gas::try_t_from_h_t`. **Gates:** `rust/tests/rung102.rs`. **Panel:** `print_afterburner_table` (born
 in Rust, held to `rust/oracle/rust_owned/`; a change detector only). **Anchor:** `docs/plans/rung102-anchor-afterburner.md`,
-committed as `379646c` before any rung-102 code. **Sandbox:** the Design view's *Afterburner* panel
-and Fly it's (`docs/plans/sandbox-plan.md` § 34). **Scratch:** `docs/plans/scratch-archive/rung102/`.
+committed as `379646c` before any rung-102 code. **Sandbox:** the Design view's *Afterburner* panel,
+Fly it's and the Controls view's (`docs/plans/sandbox-plan.md` § 34). **Scratch:** `docs/plans/scratch-archive/rung102/`.
 
 CLAUDE.md's open item *"Afterburner"*, SPEC.md's *"a second burner between turbine and nozzle, with the nozzle re-sized"*.
 The scope was set on measured probes, each answer the user's (memory `rung102-decisions`): ONE rung in three parts —
@@ -16,8 +16,8 @@ The scope was set on measured probes, each answer the user's (memory `rung102-de
 the ceiling; on a built engine the nozzle a slider (throat over the dry throat) with a *match* setting; rungs 96–101's
 thrust guesses refused with the afterburner lit.
 
-**Status: Parts A and B shipped** (Part C's section is filled when it ships; its predictions go in the anchor's
-addendum before its code).
+**Status: Parts A, B and C shipped** (2026-10-19). Part C's predictions were frozen in the anchor's § 5 addendum
+(`9128307`) before its code; 335 of its 360 cells hit.
 
 > **THE HEADLINE (Part A) — the afterburner pays most flown fast, the nozzle must open MORE than the square-root rule,
 > and dissociation sets the ceiling.** Lit to the same temperature, the same engine gains more thrust at higher flight
@@ -224,4 +224,95 @@ step 11c flies it lit, matched, slammed and removed.
 * A lit request the afterburner refuses is named at THIS throttle and flight's dry point (its turbine exit is what the
   afterburner is asked to heat); the lit engine's own turbine exit differs, so the named ceiling is the dry one's.
 
-## Part C — Controls (pending; its predictions in the anchor's addendum, frozen before its code)
+## Part C — Controls (shipped 2026-10-19; the anchor's § 5 addendum, frozen as `9128307` before its code)
+
+> **THE HEADLINE (Part C) — what the throttle holds decides the sign. On the two-shaft slam, where the throttle meters
+> FUEL, a light-off behind a held nozzle gives MORE thrust than not lighting (+19 … +27 %) — Part B, holding `Tt4`, got
+> less — because it buys it from the core: the LP shaft slows by 30–42 %, the main burner runs 163–190 K hotter on the
+> same fuel and the HP shaft overspeeds 8–13 %; the LP compressor dips toward stall straight after light-off, then its
+> flow margin (the page's) recovers past where it started while its pressure margin stays lower.** Opened by the rule at
+> every moment, no shaft moves — bit for bit — and thrust rises ×1.48–1.54. And lit at a fixed exhaust temperature, more
+> MAIN fuel at the same shaft speeds LOWERS thrust (less air through the turbine throats; the afterburner just burns
+> less), so a governor holding thrust with it pushes the wrong way: refused in words (the user's decision).
+
+**Code** (Part C): `afterburner.rs` — `TwoShaftFit` (the page's settings), `TwoShaftAb` (captured on the core: `A6`, the
+dry throat, the nozzle's own `π_n`; `w_at`), `LitAb` (`burn`, station 5 → 7 at the light-off fraction; `try_lp_turbine`,
+the LP relation lit, its lean wall and refusals named; `s_now`), `lp_exit` (each thrust tail's exit), `AbAt` (the
+readout), `LIGHT_RAMP`, `take_census_c`. `two_spool.rs` — `TwoSpoolEngine::with_afterburner`; the core swaps its throat and
+loss when fitted (`A8/π_fh`, `π_n·π_fh`) and carries `afterburner`, `ab_w` (`light_at`, `lit_ab`), `ab_out`, `ab_last`.
+`unchoked_lp.rs` — `try_lp_turbine` dispatches lit-and-held there. The four transient thrust tails (rungs 40, 62, 90, 91)
+read `lp_exit`. Every march derivative sets the light-off from its own time (`fuel_transient.rs` ×3, `lagged_bleed.rs`,
+`governor.rs`), as do the view's replays and re-reads. `sandbox_controls.rs` — `ControlsSettings` gains `ab`, `tt7`,
+`light_at`, `a8_ratio`, `a8_match`; the precheck; `StopKind::Afterburner` and `afterburner_stopped` (the cause test);
+the reply's `afterburner` block and `ab_w` / `ab_throat` / `ab_far` / `Tt7` columns; `check_ab_requests`.
+
+**The device** (anchor § 5.1). Fitted and unlit, the core's nozzle throat opens by `1/π_fh` and the flame holders join the
+nozzle's loss, so every shipped path — the tails, the steady matchers, the tables, the formula — runs the fitted engine
+unchanged. Lit, the LP turbine reads station 7 one throat downstream of `A45`: choked `π_LPT·π_AB·√(Tt45/Tt7) =
+A45·MFP45·(1+f7)/((1+f45)·A8·π_n·MFP7)`, else `ṁ7 = A8·ρ9·V9` at `p9 = p0`. Light-off at a chosen time on the march's
+0.02 grid ramps over 0.10 τ (five steps): `Tt7(w) = Tt5 + w·(Tt7 − Tt5)`, the throat `A8_dry·(1 + w·(s − 1))`; gas
+arriving hotter than `Tt7(w)` is not heated. *Match* keeps the LP turbine where the fitted engine has it unlit and books
+the lit exit (Mattingly's law in time — an ideal nozzle scheduler). The lean wall: with the throat held, below some main
+fuel the gas cannot leave the throat even with the LP turbine nearly unexpanded — no running point (the model keeps both
+turbine throats choked; a real engine would stall), answered at once without searching below it.
+
+**Gates (`tests/rung102.rs`, `part_c_*`; anchor § 5.2):** not fitted is the shipped reply byte for byte, whatever the keys
+say; fitted-unlit = the probe's hooked relation to the last digit (both slams; `unlit_dump`), and = not fitted where the
+nozzle stays choked (the default slam: every point equal); *match* ⇒ the march is the fitted-unlit one bit for bit (`ν`,
+`Tt4`; all 24 scored cells too); the held lit LP root agrees with the effective-throat fixed point through the SHIPPED pin
+to 1e−8; a re-read sets the light-off from its point's time (every recorded point bit for bit); DS vs DS/2 under 1e−6
+(off the grid it was 1.5e−4 — the probe, P7); the refusals and the afterburner's stops in words; the reply's keys.
+
+**Scored, Part C — 335 HIT, 25 MISS of 360** (`score_c.txt`; the grid unseen: three map shapes, `ρ` 0.5 / 3, the design
+flight and 5 km Mach 0.6, 900 → 1350 K, `Tt7` 1900, light-off 0.30 and 3.50; ×1, ×1.2, *match*):
+
+| claim | cells | HIT | measured |
+|---|---|---|---|
+| C1 *match*: thrust × more than √(Tt7/Tt5) | 24 | 24 | ×1.481–1.537 against 1.347 |
+| C2 held: the LP slows, by 8–50 % | 48 | 48 | −29.7 … −42.1 % |
+| C3 held: the HP overspeeds 2–20 % | 24 | 24 | +8.3 … +12.6 % |
+| C4 held: the main burner hotter | 24 | 24 | +163 … +190 K |
+| C5 held: thrust above unlit | 24 | 24 | +19.3 … +27.1 % |
+| C6 held: the LP's pressure margin dips below unlit's after light-off | 24 | 10 | MISS ×14 (below) |
+| C7 held, end: LP flow margin above unlit, pressure margin below | 48 | 40 | flow 24/24; pressure MISS ×8 (`flat-lp`) |
+| C8 held, end: both HP margins above unlit | 48 | 48 | |
+| C9 ×1.2 strictly between ×1 and *match* | 72 | 72 | |
+| C10 light-off below choke (650/700 K, Mach 0.5) | 15 | 15 | the held lit nozzle chokes within two steps |
+| C11 the HP-speed governor holds HP speed, the LP slows | 6 | 6 | HP within 0.26 %; LP −70 … −89 % |
+| C12 the redline through a late held light-off | 3 | 0 | MISS ×3: the lean wall (below) |
+
+**The misses, and the named risks.** C6's 14: six are mid-slam light-offs where the slam's OWN minimum lands exactly at
+the light-off (0.30 is still inside the ramp's dip), so nothing after it is lower — the named risk, word for word; the
+other eight are the `flat-lp` map, where the LP speed lines are flat, so the pressure ratio at the stall line equals the
+running one and that margin is identically 0 (the coordinate cannot read the map; rung 53). C7's 8 are the same flat map.
+C12's 3: a late held light-off with the redline on stops all three runs — the redline cuts the main fuel toward the lean
+wall as the LP slows (named: "the lit afterburner stopped the run"); the named risk was exactly this. C2's risk (`ρ` 3
+late, the least settled) held (−29.7 % is its smallest); C1's (the slow flight) held with margin; C3's (`ρ` 0.5 mid-slam)
+held.
+
+**Cost** (§ 5.4: 3× the same request fitted-unlit, the page's reply, best of 9). Default slam held ×1.42, ×1.15 ×1.56,
+*match* ×1.04; with the redline / schedule / floor / release on ×0.37–1.54 (a held run that stops is cheap); settle 6
+×1.44. **The trigger fired once: the HP-speed governor with the nozzle held, ×3.76** (378 ms against 101). The census says
+why, and it is not the LP relation: the governor rides the lean wall for the rest of the run, evaluating 3.3× the
+instants (20 181 against 6 089), each 1.28× dearer; the planned fix (Part B's bracket) cannot reach a cost made of more
+instants. Two deterministic changes were measured: a bracket from the unlit root (44 bisections a solve — slower, removed)
+and the top-first lean-wall answer (kept: 449 → 378 ms). A history-dependent bracket was not used: it would break the
+re-read's bit-for-bit match.
+
+**Census (against `9128307`):** check requests 0–359 byte-equal except `controls_defaults` (it now carries the five keys
+the page needs); a crash map of 1 200 random Controls requests (seed 102; shapes, `ρ`, throttles, ramp, settle, Mach,
+redline, schedule, floor, release, levers, the governor; each run not fitted, fitted unlit and lit with a random `Tt7`,
+light-off and throat): **not fitted, all 1 200 byte-equal to the base; no panic in any of the 3 600.** Lit against unlit:
+1 066 the same outcome; 66 lit runs stop where the unlit one ran and 7 stop earlier than it — all 73 classed
+`afterburner`; 59 refused in words ("hold thrust" lit). The check grid gains 9 requests (`check_ab_requests`, last);
+`browser.mjs` step 16b-ab runs it lit, shows its knobs, chart and row, refuses "holds thrust" and removes it.
+
+**Concessions (Part C):**
+* The light-off is a fixed 0.10 τ ramp of temperature and throat together — no actuator lag of its own; *match* is an
+  ideal scheduler that sizes the throat afresh at every instant.
+* The lean wall is a model limit, not a stall prediction: with both turbine throats choked the gas has nowhere to go, so
+  there is no running point; a real engine would back the gas up and stall, which the model cannot show.
+* Fitted and unlit, the duct's entry Mach is not checked (Part B's unlit point does): the swapped core never computes it.
+* The steady endpoints (and every table) are the fitted-unlit engine's: a run lights only during the march.
+* `two_spool.rs:936`'s assert is not converted: the census never reached it (an unreachable assert made an `Abort`
+  measures nothing); the anchor's § 1 line is retracted (§ 5.0 P9).

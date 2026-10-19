@@ -509,3 +509,143 @@ fn part_b_on_the_equilibrium_gas() {
     let m = fa.try_lit_matched(&fl, s.tt4, &cmap, &dry).unwrap();
     assert!(rel(m.eq.pi_t, dry.eq.pi_t) < 1e-9 && m.eq.thrust > dry.eq.thrust && m.detail.passes >= 2);
 }
+
+// =============================================================================================================
+// PART C — the Controls slam (addendum § 5.2's gates; the scored cells: scratch-archive `score_c.rs`)
+// =============================================================================================================
+
+use turbojet::afterburner::LitAb;
+use turbojet::sandbox_controls::{classify, controls, ControlsSettings, StopKind, DS};
+
+fn lit(extra: ControlsSettings) -> ControlsSettings { ControlsSettings { ab: Some(AbMode::Lit), ..extra } }
+
+#[test]
+fn part_c_not_fitted_is_the_shipped_view_and_fitted_unlit_keeps_the_core() {
+    // The afterburner keys at their defaults leave the reply byte for byte.
+    let plain = call(r#"{"op":"controls","controls":{}}"#);
+    assert_eq!(call(r#"{"op":"controls","controls":{"ab":"none","Tt7":2000,"light_at":0.5,"a8_ratio":1.0,"a8_match":0}}"#),
+               plain);
+    // Fitted and unlit: the throat opened by 1/π_fh and the flame holders in the nozzle's loss — on the default slam,
+    // choked all along, the shafts run exactly where the unfitted engine's do; the thrust pays the flame holders.
+    let d = ControlsSettings::defaults();
+    let (_, a) = controls(&d).unwrap();
+    let (_, b) = controls(&ControlsSettings { ab: Some(AbMode::Unlit), ..d }).unwrap();
+    assert_eq!(a.points.len(), b.points.len());
+    for (x, y) in a.points.iter().zip(&b.points) {
+        assert!(rel(y.nu_lp, x.nu_lp) < 1e-12 && rel(y.nu_hp, x.nu_hp) < 1e-12, "s {}", x.s);
+        assert!(y.sp_thrust < x.sp_thrust && y.sp_thrust > 0.98 * x.sp_thrust);
+    }
+}
+
+#[test]
+fn part_c_match_moves_no_shaft() {
+    let d = ControlsSettings { ab: Some(AbMode::Unlit), ..ControlsSettings::defaults() };
+    let (_, u) = controls(&d).unwrap();
+    let (sv, m) = controls(&lit(ControlsSettings { a8_match: true, ..d })).unwrap();
+    assert_eq!(u.points.len(), m.points.len());
+    for (x, y) in u.points.iter().zip(&m.points) {
+        assert_eq!((x.nu_lp.to_bits(), x.nu_hp.to_bits(), x.tt4.to_bits()), (y.nu_lp.to_bits(), y.nu_hp.to_bits(), y.tt4.to_bits()));
+    }
+    let end = m.points.last().unwrap();
+    let r = sv.read(end).unwrap();
+    let ab = r.ab.expect("lit at the end");
+    assert!(ab.w == 1.0 && ab.s > 1.2 && end.sp_thrust > 1.4 * u.points.last().unwrap().sp_thrust);
+}
+
+#[test]
+fn part_c_an_independent_instrument_agrees_on_the_held_lit_turbine() {
+    // The device solves (★AB) one throat downstream of A45. The instrument: the SHIPPED LP solve (rung 38's pin) with
+    // the throat scaled by k = π_AB·√(Tt5/Tt7)·(MFP7/MFP5)·(1+f45)/(1+f7), iterated to its fixed point.
+    let s = lit(ControlsSettings::defaults());
+    let (sv, o) = controls(&s).unwrap();
+    let base = &sv.core.fuel.inner.inner.base;
+    let x = LitAb { ab: base.afterburner.unwrap(), w: 1.0 };
+    for p in o.points.iter().filter(|p| p.s > 0.7 && (p.s * 10.0).fract() < 1e-9) {
+        let i = sv.reread(p).unwrap().base;
+        assert_eq!(i.branch, turbojet::matcher::Branch::Choked, "a choked lit point");
+        let (gas, f, tt45, eta) = (base.gas(), i.close.f, i.tt45, i.eta_lpt);
+        let pt45 = i.pi_hpt * i.close.pt4;
+        let mdot5 = base.a45 * pt45 * choked_mfp(gas, tt45, f) / tt45.sqrt();
+        let a8 = x.s_now().unwrap() * x.ab.a8_dry;
+        let (mut k, mut pi) = (1.0, 0.0);
+        for _ in 0..200 {
+            let (p_new, _, tt5) = base.try_solve_choked_turbine(gas, tt45, f, base.a45, a8 * k, x.ab.pi_n, eta).unwrap();
+            let (s7, d) = x.burn(gas, &FlowState { tt: tt5, pt: p_new * pt45, mdot: mdot5, far: f }, true).unwrap();
+            k = d.pi_ab * (tt5 / s7.tt).sqrt() * choked_mfp(gas, s7.tt, s7.far) / choked_mfp(gas, tt5, f) * (1.0 + f) / (1.0 + s7.far);
+            if (p_new - pi).abs() < 1e-15 { break; }
+            pi = p_new;
+        }
+        assert!(rel(pi, i.pi_lpt) < 1e-8, "s {}: instrument {pi} vs device {}", p.s, i.pi_lpt);
+    }
+}
+
+#[test]
+fn part_c_held_light_off_slows_the_lp_overspeeds_the_hp_and_reread_is_the_march() {
+    let d = ControlsSettings { ab: Some(AbMode::Unlit), ..ControlsSettings::defaults() };
+    let (_, u) = controls(&d).unwrap();
+    let (sv, h) = controls(&lit(d)).unwrap();
+    let (ue, he) = (u.points.last().unwrap(), h.points.last().unwrap());
+    assert!(h.stop.is_none() && he.nu_lp < 0.75 * ue.nu_lp && he.nu_hp > 1.05 * ue.nu_hp && he.tt4 > ue.tt4 + 100.0);
+    // A re-read sets the light-off from its own point's time: every recorded point, bit for bit.
+    for p in &h.points {
+        assert_eq!(sv.reread(p).unwrap().base.sp_thrust.to_bits(), p.sp_thrust.to_bits(), "s {}", p.s);
+    }
+    // The light-off ramps over five steps from the setting (0.5), on the grid.
+    let w: Vec<f64> = h.points.iter().map(|p| sv.read(p).unwrap().ab.map_or(0.0, |a| a.w)).collect();
+    let k = (0.5 / DS).round() as usize;
+    assert!(w[k] == 0.0 && (w[k + 1] - 0.2).abs() < 1e-9 && w[k + 5] == 1.0);
+}
+
+#[test]
+fn part_c_the_step_halved_moves_a_lit_run_by_little() {
+    let s = lit(ControlsSettings::defaults());
+    let (sv, a) = controls(&s).unwrap();
+    let half = sv.core.fuel.integrate_fuel(&sv.flight, s.schedule(sv.mf_lo, sv.mf_hi), (sv.start.nu_lp, sv.start.nu_hp),
+                                           s.s_end(), DS / 2.0, &sv.limiters());
+    let worst = a.points.iter().enumerate().filter_map(|(i, p)| half.get(2 * i).map(|q| (p.nu_lp - q.nu_lp).abs().max((p.nu_hp - q.nu_hp).abs())))
+        .fold(0.0, f64::max);
+    assert!(worst < 1e-6, "DS vs DS/2: {worst:e}");
+}
+
+#[test]
+fn part_c_refusals_and_stops_are_in_words() {
+    let why = |extra: &str| Json::parse(&call(&format!(r#"{{"op":"controls","controls":{{{extra}}}}}"#)))
+        .get("reason").map(|r| r.dump_compact()).unwrap_or_default();
+    assert!(why(r#""ab":"lit","govern":1,"hold":"thrust""#).contains("cannot hold thrust with the main fuel"));
+    assert!(why(r#""ab":"lit","light_at":0.25"#).contains("on the march's 0.02 step"));
+    assert!(why(r#""ab":"lit","a8_ratio":2.5"#).contains("twice"));
+    assert!(why(r#""ab":"maybe""#).contains("must be"));
+    assert!(why(r#""ab":"unlit","govern":1,"hold":"thrust""#).is_empty(), "unlit, the governor runs");
+    // A stop the afterburner causes says so: the redline cutting toward the held lean wall (its own message, named by
+    // the cause test), and a Tt7 too hot for this slam (the afterburner's own words — which wall it meets first, the
+    // oxygen or the duct's entry, is the search's; never the bare "afterburner refused:" marker).
+    let d = ControlsSettings::defaults();
+    for (s, words) in [(lit(ControlsSettings { light_at: 0.24, redline_on: true, ..d }), "rung-46"),
+                       (lit(ControlsSettings { light_at: 0.24, tt7: 2400.0, ..d }), "afterburner")] {
+        let (sv, o) = controls(&s).unwrap();
+        let st = o.stop.as_ref().expect("stops");
+        assert_eq!(classify(&sv, st, o.points.last()), StopKind::Afterburner);
+        let m = &st.failure.as_ref().unwrap().message;
+        assert!(m.contains(words) && !m.starts_with(turbojet::afterburner::REFUSED), "{m}");
+        // ...and the same request unlit runs to the end.
+        assert!(controls(&ControlsSettings { ab: Some(AbMode::Unlit), ..s }).unwrap().1.stop.is_none());
+    }
+}
+
+#[test]
+fn part_c_the_controls_reply() {
+    let j = Json::parse(&call(r#"{"op":"controls","controls":{"ab":"lit","a8_ratio":1.15,"Tt7":1900,"light_at":0.4}}"#));
+    let a = j.get("afterburner").expect("the afterburner block");
+    for k in ["mode", "Tt7", "light_at", "ramp", "match", "a8_ratio"] {
+        assert!(a.get(k).is_some(), "afterburner.{k}");
+    }
+    for k in ["ab_w", "ab_throat", "ab_far", "Tt7"] {
+        assert!(j.get(k).is_some(), "{k}");
+    }
+    let echo = j.get("controls").unwrap().dump_compact();
+    assert!(echo.contains(r#""ab":"lit""#) && echo.contains(r#""light_at":0.4"#) && echo.contains(r#""a8_ratio":1.15"#));
+    let s = ControlsSettings::from_json(&Json::parse(r#"{"ab":"unlit","a8_match":1,"light_at":1.0}"#)).unwrap();
+    assert_eq!(ControlsSettings::from_json(&s.to_json()).unwrap(), s);
+    let plain = Json::parse(&call(r#"{"op":"controls","controls":{}}"#));
+    assert!(plain.get("afterburner").is_none() && plain.get("ab_w").is_none());
+}

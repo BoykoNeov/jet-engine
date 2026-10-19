@@ -722,6 +722,39 @@ fn bracket_in(f: &impl Fn(f64) -> Result<f64, Abort>, lo: f64, hi: f64, step: f6
     Err(bad.1)
 }
 
+/// [`bracket_in`] for a residual that may have no root at all because it stays NEGATIVE to the top: the top is found
+/// first (marched down past failing trials) and, if not above zero, returned at once as `(top, f, top, f)` — the caller
+/// reads the missing sign change — without the bottom end's search. A failure carries the trial that failed.
+fn bracket_top_first(f: &impl Fn(f64) -> Result<f64, Abort>, lo: f64, hi: f64, step: f64)
+    -> Result<(f64, f64, f64, f64), (f64, Abort)>
+{
+    let mut b = hi;
+    let fb = loop {
+        match f(b) {
+            Ok(v) => break v,
+            Err(e) if b - step <= lo => return Err((b, e)),
+            Err(_) => b -= step,
+        }
+    };
+    if !(fb > 0.0) {
+        return Ok((b, fb, b, fb));
+    }
+    let mut bad = match f(lo) {
+        Ok(v) => return Ok((lo, v, b, fb)),
+        Err(e) => (lo, e),
+    };
+    let mut fb = fb;
+    while b - bad.0 > 1e-6 {
+        let x = 0.5 * (bad.0 + b);
+        match f(x) {
+            Ok(v) if v < 0.0 => return Ok((x, v, b, fb)),
+            Ok(v) => (b, fb) = (x, v),
+            Err(e) => bad = (x, e),
+        }
+    }
+    Err(bad)
+}
+
 /// [`SpoolTransient::find_equilibrium_nu`], COPIED fallible (same march, same sentinel, same Illinois): the original
 /// panics when the speed search does not bracket; here that is an `Err` carrying the SAME message, so the page's
 /// plain words (`sandbox::explain_fly`) read it unchanged, and the afterburner's own refusal can be reported instead.
@@ -794,10 +827,19 @@ pub const NU_DESIGN: f64 = 1.0;
 thread_local! {
     static TRIALS: std::cell::Cell<u64> = const { std::cell::Cell::new(0) };
     static INSTANTS: std::cell::Cell<u64> = const { std::cell::Cell::new(0) };
+    static C_LP: std::cell::Cell<u64> = const { std::cell::Cell::new(0) };
+    static C_BURN: std::cell::Cell<u64> = const { std::cell::Cell::new(0) };
+    static C_WALL: std::cell::Cell<u64> = const { std::cell::Cell::new(0) };
 }
 
 /// Part B's work census — station-5→7 trials and instants run on this thread since the last [`take_census`]; the
 /// cost trigger (anchor § 4) is read against it, not guessed.
+/// Part C's work census: lit LP-turbine solves, burns (station 5 → 7), and lean-wall answers on this thread since the
+/// last call — the cost trigger (addendum § 5.4) is read against it.
+pub fn take_census_c() -> (u64, u64, u64) {
+    (C_LP.with(|c| c.replace(0)), C_BURN.with(|c| c.replace(0)), C_WALL.with(|c| c.replace(0)))
+}
+
 pub fn take_census() -> (u64, u64) {
     (TRIALS.with(|c| c.replace(0)), INSTANTS.with(|c| c.replace(0)))
 }
@@ -1108,4 +1150,200 @@ impl<'a> FlyAfterburner<'a> {
             .map_err(|e| self.name_refusal(flight, tt4, cmap, &e))?;
         Ok(mdot7 / flux)
     }
+}
+
+// =============================================================================================
+// PART C — the afterburner on the two-shaft engine of the Controls view, lit at a chosen moment of the slam
+// =============================================================================================
+//
+// The afterburner sits behind the LP turbine. FITTED and unlit it is the shipped engine with its nozzle throat opened by
+// `1/π_fh` and the flame holders' loss in the nozzle's (`π_n·π_fh`): the core swaps those two numbers at build
+// ([`crate::two_spool::TwoSpoolCore::new`]), so every shipped path runs the fitted engine unchanged. LIT, the LP
+// turbine's nozzle relation reads station 7 — rung 38's choke chained one throat further:
+//
+//     choked    π_LPT·π_AB·√(Tt45/Tt7) = A45·MFP45·(1+f7) / ((1+f45)·A8·π_n·MFP7)
+//     unchoked  ṁ7 = A8·ρ9·V9                                        (p9 = p0)
+//
+// with the shipped `π_n` (the flame holders are inside `π_AB`). Lighting takes `LIGHT_RAMP` (HP spool τ): the burning
+// temperature `Tt7(w) = Tt5 + w·(Tt7 − Tt5)` and the throat `A8_dry·(1 + w·(s − 1))` follow the light-off fraction `w`.
+// *Match* leaves the LP turbine where the unlit engine has it (the core cannot move) and books the lit exit's thrust.
+
+/// How long the afterburner takes to light, HP spool τ: five march steps, so the ramp's two corners land on the grid.
+pub const LIGHT_RAMP: f64 = 0.10;
+
+/// What the page sets for the two-shaft engine's afterburner.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct TwoShaftFit {
+    pub ab: Afterburner,
+    pub throat: Throat,
+    /// When it lights, HP spool τ into the run (`None`: fitted, never lit).
+    pub light_at: Option<f64>,
+}
+
+/// The afterburner captured on the two-shaft core.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct TwoShaftAb {
+    pub fit: TwoShaftFit,
+    /// The burning zone's area, m², from the design run's station 5 at `M6` (∞ at `M6` 0).
+    pub a6: f64,
+    /// The dry throat, m² (`A8/π_fh` — the core's own after the swap).
+    pub a8_dry: f64,
+    /// The nozzle's own loss (the shipped `π_n`, before the flame holders joined it).
+    pub pi_n: f64,
+}
+
+/// The afterburner at an instant of a lit run: what it is, and how far lit (0 < `w` ≤ 1).
+#[derive(Clone, Copy, Debug)]
+pub struct LitAb {
+    pub ab: TwoShaftAb,
+    pub w: f64,
+}
+
+impl TwoShaftAb {
+    /// Capture on the design run: `s5` its station 5, `a8` the CORE throat and `pi_n` the nozzle's loss, both before
+    /// the swap.
+    pub fn capture(gas: &Gas, s5: &FlowState, a8: f64, pi_n: f64, fit: TwoShaftFit) -> Self {
+        let a6 = if fit.ab.m6 == 0.0 { f64::INFINITY } else { area_at_mach(gas, s5.far, s5.tt, s5.pt, s5.mdot, fit.ab.m6) };
+        TwoShaftAb { fit, a6, a8_dry: a8 / fit.ab.pi_fh, pi_n }
+    }
+
+    /// The light-off fraction at march time `s`: 0 until `light_at`, rising linearly to 1 over [`LIGHT_RAMP`]. Within
+    /// 1e−9 of the light-off it is 0 — the march ACCUMULATES `s`, so a grid time can land an ulp past it.
+    pub fn w_at(&self, s: f64) -> f64 {
+        match self.fit.light_at {
+            None => 0.0,
+            Some(on) if s <= on + 1e-9 => 0.0,
+            Some(on) if s >= on + LIGHT_RAMP => 1.0,
+            Some(on) => (s - on) / LIGHT_RAMP,
+        }
+    }
+}
+
+impl LitAb {
+    /// The throat over the dry throat now (*match*: `None` — sized at the point).
+    pub fn s_now(&self) -> Option<f64> {
+        match self.ab.fit.throat {
+            Throat::Held(s) => Some(1.0 + self.w * (s - 1.0)),
+            Throat::Match => None,
+        }
+    }
+
+    /// Station 5 → 7 at `s5` (`s5.mdot` the GAS through the turbine): the duct's Mach off its area, the burning
+    /// temperature `Tt7(w)`. Gas arriving at or above it is not heated (the duct unlit, at `π_fh`).
+    pub fn burn(&self, gas: &Gas, s5: &FlowState, name: bool) -> Result<(FlowState, AbDetail), Abort> {
+        C_BURN.with(|c| c.set(c.get() + 1));
+        let ab = &self.ab.fit.ab;
+        let tt7 = s5.tt + self.w * (ab.tt7 - s5.tt);
+        if !(tt7 > s5.tt) {
+            let s7 = FlowState { pt: ab.pi_fh * s5.pt, ..*s5 };
+            let m6 = m6_in_duct(gas, s5.far, s5.tt, s5.pt, s5.mdot, self.ab.a6, ab.m6, name)?;
+            let detail = AbDetail { mode: AbMode::Unlit, f5: s5.far, f7: s5.far, pi_ab: ab.pi_fh, pi_r: 1.0, m6, m7: m6,
+                                    passes: 1 };
+            return Ok((s7, detail));
+        }
+        let m6 = m6_in_duct(gas, s5.far, s5.tt, s5.pt, s5.mdot, self.ab.a6, ab.m6, name)?;
+        afterburn(gas, s5, s5, s5.mdot / (1.0 + s5.far), &Afterburner { tt7, m6, ..*ab }, AbMode::Lit, name)
+    }
+
+    fn lean_wall(&self, s: f64) -> Abort {
+        C_WALL.with(|c| c.set(c.get() + 1));
+        Abort(format!(
+            "With the nozzle at {s:.2}× its dry size and the afterburner lit, the hot gas cannot get out at this engine \
+             pressure: there is no running point here (the model keeps both turbine throats choked; a real engine would \
+             stall). Open the nozzle further, or light the afterburner at a higher throttle."))
+    }
+
+    /// The LP turbine `(π_LPT, τ_LPT, Tt5)` with the afterburner lit and the throat held at `s_now` × dry: the choked
+    /// relation above, else (the nozzle unchoked at that root) the subsonic one. A failing search is named: the
+    /// afterburner's own refusal in § 1's words, or the lean wall.
+    #[allow(clippy::too_many_arguments)]
+    pub fn try_lp_turbine(
+        &self, base: &crate::two_spool::TwoSpoolCore, gas: &Gas, tt45: f64, f45: f64, eta: f64, pt45: f64, p0: f64,
+        s_now: f64,
+    ) -> Result<(f64, f64, f64), Abort> {
+        C_LP.with(|c| c.set(c.get() + 1));
+        let a8 = s_now * self.ab.a8_dry;
+        let mfp45 = try_choked_mfp(gas, tt45, f45)?;
+        let mdot5 = base.a45 * pt45 * mfp45 / powp(tt45, 0.5);
+        let trial = |pi: f64, name: bool| -> Result<(f64, f64, FlowState, AbDetail), Abort> {
+            let (tau, tt5) = base.try_tau_of(gas, tt45, f45, pi, eta)?;
+            let s5 = FlowState { tt: tt5, pt: pi * pt45, mdot: mdot5, far: f45 };
+            let (s7, d) = self.burn(gas, &s5, name)?;
+            Ok((tau, tt5, s7, d))
+        };
+        // A refusal inside the search, put into words at the trial that failed.
+        let named = |pi: f64, e: Abort| -> Abort { if is_refusal(&e) { trial(pi, true).err().unwrap_or(e) } else { e } };
+        let rhs = base.a45 * mfp45 / ((1.0 + f45) * a8 * self.ab.pi_n);
+        let resid = |pi: f64| -> Result<f64, Abort> {
+            let (_, _, s7, d) = trial(pi, false)?;
+            Ok(pi * d.pi_ab * powp(tt45 / s7.tt, 0.5) - rhs * (1.0 + s7.far) / try_choked_mfp(gas, s7.tt, s7.far)?)
+        };
+        // The residual rises with π_LPT: below zero at the top (stepped down past refusals), the gas cannot leave the
+        // throat even with the LP turbine nearly unexpanded — the lean wall, answered without searching below it.
+        let (lo, flo, hi, fhi) = bracket_top_first(&resid, 0.02, 0.999, 0.01).map_err(|(x, e)| named(x, e))?;
+        if !(flo < 0.0 && 0.0 < fhi) {
+            return Err(self.lean_wall(s_now));
+        }
+        let pi_c = try_illinois(resid, lo, hi, flo, fhi, SpoolTransient::HOT_TOL, ILLINOIS_MAXIT)?;
+        let (tau, tt5, s7, _) = trial(pi_c, true)?;
+        let nozzle = Nozzle::convergent(p0, self.ab.pi_n);
+        if nozzle.try_apply(&s7, gas)?.p9 > p0 + 1e-6 {
+            return Ok((pi_c, tau, tt5));
+        }
+        // Unchoked: `ṁ7 − A8·ρ9·V9` falls as π_LPT rises; the choked root sits on its flow-short side (Part B's bracket).
+        let sub = |pi: f64| -> Result<f64, Abort> {
+            let (_, _, s7, _) = trial(pi, false)?;
+            let e = nozzle.try_apply(&s7, gas)?;
+            Ok(s7.mdot - a8 * e.p9 / (gas.r_t_at(s7.far) * e.t9) * e.v9)
+        };
+        let rlo = sub(pi_c)?;
+        let mut top = crate::unchoked_lp::PI_TOP;
+        let rhi = loop {
+            match sub(top) {
+                Ok(r) => break r,
+                Err(e) if top - 0.01 <= pi_c => return Err(named(top, e)),
+                Err(_) => top -= 0.01,
+            }
+        };
+        if !(rlo > 0.0 && rhi < 0.0) {
+            return Err(self.lean_wall(s_now));
+        }
+        let pi = try_illinois(sub, pi_c, top, rlo, rhi, SpoolTransient::HOT_TOL, ILLINOIS_MAXIT)?;
+        let (tau, tt5, _, _) = trial(pi, true)?;
+        Ok((pi, tau, tt5))
+    }
+}
+
+/// The nozzle exit behind the LP turbine and the fuel-air ratio there, for a thrust tail: the shipped nozzle on `s5`
+/// when the afterburner is not lit (bit for bit; fitted, the core's swapped `π_n` carries the flame holders), else the
+/// station-7 exit (`s5.mdot` the core AIR, as the tails pass it).
+pub fn lp_exit(base: &crate::two_spool::TwoSpoolCore, gas: &Gas, s5: &FlowState, p0: f64)
+    -> Result<(NozzleExit, f64), Abort>
+{
+    let Some(x) = base.lit_ab() else {
+        return Ok((Nozzle::convergent(p0, base.pi_n).try_apply(s5, gas)?, s5.far));
+    };
+    let g5 = FlowState { mdot: s5.mdot * (1.0 + s5.far), ..*s5 };
+    let (s7, detail) = x.burn(gas, &g5, true)?;
+    let exit = Nozzle::convergent(p0, x.ab.pi_n).try_apply(&s7, gas)?;
+    // The throat this exit used, over the dry one: held, the setting; matched, the area the lit exit needs.
+    let s = x.s_now().unwrap_or_else(|| s7.mdot / (exit.p9 / (gas.r_t_at(s7.far) * exit.t9) * exit.v9) / x.ab.a8_dry);
+    base.ab_last.set(Some(AbAt { s7, detail, s, w: x.w }));
+    Ok((exit, s7.far))
+}
+
+/// What a lit afterburner did at the last instant a thrust tail solved ([`lp_exit`]) — the readout's source.
+#[derive(Clone, Copy, Debug)]
+pub struct AbAt {
+    pub s7: FlowState,
+    pub detail: AbDetail,
+    /// The throat over the dry throat.
+    pub s: f64,
+    /// How far lit.
+    pub w: f64,
+}
+
+/// Is this a lit afterburner's failure (its own refusal, or the lean wall)?
+pub fn is_lit_failure(e: &Abort) -> bool {
+    is_refusal(e) || e.0.contains("and the afterburner lit, the hot gas cannot get out")
 }

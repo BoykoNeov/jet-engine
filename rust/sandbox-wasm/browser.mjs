@@ -745,6 +745,40 @@ try {
   }
   await ev(`document.getElementById('unpin').click()`);
 
+  // 16b-ab. RUNG 102 (Part C): the afterburner lit at the ramp's end of the opening slam, the nozzle held — the native
+  // reply of `check_ab_requests`' second request; its knobs, chart and row; "holds thrust" refused lit in words; "not
+  // fitted" back on the opening run.
+  await ev(`document.getElementById('reset').click()`);
+  await waitFor(`window.sandbox.ctlState === 'done'`, 30000);
+  await ev(`(() => { const s = document.getElementById('ctl-ab'); s.value = 'lit'; s.dispatchEvent(new Event('change')); })()`);
+  const abOn = await waitFor(`window.sandbox.ctlState === 'done' && window.sandbox.last.afterburner !== undefined`, 30000);
+  const abNative = (() => { for (const l of readFileSync(nativeTxt, 'utf8').split(/\r?\n/)) {
+    const [rq, out] = l.split('\t'); if (!out || !rq.startsWith('{"op":"controls"')) continue;
+    const c = JSON.parse(rq).controls;
+    if (c.ab === 'lit' && c.Tt7 === undefined && c.light_at === undefined && c.a8_ratio === undefined && !c.a8_match
+        && !c.govern && !c.redline_on && c.lever === 'none') return JSON.parse(out);
+  } })();
+  const eab = abOn ? (abNative ? close(await ev('window.sandbox.last'), abNative) : 'no native answer') : 'no run';
+  check('the_controls_afterburner_lit_matches_native', abOn && !eab, eab || '');
+  await ev(`document.getElementById('ctlq-ab').click()`);
+  const abVis = await ev(`[document.getElementById('ctl-ab-box').hidden, document.getElementById('ctl-ab-lit-box').hidden,
+    document.getElementById('ctlq-ab').hidden, document.querySelectorAll('#ctl-chart .rline').length,
+    [...document.getElementById('ctl-table').tBodies[0].rows].map(t => t.cells[0].textContent + ' = ' + t.cells[1].textContent)
+      .find(t => /^Afterburner/.test(t)) || '']`);
+  check('the_controls_afterburner_shows_its_knobs_chart_and_row', abVis[0] === false && abVis[1] === false && abVis[2] === false
+        && abVis[3] >= 1 && /lit at 0\.500 τ; at the end its exit is 2,000 K, the nozzle throat ×1\.00 its dry size/.test(abVis[4]),
+        JSON.stringify(abVis));
+  if (process.env.SANDBOX_SHOTS) { await shot('controls-afterburner'); await shot('controls-afterburner-phone', 390); }
+  await ev(`document.getElementById('ctlq-Tt4').click()`);
+  await ev(`window.sandbox.controls({govern: 1, hold: 'thrust'}).then(r => r.state)`);
+  const abThrust = await ev(`document.getElementById('bad-plain').textContent`);
+  check('holding_thrust_with_the_afterburner_lit_is_refused_in_words', /cannot hold thrust with the main fuel/.test(abThrust),
+        abThrust.slice(0, 200));
+  await ev(`document.getElementById('reset').click()`);
+  const backOn = await waitFor(`window.sandbox.ctlState === 'done' && window.sandbox.last.controls && window.sandbox.last.afterburner === undefined`, 30000);
+  const eBack = backOn ? close(await ev('window.sandbox.last'), nativeOf('{"op":"controls","controls":{}}')) : 'no run';
+  check('not_fitted_restores_the_opening_controls_run', backOn && !eBack, eBack || '');
+
   // 16c. THE BURNER (slice 5). The opening burner is the native `{"op":"burner","settings":{},"burner":{}}`
   // (the Design engine's defaults, read on the equilibrium gas); a burner result is the one with `ei_thermal`.
   await ev(`document.getElementById('mode-burner').click()`);

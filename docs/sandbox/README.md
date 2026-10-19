@@ -324,7 +324,7 @@ the perfect gas, come out of iterated solves (stopping at 1e-12), so they get th
 
 None planned. Slices 1–5 cover plan § 5's list; what comes next is the user's choice (plan § 5).
 
-## Rung 102 — the afterburner (Parts A and B shipped 2026-10-19)
+## Rung 102 — the afterburner (Parts A, B and C shipped 2026-10-19)
 
 On the **Design** view, under *Nozzle and gas*: **Light an afterburner behind the turbine**, then its knobs — the
 afterburner exit temperature, its combustion efficiency, the flame holders' pressure ratio, and the burning zone's entry
@@ -339,5 +339,12 @@ temperature you choose, with the nozzle throat on a slider (its dry size up to t
 size that keeps the engine core running exactly as it does unlit). Lit behind a throat held at its dry size, the engine
 makes LESS thrust than unlit and its stall margin collapses; open the throat and both come back. The four tiles compare
 with the same engine unlit at the same throttle and flight; the stall tile shows the unlit margin beneath. The throttle
-slam flies the engine without an afterburner (the Controls view will light one during a slam). Controls comes next
+slam flies the engine without an afterburner (the Controls view lights one during a slam).
+
+On **Controls**, the *Afterburner* box at the foot of the panel fits one to the two-shaft engine: not fitted, fitted but
+not lit, or lit at a moment of the run you choose (it takes 0.1 τ to light), with its temperature and the same nozzle
+slider and rule. Here the throttle meters fuel, so a light-off behind a held nozzle gives MORE thrust than unlit — but the
+LP shaft slows by about a third, the burner runs some 170 K hotter and the HP shaft spins past its design speed; opened by
+the rule, no shaft notices. The *Afterburner* chart shows its exit temperature, a row sums it up, and a stop the
+afterburner causes says so. "Holds thrust" is refused while it is lit: lit, more main fuel lowers thrust at that moment
 (`docs/rung102-spec.md`, plan § 34).

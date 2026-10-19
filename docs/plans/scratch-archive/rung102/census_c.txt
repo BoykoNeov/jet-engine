@@ -1,0 +1,11 @@
+check requests: 369 shipped, 369 base; 10 replies differ: ["#155 {\"op\":\"controls_defaults\"}", "#360 {\"op\":\"controls\",\"controls\":{\"shape\":\"flow/press\",\"rho\":1.0,", "#361 {\"op\":\"controls\",\"controls\":{\"shape\":\"flow/press\",\"rho\":1.0,", "#362 {\"op\":\"controls\",\"controls\":{\"shape\":\"flow/press\",\"rho\":1.0,", "#363 {\"op\":\"controls\",\"controls\":{\"shape\":\"flow/press\",\"rho\":1.0,", "#364 {\"op\":\"controls\",\"controls\":{\"shape\":\"flow/press\",\"rho\":1.0,", "#365 {\"op\":\"controls\",\"controls\":{\"shape\":\"flow/press\",\"rho\":1.0,", "#366 {\"op\":\"controls\",\"controls\":{\"shape\":\"flow/press\",\"rho\":1.0,", "#367 {\"op\":\"controls\",\"controls\":{\"shape\":\"flow/press\",\"rho\":1.0,", "#368 {\"op\":\"controls\",\"controls\":{\"shape\":\"flow/press\",\"rho\":1.0,"]
+not fitted: 1200 of 1200 replies byte-equal to the base; panics shipped 0 base 0
+fitted unlit: panics 0; lit: panics 0
+lit vs unlit: 1066 of 1200 the same outcome class
+    66  lit stop afterburner (unlit None)
+     6  lit stop afterburner (unlit Some("floor_unreachable"))
+     1  lit stop afterburner (unlit Some("rich"))
+    77  lit stop floor_unreachable (unlit Some("floor_unreachable"))
+     9  lit stop rich (unlit Some("rich"))
+    59  refused lit, ran unlit: "With the afterburner lit, the control cannot hold thrust with the mai
+PROBLEMS (0): []

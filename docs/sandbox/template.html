@@ -486,6 +486,33 @@ footer p { max-width: 90ch; }
           over 500 K above where it settles: the governor needs its limiters. Where the governor asks for more fuel than
           the engine can burn, or less than it can run on, it is held at that edge, marked under the chart. The lean edge is
           the solver's search bound, not a flame-out model, and a run that sits on it is worked out less precisely.</p></div>
+      <div class="knob"><label for="ctl-ab">Afterburner <small>rung 102</small></label>
+        <select id="ctl-ab" style="grid-column: 1 / -1">
+          <option value="none">Not fitted</option>
+          <option value="unlit">Fitted, not lit</option>
+          <option value="lit">Lit during the run</option>
+        </select></div>
+      <div id="ctl-ab-box" hidden>
+        <div class="knob"><label for="ctl-Tt7">Afterburner exit temperature <small>K</small></label><input type="number" id="ctl-Tt7" step="10">
+          <input type="range" id="ctl-Tt7-r" min="1100" max="2400" step="10" aria-label="Afterburner temperature slider"></div>
+        <div id="ctl-ab-lit-box">
+          <div class="knob"><label for="ctl-light_at">Light it at <small>τ into the run</small></label><input type="number" id="ctl-light_at" step="0.02">
+            <input type="range" id="ctl-light_at-r" min="0" max="10" step="0.02" aria-label="Light-off time slider">
+            <div class="derived">On the march's 0.02 τ step. Lighting takes 0.1 τ: the burning temperature and the nozzle's
+              opening both ramp up over five steps.</div></div>
+          <div class="knob"><label for="ctl-a8">Nozzle throat over its dry size</label><input type="number" id="ctl-a8" step="0.01">
+            <input type="range" id="ctl-a8-r" min="1" max="2" step="0.01" aria-label="Nozzle throat slider"></div>
+          <label class="swrow"><input type="checkbox" id="ctl-a8_match"> Open the nozzle by the rule at every moment: the size
+            that keeps the engine core where it runs unlit</label></div>
+        <p class="note" id="ctl-ab-note">Fitted but not lit, the flame holders sit in the gas and cost a little thrust; the
+          nozzle was sized for them, so the shafts run as before. Lit behind a nozzle held at its dry size, the hot gas backs
+          up into the LP turbine: the LP shaft slows by about a third, and because the fuel is metered the burner runs some
+          150–200 K hotter, which spins the HP shaft past its design speed; the LP compressor dips toward stall right after
+          light-off. Opened by the rule, neither shaft notices and all the extra heat becomes thrust. "Holds thrust" is
+          refused while lit: with the afterburner holding its temperature, more main fuel LOWERS thrust at that moment, so a
+          governor would push the wrong way. And a limiter cutting the main fuel can take a held-nozzle engine to where the hot
+          gas cannot get out at all: the model has no running point there (a real engine would stall), and says so.</p>
+      </div>
     </fieldset>
     <fieldset id="ctl-sw-set" hidden>
       <legend>Fuel controls</legend>
@@ -905,7 +932,8 @@ footer p { max-width: 90ch; }
         <button type="button" id="ctlq-phi_hp" aria-pressed="false">HP flow vs stall</button>
         <button type="button" id="ctlq-thrust" aria-pressed="false">Thrust</button>
         <button type="button" id="ctlq-lever" aria-pressed="false">Lever setting</button>
-        <button type="button" id="ctlq-metal" aria-pressed="false">Turbine metal</button></div>
+        <button type="button" id="ctlq-metal" aria-pressed="false">Turbine metal</button>
+        <button type="button" id="ctlq-ab" aria-pressed="false">Afterburner</button></div>
       <svg id="ctl-chart" viewBox="0 0 640 360" role="img" aria-label="The chosen quantity against time during the throttle move, with which fuel control holds the fuel"></svg>
       <div class="legend"><span id="ctl-legend"></span><span id="ctl-pin-legend" hidden><span class="sw pin"></span>pinned run</span>
         <span>shaded: the fuel move</span><span>×: the run stopped</span><span id="ctl-progress"></span></div>
@@ -1347,9 +1375,10 @@ const CTL_NUM = { "ctl-rho": "rho", "ctl-from": "from", "ctl-to": "to", "ctl-ram
                   "ctl-cool_vane": "cool_vane", "ctl-cool_blade": "cool_blade",
                   "ctl-generator_power": "generator_power", "ctl-generator_share": "generator_share",
                   "ctl-metal_year": "metal_year", "ctl-gov_tau": "gov_tau", "ctl-gov_gain": "gov_gain",
-                  "ctl-exhaust_tau": "exhaust_tau" };
+                  "ctl-exhaust_tau": "exhaust_tau",
+                  "ctl-Tt7": "Tt7", "ctl-light_at": "light_at", "ctl-a8": "a8_ratio" };
 const CTL_SW = ["redline_on", "gov_lag_on", "accel_on", "floor_on", "release_on", "metal_on", "hold_cap", "govern", "table_clean",
-                "corr_p", "corr_t", "exhaust_lag"];
+                "corr_p", "corr_t", "exhaust_lag", "a8_match"];
 // Rung 98: the run reads a table -- rung 96's inferred thrust, rung 48's schedule, or rung 95's proportional speed law.
 const ctlTables = c => (c.govern === 1 && c.hold === "thrust" && c.thrust_by !== "true") || c.accel_on === 1
   || (c.govern === 1 && c.hold === "speed" && c.speed_law === "prop");
@@ -1486,6 +1515,10 @@ function showSettings() {
     $("ctlq-lever").hidden = C.lever === "none";
     for (const t of TECH) press("ctl-mtech-" + t, C.metal_tech === t);
     $("ctl-metal-box").hidden = C.metal_on !== 1; $("ctlq-metal").hidden = C.metal_on !== 1;
+    // Rung 102: the afterburner's knobs, the light-off within the run, its chart only when it lights.
+    $("ctl-ab").value = C.ab; $("ctl-ab-box").hidden = C.ab === "none"; $("ctl-ab-lit-box").hidden = C.ab !== "lit";
+    $("ctl-light_at-r").max = String(Math.max(0, +(C.ramp + C.settle - CTL_DS).toFixed(2)));
+    $("ctlq-ab").hidden = C.ab !== "lit";
     $("ctl-metal_life").value = String(C.metal_life);
     for (const h of ["tt4", "thrust", "speed"]) press("ctl-hold-" + h, C.hold === h);
     $("ctl-hold-note").hidden = C.generator === "off" || C.hold === "tt4";
@@ -1962,6 +1995,8 @@ const CTL_Q = {
                                          : [[r.v, "rline", "stator closing (0 = design setting)"]]), steady: r => [] },
   metal: { label: "turbine metal temperature, K", lines: r => [[r.metal_vane, "rline", "vane metal"], [r.metal_blade, "fsched", "blade metal"]],
            steady: r => [r.start.metal_vane, r.end.metal_vane, r.start.metal_blade, r.end.metal_blade].filter(v => v !== null) },
+  // Rung 102: the afterburner's exit temperature once it lights (blank before).
+  ab: { label: "afterburner exit temperature, K", lines: r => [[r.Tt7, "rline", "afterburner exit"]], steady: r => [] },
 };
 
 function drawCtl() {
@@ -1969,6 +2004,7 @@ function drawCtl() {
   if (!crun || !C) { svg.innerHTML = ""; ctlTable(); return; }
   if (ctlQ === "lever" && C.lever === "none") ctlQ = "Tt4";
   if (ctlQ === "metal" && (!C.metal_on || !crun.metal_limit)) ctlQ = "Tt4";
+  if (ctlQ === "ab" && (C.ab !== "lit" || !crun.Tt7)) ctlQ = "Tt4";
   const q = CTL_Q[ctlQ], r = crun, p = cpinned;
   const lines = q.lines(r);
   const ys = [];
@@ -2093,6 +2129,14 @@ const CTL_ROWS = [
   ["Shaft speeds at the end, LP / HP (% of design)", r => `${fmt(r.nu_lp[r.nu_lp.length - 1] * 100, 4)} / ${fmt(r.nu_hp[r.nu_hp.length - 1] * 100, 4)}`],
   ["Still short of the final steady speeds, LP / HP (%)", r => `${fmt(r.settled_lp * 100, 2)} / ${fmt(r.settled_hp * 100, 2)}`],
   ["Thrust at the end (N per kg/s of design airflow)", r => r.thrust[r.thrust.length - 1], 4],
+  ["Afterburner (rung 102)", r => {
+    if (!r.afterburner) return "not fitted";
+    if (r.afterburner.mode === "unlit") return "fitted, not lit (the flame holders cost a little thrust)";
+    const k = r.ab_w.length - 1;
+    if (!r.ab_w[k]) return `lit at ${fmt(r.afterburner.light_at, 3)} τ — the run ended before it lit`;
+    return `lit at ${fmt(r.afterburner.light_at, 3)} τ; at the end its exit is ${fmt(r.Tt7[k], 4)} K, the nozzle throat `
+      + `×${fmt(r.ab_throat[k], 3)} its dry size${r.afterburner.match ? " (by the rule)" : ""}, and it burns `
+      + `${fmt(r.ab_far[k] * 1e3, 3)} g of fuel per kg of air`; }],
   ["Air the aircraft takes, start / end (% of the HP compressor's air)", r => r.controls.customer === "off" ? "none"
     : `${fmt(r.start.customer_share * 100, 3)} / ${fmt(r.end.customer_share * 100, 3)}`],
   ["Turbine cooling air, vane / blade (% of the HP compressor's air)",
@@ -3101,7 +3145,7 @@ function wire() {
     if (k === "redline_on" && !C.redline_on) C.gov_lag_on = 0;   // the lag belongs to the limiter
     showSettings(); scheduleCtl();
   });
-  for (const [id, k] of [["ctl-shape", "shape"], ["ctl-lever", "lever"]]) {
+  for (const [id, k] of [["ctl-shape", "shape"], ["ctl-lever", "lever"], ["ctl-ab", "ab"]]) {
     $(id).addEventListener("change", () => { C[k] = $(id).value; showSettings(); scheduleCtl(); });
   }
   const cclick = (id, f) => $(id).addEventListener("click", () => { f(); showSettings(); scheduleCtl(); });

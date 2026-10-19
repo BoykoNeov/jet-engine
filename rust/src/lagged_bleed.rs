@@ -386,6 +386,7 @@ pub fn r65_integrate_fuel_valve_lag(
 
     type Der = (f64, f64, f64, f64, crate::fuel_transient::FuelInstant, f64);
     let der = |a: f64, h: f64, q: f64, s: f64| -> Result<Der, Abort> {
+        ft.inner.inner.base.light_at(s);   // RUNG 102: the afterburner as lit at this march time
         let mf_sched = fuel_schedule(s);
         // THE MIN-SELECT, rung 48/49's discipline verbatim: every cap is solved from the
         // SCHEDULED fuel so arming one leg cannot perturb another's bracket.

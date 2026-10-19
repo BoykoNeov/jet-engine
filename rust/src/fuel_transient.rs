@@ -2484,6 +2484,7 @@ impl FuelTransientCore {
         let der = |a: f64, b: f64, g: f64, s: f64|
          -> Result<(f64, f64, f64, f64, FuelInstant), Abort> {
             bump(&DER_CALLS);
+            self.inner.inner.base.light_at(s);   // RUNG 102: the afterburner as lit at this march time
             let mf_sched = fuel_schedule(s);
             let mut mf = mf_sched - g;
             if 1e-9 > mf {
@@ -2634,6 +2635,7 @@ impl FuelTransientCore {
         let der = |a: f64, b: f64, g: f64, s: f64|
          -> Result<(f64, f64, f64, f64, FuelInstant, f64), Abort> {
             bump(&DER_CALLS);
+            self.inner.inner.base.light_at(s);   // RUNG 102: the afterburner as lit at this march time
             let mf_sched = fuel_schedule(s);
             let mut mf = mf_sched - g;
             if 1e-9 > mf {
@@ -3852,6 +3854,7 @@ pub fn r43_integrate_fuel(
     let der = |a: f64, b: f64, mf_in: f64, s: f64|
      -> Result<(f64, f64, f64, FuelInstant), Abort> {
         bump(&DER_CALLS);
+        ft.inner.inner.base.light_at(s);   // RUNG 102: the afterburner as lit at this march time
         let mut mf = mf_in;
         let mut i = match ft.try_instant_fuel(flight, a, b, mf) {
             Ok(i) => i,

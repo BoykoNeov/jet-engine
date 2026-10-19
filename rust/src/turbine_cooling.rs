@@ -906,9 +906,10 @@ pub fn r91_try_instant_tail(
     let f45 = tb.hpt.f45;
     let s5 = FlowState { tt: tb.tt5, pt: tb.pi_lpt * tb.hpt.pi_hpt * c.pt4, mdot: nozzle_air,
                          far: f45 };
-    let exit = Nozzle::convergent(flight.p0, core.base.pi_n).try_apply(&s5, wgas)?;
-    let press = (1.0 + f45) * wgas.r_t_at(f45) * exit.t9 * (1.0 - flight.p0 / exit.p9) / exit.v9;
-    let sp_thrust = (1.0 + f45) * exit.v9 - v0 + press;
+    // RUNG 102: behind a lit afterburner the exit is station 7's, on the total fuel (the shipped nozzle otherwise).
+    let (exit, f9) = crate::afterburner::lp_exit(&core.base, wgas, &s5, flight.p0)?;
+    let press = (1.0 + f9) * wgas.r_t_at(f9) * exit.t9 * (1.0 - flight.p0 / exit.p9) / exit.v9;
+    let sp_thrust = (1.0 + f9) * exit.v9 - v0 + press;
     let share = nozzle_air / face;
     Ok(Instant2 {
         close: c.clone(),

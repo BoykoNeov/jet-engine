@@ -1,0 +1,38 @@
+[package]
+name = "rung102-cscore"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+turbojet = { path = "W:/Claude_projects/jet engine/rust" }
+
+[profile.release]
+opt-level = 3
+
+[[bin]]
+name = "smoke_c"
+path = "src/smoke_c.rs"
+
+[[bin]]
+name = "cost_c"
+path = "src/cost_c.rs"
+
+[[bin]]
+name = "census_c"
+path = "src/census_c.rs"
+
+[[bin]]
+name = "score_c"
+path = "src/score_c.rs"
+
+[[bin]]
+name = "unlit_dump"
+path = "src/unlit_dump.rs"
+
+[[bin]]
+name = "crashctl"
+path = "src/crashctl.rs"
+
+[[bin]]
+name = "replay"
+path = "W:/temp/claude/rung102-probe/src/replay.rs"

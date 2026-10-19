@@ -66,3 +66,8 @@ probe the Controls march, write the anchor ADDENDUM with predictions, commit, th
 (reason measured in the probe: lit at a fixed Tt7, more main fuel at frozen shaft speeds LOWERS thrust — less air, the
 afterburner burns less — so the governor's root-or-clamp pushes the wrong way and bangs between the lean and rich walls).
 Hold HP speed and plain Tt4 throttling run. This reverses the anchor's "direct thrust control works" line.
+
+**Done (2026-10-19):** Part B shipped `23c5651`; Part C's addendum `9128307` (360 cells on unseen settings); Part C
+built and scored 335/360 (misses: a mid-slam minimum at the light-off itself, the flat-LP map's identically-zero
+pressure margin, the redline meeting the held lean wall). Rung 102 is complete; CLAUDE.md row added, "Afterburner"
+struck from the open list.

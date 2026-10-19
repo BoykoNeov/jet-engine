@@ -1446,6 +1446,7 @@ pub fn check_requests() -> Vec<String> {
     out.extend(crate::sandbox_cooling::check_requests());
     out.extend(check_ab_requests());
     out.extend(check_ab_fly_requests());
+    out.extend(crate::sandbox_controls::check_ab_requests());
     out
 }
 
