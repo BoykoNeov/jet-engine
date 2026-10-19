@@ -1,0 +1,22 @@
+[package]
+name = "rung101-probe"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+turbojet = { path = "W:/Claude_projects/jet engine/rust" }
+
+[profile.release]
+opt-level = 3
+
+[[bin]]
+name = "airflow"
+path = "src/airflow.rs"
+
+[[bin]]
+name = "fan"
+path = "src/fan.rs"
+
+[[bin]]
+name = "shape"
+path = "src/shape.rs"

@@ -1,0 +1,96 @@
+plain flow/press 250K M0.1  700   | EPR roots/falls U (1, 0) L (1, 0) L.8 (1, 0) L1.2 (1, 0) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 0
+plain flow/press 250K M0.1  1000  | EPR roots/falls U (1, 0) L (1, 0) L.8 (1, 0) L1.2 (1, 0) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 0
+plain flow/press 250K M0.85 700   | EPR roots/falls U (1, 0) L (1, 0) L.8 (1, 0) L1.2 (1, 0) | no fan formula here
+plain flow/press 250K M0.85 1000  | EPR roots/falls U (1, 0) L (1, 0) L.8 (1, 0) L1.2 (1, 0) | no fan formula here
+plain flow/press 250K M1.6  700   | EPR roots/falls U (1, 0) L (1, 0) L.8 (0, 0) L1.2 (0, 0) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 0
+plain flow/press 250K M1.6  1000  | EPR roots/falls U (1, 0) L (1, 0) L.8 (1, 0) L1.2 (1, 0) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 0
+plain flow/press 250K M2    700   | refused (The control's thrust table is made at th) | refused (The control's thrust table is made at th)
+plain flow/press 250K M2    1000  | EPR roots/falls U (1, 0) L (1, 0) L.8 (0, 0) L1.2 (1, 0) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 34
+plain flow/press 250K M2.5  700   | refused (At the starting throttle (700 K): the en) | refused (At the starting throttle (700 K): the en)
+plain flow/press 250K M2.5  1000  | refused (The control's thrust table is made at th) | refused (The control's thrust table is made at th)
+plain flow/press 250K M3    700   | refused (At the starting throttle (700 K): the en) | refused (At the starting throttle (700 K): the en)
+plain flow/press 250K M3    1000  | refused (The control's thrust table is made at th) | refused (The control's thrust table is made at th)
+plain flow/press 288K M0.3  700   | EPR roots/falls U (1, 0) L (1, 0) L.8 (1, 0) L1.2 (1, 0) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 0
+plain flow/press 288K M0.3  1000  | EPR roots/falls U (1, 0) L (1, 0) L.8 (1, 0) L1.2 (1, 0) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 0
+plain flow/press 288K M1.2  700   | EPR roots/falls U (1, 0) L (1, 0) L.8 (0, 0) L1.2 (1, 0) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 0
+plain flow/press 288K M1.2  1000  | EPR roots/falls U (1, 0) L (1, 0) L.8 (1, 0) L1.2 (1, 0) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 0
+plain tilted     250K M0.1  700   | EPR roots/falls U (1, 0) L (1, 0) L.8 (1, 0) L1.2 (1, 0) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 0
+plain tilted     250K M0.1  1000  | EPR roots/falls U (1, 0) L (1, 0) L.8 (1, 0) L1.2 (1, 0) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 0
+plain tilted     250K M0.85 700   | EPR roots/falls U (1, 0) L (1, 0) L.8 (1, 0) L1.2 (1, 0) | no fan formula here
+plain tilted     250K M0.85 1000  | EPR roots/falls U (1, 0) L (1, 0) L.8 (1, 0) L1.2 (1, 0) | no fan formula here
+plain tilted     250K M1.6  700   | EPR roots/falls U (1, 0) L (1, 0) L.8 (0, 0) L1.2 (0, 0) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 0
+plain tilted     250K M1.6  1000  | EPR roots/falls U (1, 0) L (1, 0) L.8 (1, 0) L1.2 (1, 0) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 0
+plain tilted     250K M2    700   | refused (The control's thrust table is made at th) | refused (The control's thrust table is made at th)
+plain tilted     250K M2    1000  | EPR roots/falls U (1, 0) L (1, 0) L.8 (0, 0) L1.2 (1, 0) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 34
+plain tilted     250K M2.5  700   | refused (At the starting throttle (700 K): the en) | refused (At the starting throttle (700 K): the en)
+plain tilted     250K M2.5  1000  | refused (The control's thrust table is made at th) | refused (The control's thrust table is made at th)
+plain tilted     250K M3    700   | refused (At the starting throttle (700 K): the en) | refused (At the starting throttle (700 K): the en)
+plain tilted     250K M3    1000  | refused (The control's thrust table is made at th) | refused (The control's thrust table is made at th)
+plain tilted     288K M0.3  700   | EPR roots/falls U (1, 0) L (1, 0) L.8 (1, 0) L1.2 (1, 0) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 0
+plain tilted     288K M0.3  1000  | EPR roots/falls U (1, 0) L (1, 0) L.8 (1, 0) L1.2 (1, 0) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 0
+plain tilted     288K M1.2  700   | EPR roots/falls U (1, 0) L (1, 0) L.8 (0, 0) L1.2 (0, 0) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 0
+plain tilted     288K M1.2  1000  | EPR roots/falls U (1, 0) L (1, 0) L.8 (1, 0) L1.2 (1, 0) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 0
+cool  flow/press 250K M0.1  700   | EPR roots/falls U (1, 0) L (1, 0) L.8 (1, 0) L1.2 (1, 0) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 0
+cool  flow/press 250K M0.1  1000  | EPR roots/falls U (1, 0) L (1, 0) L.8 (1, 0) L1.2 (1, 0) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 0
+cool  flow/press 250K M0.85 700   | EPR roots/falls U (1, 0) L (1, 0) L.8 (1, 0) L1.2 (1, 0) | no fan formula here
+cool  flow/press 250K M0.85 1000  | EPR roots/falls U (1, 0) L (1, 0) L.8 (1, 0) L1.2 (1, 0) | no fan formula here
+cool  flow/press 250K M1.6  700   | EPR roots/falls U (1, 0) L (1, 0) L.8 (0, 0) L1.2 (0, 0) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 10
+cool  flow/press 250K M1.6  1000  | EPR roots/falls U (1, 0) L (1, 0) L.8 (1, 0) L1.2 (1, 0) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 9
+cool  flow/press 250K M2    700   | refused (The control's thrust table is made at th) | refused (The control's thrust table is made at th)
+cool  flow/press 250K M2    1000  | EPR roots/falls U (1, 0) L (1, 0) L.8 (0, 0) L1.2 (1, 0) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 46
+cool  flow/press 250K M2.5  700   | refused (At the starting throttle (700 K): the en) | refused (At the starting throttle (700 K): the en)
+cool  flow/press 250K M2.5  1000  | refused (At the starting throttle (1000 K), the c) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 99
+cool  flow/press 250K M3    700   | refused (At the starting throttle (700 K): the en) | refused (At the starting throttle (700 K): the en)
+cool  flow/press 250K M3    1000  | refused (The control's thrust table is made at th) | refused (The control's thrust table is made at th)
+cool  flow/press 288K M0.3  700   | EPR roots/falls U (1, 0) L (1, 0) L.8 (1, 0) L1.2 (1, 0) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 0
+cool  flow/press 288K M0.3  1000  | EPR roots/falls U (1, 0) L (1, 0) L.8 (1, 0) L1.2 (1, 0) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 0
+cool  flow/press 288K M1.2  700   | EPR roots/falls U (1, 0) L (1, 0) L.8 (0, 0) L1.2 (0, 0) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 0
+cool  flow/press 288K M1.2  1000  | EPR roots/falls U (1, 0) L (1, 0) L.8 (1, 0) L1.2 (1, 0) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 0
+cool  tilted     250K M0.1  700   | EPR roots/falls U (1, 0) L (1, 0) L.8 (1, 0) L1.2 (1, 0) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 0
+cool  tilted     250K M0.1  1000  | EPR roots/falls U (1, 0) L (1, 0) L.8 (1, 0) L1.2 (1, 0) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 0
+cool  tilted     250K M0.85 700   | EPR roots/falls U (1, 0) L (1, 0) L.8 (1, 0) L1.2 (1, 0) | no fan formula here
+cool  tilted     250K M0.85 1000  | EPR roots/falls U (1, 0) L (1, 0) L.8 (1, 0) L1.2 (1, 0) | no fan formula here
+cool  tilted     250K M1.6  700   | EPR roots/falls U (1, 0) L (0, 0) L.8 (0, 0) L1.2 (0, 0) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 10
+cool  tilted     250K M1.6  1000  | EPR roots/falls U (1, 0) L (1, 0) L.8 (1, 0) L1.2 (1, 0) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 9
+cool  tilted     250K M2    700   | refused (The control's thrust table is made at th) | refused (The control's thrust table is made at th)
+cool  tilted     250K M2    1000  | EPR roots/falls U (1, 0) L (1, 0) L.8 (0, 0) L1.2 (1, 0) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 46
+cool  tilted     250K M2.5  700   | refused (At the starting throttle (700 K): the en) | refused (At the starting throttle (700 K): the en)
+cool  tilted     250K M2.5  1000  | refused (At the starting throttle (1000 K), the c) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 99
+cool  tilted     250K M3    700   | refused (At the starting throttle (700 K): the en) | refused (At the starting throttle (700 K): the en)
+cool  tilted     250K M3    1000  | refused (The control's thrust table is made at th) | refused (The control's thrust table is made at th)
+cool  tilted     288K M0.3  700   | EPR roots/falls U (1, 0) L (1, 0) L.8 (1, 0) L1.2 (1, 0) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 0
+cool  tilted     288K M0.3  1000  | EPR roots/falls U (1, 0) L (1, 0) L.8 (1, 0) L1.2 (1, 0) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 0
+cool  tilted     288K M1.2  700   | EPR roots/falls U (1, 0) L (1, 0) L.8 (0, 0) L1.2 (0, 0) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 0
+cool  tilted     288K M1.2  1000  | EPR roots/falls U (1, 0) L (1, 0) L.8 (1, 0) L1.2 (1, 0) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 0
+bleed flow/press 250K M0.1  700   | EPR roots/falls U (1, 0) L (1, 0) L.8 (1, 0) L1.2 (1, 0) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 0
+bleed flow/press 250K M0.1  1000  | EPR roots/falls U (1, 0) L (1, 0) L.8 (1, 0) L1.2 (1, 0) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 0
+bleed flow/press 250K M0.85 700   | EPR roots/falls U (1, 0) L (1, 0) L.8 (1, 0) L1.2 (1, 0) | no fan formula here
+bleed flow/press 250K M0.85 1000  | EPR roots/falls U (1, 0) L (1, 0) L.8 (1, 0) L1.2 (1, 0) | no fan formula here
+bleed flow/press 250K M1.6  700   | EPR roots/falls U (1, 0) L (1, 0) L.8 (0, 0) L1.2 (0, 0) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 13
+bleed flow/press 250K M1.6  1000  | EPR roots/falls U (1, 0) L (1, 0) L.8 (1, 0) L1.2 (1, 0) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 12
+bleed flow/press 250K M2    700   | refused (The control's thrust table is made at th) | refused (The control's thrust table is made at th)
+bleed flow/press 250K M2    1000  | EPR roots/falls U (1, 0) L (1, 0) L.8 (0, 0) L1.2 (1, 0) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 70
+bleed flow/press 250K M2.5  700   | refused (At the starting throttle (700 K): the en) | refused (At the starting throttle (700 K): the en)
+bleed flow/press 250K M2.5  1000  | refused (The control's thrust table is made at th) | refused (The control's thrust table is made at th)
+bleed flow/press 250K M3    700   | refused (At the starting throttle (700 K): the en) | refused (At the starting throttle (700 K): the en)
+bleed flow/press 250K M3    1000  | refused (The control's thrust table is made at th) | refused (The control's thrust table is made at th)
+bleed flow/press 288K M0.3  700   | EPR roots/falls U (1, 0) L (1, 0) L.8 (1, 0) L1.2 (1, 0) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 0
+bleed flow/press 288K M0.3  1000  | EPR roots/falls U (1, 0) L (1, 0) L.8 (1, 0) L1.2 (1, 0) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 0
+bleed flow/press 288K M1.2  700   | EPR roots/falls U (1, 0) L (1, 0) L.8 (0, 0) L1.2 (0, 0) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 0
+bleed flow/press 288K M1.2  1000  | EPR roots/falls U (1, 0) L (1, 0) L.8 (1, 0) L1.2 (1, 0) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 0
+bleed tilted     250K M0.1  700   | EPR roots/falls U (1, 0) L (1, 0) L.8 (1, 0) L1.2 (1, 0) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 0
+bleed tilted     250K M0.1  1000  | EPR roots/falls U (1, 0) L (1, 0) L.8 (1, 0) L1.2 (1, 0) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 0
+bleed tilted     250K M0.85 700   | EPR roots/falls U (1, 0) L (1, 0) L.8 (1, 0) L1.2 (1, 0) | no fan formula here
+bleed tilted     250K M0.85 1000  | EPR roots/falls U (1, 0) L (1, 0) L.8 (1, 0) L1.2 (1, 0) | no fan formula here
+bleed tilted     250K M1.6  700   | EPR roots/falls U (1, 0) L (1, 0) L.8 (0, 0) L1.2 (0, 0) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 13
+bleed tilted     250K M1.6  1000  | EPR roots/falls U (1, 0) L (1, 0) L.8 (1, 0) L1.2 (1, 0) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 13
+bleed tilted     250K M2    700   | refused (The control's thrust table is made at th) | refused (The control's thrust table is made at th)
+bleed tilted     250K M2    1000  | EPR roots/falls U (1, 0) L (1, 0) L.8 (0, 0) L1.2 (1, 0) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 71
+bleed tilted     250K M2.5  700   | refused (At the starting throttle (700 K): the en) | refused (At the starting throttle (700 K): the en)
+bleed tilted     250K M2.5  1000  | refused (The control's thrust table is made at th) | refused (The control's thrust table is made at th)
+bleed tilted     250K M3    700   | refused (At the starting throttle (700 K): the en) | refused (At the starting throttle (700 K): the en)
+bleed tilted     250K M3    1000  | refused (The control's thrust table is made at th) | refused (The control's thrust table is made at th)
+bleed tilted     288K M0.3  700   | EPR roots/falls U (1, 0) L (1, 0) L.8 (1, 0) L1.2 (1, 0) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 0
+bleed tilted     288K M0.3  1000  | EPR roots/falls U (1, 0) L (1, 0) L.8 (1, 0) L1.2 (1, 0) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 0
+bleed tilted     288K M1.2  700   | EPR roots/falls U (1, 0) L (1, 0) L.8 (0, 0) L1.2 (0, 0) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 0
+bleed tilted     288K M1.2  1000  | EPR roots/falls U (1, 0) L (1, 0) L.8 (1, 0) L1.2 (1, 0) | FAN-R roots/falls (1, 0) x-roots max 1 no-root fuels 0
