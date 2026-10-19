@@ -442,10 +442,12 @@ fn every_kind_of_stop_the_crash_map_found_is_driven_and_worded() {
 fn an_endpoint_without_a_steady_point_is_refused_in_words() {
     let d = ControlsSettings::defaults();
     let flat = CONTROL_SHAPES.iter().position(|&k| k == "flat-lp").unwrap();
-    let m = build(&ControlsSettings { shape: flat, from: 650.0, ..d }).err().expect("refused").0;
-    assert!(m.starts_with("At the starting throttle (650 K)") && m.contains("off the part of their maps"), "{m}");
-    let m = build(&ControlsSettings { shape: flat, to: 650.0, ..d }).err().expect("refused").0;
-    assert!(m.starts_with("At the final throttle (650 K)"), "{m}");
+    // 500 K: below the lowest throttle that solves at the design flight (520 K on this map since the
+    // HP-wall repair, 2026-10-19 — before it, 650 K was refused here too, wrongly).
+    let m = build(&ControlsSettings { shape: flat, from: 500.0, ..d }).err().expect("refused").0;
+    assert!(m.starts_with("At the starting throttle (500 K)") && m.contains("off the part of their maps"), "{m}");
+    let m = build(&ControlsSettings { shape: flat, to: 500.0, ..d }).err().expect("refused").0;
+    assert!(m.starts_with("At the final throttle (500 K)"), "{m}");
     // A lever whose schedule does all its travel just below design speed: the steady search does not
     // settle (crash map, typed past the slider's 0.8).
     let steep = ControlsSettings { lever: LeverChoice::Stator, v_max: 0.188, v_n_lo: 0.936,
@@ -788,12 +790,13 @@ fn the_generator_load_reaches_the_model_and_its_refusals_are_words() {
     };
     assert!(e.0.contains("With the generator off this throttle does have a steady point"), "{}", e.0);
     // and a throttle with no steady point even unloaded is NOT blamed on the generator
-    let e = match controls(&ControlsSettings { generator: GeneratorMode::Lp, generator_power: 0.005, from: 600.0,
+    // (500 K: 600 K was refused here before the HP-wall repair, 2026-10-19, and now runs)
+    let e = match controls(&ControlsSettings { generator: GeneratorMode::Lp, generator_power: 0.005, from: 500.0,
                                                shape: 3, lever: LeverChoice::Bleed, ..d }) {
         Err(e) => e,
-        Ok(_) => panic!("600 K on the flat-LP map has no steady point even unloaded"),
+        Ok(_) => panic!("500 K on the flat-LP map has no steady point even unloaded"),
     };
-    assert!(controls(&ControlsSettings { from: 600.0, shape: 3, lever: LeverChoice::Bleed, ..d }).is_err(),
+    assert!(controls(&ControlsSettings { from: 500.0, shape: 3, lever: LeverChoice::Bleed, ..d }).is_err(),
             "the unloaded engine must fail there too, or this check is vacuous");
     assert!(!e.0.contains("With the generator off"), "{}", e.0);
     let stop = Stop { s_last: 0.4, failure: Some(Failure {

@@ -153,18 +153,21 @@ fn every_new_refusal_is_words() {
     assert!(nan.contains("p0 is not a number"), "{nan}");
     // the crash map's one new end failure (plan § 27), from its own request: a very low throttle in warm, dense air,
     // with a fixed customer amount. On rung 38's pin the nozzle could not push the gas out; with rung 97's unchoked
-    // branch the LP turbine expands less, the end's search runs the LP shaft slower, and it leaves the compressor map.
+    // branch the LP turbine expands less, the end's search runs the LP shaft slower, and it left the compressor map —
+    // the closure's search running past the HP map's own wall. Since the HP-wall repair (2026-10-19, plan § 36) the
+    // search stops at that wall, and what remains is the nozzle: it cannot push the gas out even with the LP turbine
+    // taking almost no work.
     let r = call(r#"{"op":"controls","controls":{"T0":281.025575242416,"p0":110666.3721625535,"shape":"flow/press","redline_on":1,"generator":"hp","generator_power":0.05,"customer":"amount","customer_amount":0.13,"cool_vane":0.04,"cool_blade":0.12,"from":600,"to":870,"ramp":0.02,"settle":3.3,"rho":2.3}}"#);
-    assert!(r.contains("At the starting throttle (600 K)") && r.contains("run off the part of their maps"), "{r}");
+    assert!(r.contains("At the starting throttle (600 K)") && r.contains("pushed out against the air"), "{r}");
     assert!(endpoint_words("nozzle back-pressure p9=1 Pa exceeds total pressure pt9=0.9 Pa").contains("cannot push it out"));
     assert!(endpoint_words("rung-97: the nozzle cannot pass the LP turbine's flow").contains("pushed out against the air"));
-    // Away from the design flight the TOP of the throttle range can leave the maps too (1700 K at 11 km on the first
-    // map), so the off-map words must not send the user upward.
+    // The TOP of the throttle range at 11 km (1700 K on the first map) was refused as off the maps (plan § 27): the
+    // same search past the HP map's wall, at high power. Since the repair it runs. The off-map words still must not
+    // send the user upward.
     let (t, p) = standard(11_000.0);
-    let hi = controls_precheck(&d).and_then(|_| build(&ControlsSettings { t0: t, p0: p, to: 1700.0, ..d }).map(|_| ()))
-        .unwrap_err().0;
-    assert!(hi.contains("At the final throttle (1700 K)") && hi.contains("toward the middle") && !hi.contains("Raise the"),
-            "{hi}");
+    assert!(controls_precheck(&d).and_then(|_| build(&ControlsSettings { t0: t, p0: p, to: 1700.0, ..d }).map(|_| ())).is_ok());
+    let w = endpoint_words("rung-40 two-shaft closure does not bracket at nu=(1.0,1.0), Tt4=1700");
+    assert!(w.contains("toward the middle") && !w.contains("Raise the"), "{w}");
 }
 
 /// At the design flight the governor's limit refusals are rung 95/96's own words, character for character.

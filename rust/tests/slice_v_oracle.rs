@@ -94,6 +94,7 @@ use turbojet::stator_transient::{
     StatorSchedule,
 };
 use turbojet::two_spool::{build_two_spool_turbojet, Spool, TwoSpoolEngine, TwoSpoolLosses};
+use turbojet::two_spool_transient::take_hp_wall_rescues;
 
 const ORACLE_MAIN: &str = include_str!("../oracle/slice_v_pypy.tsv");
 const ORACLE_CPYTHON: &str = include_str!("../oracle/slice_v_cpython.tsv");
@@ -113,6 +114,10 @@ fn load(text: &str) -> BTreeMap<String, u64> {
 /// both halves panic together.
 struct Cmp {
     py: BTreeMap<String, u64>,
+    /// THE HP-WALL DIVERGENCE (2026-10-19) — `key -> (full march length, closures the repair rescued)`,
+    /// registered before a march's `npts` is emitted. See [`Cmp::hp_wall_npts`].
+    hp_wall: BTreeMap<String, (u64, u64)>,
+    licensed: Vec<String>,
     seen: BTreeSet<String>,
     bad: Vec<String>,
     /// Set on the CPython arm. It changes only WHICH LIST a disagreement lands in, never whether
@@ -125,7 +130,7 @@ struct Cmp {
 impl Cmp {
     fn new(py: BTreeMap<String, u64>) -> Self {
         Cmp { py, seen: BTreeSet::new(), bad: Vec::new(), cpython: false, drifts: Vec::new(),
-              flips: Vec::new() }
+              flips: Vec::new(), hp_wall: BTreeMap::new(), licensed: Vec::new() }
     }
 
     fn f(&mut self, key: &str, got: f64) {
@@ -147,8 +152,30 @@ impl Cmp {
         self.raw(key, 1, true);
     }
 
+    /// **THE HP-WALL DIVERGENCE (2026-10-19, sandbox plan § 36) — a licensed departure from
+    /// `python-final`, written as a RULE.** Rung 40's closure (which rung 57's `Tt4` march runs on)
+    /// searched the face flow past the HP map's own wall; there a trial went off the map and the
+    /// march STOPPED (Python's `npts` short of the grid). The repair caps that search at the HP wall
+    /// where the old bracket failed, so the march now runs on. A march's `npts` may therefore differ
+    /// from Python's only if: the repair rescued at least one closure in THAT march, the Rust march
+    /// ran to its FULL grid length, and Python's stopped short. Every other key stays on the
+    /// bit-gate — measured: every margin, minimum and later reader of these cells held bit for bit
+    /// (the minima were reached before Python's stop).
+    fn hp_wall_npts(&mut self, key: &str, full: u64, rescued: u64) {
+        self.hp_wall.insert(key.to_string(), (full, rescued));
+    }
+
     fn raw(&mut self, key: &str, got: u64, discrete: bool) {
         assert!(self.seen.insert(key.to_string()), "the Rust emitted {key} twice");
+        if let (Some(&(full, rescued)), Some(&want)) = (self.hp_wall.get(key), self.py.get(key)) {
+            if want != got {
+                assert!(rescued > 0 && got == full && want < full,
+                        "{key}: rust {got} vs python {want} is outside the HP-wall rule \
+                         (full {full}, rescued {rescued})");
+                self.licensed.push(format!("{key}: rust {got} (full) vs python {want}"));
+                return;
+            }
+        }
         match self.py.get(key) {
             None => self.bad.push(format!("{key}: NO GOLDEN (the dump never emitted it)")),
             Some(&want) if want != got => {
@@ -171,6 +198,9 @@ impl Cmp {
     }
 
     fn finish(&self, arm: &str) {
+        assert!(!self.licensed.is_empty(), "the HP-wall rule licensed nothing — it would be vacuous");
+        println!("HP-wall divergence (2026-10-19): {} march length(s) licensed:\n  {}",
+                 self.licensed.len(), self.licensed.join("\n  "));
         let missed: Vec<&String> = self.py.keys().filter(|k| !self.seen.contains(*k)).collect();
         assert!(self.drifts.is_empty(),
                 "{} CPG float keys drifted between interpreters — every cell in this file is CPG, \
@@ -542,8 +572,10 @@ fn emit(c: &mut Cmp) {
         // Python's defaults: `transient_surge_margin(..., s_end=3.0, ds=0.02)` and
         // `transient_surge_margin_fuel(..., s_settle=6.0, ds=0.02)`. Both are the DEFAULTS
         // p7o relied on, so they are spelled out here rather than inherited.
-        put_tsm(c, &format!("{p}/tsm"),
-                &m.fuel.inner.transient_surge_margin(&fl, LO, HI, 0.5, 3.0, 0.02));
+        take_hp_wall_rescues();
+        let tsm = m.fuel.inner.transient_surge_margin(&fl, LO, HI, 0.5, 3.0, 0.02);
+        c.hp_wall_npts(&format!("{p}/tsm/npts"), (3.0f64 / 0.02).round() as u64 + 1, take_hp_wall_rescues());
+        put_tsm(c, &format!("{p}/tsm"), &tsm);
         c.f(&format!("{p}/after_tsm_vsv_lp"), core.map_lp().vsv);
         c.f(&format!("{p}/after_tsm_vsv_hp"), core.map_hp().vsv);
         put_tsmf(c, &format!("{p}/tsmf"),

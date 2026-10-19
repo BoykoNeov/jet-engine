@@ -1478,12 +1478,11 @@ pub fn endpoint_words(message: &str) -> String {
         // Plan § 27: away from the design flight the TOP of the range can be off the maps too, so the words do not say
         // which way to move.
         "the compressors would have to run off the part of their maps the model covers. Mostly this is a throttle too \
-         low for the air (on the flat-LP map at the design flight, below about 700–900 K; warmer air raises that, \
-         and so does flying faster, which warms the air before it reaches the engine — on the flat-LP map about \
-         1000 K at Mach 1.6, 1200 K at Mach 2, 1600 K at Mach 2.6; colder air lowers it), or a large fixed load or amount of air in thin air; away from the design flight it can \
-         also be the top of the range (measured: 1700 K at 11 km on the map curved along flow at LP, along pressure at \
-         HP); or a lever whose schedule does nearly all its travel just below the design speed. Move this throttle \
-         toward the middle of its range, or start the lever's schedule lower"
+         low for the air (at the design flight, below about 510–520 K on every map; warmer air raises that, and so \
+         does flying faster, which warms the air before it reaches the engine — about 610 K at Mach 1.6, 670–690 K at \
+         Mach 2, 800–820 K at Mach 2.6; colder air lowers it), or a large fixed load or amount of air in thin air, or \
+         a lever whose schedule does nearly all its travel just below the design speed. Move this throttle toward the \
+         middle of its range, or start the lever's schedule lower"
     } else {
         "the model's steady solve fails"
     };

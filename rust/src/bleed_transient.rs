@@ -66,7 +66,8 @@ use crate::stator_transient::{
 };
 use crate::two_spool::{Spool, TwoSpoolEngine};
 use crate::two_spool_transient::{
-    BelowCeiling, CloseState, Instant2, TwoSpoolTransientCore, TwoSpoolTransientHooks,
+    face_phi_hp, hp_wall_rescue, BelowCeiling, CloseState, Instant2, TwoSpoolTransientCore,
+    TwoSpoolTransientHooks,
 };
 
 // ---------------------------------------------------------------------------------------------
@@ -740,8 +741,16 @@ pub fn r62_close_body(
     let wall_map = c.map_lp().phi_max(0.1) * n_lp;
     if 2.5 <= wall_map { bump(&HI_WALL_LITERAL); } else { bump(&HI_WALL_MAP); }
     let hi = 2.5f64.min(wall_map);
-    // Python evaluates `ghi = g(hi)` OUTSIDE the try: a failure at the high wall PROPAGATES.
-    let ghi = g(hi)?;
+    // Python evaluates `ghi = g(hi)` OUTSIDE the try: a failure at the high wall PROPAGATES —
+    // unless the HP face's own wall brackets the root below it (rung 40's repair, § 36).
+    let phi_hp_at = |m: f64| face_phi_hp(c, gas, tt2, pt2, n_lp, nu_hp, 1.0 - b, m);
+    let ghi = match g(hi) {
+        Ok(v) => v,
+        Err(e) => match hp_wall_rescue(&c.map_hp(), None, hi, phi_hp_at, g) {
+            Some(root) => return ev(root?),
+            None => return Err(e),
+        },
+    };
 
     let (mut lo, mut glo, mut m) = (None, 0.0f64, 0.02f64);
     while m < hi {
@@ -751,6 +760,9 @@ pub fn r62_close_body(
         }
     }
     let Some(lo) = lo.filter(|_| glo < 0.0 && 0.0 < ghi) else {
+        if let Some(root) = lo.and_then(|lo| hp_wall_rescue(&c.map_hp(), Some((lo, glo)), hi, phi_hp_at, g)) {
+            return ev(root?);
+        }
         bump(&CLOSE_BRACKET_FAILS);
         return Err(Abort(format!(
             "rung-62 bled two-shaft closure does not bracket at nu=({nu_lp:.4},{nu_hp:.4}), \

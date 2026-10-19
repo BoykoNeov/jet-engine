@@ -55,7 +55,7 @@ use crate::two_spool::{
     Cascade, CascadeMap, TwoSpoolCore, TwoSpoolEngine, TwoSpoolHooks, TwoSpoolMapCore,
     TwoSpoolMapResult, TwoSpoolResult, R39,
 };
-use crate::two_spool_transient::{CloseState, Instant2, TwoSpoolTransientCore};
+use crate::two_spool_transient::{face_phi_hp, hp_wall_rescue, CloseState, Instant2, TwoSpoolTransientCore};
 
 // =========================================================================================
 // THE COOLING
@@ -684,22 +684,35 @@ pub fn r91_try_close(
     };
     let wall_map = c.map_lp().phi_max(0.1) * n_lp;
     let hi = 2.5f64.min(wall_map);
-    let ghi = g(hi)?;
-    let (mut lo, mut glo, mut m) = (None, 0.0f64, 0.02f64);
-    while m < hi {
-        match g(m) {
-            Ok(v) => { glo = v; lo = Some(m); break; }
-            Err(_) => { m += 0.02; }
+    // A failure at the high wall propagates — unless the HP face's own wall brackets the root
+    // below it (rung 40's repair, sandbox plan § 36).
+    let phi_hp_at = |m: f64| face_phi_hp(c, gas, tt2, pt2, n_lp, nu_hp, 1.0 - b, m);
+    let root = match g(hi) {
+        Err(e) => match hp_wall_rescue(&c.map_hp(), None, hi, phi_hp_at, g) {
+            Some(root) => root?,
+            None => return Err(e),
+        },
+        Ok(ghi) => {
+            let (mut lo, mut glo, mut m) = (None, 0.0f64, 0.02f64);
+            while m < hi {
+                match g(m) {
+                    Ok(v) => { glo = v; lo = Some(m); break; }
+                    Err(_) => { m += 0.02; }
+                }
+            }
+            match lo.filter(|_| glo < 0.0 && 0.0 < ghi) {
+                Some(lo) => try_illinois(g, lo, hi, glo, ghi, TwoSpoolTransientCore::CLOSE_TOL,
+                                         ILLINOIS_MAXIT)?,
+                None => match lo.and_then(|lo| hp_wall_rescue(&c.map_hp(), Some((lo, glo)), hi, phi_hp_at, g)) {
+                    Some(root) => root?,
+                    None => return Err(Abort(format!(
+                        "rung-91 two-shaft closure with turbine cooling does not bracket at \
+                         nu=({nu_lp:.4},{nu_hp:.4}), Tt4={tt4:.0}, b={b:.4} — off the modeled speed-line \
+                         region."))),
+                },
+            }
         }
-    }
-    let Some(lo) = lo.filter(|_| glo < 0.0 && 0.0 < ghi) else {
-        return Err(Abort(format!(
-            "rung-91 two-shaft closure with turbine cooling does not bracket at \
-             nu=({nu_lp:.4},{nu_hp:.4}), Tt4={tt4:.0}, b={b:.4} — off the modeled speed-line \
-             region.")));
     };
-    let root = try_illinois(g, lo, hi, glo, ghi, TwoSpoolTransientCore::CLOSE_TOL,
-                            ILLINOIS_MAXIT)?;
     let out = ev(root)?;
     let hpc = (1.0 - b) * out.mdot_face.expect("set above");
     check_root(out.customer.expect("set above"), eps, hpc)?;

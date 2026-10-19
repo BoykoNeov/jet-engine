@@ -182,7 +182,7 @@ Never re-open one, and never re-enumerate them here.
 - Rung 79 § 9's **gap** — `docs/rung79-gap-margin.md`. Its § 5 march **STANDS STILL**; residual = rung 77's `1/(1−c)`. **CORRECTS 79.**
 - "Earned at design" over `π_c` (`docs/rung29-pi-c-margin.md`, NOT protective) and `M0` (`docs/rung29-M0-margin.md`, monotone-protective).
 - `β<1` over `π_c` — `docs/rung28-beta-margin.md` (β pressure-invariant; higher `π_c` protective).
-- Solver repairs (sandbox plan § 14): rung 34's march wall + rung 31's turbine wall (an oracle RULE), 2026-10-10; rung 43's `below_ceiling` ON BY DEFAULT 2026-10-14 (no verdict moves; CORRECTS 65 § 3; oracles held OFF); the nozzle back-pressure follows the FLIGHT, not the design ambient, 2026-10-16 (§ 26; nothing shipped moved, bit for bit).
+- Solver repairs (sandbox plan § 14/26/36): rung 34's march wall + rung 31's turbine wall (oracle RULE), 10-10; rung 43's `below_ceiling` ON BY DEFAULT 10-14 (no verdict moves; CORRECTS 65 § 3; oracles held OFF); nozzle back-pressure follows the FLIGHT, 10-16 (nothing moved); the two-shaft closure stops at the HP map wall, 10-19 (4 Python march lengths, a RULE).
 
 **Still OPEN — the live to-build list:**
 - **The real spatial / transported-CFD PDF** — the standing mixing ceiling (22–24 are a Gaussian-plume cartoon; needs an anchored SCALE + spread law).

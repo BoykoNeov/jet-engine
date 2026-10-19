@@ -309,8 +309,11 @@ fn the_hand_built_machine_is_the_shipped_one() {
 ///   That number is EMITTED by the test itself; the first writing of this comment typed `1.3e-13`
 ///   off a hand calculation and was wrong by an order of magnitude, which is § 5.19 (xi)'s rule
 ///   catching its own author for the third time in this slice.
-/// * the march itself lands on a different number of points — `npts` 61 → 62 — which is a
-///   DISCRETE key and cannot be met by a tolerance.
+/// * ~~the march itself lands on a different number of points — `npts` 61 → 62~~ — **retired by
+///   the HP-wall repair (2026-10-19, sandbox plan § 36)**: both marches stopped where a closure
+///   trial ran past the HP map's own wall; the search is now capped there, so both run to the
+///   full grid (151) and the length no longer separates them. The golden's 61 is licensed by
+///   `slice_v_oracle.rs`'s HP-wall rule. The margin half of the finding is untouched.
 #[test]
 fn the_local_armed_core_breaks_rung_57s_own_currency() {
     let g = golden();
@@ -320,7 +323,9 @@ fn the_local_armed_core_breaks_rung_57s_own_currency() {
     assert_eq!(a.tsm_lp.to_bits(), g["A/both/tsm/margin_min_lp"],
                "the CLEAN reading is not the committed golden -- either this crate has drifted \
                 from PyPy or the golden was regenerated against buggy code");
-    assert_eq!(a.npts, g["A/both/tsm/npts"]);
+    // The HP-wall repair: Python's march stopped short (the golden's 61); this one runs to the end.
+    assert!(g["A/both/tsm/npts"] < 151);
+    assert_eq!(a.npts, 151);
 
     // § 5.20 (ii)'s scoped column, at the precision the plan prints it.
     const SCOPED_BOTH: f64 = 0.03909986668;
@@ -333,8 +338,7 @@ fn the_local_armed_core_breaks_rung_57s_own_currency() {
     let moved = rel_pct(a.tsm_lp, b.tsm_lp);
     assert!((moved - 15.431).abs() <= 5e-4,
             "the move is {moved:.6} %, not the 15.431 % pre-registered at P5");
-    assert_eq!(b.npts, 62, "the scoped march did not change length -- 61 -> 62 is the discrete \
-                            half of this finding and a tolerance cannot satisfy it");
+    assert_eq!(b.npts, 151, "the scoped march no longer stops early (the HP-wall repair)");
     println!("P5: margin_min_lp {:.17e} -> {:.17e}  ({moved:.6} %), npts {} -> {}",
              a.tsm_lp, b.tsm_lp, a.npts, b.npts);
 }

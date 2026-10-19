@@ -87,7 +87,9 @@ standard day, each map; "old" is the same run with `lp_pinned`. Floor: a speed d
 Flat-LP has no steady point at 700 K on either day: **2 cells VACUOUS** each. *(Corrected 2026-10-19, rung 103's probe
 `docs/plans/scratch-archive/rung103/probe1_census.txt`: the steady matcher HAS a point there — one root, positive
 thrust, on both days — it is rung 40's transient equilibrium that fails to bracket. The cells stay vacuous: H1/H2
-start the march from that equilibrium.)*
+start the march from that equilibrium.)* *(Repaired 2026-10-19, sandbox plan § 36: the equilibrium now solves both
+cells. The rung's panel shows H1 holding there too — LP speed 0.65873 against the pin's 0.67607 on the +40 K day,
+0.67643 against 0.67644 on the standard day; H2 was not re-scored. The verdicts below are as frozen.)*
 
 | # | verdict | measured |
 |---|---|---|

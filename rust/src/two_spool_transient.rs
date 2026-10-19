@@ -1927,6 +1927,99 @@ pub fn round3(x: f64) -> f64 {
 }
 
 // ---------------------------------------------------------------------------------------------
+// The HP face's own wall — a solver repair (2026-10-19, sandbox plan § 36), shared by the four
+// `Tt4`-driven closures (rungs 40/62/90/91)
+// ---------------------------------------------------------------------------------------------
+
+thread_local! {
+    static HP_WALL_RESCUES: Cell<u64> = const { Cell::new(0) };
+}
+
+/// How many closures the HP face's wall rescued on this thread since the last call; resets.
+pub fn take_hp_wall_rescues() -> u64 {
+    HP_WALL_RESCUES.with(|x| x.replace(0))
+}
+
+/// The HP face's flow coefficient at the LP face flow `m_lp` — the pre-burner lines of the four
+/// closures' `ev`, with `core_frac` the share of the face air the HP compressor gets (`1 − b`;
+/// `1` for rung 40). No burner, so it cannot fail.
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn face_phi_hp(
+    c: &TwoSpoolMapCore, gas: &Gas, tt2: f64, pt2: f64, n_lp: f64, nu_hp: f64, core_frac: f64, m_lp: f64,
+) -> f64 {
+    let phi_lp = m_lp / n_lp;
+    let tau_lpc = 1.0 + (c.tau_lpc_d - 1.0) * c.map_lp().psi(phi_lp) * n_lp * n_lp;
+    let tt25 = tt2 * tau_lpc;
+    let eta_lpc = c.map_lp().eta_c_at(c.base.eta_lpc, phi_lp, n_lp);
+    let h2 = gas.h_c(tt2);
+    let pi_lpc = gas.pr_c(gas.t_from_h_c(h2 + eta_lpc * (gas.h_c(tt25) - h2))) / gas.pr_c(tt2);
+    let face = m_lp * c.mcorr_lp_d * pt2 / powp(tt2, 0.5);
+    let m_hp = (core_frac * face * powp(tt25, 0.5) / (pi_lpc * pt2)) / c.mcorr_hp_d;
+    m_hp / (nu_hp * powp(c.tt25_d / tt25, 0.5))
+}
+
+/// **THE HP FACE'S OWN WALL**, read only where a closure's bracket has FAILED.
+///
+/// The four `Tt4` closures search the face flow up to the LP map's own wall, and nothing bounds
+/// where that puts the HP face. On a FLAT LP map there is no LP wall (`phi_max`'s sentinel, so the
+/// bare 2.5), and the HP face runs far past its map: `ψ_H < 0`, `Tt3` below zero — yet FINITE, so
+/// the NaN guard never fires — and there `g` turns back NEGATIVE (measured at `m ≈ 2.4`, flat-LP,
+/// design flight, 700 K). The bracket's sign test then refuses a closure whose one physical root
+/// sits at `m ≈ 0.42`, and rung 40's equilibrium refused running engines.
+///
+/// The cap is the flow at which the HP face reaches its map's own wall — `ψ_H = 0.1`, the SAME
+/// floor the LP wall uses (no new constant) — found by bisection on [`face_phi_hp`]. `lo` is the
+/// closure's own low end when it found one (`None` when `g(hi)` failed first: then it is marched in
+/// here, from 0.02 in 0.02 steps, as the closures do). Returns the root on `[lo, cap]` only if the
+/// HP wall binds inside `(lo, hi)`, `g(lo) < 0 < g(cap)`; otherwise `None`, and the closure refuses
+/// as before. Every closure whose bracket held never reaches this, so it is bit for bit what it was.
+pub(crate) fn hp_wall_rescue<P, G>(
+    map_hp: &ComponentMap, lo: Option<(f64, f64)>, hi: f64, phi_hp_at: P, g: G,
+) -> Option<Result<f64, Abort>>
+where
+    P: Fn(f64) -> f64,
+    G: Fn(f64) -> Result<f64, Abort>,
+{
+    let wall = map_hp.phi_max(0.1);
+    // `!(x > y)` so a NaN face coefficient refuses rather than bisects.
+    if !(phi_hp_at(hi) > wall) {
+        return None;
+    }
+    let (lo, glo) = match lo {
+        Some(p) => p,
+        None => {
+            let mut m = 0.02f64;
+            loop {
+                if m >= hi {
+                    return None;
+                }
+                if let Ok(v) = g(m) {
+                    break (m, v);
+                }
+                m += 0.02;
+            }
+        }
+    };
+    if !(glo < 0.0) || !(phi_hp_at(lo) < wall) {
+        return None;
+    }
+    let (mut a, mut b) = (lo, hi);
+    for _ in 0..200 {
+        let mid = 0.5 * (a + b);
+        if mid <= a || mid >= b {
+            break;
+        }
+        if phi_hp_at(mid) <= wall { a = mid } else { b = mid }
+    }
+    let gcap = g(a).ok()?;
+    if !(0.0 < gcap) {
+        return None;
+    }
+    HP_WALL_RESCUES.with(|x| x.set(x.get() + 1));
+    Some(try_illinois(&g, lo, a, glo, gcap, TwoSpoolTransientCore::CLOSE_TOL, ILLINOIS_MAXIT))
+}
+
+// ---------------------------------------------------------------------------------------------
 // R40's three bodies
 // ---------------------------------------------------------------------------------------------
 
@@ -2017,8 +2110,16 @@ fn r40_try_close(
         HI_WALL_MAP.with(|x| x.set(x.get() + 1));
     }
     let hi = 2.5f64.min(wall_map);
-    // Python evaluates `ghi = g(hi)` OUTSIDE the try: a failure at the high wall PROPAGATES.
-    let ghi = g(hi)?;
+    // Python evaluates `ghi = g(hi)` OUTSIDE the try: a failure at the high wall PROPAGATES —
+    // unless the HP face's own wall brackets the root below it ([`hp_wall_rescue`], the repair).
+    let phi_hp_at = |m: f64| face_phi_hp(c, gas, tt2, pt2, n_lp, nu_hp, 1.0, m);
+    let ghi = match g(hi) {
+        Ok(v) => v,
+        Err(e) => match hp_wall_rescue(&c.map_hp(), None, hi, phi_hp_at, g) {
+            Some(root) => return ev(root?),
+            None => return Err(e),
+        },
+    };
 
     // March the LOW wall IN: at very small m_lp the pressure ratio explodes and the reacting-gas
     // equilibrium solve can fail there — an off-map bracket artifact, not a physical bound.
@@ -2040,6 +2141,9 @@ fn r40_try_close(
         }
     }
     let Some(lo) = lo.filter(|_| glo < 0.0 && 0.0 < ghi) else {
+        if let Some(root) = lo.and_then(|lo| hp_wall_rescue(&c.map_hp(), Some((lo, glo)), hi, phi_hp_at, g)) {
+            return ev(root?);
+        }
         CLOSE_BRACKET_FAILS.with(|x| x.set(x.get() + 1));
         return Err(Abort(format!(
             "rung-40 two-shaft closure does not bracket at nu=({nu_lp:.4},{nu_hp:.4}), \

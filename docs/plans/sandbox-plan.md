@@ -1905,3 +1905,42 @@ spec `docs/rung102-spec.md`; scratch `scratch-archive/rung102/`.
   `sandbox_blades` (`…_is_re_solved_by_the_view`, the 805 K case now below idle, the new words) and `sandbox_cooling`
   (the heavy-cooling knob compared like for like, the no-cooling point, the new words); `browser.mjs` step 14 (its two
   "Not modelled" rows are lever rows now). Spec § 4.
+
+## 36. The two-shaft closure stops at the HP map's own wall (2026-10-19) — a solver repair, not a slice
+
+Rung 103's open seam: rung 40's equilibrium refused running engines. **The cause was not the Newton's start** —
+seeded AT the steady matcher's root it still failed. It was the closure (`r40_try_close` and its rung-62/90/91 copies):
+the face-flow search runs up to the LP map's own wall, and nothing bounded where that puts the HP face. On the flat-LP
+map there is no LP wall (`phi_max`'s sentinel, so the bare 2.5); past the HP map's wall `ψ_H < 0` and `Tt3` goes below
+zero yet stays FINITE, the residual turns back negative, and the bracket's sign test refused a closure whose one
+physical root sat well inside. At 11 km and high power the same happens on the curved maps (the "top of the range").
+- **The repair** (`two_spool_transient::hp_wall_rescue`, shared by the four `Tt4`-driven closures): only where the old
+  bracket FAILED (`g(hi)` refused, or the signs did not bracket), cap the search where the HP face reaches its map's
+  wall — `ψ_H = 0.1`, the floor the LP wall already uses, no new constant — by bisection on the pre-burner face algebra,
+  and solve on `[lo, cap]`. A closure whose bracket held never enters it: bit for bit. The fuel-driven closures (rung
+  43's scan up from the rich wall, and its copies) already stop at the first sign change and were never affected.
+- **The census and the user's decision.** The whole gate ran with the repair on: the only Python-held keys that moved
+  are 4 march lengths (`slice_v_oracle`, `A/*/tsm/npts`, 48–62 → the full 151 — rung 57's `Tt4` marches stopped at an
+  off-map trial; every margin and later reader held bit for bit, the minima came before the stop). The user chose
+  **on everywhere** (2026-10-19): the 4 are licensed by a RULE in `slice_v_oracle.rs` (rescued in that march, the Rust
+  march full length, Python's short). Rewritten: rung 57's `test_offmap_guard_…` (REVERSED: now solves, at rung 39's
+  point), `slice_v_dispatch`'s P5 (its 61 → 62 length half retired; the 15.4 % margin half stands), rung 97's panel
+  golden (its two flat-LP rows were the bug), `sandbox_controls` (the refused endpoints at 500 K, below the new 520 K
+  edge) and `sandbox_altitude` (the warm 600 K case is now refused by the nozzle, rung 97's words; the 11 km 1700 K end
+  runs). Rung 97 § 3's two vacuous flat-LP cells now solve (noted in place; not re-scored).
+- **The gate:** `tests/hp_wall_repair.rs` — at every flat-LP point the steady matcher solves (four flights, 550–1500 K),
+  the equilibrium lands on its speeds (independent: no closure code in common; ≤ 6e-13 measured, bar 1e-10); the 11 km
+  top of range likewise; the curved maps never enter the repair over that grid; the Controls page runs flat-LP from
+  600/700 K through all four closures (15 of those 16 starts were refused before). Red check (the rescue switched off by
+  an env flag, then removed): 4 of 5 red — every one a refusal, which is the bug; the fifth asserts non-entry.
+- **What moved on the page** (crash map, seed 36, 1 200 random Controls requests, half on flat-LP, against a worktree of
+  `070b729`): 779 runs byte-equal; 378 refusals now run; 19 refusals change words; 24 identical; no panic; slowest
+  reply 119 → 161 ms. The 18 still "off the maps": 4 below idle (the steady matcher agrees), 8 where the steady matcher
+  also fails (its efficiency check, which trips at zero or negative thrust — warm, fast flights at low throttle), 3 that
+  run bare but not with their load (cooling, customer bleed, generator), and 3 of the open seam below. The refusal
+  words were re-measured: the lowest throttle that solves at the design flight is 510–520 K on every map (flat-LP was
+  750 K), ~610 K at Mach 1.6, 670–690 K at Mach 2, 800–820 K at Mach 2.6 (flat-LP was 980/1170/1520 K); the "top of
+  the range" clause is gone.
+- **Still open:** the Newton starts at full speed. Just above idle (556–562 K in the crash map; 550 K standard day,
+  M 0.85 in the gate) the compressor exit there is hotter than the burner target, so the closure has no root AT THE
+  START, while the running point has one (seeded there it solves). A start from the steady matcher would close it.

@@ -182,10 +182,11 @@ is assumed, not earned (rung 97's, still). And **the arrow's size near the bound
 so a criterion that reads the HP spool's sensitivity to the LP compressor (a margin, a schedule) is blind to it exactly
 where the nozzle first unchokes.
 
-**Rung 40's equilibrium refuses running engines** (found in this rung's probe, not built): on `flat-lp` at sea level it
-fails to bracket ("two-shaft closure does not bracket") where the steady matcher finds one clean root with positive
-thrust — unchoked at 650–750 K on the +40 K day (550/600 K are below idle) and 550–700 K on a standard day, and on the
-+40 K day at 800–950 K **choked** too (`probe1_census.txt`, Mach 0.85). The Controls page
-starts and ends its slam from that equilibrium and words the failure as "no steady operating point … off the part of
-their maps the model covers", so it likely refuses throttles that run. A solver fix (or a start from the steady
-matcher), not a rung; rung 97 § 3's "no steady point" is corrected in place.
+**Rung 40's equilibrium refused running engines** (found in this rung's probe) — **REPAIRED 2026-10-19** (sandbox plan
+§ 36, `tests/hp_wall_repair.rs`). On `flat-lp` it failed to bracket ("two-shaft closure does not bracket") where the
+steady matcher finds one clean root with positive thrust (`probe1_census.txt`). The cause was not the Newton's start —
+seeded AT the steady root it still failed — but the closure's search: with no LP wall on a flat map it ran to the bare
+2.5, past the HP map's own wall, where the residual turns back negative. Capping it at the HP wall, only where the old
+bracket failed, solves every such point at the steady matcher's speeds (≤ 6e-13). Still open: one cell (550 K, standard
+day, M 0.85, barely above idle) whose full-speed START has no closure root. Rung 97 § 3's "no steady point" is
+corrected in place.

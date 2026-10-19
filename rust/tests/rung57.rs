@@ -50,6 +50,7 @@ use turbojet::stator_transient::{
     StatorLeg, StatorSchedule,
 };
 use turbojet::two_spool::{build_two_spool_turbojet, Spool, TwoSpoolEngine, TwoSpoolLosses};
+use turbojet::two_spool_transient::take_hp_wall_rescues;
 
 // ---------------------------------------------------------------------------------- the grid
 // `test_rung57.py:47-62`, spelled out rather than imported from a shared module — see the header.
@@ -316,15 +317,22 @@ fn test_constructor_guards() {
     });
 }
 
-/// Python `test_offmap_guard_is_an_assertion_not_a_typeerror`. RUNG 57's by-product: past
-/// `phi_H ~ 4` the loading law gives `Tt3 < 0` and `pr_c` of a negative base returns a COMPLEX in
-/// Python — which used to reach the bracket comparison as a `TypeError` that no caller catches.
-/// In Rust the same state is a named refusal from rung 40's closure.
+/// Python `test_offmap_guard_is_an_assertion_not_a_typeerror` — **REVERSED by the HP-wall repair
+/// (2026-10-19, sandbox plan § 36).** RUNG 57's by-product: past `phi_H ~ 4` the loading law gives
+/// `Tt3 < 0` and `pr_c` of a negative base returns a COMPLEX in Python — which used to reach the
+/// bracket comparison as a `TypeError` that no caller catches; in Rust it was a named refusal from
+/// rung 40's closure ("off-map compressor trial"), and this equilibrium ENDED there. That trial is
+/// the closure's search running past the HP map's own wall; the search is now capped at that wall
+/// where it failed, so the equilibrium solves — at rung 39's matched point, an independent solve.
 #[test]
 fn test_offmap_guard_is_an_assertion_not_a_typeerror() {
-    refuses("off-map compressor trial", || {
-        st_maps(flat_lp(), flat_hp(), StatorArm::default()).fuel.inner.equilibrium(&flight(), LO);
-    });
+    let m = st_maps(flat_lp(), flat_hp(), StatorArm::default());
+    take_hp_wall_rescues();
+    let i = m.fuel.inner.equilibrium(&flight(), LO);
+    assert!(take_hp_wall_rescues() > 0, "the off-map trial was not met — this test no longer reaches the wall");
+    let r = m.fuel.inner.inner.try_match_point(&flight(), LO).unwrap_or_else(|e| panic!("{}", e.0));
+    assert!((i.nu_lp - r.n_lp_ratio).abs() < 1e-10 && (i.nu_hp - r.n_hp_ratio).abs() < 1e-10,
+            "equilibrium ({}, {}) vs rung 39 ({}, {})", i.nu_lp, i.nu_hp, r.n_lp_ratio, r.n_hp_ratio);
 }
 
 /// Python `test_currency_split_replays_on_the_transient`. Rung 53's headline, dynamically:

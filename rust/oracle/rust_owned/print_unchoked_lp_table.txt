@@ -7,11 +7,11 @@ on the Controls engine, against rung 38's pin (the old model: the nozzle throat 
   +40 K    flow/press     0.7053   0.6884    0.58948    0.60745    33.58    32.04       9
   +40 K    press/flow     0.7046   0.6884    0.57125    0.58761    34.40    33.19      10
   +40 K    tilted         0.7056   0.6884    0.58113    0.59904    33.29    31.79      10
-  +40 K    flat-lp     At the starting throttle (700 K): the engine has no steady o
+  +40 K    flat-lp        0.7022   0.6884    0.65873    0.67607    37.43    36.45       9
   standard flow/press     0.6886   0.6884    0.60911    0.60931    88.44    88.44       1
   standard press/flow     0.6886   0.6884    0.58980    0.58991    89.74    89.74       1
   standard tilted         0.6887   0.6884    0.60073    0.60096    87.98    87.98       1
-  standard flat-lp     At the starting throttle (700 K): the engine has no steady o
+  standard flat-lp        0.6884   0.6884    0.67643    0.67644    93.85    93.85       1
 
   (pi_LPT: the LP turbine's pressure ratio, exit over inlet; LP speed: fraction of design; thrust: N per kg/s of
   design airflow; unch.: how many of the 700 -> 1400 K move's 126 points have the nozzle unchoked.) The compressors,
