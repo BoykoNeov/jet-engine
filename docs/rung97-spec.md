@@ -84,7 +84,10 @@ unchoked (of the run's moments)"). The numbers there are now the model's own.
 
 Cells: the 700 K throttle (H1) and the 700 → 1400 K slam over 0.5 τ (H2), sea level at Mach 0.85 on a +40 K and a
 standard day, each map; "old" is the same run with `lp_pinned`. Floor: a speed difference counts only above 1e−9.
-Flat-LP has no steady point at 700 K on either day: **2 cells VACUOUS** each.
+Flat-LP has no steady point at 700 K on either day: **2 cells VACUOUS** each. *(Corrected 2026-10-19, rung 103's probe
+`docs/plans/scratch-archive/rung103/probe1_census.txt`: the steady matcher HAS a point there — one root, positive
+thrust, on both days — it is rung 40's transient equilibrium that fails to bracket. The cells stay vacuous: H1/H2
+start the march from that equilibrium.)*
 
 | # | verdict | measured |
 |---|---|---|

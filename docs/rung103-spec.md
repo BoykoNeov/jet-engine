@@ -181,3 +181,10 @@ failed in 12 programs. What each failure says:
 is assumed, not earned (rung 97's, still). And **the arrow's size near the boundary**: H1's slope starts at zero at choke,
 so a criterion that reads the HP spool's sensitivity to the LP compressor (a margin, a schedule) is blind to it exactly
 where the nozzle first unchokes.
+
+**Rung 40's equilibrium refuses running engines** (found in this rung's probe, not built): on `flat-lp` at sea level it
+fails to bracket ("two-shaft closure does not bracket") where the steady matcher finds one clean root with positive
+thrust — 550–750 K unchoked, and on the +40 K day 800–950 K **choked** too (`probe1_census.txt`). The Controls page
+starts and ends its slam from that equilibrium and words the failure as "no steady operating point … off the part of
+their maps the model covers", so it likely refuses throttles that run. A solver fix (or a start from the steady
+matcher), not a rung; rung 97 § 3's "no steady point" is corrected in place.
