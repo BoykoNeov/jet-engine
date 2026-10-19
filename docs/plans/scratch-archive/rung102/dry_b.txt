@@ -1,0 +1,27 @@
+== map flow
+  250K 50kPa M0.5  Tt4 1300: nu 0.9224 choked true M9 1.0000 thrust 10245.0 N  sm 0.3253
+  250K 50kPa M0.5  Tt4 1500: nu 1.0177 choked true M9 1.0000 thrust 14263.5 N  sm 0.5074
+  3 km M0.3        Tt4 1300: nu 0.9161 choked true M9 1.0000 thrust 12416.9 N  sm 0.2906
+  3 km M0.3        Tt4 1500: nu 1.0091 choked true M9 1.0000 thrust 17262.6 N  sm 0.4508
+  11 km M1.4       Tt4 1300: nu 0.9023 choked true M9 1.0000 thrust 7721.7 N  sm 0.2221
+  11 km M1.4       Tt4 1500: nu 0.9899 choked true M9 1.0000 thrust 10727.5 N  sm 0.3389
+  SL M0.1          Tt4 1300: nu 0.9084 choked true M9 1.0000 thrust 16156.4 N  sm 0.2510
+  SL M0.1          Tt4 1500: nu 0.9984 choked true M9 1.0000 thrust 22337.3 N  sm 0.3862
+== map pressure
+  250K 50kPa M0.5  Tt4 1300: nu 0.9196 choked true M9 1.0000 thrust 10243.8 N  sm 0.5755
+  250K 50kPa M0.5  Tt4 1500: nu 1.0221 choked true M9 1.0000 thrust 14255.7 N  sm 0.8828
+  3 km M0.3        Tt4 1300: nu 0.9117 choked true M9 1.0000 thrust 12411.5 N  sm 0.5164
+  3 km M0.3        Tt4 1500: nu 1.0114 choked true M9 1.0000 thrust 17260.1 N  sm 0.7882
+  11 km M1.4       Tt4 1300: nu 0.8941 choked true M9 1.0000 thrust 7709.3 N  sm 0.3991
+  11 km M1.4       Tt4 1500: nu 0.9873 choked true M9 1.0000 thrust 10725.8 N  sm 0.5991
+  SL M0.1          Tt4 1300: nu 0.9019 choked true M9 1.0000 thrust 16138.4 N  sm 0.4488
+  SL M0.1          Tt4 1500: nu 0.9980 choked true M9 1.0000 thrust 22337.2 N  sm 0.6794
+== map tilted
+  250K 50kPa M0.5  Tt4 1300: nu 0.9209 choked true M9 1.0000 thrust 10243.0 N  sm 0.4174
+  250K 50kPa M0.5  Tt4 1500: nu 1.0200 choked true M9 1.0000 thrust 14255.2 N  sm 0.6584
+  3 km M0.3        Tt4 1300: nu 0.9138 choked true M9 1.0000 thrust 12409.5 N  sm 0.3715
+  3 km M0.3        Tt4 1500: nu 1.0103 choked true M9 1.0000 thrust 17259.8 N  sm 0.5833
+  11 km M1.4       Tt4 1300: nu 0.8980 choked true M9 1.0000 thrust 7706.5 N  sm 0.2812
+  11 km M1.4       Tt4 1500: nu 0.9885 choked true M9 1.0000 thrust 10725.6 N  sm 0.4348
+  SL M0.1          Tt4 1300: nu 0.9050 choked true M9 1.0000 thrust 16133.6 N  sm 0.3193
+  SL M0.1          Tt4 1500: nu 0.9982 choked true M9 1.0000 thrust 22337.2 N  sm 0.4976

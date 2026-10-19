@@ -295,6 +295,23 @@ maps).
 soft check: near 0.94 at a doubling); the equilibrium `pt7` iteration's pass counts; the *match* area at every Part B
 cell beside the square-root rule; the held-nozzle thrust and fuel ratios; cost (§ 4); the refusals counted by class.
 
+**§ 3b — Part B clarifications, 2026-10-19, written after Part A shipped (7de9419) and BEFORE any Part B code, on dry
+runs only** (`dry_b.txt` in the scratch archive). No bar moves; three readings the text above left open are fixed:
+
+* **"Its two map shapes"** — the solver has THREE (`flow`, `pressure`, `tilted`). The two scored are **`flow`** (the
+  page's opening shape, G4's) and **`pressure`** (the next in the page's order; "its stall line read differently" —
+  curvature in pressure). `tilted` is run and REPORTED beside, not scored. Cell counts unchanged.
+* **The dry pre-flight**: all 16 scored (flight, `Tt4`) points run DRY on all three shapes, every one CHOKED, every one
+  with a positive margin (`flow` 0.222–0.507, `pressure` 0.399–0.883, `tilted` 0.281–0.658). So no cell is VACUOUS, and
+  no clause is needed for a dry point unchoked or already past the stall line.
+* **"Dry" and "held" (`s` = 1)** — the fitted engine's dry throat is sized for its UNLIT duct, `A8_dry = A8_core/π_fh`,
+  so unlit with `s` = 1 sits where the engine without an afterburner sits wherever the nozzle is choked (all 16 dry
+  points: equal to rounding, a gate — `π_fh·(A8/π_fh)` is not bit-exact). H7–H9's "dry" is that unlit engine. G4's probe
+  held the CORE throat (`A8_core`, no `1/π_fh`) against the engine without an afterburner, so its held throat was 3 %
+  smaller than Part B's: Part B's held point is slightly LESS severe than G4's numbers (a direction, stated before
+  scoring). *Match* sizes the area from the lit exit at the unlit core: `ṁ7·√Tt7/(π_n·pt7·MFP7)` when choked,
+  `ṁ7/(ρ9·V9)` at `p9 = p0` when not (not reached on the scored grid, per the dry pre-flight).
+
 ## 4. What would change the plan
 
 * **Cost on the product's path.** Fly it is live at 10–45 ms a point (plan § 10.7). If a lit point (held or *match*)
