@@ -1890,3 +1890,18 @@ spec `docs/rung102-spec.md`; scratch `scratch-archive/rung102/`.
   3 600, every new lit stop named (spec Part C). `check_requests` adds 9 (`sandbox_controls::check_ab_requests`, last);
   `browser.mjs` step 16b-ab (lit matches native; knobs, chart and row shown; "holds thrust" refused; not fitted restores
   the opening run).
+
+## 35. The steady matchers below choke — rung 103 (2026-10-19) — not a slice
+
+- **What the pages gain:** the Blades view's plants (`Machine::below_choke`, carried into each stator sibling), the
+  Cooling view's fixed engine (`FixedEngine::below_choke`) and the Controls view's generator check turn rung 103's switch
+  on: an unchoked throttle is re-solved with the LP turbine free instead of refused. The library default stays off
+  (every older rung, oracle and golden unchanged). Two new refusals with plain words: below idle; the nozzle cannot pass
+  the flow. The Controls view's holds already ran on rung 40's equilibrium (rung 97's branch).
+- **A pre-existing panic fixed:** a Cooling sweep point whose metal holds with no cooling air (`booking.expect`) —
+  226 of 1 200 random low-throttle requests on the code before this rung, none after.
+- **What moved** (crash map, seed 103, against `8bf63b9`): 648 byte-equal; 139 refusals now run; 76 refusals change words;
+  13 Blades levers scan past their old stop; 66 Cooling knob answers start their search lower. Tests rewritten:
+  `sandbox_blades` (`…_is_re_solved_by_the_view`, the 805 K case now below idle, the new words) and `sandbox_cooling`
+  (the heavy-cooling knob compared like for like, the no-cooling point, the new words); `browser.mjs` step 14 (its two
+  "Not modelled" rows are lever rows now). Spec § 4.

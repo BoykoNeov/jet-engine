@@ -1,0 +1,7 @@
+bleed     n= 31 | LP speed -36.24%..-0.00% | HP slower  26 (-0.379%..+0.003%) | LP phi up  31 | HP phi down  28 | thrust more  14, diff -1.57..+15.96 N per kg/s design air
+cooling   n= 32 | LP speed -49.89%..-0.01% | HP slower  32 (-0.734%..-0.000%) | LP phi up  32 | HP phi down  32 | thrust more  11, diff -4.42..+12.34 N per kg/s design air
+customer  n= 31 | LP speed -43.88%..-0.05% | HP slower  29 (-0.532%..+0.000%) | LP phi up  31 | HP phi down  30 | thrust more  11, diff -3.00..+15.05 N per kg/s design air
+gen-HP    n= 28 | LP speed -68.58%..-0.01% | HP slower  28 (-3.821%..-0.000%) | LP phi up  28 | HP phi down  28 | thrust more   2, diff -12.47..+5.14 N per kg/s design air
+gen-LP    n= 23 | LP speed -30.15%..-0.00% | HP slower  14 (-0.235%..+0.012%) | LP phi up  23 | HP phi down  16 | thrust more   1, diff -8.16..+3.75 N per kg/s design air
+plain     n= 29 | LP speed -35.16%..-0.01% | HP slower  26 (-0.411%..+0.001%) | LP phi up  29 | HP phi down  27 | thrust more  11, diff -2.91..+9.75 N per kg/s design air
+TOTAL n=174 HP slower 155 LP phi up 174 HP phi down 161 thrust more 50

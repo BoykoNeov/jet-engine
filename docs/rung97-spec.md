@@ -16,7 +16,7 @@ transient"*, built for the transient family. It came up while adding a Mach knob
 points whose nozzle was unchoked and computed them on rung 38's two-choked-throat pin anyway — the tail only flagged
 them, and the page drew them. Offered three repairs (refuse in words, draw dashed and warn, build the branch), the user
 chose to build it ("Fix it properly first", 2026-10-18). The steady matchers (rungs 38/39/42/90/91/92's cascades) keep
-their refusal: **transient BUILT, steady still OPEN.**
+their refusal: **transient BUILT, steady still OPEN** — the steady half BUILT BY RUNG 103, behind a switch (off in the old code, on in the pages).
 
 > **THE HEADLINE — below the unchoke boundary the nozzle's back-pressure takes work off the LP shaft ALONE.** The
 > compressors, the HP nozzle guide vane and the HP turbine never read the LP turbine, so at a given instant the HP
@@ -104,7 +104,8 @@ Flat-LP has no steady point at 700 K on either day: **2 cells VACUOUS** each.
   N per kg/s of design airflow (+40 K; +3.6 to +4.8 %); equal to the second decimal on the standard day. The LP turbine
   takes less, so the gas reaches the nozzle at a higher pressure (`pt5/p0` 1.590 / 1.596 / 1.589 against 1.580 / 1.587 /
   1.579) and leaves faster: each kg of air gives 5.5–6.7 % more thrust, while the slower LP shaft passes 1.7–1.8 % less
-  air (`followup.txt`). The faster jet wins. No sign was derived for this.
+  air (`followup.txt`). The faster jet wins. No sign was derived for this — and it does not generalise: on rung 103's
+  174 steady cells (six variants, other maps and flights) thrust is MORE than the pin's at only 50 (`docs/rung103-spec.md` § 3).
 * **Through the slam** (+40 K): the peak `Tt4` is 9.7–10.5 K higher; the LP compressor's lowest flow coefficient is
   0.0004–0.0017 HIGHER (further from its stall line) and the HP compressor's 0.0018–0.0023 LOWER (nearer). At the start
   end the LP's is 0.007–0.008 higher and the HP's 0.001 lower. The unchoked stretch is 9–10 of 126 points.
@@ -177,13 +178,13 @@ expansion is geometry; below the boundary it re-couples to the compressors and t
 
 * **`A45` stays assumed choked** (rung 38's concession, carried). At the root the LP turbine expands by only 1.36–1.45
   overall; a real vane row would be well short of sonic there — and on the choked branch alike.
-* **The steady matchers keep their refusal** — the status is "transient BUILT, steady still OPEN".
-* **The generator-refusal check on the Controls view still reads rung 92's steady (pinned) cascade.**
+* **The steady matchers keep their refusal** — the status was "transient BUILT, steady still OPEN"; **BUILT BY RUNG 103**, behind a switch.
+* **The generator-refusal check on the Controls view still reads rung 92's steady (pinned) cascade** — DISCHARGED BY RUNG 103 (the check turns the branch on).
 * Inherited: invented maps, the perfect gas, one `η_m`, and the Controls view's flight at Mach 0.85 (a Mach knob is the
   next sandbox change).
 
 ## The next seam
 
-**The steady matchers' unchoked branch** (rungs 38/39/42/90/91/92's cascades — the same equation in a different solve
+**The steady matchers' unchoked branch** (BUILT BY RUNG 103) (rungs 38/39/42/90/91/92's cascades — the same equation in a different solve
 structure), and **a choked-or-not `A45`**: with the LP turbine expanding under 1.5, its nozzle guide vane is the next
 throat whose choke is assumed rather than earned.

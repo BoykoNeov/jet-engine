@@ -255,17 +255,29 @@ fn each_refusal_fires_on_its_case() {
     assert_eq!(f(&ask(r#"{"op":"blade_size","blades":{"lp":{"phi_d":1.2}}}"#), "ok"), 1.0);
 }
 
+/// Rung 103 (this test was "…is_refused_before_the_schedule" until then): the view's plants re-solve an unchoked
+/// throttle, so 600 K — refused before — now reads its lever. The library default still refuses it.
 #[test]
-fn a_lever_point_where_the_nozzle_unchokes_is_refused_before_the_schedule() {
+fn a_lever_point_where_the_nozzle_unchokes_is_re_solved_by_the_view() {
     let j = ask(r#"{"op":"blade_lever","Tt4":600,"blades":{}}"#);
-    let r = reason(&j);
-    assert!(r.contains("nozzle unchokes"), "{r}");
-    assert!(s(&j, "message").contains("nozzle UNCHOKED"), "the model's own message rides along");
-    // The same throttle through the schedule directly panics with that message — the pre-test is
-    // what keeps it off the trap path.
+    assert_eq!(f(&j, "ok"), 1.0, "{}", j.dump_compact());
+    // The machine built with rung 85's default keeps rung 38's refusal: the schedule panics with it…
     let z = machine(BladeKnobs::default());
-    let e = quiet(|| z.schedule(Lever::Lumped, Spool::Lp, &[600.0])).expect_err("the schedule itself panics here");
+    let e = quiet(|| z.schedule(Lever::Lumped, Spool::Lp, &[600.0])).expect_err("the switch-off schedule panics here");
     assert!(e.contains("nozzle UNCHOKED"), "{e}");
+    // …and with the switch on it reads what the page reads, bit for bit.
+    let r = Machine { below_choke: true, ..z }.schedule(Lever::Lumped, Spool::Lp, &[600.0])[0];
+    assert_eq!(r.n_lp.to_bits(), f(&j, "n_lp").to_bits());
+    assert_eq!(r.n_lp_bare.to_bits(), f(&j, "n_lp_bare").to_bits());
+}
+
+/// Rung 103's two new refusals, in the lever's words.
+#[test]
+fn the_below_choke_refusals_have_plain_words() {
+    let w = lever_words("rung-103: below idle at Tt4=805: with the nozzle unchoked the engine makes more drag than thrust");
+    assert!(w.contains("more drag than thrust") && w.contains("Raise the throttle"), "{w}");
+    let w = lever_words("rung-97: the nozzle cannot pass the LP turbine's flow against 101325 Pa");
+    assert!(w.contains("no running point") && w.contains("Raise the throttle"), "{w}");
 }
 
 #[test]
@@ -281,10 +293,13 @@ fn the_plain_words_cover_the_models_own_failures() {
 /// The other two lever-point refusals, each on a design the plan § 11.5 sweep found raising it.
 #[test]
 fn the_low_throttle_refusals_are_named_for_the_throttle() {
-    // Perfect gas, high pressure ratios: the nozzle's gas below the outside pressure at 805 K.
+    // Perfect gas, high pressure ratios: rung 38's pin left the nozzle's gas below the outside pressure at 805 K. That
+    // was the pin over-expanding the LP turbine; since rung 103 the view re-solves the point with the turbine free, and
+    // the engine's own answer is that it runs below idle there.
     let j = ask(r#"{"op":"blade_lever","Tt4":805.16,"blades":{"pi_lpc":5.18,"pi_hpc":14.76,"Tt4":1120,"shape":"steep"}}"#);
-    assert!(reason(&j).contains("less pressure than the air outside"), "{}", j.dump_compact());
-    assert!(s(&j, "message").contains("nozzle back-pressure"));
+    assert!(reason(&j).contains("more drag than thrust"), "{}", j.dump_compact());
+    assert!(s(&j, "message").contains("rung-103: below idle"));
+    assert!(lever_words("nozzle back-pressure p9=101325 Pa exceeds").contains("less pressure than the air outside"));
     // Thermally perfect: a turbine past the bottom of the gas tables at 795 K.
     let j = ask(r#"{"op":"blade_lever","Tt4":795.14,"blades":{"gas":"thermally_perfect","pi_lpc":4.3068,"pi_hpc":13.6148,"Tt4":1100.77,"shape":"steep"}}"#);
     assert!(reason(&j).contains("colder than the gas tables reach"), "{}", j.dump_compact());
@@ -301,7 +316,8 @@ fn the_low_throttle_refusals_are_named_for_the_throttle() {
 /// leaves a run of spaces mid-sentence (it happened once, while these were being written).
 #[test]
 fn the_plain_words_have_no_broken_line_continuations() {
-    let msgs = ["nozzle UNCHOKED", "nozzle back-pressure", "root not bracketed", "efficiency cascade", "anything"];
+    let msgs = ["nozzle UNCHOKED", "nozzle back-pressure", "root not bracketed", "efficiency cascade", "anything",
+                "rung-103: below idle", "rung-97: the nozzle cannot pass"];
     for m in msgs {
         for w in [lever_words(m), explain_blades(m)] {
             assert!(!w.contains("  "), "{m}: {w:?}");

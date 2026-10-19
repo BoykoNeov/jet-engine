@@ -135,7 +135,8 @@ impl CoolingSettings {
     pub fn fixed(&self) -> FixedEngine {
         let b = BladeSettings::defaults();
         let (ml, mh) = control_maps(CONTROL_SHAPES[self.shape]).expect("CONTROL_SHAPES lists only buildable shapes");
-        FixedEngine::new(b.design(), b.flight(), 1.0, ml, mh)
+        // Rung 103: this view's engine re-solves an unchoked throttle instead of refusing it.
+        FixedEngine { below_choke: true, ..FixedEngine::new(b.design(), b.flight(), 1.0, ml, mh) }
     }
 }
 
@@ -179,8 +180,14 @@ pub fn cooling_point(s: &CoolingSettings, tt4: f64) -> Result<Json, DoesNotRun> 
         Framing::Fixed => {
             let fe = s.fixed();
             let l = fe.try_limited(&lim, &fl, tt4).map_err(words)?;
-            let k = l.point.booking.expect("a limited point is cooled");
             let r = &l.point.base;
+            // A metal that holds with NO cooling air leaves the matcher inactive (rung 91 forwards to rung 90's body),
+            // so no booking: the bare formula, as the knob form reads it. (It panicked here before rung 103 too — at
+            // 900 K on the defaults — and rung 103's re-solve made 700–850 K reach it.)
+            let (st, tsfc) = match l.point.booking {
+                Some(k) => (k.st_inlet, k.tsfc_inlet),
+                None => (r.base.thrust / r.base.mdot_air, r.base.performance.tsfc),
+            };
             // The same engine uncooled at the same burner temperature (its metal far past the limit).
             let bare = fe.try_point(TurbineCooling::new(0.0, 0.0), &fl, tt4).ok();
             let (st0, tsfc0) = bare.as_ref()
@@ -189,7 +196,7 @@ pub fn cooling_point(s: &CoolingSettings, tt4: f64) -> Result<Json, DoesNotRun> 
             let (ml, mh) = control_maps(CONTROL_SHAPES[s.shape]).expect("buildable");
             Ok(jobj! {
                 "ok" => Json::Int(1), "framing" => "fixed", "Tt4" => tt4, "vane" => l.vane, "blade" => l.blade,
-                "st" => k.st_inlet, "tsfc" => k.tsfc_inlet, "st_bare" => num_or_null(st0), "tsfc_bare" => num_or_null(tsfc0),
+                "st" => st, "tsfc" => tsfc, "st_bare" => num_or_null(st0), "tsfc_bare" => num_or_null(tsfc0),
                 "Tt3" => l.inputs.tt3, "Tt41" => l.inputs.tt41, "metal_vane" => l.reading.vane,
                 "metal_blade" => l.reading.blade, "passes" => Json::Int(l.passes as i64),
                 "n_lp" => r.n_lp_ratio, "n_hp" => r.n_hp_ratio, "phi_lp" => r.phi_lp, "phi_hp" => r.phi_hp,
@@ -229,7 +236,7 @@ pub fn cooling_knob(s: &CoolingSettings) -> Result<Json, DoesNotRun> {
         if lo >= KNOB_HI {
             return jobj! { "ok" => Json::Int(0), "reason" => format!(
                 "With this cooling the engine has no burner temperature from {KNOB_LO:.0} to {KNOB_HI:.0} K that the model \
-                 solves (its nozzle unchokes, a case the two-shaft model does not handle).") };
+                 solves.") };
         }
         match fe.try_max_tt4(cool, &lim, &fl, lo, KNOB_HI) {
             Ok(m) => {
@@ -262,6 +269,14 @@ pub fn point_words(message: &str, tt4: f64) -> String {
     } else if message.contains("no amount of that air") {
         format!("At {tt4:.0} K the metal limit is below the cooling air's own temperature, so no air can hold it. A newer \
                  material raises the limit. The model says: {message}")
+    } else if message.contains("rung-103: below idle") {
+        // Rung 103: this view re-solves an unchoked throttle, so these two reach it (before the old words: this
+        // message says "unchoked" too).
+        format!("At {tt4:.0} K, with the cooling this needs, the engine makes more drag than thrust: below this throttle \
+                 it does not run usefully. The model says: {message}")
+    } else if message.contains("rung-97: the nozzle cannot pass") {
+        format!("At {tt4:.0} K, with the cooling this needs, the engine has no running point: the gas leaving the turbines \
+                 has too little pressure to push the flow out of the nozzle. The model says: {message}")
     } else if message.contains("UNCHOKED") || message.contains("unchoked") {
         format!("At {tt4:.0} K, with the cooling this needs, the engine's nozzle stops choking - a case the two-shaft \
                  model does not solve. The model says: {message}")

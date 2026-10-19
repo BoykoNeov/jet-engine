@@ -246,8 +246,8 @@ pub fn try_cascade_customer(
     for _ in 0..TwoSpoolMapCore::TURB_MAX {
         let (pi_hpt, tau_hpt, tt45) = base.try_solve_choked_turbine(
             wgas, tt4, f, base.a4, base.a45, 1.0, eta_hpt)?;
-        let (pi_lpt, tau_lpt, tt5) = base.try_solve_choked_turbine(
-            wgas, tt45, f, base.a45, base.a8, base.pi_n, eta_lpt)?;
+        let (pi_lpt, tau_lpt, tt5) = crate::steady_unchoked::try_lp_steady(
+            base, wgas, tt45, f, eta_lpt, pi_hpt)?;
 
         // (3) the LP balance: the LPT drives the face air with (1-b)(1-c)(1+f) of gas.
         let dh_lpt = base.eta_m * (1.0 - b) * (1.0 - c) * (1.0 + f)
@@ -327,6 +327,14 @@ pub struct CustomerBleedResult {
 pub fn try_match_customer(
     core: &TwoSpoolMapCore, flight: &FlightCondition, tt4: f64,
 ) -> Result<CustomerBleedResult, Abort> {
+    // RUNG 103: behind the switch, a point the pinned body cannot finish is re-solved with the LP turbine free.
+    crate::steady_unchoked::dispatch(&core.base, flight.p0, tt4, || customer_body(core, flight, tt4),
+                                     |x| x.base.base.thrust)
+}
+
+fn customer_body(
+    core: &TwoSpoolMapCore, flight: &FlightCondition, tt4: f64,
+) -> Result<CustomerBleedResult, Abort> {
     if !core.base.customer_active() {
         bump(&STEADY_INACTIVE);
         let base = (crate::bleed::R42.try_match_point)(core, flight, tt4)?;
@@ -356,6 +364,7 @@ pub fn try_match_customer(
     };
     let mut cm: Option<CascadeMap> = None;
     for _ in 0..TwoSpoolCore::MAX {
+        crate::steady_unchoked::track_pt4(base, pt4);
         let owned = base.try_working_gas(f, tt4, pt4)?;
         let wgas = owned.as_ref().unwrap_or(base.gas());
         let x = try_cascade_customer(core, wgas, tt2, tt4, f, c)?;
@@ -416,7 +425,8 @@ pub fn try_match_customer(
         / (base.eta_m * (1.0 - b) * (1.0 - c) * (1.0 + s4.far));
     let s5 = Turbine::new(x.eta_lpt, None).apply(&s45, &rgas, dh_lpt_reb);
     let exit = Nozzle::convergent(flight.p0, base.pi_n).try_apply(&s5, &rgas)?;
-    if exit.p9 <= flight.p0 + 1e-6 {
+    if exit.p9 <= flight.p0 + 1e-6
+        && crate::steady_unchoked::refuse_unchoked(base, tt4, (1.0 + s4.far) * exit.v9 - v0)? {
         return Err(Abort(format!(
             "rung-90 customer-bleed match at Tt4={tt4:.0}, c={c:.3}, M0={:.2}: nozzle UNCHOKED -- \
              OUT OF SCOPE (docs/rung38-spec.md 'Scope').", flight.m0)));

@@ -1,0 +1,14 @@
+[package]
+name = "rung103-base"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+turbojet = { path = "W:/temp/claude/rung103-on/rust" }
+
+[profile.release]
+opt-level = 3
+
+[[bin]]
+name = "crash"
+path = "src/crash.rs"

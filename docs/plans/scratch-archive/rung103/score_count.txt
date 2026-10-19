@@ -1,0 +1,3 @@
+choked 900 K                                     tau_of calls   1880  ok true
+unchoked 700 K, switch off (the refusal)         tau_of calls   2068  ok false
+unchoked 700 K, switch on (refusal + branch)     tau_of calls   8742  ok true

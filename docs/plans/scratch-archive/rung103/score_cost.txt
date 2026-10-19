@@ -1,0 +1,6 @@
+Blades lever         unchoked    57.34 ms | choked    14.56 ms | x3.94   [{"ok":1,"Tt4":600.0,"reached":1,"travel":3.237417174037543,"]
+Blades lever         unchoked    37.68 ms | choked    14.72 ms | x2.56   [{"ok":1,"Tt4":625.0,"reached":1,"travel":3.1886841957922982,]
+Cooling point        unchoked     0.88 ms | choked     0.29 ms | x3.05   [{"ok":1,"framing":"fixed","Tt4":600.0,"vane":0.0,"blade":0.0]
+Cooling knob heavy   unchoked    13.36 ms | choked    43.60 ms | x0.31   [{"ok":1,"yours":{"ok":0,"reason":"With this cooling the meta]
+generator check 700/900 K  unchoked    1.949 ms | choked    0.389 ms | x5.00  (unchoked solves: true)
+generator check 750/900 K  unchoked    1.635 ms | choked    0.381 ms | x4.29  (unchoked solves: true)

@@ -1,0 +1,40 @@
+229 programs: 2885 passed, 18 failed, 0 ignored; run 925 s, total 1 462 s (build included)
+FAILED: two_spool_oracle (exit 101) - log W:\temp\claude\rung103-on\rust\target\test-all\two_spool_oracle.out
+FAILED: slice_l_oracle (exit 101) - log W:\temp\claude\rung103-on\rust\target\test-all\slice_l_oracle.out
+FAILED: rung41 (exit 101) - log W:\temp\claude\rung103-on\rust\target\test-all\rung41.out
+FAILED: rung90 (exit 101) - log W:\temp\claude\rung103-on\rust\target\test-all\rung90.out
+FAILED: rung38 (exit 101) - log W:\temp\claude\rung103-on\rust\target\test-all\rung38.out
+FAILED: sandbox_blades (exit 101) - log W:\temp\claude\rung103-on\rust\target\test-all\sandbox_blades.out
+FAILED: cli_golden (exit 101) - log W:\temp\claude\rung103-on\rust\target\test-all\cli_golden.out
+FAILED: rung39 (exit 101) - log W:\temp\claude\rung103-on\rust\target\test-all\rung39.out
+FAILED: sandbox_cooling (exit 101) - log W:\temp\claude\rung103-on\rust\target\test-all\sandbox_cooling.out
+FAILED: sandbox-browser (exit 1) - log W:\temp\claude\rung103-on\rust\target\test-all\sandbox-browser.out
+FAILED: slice_n_oracle (exit 101) - log W:\temp\claude\rung103-on\rust\target\test-all\slice_n_oracle.out
+FAILED: rung103 (exit 101) - log W:\temp\claude\rung103-on\rust\target\test-all\rung103.out
+FAILED: two_spool_oracle (exit 101) - log W:\temp\claude\rung103-on\rust\target\test-all\two_spool_oracle.out
+    test two_spool_matches_pypy_bit_for_bit ... FAILED
+    test two_spool_matches_cpython_within_measured_bars ... FAILED
+FAILED: slice_l_oracle (exit 101) - log W:\temp\claude\rung103-on\rust\target\test-all\slice_l_oracle.out
+    test slice_l_matches_pypy_bit_for_bit ... FAILED
+    test slice_l_matches_cpython_within_measured_bars ... FAILED
+FAILED: rung41 (exit 101) - log W:\temp\claude\rung103-on\rust\target\test-all\rung41.out
+    test p5_the_refinement_count_is_33_and_predictable ... FAILED
+FAILED: rung90 (exit 101) - log W:\temp\claude\rung103-on\rust\target\test-all\rung90.out
+    test a8_the_amount_mode_bites_harder_at_low_power_and_shrinks_the_envelope ... FAILED
+FAILED: rung38 (exit 101) - log W:\temp\claude\rung103-on\rust\target\test-all\rung38.out
+FAILED: sandbox_blades (exit 101) - log W:\temp\claude\rung103-on\rust\target\test-all\sandbox_blades.out
+    test the_low_throttle_refusals_are_named_for_the_throttle ... FAILED
+    test a_lever_point_where_the_nozzle_unchokes_is_refused_before_the_schedule ... FAILED
+FAILED: cli_golden (exit 101) - log W:\temp\claude\rung103-on\rust\target\test-all\cli_golden.out
+    test every_ported_panel_reproduces_its_segment_exactly ... FAILED
+FAILED: rung39 (exit 101) - log W:\temp\claude\rung103-on\rust\target\test-all\rung39.out
+    test gate9_scope_guard_unchoke_raises ... FAILED
+FAILED: sandbox_cooling (exit 101) - log W:\temp\claude\rung103-on\rust\target\test-all\sandbox_cooling.out
+    test heavy_cooling_starts_the_knobs_search_where_the_engine_solves ... FAILED
+FAILED: sandbox-browser (exit 1) - log W:\temp\claude\rung103-on\rust\target\test-all\sandbox-browser.out
+    test the_committed_page_is_current ... FAILED
+FAILED: slice_n_oracle (exit 101) - log W:\temp\claude\rung103-on\rust\target\test-all\slice_n_oracle.out
+    test slice_n_matches_pypy_bit_for_bit ... FAILED
+FAILED: rung103 (exit 101) - log W:\temp\claude\rung103-on\rust\target\test-all\rung103.out
+    test r1_the_switch_is_off_by_default_on_every_matcher ... FAILED
+    test h2_the_lp_shaft_runs_slower_than_the_pin_said ... FAILED

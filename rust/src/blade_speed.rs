@@ -299,6 +299,9 @@ pub struct Machine {
     pub map_hp: ComponentMap,
     pub lp: Sizing,
     pub hp: Sizing,
+    /// RUNG 103: every plant this machine builds re-solves below choke instead of refusing (the Blades view sets it;
+    /// `false` from [`build`], so every shipped reading is unchanged).
+    pub below_choke: bool,
 }
 
 /// The `(γ, cp)` a spool's Mach numbers are read with, at its face total temperature `tt`.
@@ -336,7 +339,7 @@ pub fn build(
     let lp = size(duty_lp, knobs_lp)?;
     let hp = size(duty_hp, knobs_hp)?;
     Ok(Machine { design: design.clone(), flight, map_lp: reshape(map_lp, lp.r, knobs_lp.droop),
-                 map_hp: reshape(map_hp, hp.r, knobs_hp.droop), lp, hp })
+                 map_hp: reshape(map_hp, hp.r, knobs_hp.droop), lp, hp, below_choke: false })
 }
 
 /// Which stator lever moves, and over which rows.
@@ -412,9 +415,11 @@ impl Machine {
             Lever::Lumped => (1, 1),
             Lever::AllRows | Lever::FrontRow => (self.lp.k, self.hp.k),
         };
-        StageStackCore::new(StageStackCoreSpec {
+        let plant = StageStackCore::new(StageStackCoreSpec {
             k_lp, k_hp, vsv_stages_lp: front(Spool::Lp), vsv_stages_hp: front(Spool::Hp), ..base
-        })
+        });
+        plant.core.core.base.below_choke.set(self.below_choke);
+        plant
     }
 
     fn read_at(&self, plant: &StageStackCore, spool: Spool, v: f64, tt4: f64) -> TwoSpoolMapResult {

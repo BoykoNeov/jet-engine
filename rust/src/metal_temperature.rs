@@ -305,6 +305,9 @@ pub struct FixedEngine {
     pub mdot_design: f64,
     pub map_lp: ComponentMap,
     pub map_hp: ComponentMap,
+    /// RUNG 103: its matchers re-solve an unchoked throttle instead of refusing (the Cooling view sets it; `false`
+    /// from [`FixedEngine::new`], so rungs 93/94 read exactly as before).
+    pub below_choke: bool,
 }
 
 /// The hottest `Tt4` the metal allows at given shares.
@@ -338,12 +341,14 @@ impl FixedEngine {
                                            the design engine without it.");
         assert!(design.customer.is_none() && design.offtake.is_none(),
                 "rung-93's fixed engine is scoped without the customer bleed or a shaft load.");
-        FixedEngine { design, flight_design, mdot_design, map_lp, map_hp }
+        FixedEngine { design, flight_design, mdot_design, map_lp, map_hp, below_choke: false }
     }
 
     pub fn matcher(&self, cool: TurbineCooling) -> TurbineCoolingMatcher {
-        TurbineCoolingMatcher::new(self.design.clone().with_turbine_cooling(cool), self.flight_design,
-                                   self.mdot_design, self.map_lp, self.map_hp, 0.0)
+        let m = TurbineCoolingMatcher::new(self.design.clone().with_turbine_cooling(cool), self.flight_design,
+                                           self.mdot_design, self.map_lp, self.map_hp, 0.0);
+        m.core.base.below_choke.set(self.below_choke);
+        m
     }
 
     pub fn try_point(&self, cool: TurbineCooling, flight: &FlightCondition, tt4: f64)

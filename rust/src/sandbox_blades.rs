@@ -255,7 +255,8 @@ pub fn machine(s: &BladeSettings) -> Result<Machine, DoesNotRun> {
     blade_precheck(s)?;
     let (ml, mh) = shape_maps(SHAPES[s.shape]).expect("SHAPES lists only buildable shapes");
     let design = s.design();
-    build(&design, s.flight(), ml, mh, s.lp, s.hp).map_err(|e| {
+    // Rung 103: this view's plants re-solve an unchoked throttle instead of refusing it.
+    build(&design, s.flight(), ml, mh, s.lp, s.hp).map(|z| Machine { below_choke: true, ..z }).map_err(|e| {
         // `build` sizes the LP spool first, so the refusal is the LP's iff the LP's knobs alone
         // (on both spools) refuse the same way — a second sizing, microseconds.
         let lp_alone = build(&design, s.flight(), ml, mh, s.lp, s.lp).err();
@@ -368,6 +369,17 @@ pub fn lever_json(s: &BladeSettings, tt4: f64) -> Result<Json, DoesNotRun> {
 ///   (`TwoSpoolMatcher::try_tau_of`, the one chain `gas::try_solve` documents): a turbine expanding
 ///   past the bottom of the gas tables.
 pub fn lever_words(message: &str) -> String {
+    // Rung 103: the view's engine re-solves an unchoked throttle, so two new refusals reach it.
+    if message.contains("rung-103: below idle") {
+        return "At this throttle the engine makes more drag than thrust: with the nozzle no longer choked, the jet \
+                leaves slower than the air comes in. Below this throttle it does not run usefully. Raise the \
+                throttle.".to_string();
+    }
+    if message.contains("rung-97: the nozzle cannot pass") {
+        return "At this throttle the engine has no running point: the gas leaving the turbines has too little \
+                pressure to push the flow out of the nozzle, however little the low-pressure turbine expands it. \
+                Raise the throttle.".to_string();
+    }
     if message.contains("nozzle back-pressure") {
         return "At this throttle the gas reaching the nozzle has less pressure than the air outside: the two \
                 turbines use it all up driving the compressors. This happens at a low throttle with high \
@@ -386,7 +398,7 @@ pub fn lever_words(message: &str) -> String {
 /// itself fails two ways over the page's slider box (sweep 2026-10-07, 45 000 designs, plan § 11.8),
 /// both only at an overall pressure ratio ≳ 49 with a low design `Tt4`: the jet below outside
 /// pressure (thermally perfect, 1.7 %) and slice 1's efficiency-bookkeeping check ([`explain`]'s
-/// words). The two-spool matchers' own failure, the UNCHOKED nozzle (rung 38's scope, an open seam),
+/// words). The two-spool matchers' own failure, the UNCHOKED nozzle (rung 38's scope; this view re-solves it since rung 103),
 /// is kept for completeness. Each entry is driven by a test (`tests/sandbox_blades.rs`).
 pub fn explain_blades(message: &str) -> String {
     if message.contains("nozzle UNCHOKED") {

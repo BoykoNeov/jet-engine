@@ -1174,6 +1174,9 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
             let mut m = e.0;
             if let Some(de) = gen_check.as_ref().filter(|_| !m.contains("rung-92:")) {
                 let st = ShaftOfftakeMatcher::new(de.clone(), fd, MDOT_DESIGN, ml, mh, 0.0);
+                // Rung 103: the steady check re-solves an unchoked throttle, as the march's own equilibrium does
+                // (rung 97) — so its answer is no longer the pin's there.
+                st.core.base.below_choke.set(true);
                 if let Err(e2) = st.try_match_point(&fl, tt4) {
                     if e2.0.contains("rung-92:") { m = e2.0; }
                 }

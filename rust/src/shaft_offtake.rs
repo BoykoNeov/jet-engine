@@ -268,8 +268,8 @@ fn try_cascade_loaded(
     let (mut eta_hpt, mut eta_lpt, mut tt3) = (base.eta_hpt, base.eta_lpt, tt3_seed);
     for _ in 0..TwoSpoolCore::MAX {
         let hpt = try_solve_cooled_hpt(base, wgas, tt4, f, burner, e1, e2, tt3, eta_hpt)?;
-        let (pi_lpt, tau_lpt, tt5) = base.try_solve_choked_turbine(
-            wgas, hpt.tt45, hpt.f45, base.a45, base.a8, base.pi_n, eta_lpt)?;
+        let (pi_lpt, tau_lpt, tt5) = crate::steady_unchoked::try_lp_steady(
+            base, wgas, hpt.tt45, hpt.f45, eta_lpt, hpt.pi_hpt)?;
 
         // The LP balance, per FACE air: the LPT passes (1-b)(G + eps) of gas; the LP load comes off.
         let g = burner * (1.0 + f);
@@ -388,6 +388,14 @@ fn try_score_nozzle(
 pub fn try_match_loaded(
     core: &TwoSpoolMapCore, flight: &FlightCondition, tt4: f64,
 ) -> Result<OfftakeResult, Abort> {
+    // RUNG 103: behind the switch, a point the pinned body cannot finish is re-solved with the LP turbine free.
+    crate::steady_unchoked::dispatch(&core.base, flight.p0, tt4, || loaded_body(core, flight, tt4),
+                                     |x| x.base.base.thrust)
+}
+
+fn loaded_body(
+    core: &TwoSpoolMapCore, flight: &FlightCondition, tt4: f64,
+) -> Result<OfftakeResult, Abort> {
     if !core.base.offtake_active() {
         bump(&STEADY_INACTIVE);
         let r = crate::turbine_cooling::try_match_cooled(core, flight, tt4)?;
@@ -422,6 +430,7 @@ pub fn try_match_loaded(
     let mut tt3_seed = base.reference.station("3").tt;
     let mut lc: Option<LoadedCascade> = None;
     for _ in 0..TwoSpoolCore::MAX {
+        crate::steady_unchoked::track_pt4(base, pt4);
         let owned = base.try_working_gas(f, tt4, pt4)?;
         let wgas = owned.as_ref().unwrap_or(base.gas());
         let x = try_cascade_loaded(core, wgas, tt2, tt4, f, c, cool, tt3_seed,
@@ -495,7 +504,8 @@ pub fn try_match_loaded(
         / (base.eta_m * s45.mdot);
     let s5 = Turbine::new(m.eta_lpt, None).apply(&s45, &rgas, dh_lpt_reb);
     let exit = Nozzle::convergent(flight.p0, base.pi_n).try_apply(&s5, &rgas)?;
-    if exit.p9 <= flight.p0 + 1e-6 {
+    if exit.p9 <= flight.p0 + 1e-6
+        && crate::steady_unchoked::refuse_unchoked(base, tt4, (1.0 + s45.far) * exit.v9 - v0)? {
         return Err(Abort(format!(
             "rung-92 loaded match at Tt4={tt4:.0}, M0={:.2}: nozzle UNCHOKED -- OUT OF SCOPE \
              (docs/rung38-spec.md 'Scope').", flight.m0)));

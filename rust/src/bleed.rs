@@ -240,8 +240,8 @@ pub fn try_cascade_bleed(
     for turb_pass in 0..TwoSpoolMapCore::TURB_MAX {
         let (pi_hpt, tau_hpt, tt45) = base.try_solve_choked_turbine(
             wgas, tt4, f, base.a4, base.a45, 1.0, eta_hpt)?;
-        let (pi_lpt, tau_lpt, tt5) = base.try_solve_choked_turbine(
-            wgas, tt45, f, base.a45, base.a8, base.pi_n, eta_lpt)?;
+        let (pi_lpt, tau_lpt, tt5) = crate::steady_unchoked::try_lp_steady(
+            base, wgas, tt45, f, eta_lpt, pi_hpt)?;
 
         // ENERGY. (1) the LP balance: the LPT drives mdot_2 with (1-b)*mdot_2*(1+f) of gas.
         // `(1-b)` sits BETWEEN eta_m and (1+f), which is not rung 39's product with a factor
@@ -313,6 +313,14 @@ fn r42_try_match_point(
 pub fn try_match_bleed(
     core: &TwoSpoolMapCore, flight: &FlightCondition, tt4: f64,
 ) -> Result<TwoSpoolBleedResult, Abort> {
+    // RUNG 103: behind the switch, a point the pinned body cannot finish is re-solved with the LP turbine free.
+    crate::steady_unchoked::dispatch(&core.base, flight.p0, tt4, || bleed_body(core, flight, tt4),
+                                     |x| x.base.base.thrust)
+}
+
+fn bleed_body(
+    core: &TwoSpoolMapCore, flight: &FlightCondition, tt4: f64,
+) -> Result<TwoSpoolBleedResult, Abort> {
     if core.bleed == 0.0 {
         let base = (R39.try_match_point)(core, flight, tt4)?;
         return Ok(TwoSpoolBleedResult { base, booking: None });
@@ -331,6 +339,7 @@ pub fn try_match_bleed(
         (base.f_design, base.pi_b * base.pi_hpc_design * base.pi_lpc_design * pt2);
     let mut c: Option<CascadeMap> = None;
     for _ in 0..TwoSpoolCore::MAX {
+        crate::steady_unchoked::track_pt4(base, pt4);
         let owned = base.try_working_gas(f, tt4, pt4)?;
         let wgas = owned.as_ref().unwrap_or(base.gas());
         let cm = try_cascade_bleed(core, wgas, tt2, pt2, tt4, f)?;
@@ -383,7 +392,8 @@ pub fn try_match_bleed(
 
     // SCOPE GUARD (inherited). Bleed lowers pi_LPC hence pt4, so this bites SOONER — 23 cells of
     // the dump grid at b = 0, 25 at b = 0.10. An `Err` and not a panic: module note § 3.
-    if exit.p9 <= flight.p0 + 1e-6 {
+    if exit.p9 <= flight.p0 + 1e-6
+        && crate::steady_unchoked::refuse_unchoked(base, tt4, (1.0 + s4.far) * exit.v9 - v0)? {
         return Err(Abort(format!(
             "rung-42 bleed match at Tt4={tt4:.0}, b={b:.3}, M0={:.2}: nozzle UNCHOKED -- OUT OF \
              SCOPE (docs/rung38-spec.md 'Scope'). Opening the valve shrinks the choked envelope; \

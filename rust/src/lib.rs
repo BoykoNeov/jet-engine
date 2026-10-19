@@ -186,6 +186,7 @@ pub mod spool;
 pub mod stage;
 pub mod shaft_offtake;
 pub mod staircase_law;
+pub mod steady_unchoked;
 pub mod state_coordinate;
 pub mod stator;
 pub mod stator_bleed;

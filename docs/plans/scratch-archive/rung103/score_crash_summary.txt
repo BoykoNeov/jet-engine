@@ -1,0 +1,13 @@
+crash map, seed 103 (score_crash.rs): base = 8bf63b9 (worktree), new = rung 103
+panics: base 226, new 0
+    226 PANIC a limited point is cooled
+outcome old -> new:
+     79 ok -> ok (diff)
+    648 ok -> ok (same)
+    226 panic -> ok (diff)
+    139 refused -> ok (diff)
+     76 refused -> refused (diff)
+     32 refused -> refused (same)
+ok->ok diff by op:
+     13 "op":"blade_lever"
+     66 "op":"cooling_knob"

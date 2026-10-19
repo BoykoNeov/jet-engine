@@ -696,6 +696,18 @@ pub struct TwoSpoolCore {
     pub ab_out: std::cell::Cell<bool>,
     /// What the lit afterburner did at the last thrust tail solved (a readout's source; cleared by each re-read).
     pub ab_last: std::cell::Cell<Option<crate::afterburner::AbAt>>,
+    /// RUNG 103: `true` lets the six steady matchers re-solve a point their pinned path cannot finish with the LP
+    /// turbine free (rung 97's root) — [`crate::steady_unchoked::dispatch`]. `false` by default: every shipped path keeps
+    /// rung 38's refusal; the sandbox views and rung 103's tests turn it on.
+    pub below_choke: std::cell::Cell<bool>,
+    /// RUNG 103: how the steady cascades solve the LP turbine right now — [`crate::steady_unchoked::SteadyLp`]. `Pin`
+    /// except for the length of one re-solve (or the independent-root gate's held search).
+    pub steady_lp: std::cell::Cell<crate::steady_unchoked::SteadyLp>,
+    /// RUNG 103: an outer matcher's dispatch is running its pinned body, so a body it forwards to does not retry.
+    pub dispatching: std::cell::Cell<bool>,
+    /// RUNG 103: `true` skips the unchoked refusal and keeps the pin — "the old model" with its numbers. For the rung's
+    /// scoring only; nothing on the page or the CLI sets it.
+    pub pin_past_choke: std::cell::Cell<bool>,
 }
 
 impl TwoSpoolCore {
@@ -856,6 +868,10 @@ impl TwoSpoolCore {
             ab_w: std::cell::Cell::new(0.0),
             ab_out: std::cell::Cell::new(false),
             ab_last: std::cell::Cell::new(None),
+            below_choke: std::cell::Cell::new(false),
+            steady_lp: std::cell::Cell::new(crate::steady_unchoked::SteadyLp::Pin),
+            dispatching: std::cell::Cell::new(false),
+            pin_past_choke: std::cell::Cell::new(false),
         }
     }
 
@@ -1053,9 +1069,9 @@ impl TwoSpoolCore {
         // Step 1 (★-HP): tau_HPT from (A4, A45) alone.
         let (pi_hpt, tau_hpt, tt45) =
             self.try_solve_choked_turbine(wgas, tt4, f, self.a4, self.a45, 1.0, self.eta_hpt)?;
-        // Step 2 (★-LP): tau_LPT from (A45, A8) alone — needs the nozzle choked.
-        let (pi_lpt, tau_lpt, tt5) = self.try_solve_choked_turbine(
-            wgas, tt45, f, self.a45, self.a8, self.pi_n, self.eta_lpt)?;
+        // Step 2 (★-LP): tau_LPT from (A45, A8) alone — needs the nozzle choked (rung 103: or the re-solve's root).
+        let (pi_lpt, tau_lpt, tt5) = crate::steady_unchoked::try_lp_steady(
+            self, wgas, tt45, f, self.eta_lpt, pi_hpt)?;
 
         // Step 3: LP shaft balance -> pi_LPC. NO reference to the HP spool.
         let dh_lpt = self.eta_m * (1.0 + f) * (wgas.h_t(tt45, f) - wgas.h_t(tt5, f));
@@ -1103,6 +1119,7 @@ impl TwoSpoolCore {
                               pi_lpc: f64::NAN, tt25: f64::NAN, pi_hpc: f64::NAN,
                               tt3: f64::NAN };
         for _ in 0..Self::MAX {
+            crate::steady_unchoked::track_pt4(self, pt4);
             let owned = self.working_gas(f, tt4, pt4);
             let wgas = owned.as_ref().unwrap_or(self.gas());
             c = self.cascade(wgas, tt2, tt4, f);
@@ -1135,15 +1152,25 @@ impl TwoSpoolCore {
             .unwrap_or_else(|e| panic!("{}", e.0));
         let nozzle_choked = r.exit_p9 > flight.p0 + 1e-6;
 
-        // SCOPE GUARD (`docs/rung38-spec.md` § Scope). Unchoke relocates rung 33's inversion one
-        // throat upstream onto the LP spool — a genuinely different solve, not built here. FLAG,
-        // DON'T LIE, where rung 33 could DISPATCH. It fires on 23 of the 147-cell dump grid, so
-        // it is a live band along the cold/slow edge and not a corner (§ 5.7 (e)).
-        assert!(nozzle_choked,
+        // RUNG 103: with the switch on, the guard's point is re-solved with the LP turbine free (this matcher is
+        // infallible, so it re-solves here only and its branch's failures panic in their own words).
+        if !nozzle_choked {
+            use crate::steady_unchoked::{refuse_unchoked, rung38_below_choke, SteadyLp};
+            if self.below_choke.get() && self.steady_lp.get() == SteadyLp::Pin {
+                return rung38_below_choke(self, flight.p0, tt4, || self.match_point(flight, tt4), |x| x.thrust);
+            }
+            let refuse = refuse_unchoked(self, tt4, (1.0 + r.s4.far) * r.exit_v9 - r.v0)
+                .unwrap_or_else(|e| panic!("{}", e.0));
+            // SCOPE GUARD (`docs/rung38-spec.md` § Scope). Unchoke relocates rung 33's inversion one
+            // throat upstream onto the LP spool — a genuinely different solve, BUILT BY RUNG 103 behind its
+            // switch. FLAG, DON'T LIE, where rung 33 could DISPATCH. It fires on 23 of the 147-cell dump
+            // grid, so it is a live band along the cold/slow edge and not a corner (§ 5.7 (e)).
+            assert!(!refuse,
                 "rung-38 two-spool match at Tt4={tt4:.0}, M0={:.2}: nozzle UNCHOKED -- OUT OF \
                  SCOPE (docs/rung38-spec.md 'Scope'). The LP turbine's geometric tau_LPT pin \
                  (*-LP) is only valid while the nozzle stays choked; a rung-33-shaped follow-on \
                  would resolve the LP spool's own subsonic branch.", flight.m0);
+        }
 
         r.into_result(self, flight, tt4, mdot_air, &c)
     }
@@ -1548,8 +1575,8 @@ impl TwoSpoolMapCore {
             // Steps 1–2: both turbines pinned by geometry, at the current turbine efficiencies.
             let (pi_hpt, tau_hpt, tt45) = self.base.try_solve_choked_turbine(
                 wgas, tt4, f, self.base.a4, self.base.a45, 1.0, eta_hpt)?;
-            let (pi_lpt, tau_lpt, tt5) = self.base.try_solve_choked_turbine(
-                wgas, tt45, f, self.base.a45, self.base.a8, self.base.pi_n, eta_lpt)?;
+            let (pi_lpt, tau_lpt, tt5) = crate::steady_unchoked::try_lp_steady(
+                &self.base, wgas, tt45, f, eta_lpt, pi_hpt)?;
 
             // ENERGY (map-free): the LP balance fixes Tt25, the HP balance fixes Tt3 onto it.
             let dh_lpt = self.base.eta_m * (1.0 + f) * (wgas.h_t(tt45, f) - wgas.h_t(tt5, f));
@@ -1719,6 +1746,13 @@ fn r39_lp_eta_loop(
 fn r39_try_match_point(
     core: &TwoSpoolMapCore, flight: &FlightCondition, tt4: f64,
 ) -> Result<TwoSpoolMapResult, Abort> {
+    // RUNG 103: behind the switch, a point the pinned body cannot finish is re-solved with the LP turbine free.
+    crate::steady_unchoked::dispatch(&core.base, flight.p0, tt4, || r39_body(core, flight, tt4), |x| x.base.thrust)
+}
+
+fn r39_body(
+    core: &TwoSpoolMapCore, flight: &FlightCondition, tt4: f64,
+) -> Result<TwoSpoolMapResult, Abort> {
     core.base.refuse_customer("rung 39's map matcher");
     core.base.refuse_cooling("rung 39's map matcher");
     core.base.refuse_offtake("rung 39's map matcher");
@@ -1730,6 +1764,7 @@ fn r39_try_match_point(
     let (mut f, mut pt4) = (b.f_design, b.pi_b * b.pi_hpc_design * b.pi_lpc_design * pt2);
     let mut c: Option<CascadeMap> = None;
     for _ in 0..TwoSpoolCore::MAX {
+        crate::steady_unchoked::track_pt4(b, pt4);
         let owned = b.try_working_gas(f, tt4, pt4)?;
         let wgas = owned.as_ref().unwrap_or(b.gas());
         let cm = core.try_cascade_map(wgas, tt2, pt2, tt4, f)?;
@@ -1763,7 +1798,8 @@ fn r39_try_match_point(
     // point, and this is much the commonest reason they do — 23 of the 147-cell dump grid at
     // `b = 0`, rising to 25 at `b = 0.10`, which IS rung 42 gate 6's shrinking envelope, as a
     // count.
-    if r.exit_p9 <= flight.p0 + 1e-6 {
+    if r.exit_p9 <= flight.p0 + 1e-6
+        && crate::steady_unchoked::refuse_unchoked(b, tt4, (1.0 + r.s4.far) * r.exit_v9 - r.v0)? {
         return Err(Abort(format!(
             "rung-39 two-spool map match at Tt4={tt4:.0}, M0={:.2}: nozzle UNCHOKED -- OUT \
              OF SCOPE (docs/rung38-spec.md 'Scope'). The LP turbine's geometric tau_LPT pin \

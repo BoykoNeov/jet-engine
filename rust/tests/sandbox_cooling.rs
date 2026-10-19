@@ -105,20 +105,48 @@ fn the_knob_is_rung93s_hottest_burner_bit_for_bit() {
 fn heavy_cooling_starts_the_knobs_search_where_the_engine_solves() {
     // The crash map's case: 13.5 % vane and 18.5 % blade air unchoke the nozzle at 700 K, so a search from 700 K
     // refused; the view starts at the coolest 50 K step the engine solves at, and finds the hottest burner above it.
+    // Since rung 103 the view's engine re-solves the unchoked 700 K, so its search starts at the floor itself; the
+    // library default (switch off) still refuses there.
     let s = CoolingSettings { vane: 0.135, blade: 0.185, ..CoolingSettings::defaults() };
     let j = ask(&format!(r#"{{"op":"cooling_knob","cooling":{}}}"#, s.to_json().dump_compact()));
     let y = j.get("yours").unwrap();
-    let ok = y.get("ok") == Some(&Json::Int(1));
-    assert!(ok || matches!(y.get("reason"), Some(Json::Str(m)) if m.contains("holds all the way")), "{}", j.dump_compact());
     let (ml, mh) = maps("flow/press");
-    let fe = FixedEngine::new(design(), flight(), 1.0, ml, mh);
+    let off = FixedEngine::new(design(), flight(), 1.0, ml, mh);
     let cool = TurbineCooling::new(0.135, 0.185);
-    assert!(fe.try_point(cool, &flight(), sk::KNOB_LO).is_err(), "the engine does not solve at the search's floor");
-    if ok {
-        let lo = (0..).map(|k| sk::KNOB_LO + sk::KNOB_STEP * k as f64).find(|&t| fe.try_point(cool, &flight(), t).is_ok()).unwrap();
-        let want = fe.try_max_tt4(cool, &lim(1985.0, 1.0), &flight(), lo, sk::KNOB_HI).unwrap();
-        assert!(f(y, "Tt4").to_bits() == want.tt4.to_bits());
+    let e = off.try_point(cool, &flight(), sk::KNOB_LO).expect_err("switch off: no point at the search's floor");
+    assert!(e.0.contains("UNCHOKED"), "{}", e.0);
+    let fe = FixedEngine { below_choke: true, ..FixedEngine::new(design(), flight(), 1.0, ml, mh) };
+    assert!(fe.try_point(cool, &flight(), sk::KNOB_LO).is_ok(), "the view's engine solves at the search's floor");
+    // So the view's answer is the search from the floor on the view's engine — a number, or that search's own refusal.
+    match fe.try_max_tt4(cool, &lim(1985.0, 1.0), &flight(), sk::KNOB_LO, sk::KNOB_HI) {
+        Ok(want) => assert_eq!(f(y, "Tt4").to_bits(), want.tt4.to_bits(), "{}", j.dump_compact()),
+        Err(e) => {
+            assert_eq!(y.get("ok"), Some(&Json::Int(0)), "{}", j.dump_compact());
+            assert!(e.0.contains("holds all the way") && matches!(y.get("reason"), Some(Json::Str(m)) if m.contains("holds all the way")),
+                    "{} / {}", e.0, j.dump_compact());
+        }
     }
+}
+
+/// Rung 103: a sweep point where the metal holds with NO cooling air used to panic (the matcher forwards to the
+/// uncooled body, which keeps no booking) — at 900 K on the defaults, and at 700–850 K once rung 103 re-solved them.
+#[test]
+fn a_point_needing_no_cooling_reads_the_bare_engine() {
+    for t in [700.0, 800.0, 900.0] {
+        let r = point(&CoolingSettings::defaults(), t);
+        assert_eq!(r.get("ok"), Some(&Json::Int(1)), "{t}: {}", r.dump_compact());
+        assert_eq!((f(&r, "vane"), f(&r, "blade")), (0.0, 0.0));
+        assert_eq!(f(&r, "st").to_bits(), f(&r, "st_bare").to_bits(), "{t}: no cooling, so the bare engine's thrust");
+    }
+}
+
+#[test]
+fn the_below_choke_refusals_have_plain_words() {
+    let w = sk::point_words("rung-103: below idle at Tt4=650: with the nozzle unchoked the engine makes more drag", 650.0);
+    assert!(w.contains("more drag than thrust") && !w.contains("does not solve"), "{w}");
+    let w = sk::point_words("rung-97: the nozzle cannot pass the LP turbine's flow", 650.0);
+    assert!(w.contains("no running point"), "{w}");
+    assert!(sk::point_words("rung-91 cooled match: nozzle UNCHOKED", 650.0).contains("does not solve"));
 }
 
 #[test]

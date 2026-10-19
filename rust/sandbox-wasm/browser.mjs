@@ -318,8 +318,10 @@ try {
   // THIS design's grid, which starts at its own 1200 K.
   await waitFor(`window.sandbox.lever === 9 && window.sandbox.points()[0].Tt4 === 1200`, 30000);
   const rows = await ev(`[...document.getElementById('bl-lever-table').tBodies[0].rows].map(r => r.textContent)`);
-  check('unreached_and_not_modelled_throttles_are_said_in_words', rows.length === 9 && rows.filter(r => /no \(last setting\)/.test(r)).length >= 1
-        && rows.filter(r => /Not modelled: .*nozzle unchokes/.test(r)).length === 2, JSON.stringify(rows.slice(-3)));
+  // Rung 103: the two lowest throttles (720, 780 K) were "Not modelled: … nozzle unchokes"; the view now re-solves them,
+  // so they are lever rows like the rest (both short of the target) and no row says the old words.
+  check('unreached_and_not_modelled_throttles_are_said_in_words', rows.length === 9 && rows.filter(r => /no \(last setting\)/.test(r)).length >= 2
+        && rows.filter(r => /Not modelled/.test(r)).length === 0 && /^720no \(last setting\)/.test(rows[8]), JSON.stringify(rows.slice(-3)));
   if (process.env.SANDBOX_SHOTS) { await shot('blades-light'); await shot('blades-dark', 1280, true); await shot('blades-phone', 390); }
 
   // 15. Blades that cannot be built: the panel in plain words, then recovery.

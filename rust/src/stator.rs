@@ -480,7 +480,10 @@ impl VariableStatorCore {
     /// Every sweep below goes through this, so a swept setting can never be confused with a
     /// re-designed engine (rung 42's controlled comparison, at fixed `Tt4`).
     pub fn at_setting(&self, vsv_lp: f64, vsv_hp: f64) -> VariableStatorCore {
-        (self.hooks.at_setting)(self, vsv_lp, vsv_hp)
+        let s = (self.hooks.at_setting)(self, vsv_lp, vsv_hp);
+        // RUNG 103: a sibling is rebuilt from the design engine, so it carries the below-choke switch by hand.
+        s.core.base.below_choke.set(self.core.base.below_choke.get());
+        s
     }
 
     /// The sibling with ONE spool moved and the other at design — the shape every rung-53/54
