@@ -1,0 +1,12 @@
+500 plain: At the starting throttle (500 K): the engine has no steady operating point: the compressors would have to run off the part of their maps the model covers. Mostl
+500 to: At the final throttle (500 K): the engine has no steady operating point: the compressors would have to run off the part of their maps the model covers. Mostly t
+500 bleed: At the starting throttle (500 K): the engine has no steady operating point: the compressors would have to run off the part of their maps the model covers. Mostl
+500 bleed+gen: At the starting throttle (500 K): the engine has no steady operating point: the compressors would have to run off the part of their maps the model covers. Mostl
+510 plain: At the starting throttle (510 K): the engine has no steady operating point: the compressors would have to run off the part of their maps the model covers. Mostl
+510 to: At the final throttle (510 K): the engine has no steady operating point: the compressors would have to run off the part of their maps the model covers. Mostly t
+510 bleed: At the starting throttle (510 K): the engine has no steady operating point: the compressors would have to run off the part of their maps the model covers. Mostl
+510 bleed+gen: At the starting throttle (510 K): the engine has no steady operating point: the compressors would have to run off the part of their maps the model covers. Mostl
+520 plain: RUNS
+520 to: RUNS
+520 bleed: RUNS
+520 bleed+gen: RUNS

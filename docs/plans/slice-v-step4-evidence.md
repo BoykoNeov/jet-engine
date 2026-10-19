@@ -54,7 +54,7 @@ locally-armed-core carrier bug. Both columns are read off artifacts.
 | both | `SM_lp` | 0.060873799624 | 0.05798678588 | **4.743** |
 | both | `margin_min_lp` | 0.046234125347 | 0.039099866681 | **15.431** |
 
-and `A/both/tsm/npts` moves **61 -> 62** with it.
+and `A/both/tsm/npts` moves **61 -> 62** with it. *(Retired 2026-10-19, sandbox plan § 36: both marches stopped at a closure trial past the HP map's own wall; with the search capped there both run to 151, so the length half no longer separates them. The margin half stands.)*
 
 **§ 5.20 (ii)'s `const_lp` row — *every key: 0, no difference at all* — reproduces exactly:**
 `0` of section A's `const_lp` keys move under I1.

@@ -1,0 +1,40 @@
+design  plain        from  600: REFUSED: DoesNotRun("At the starting throttle (600 K): the engine has no steady operating point: the compressors would have to run off the part of their maps t
+design  plain        from  650: REFUSED: DoesNotRun("At the starting throttle (650 K): the engine has no steady operating point: the compressors would have to run off the part of their maps t
+design  plain        from  700: REFUSED: DoesNotRun("At the starting throttle (700 K): the engine has no steady operating point: the compressors would have to run off the part of their maps t
+design  plain        from  750: RUNS: 126 points, last s=2.50
+design  plain        from  800: RUNS: 126 points, last s=2.50
+design  bleed lever  from  600: REFUSED: DoesNotRun("At the starting throttle (600 K): the engine has no steady operating point: the compressors would have to run off the part of their maps t
+design  bleed lever  from  650: REFUSED: DoesNotRun("At the starting throttle (650 K): the engine has no steady operating point: the compressors would have to run off the part of their maps t
+design  bleed lever  from  700: RUNS: 126 points, last s=2.50
+design  bleed lever  from  750: RUNS: 126 points, last s=2.50
+design  bleed lever  from  800: RUNS: 126 points, last s=2.50
+design  customer     from  600: REFUSED: DoesNotRun("At the starting throttle (600 K): the engine has no steady operating point: the compressors would have to run off the part of their maps t
+design  customer     from  650: REFUSED: DoesNotRun("At the starting throttle (650 K): the engine has no steady operating point: the compressors would have to run off the part of their maps t
+design  customer     from  700: REFUSED: DoesNotRun("At the starting throttle (700 K): the engine has no steady operating point: the compressors would have to run off the part of their maps t
+design  customer     from  750: REFUSED: DoesNotRun("At the starting throttle (750 K): the engine has no steady operating point: the compressors would have to run off the part of their maps t
+design  customer     from  800: RUNS: 126 points, last s=2.50
+design  cooling      from  600: REFUSED: DoesNotRun("At the starting throttle (600 K): the engine has no steady operating point: the compressors would have to run off the part of their maps t
+design  cooling      from  650: REFUSED: DoesNotRun("At the starting throttle (650 K): the engine has no steady operating point: the compressors would have to run off the part of their maps t
+design  cooling      from  700: REFUSED: DoesNotRun("At the starting throttle (700 K): the engine has no steady operating point: the compressors would have to run off the part of their maps t
+design  cooling      from  750: REFUSED: DoesNotRun("At the starting throttle (750 K): the engine has no steady operating point: the compressors would have to run off the part of their maps t
+design  cooling      from  800: RUNS: 126 points, last s=2.50
+SL std  plain        from  600: REFUSED: DoesNotRun("At the starting throttle (600 K): the engine has no steady operating point: the compressors would have to run off the part of their maps t
+SL std  plain        from  650: REFUSED: DoesNotRun("At the starting throttle (650 K): the engine has no steady operating point: the compressors would have to run off the part of their maps t
+SL std  plain        from  700: REFUSED: DoesNotRun("At the starting throttle (700 K): the engine has no steady operating point: the compressors would have to run off the part of their maps t
+SL std  plain        from  750: REFUSED: DoesNotRun("At the starting throttle (750 K): the engine has no steady operating point: the compressors would have to run off the part of their maps t
+SL std  plain        from  800: REFUSED: DoesNotRun("At the starting throttle (800 K): the engine has no steady operating point: the compressors would have to run off the part of their maps t
+SL std  bleed lever  from  600: REFUSED: DoesNotRun("At the starting throttle (600 K): the engine has no steady operating point: the compressors would have to run off the part of their maps t
+SL std  bleed lever  from  650: REFUSED: DoesNotRun("At the starting throttle (650 K): the engine has no steady operating point: the compressors would have to run off the part of their maps t
+SL std  bleed lever  from  700: REFUSED: DoesNotRun("At the starting throttle (700 K): the engine has no steady operating point: the compressors would have to run off the part of their maps t
+SL std  bleed lever  from  750: REFUSED: DoesNotRun("At the starting throttle (750 K): the engine has no steady operating point: the compressors would have to run off the part of their maps t
+SL std  bleed lever  from  800: RUNS: 126 points, last s=2.50
+SL std  customer     from  600: REFUSED: DoesNotRun("At the starting throttle (600 K): the engine has no steady operating point: the compressors would have to run off the part of their maps t
+SL std  customer     from  650: REFUSED: DoesNotRun("At the starting throttle (650 K): the engine has no steady operating point: the compressors would have to run off the part of their maps t
+SL std  customer     from  700: REFUSED: DoesNotRun("At the starting throttle (700 K): the engine has no steady operating point: the compressors would have to run off the part of their maps t
+SL std  customer     from  750: REFUSED: DoesNotRun("At the starting throttle (750 K): the engine has no steady operating point: the compressors would have to run off the part of their maps t
+SL std  customer     from  800: REFUSED: DoesNotRun("At the starting throttle (800 K): the engine has no steady operating point: the compressors would have to run off the part of their maps t
+SL std  cooling      from  600: REFUSED: DoesNotRun("At the starting throttle (600 K): the engine has no steady operating point: the compressors would have to run off the part of their maps t
+SL std  cooling      from  650: REFUSED: DoesNotRun("At the starting throttle (650 K): the engine has no steady operating point: the compressors would have to run off the part of their maps t
+SL std  cooling      from  700: REFUSED: DoesNotRun("At the starting throttle (700 K): the engine has no steady operating point: the compressors would have to run off the part of their maps t
+SL std  cooling      from  750: REFUSED: DoesNotRun("At the starting throttle (750 K): the engine has no steady operating point: the compressors would have to run off the part of their maps t
+SL std  cooling      from  800: REFUSED: DoesNotRun("At the starting throttle (800 K): the engine has no steady operating point: the compressors would have to run off the part of their maps t

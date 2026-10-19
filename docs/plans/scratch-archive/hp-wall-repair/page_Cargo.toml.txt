@@ -1,0 +1,31 @@
+[package]
+name = "eqpage-new"
+version = "0.1.0"
+edition = "2021"
+[dependencies]
+turbojet = { path = "W:/Claude_projects/jet engine/rust" }
+[profile.release]
+opt-level = 3
+[[bin]]
+name = "page"
+path = "../src/page.rs"
+
+[[bin]]
+name = "crash"
+path = "../src/crash.rs"
+
+[[bin]]
+name = "classify"
+path = "../src/classify.rs"
+
+[[bin]]
+name = "floor"
+path = "../src/floor.rs"
+
+[[bin]]
+name = "check"
+path = "../src/check.rs"
+
+[[bin]]
+name = "thrust"
+path = "../src/thrust.rs"

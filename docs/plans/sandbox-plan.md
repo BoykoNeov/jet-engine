@@ -1936,7 +1936,8 @@ physical root sat well inside. At 11 km and high power the same happens on the c
 - **What moved on the page** (crash map, seed 36, 1 200 random Controls requests, half on flat-LP, against a worktree of
   `070b729`): 779 runs byte-equal; 378 refusals now run; 19 refusals change words; 24 identical; no panic; slowest
   reply 119 → 161 ms. The 18 still "off the maps": 4 below idle (the steady matcher agrees), 8 where the steady matcher
-  also fails (its efficiency check, which trips at zero or negative thrust — warm, fast flights at low throttle), 3 that
+  also fails, in its efficiency check — measured below idle: specific thrust −1.4 to −53 N/(kg/s), nozzle CHOKED, so
+  rung 103's below-idle words (unchoked branch only) never fire there (warm, fast flights at low throttle), 3 that
   run bare but not with their load (cooling, customer bleed, generator), and 3 of the open seam below. The refusal
   words were re-measured: the lowest throttle that solves at the design flight is 510–520 K on every map (flat-LP was
   750 K), ~610 K at Mach 1.6, 670–690 K at Mach 2, 800–820 K at Mach 2.6 (flat-LP was 980/1170/1520 K); the "top of

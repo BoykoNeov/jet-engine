@@ -25,6 +25,8 @@ scoped  3.90998666812636397e-2
 moved   15.430721 %          npts 61 -> 62
 ```
 
+*(The `npts` half: retired 2026-10-19, sandbox plan § 36 — both marches now run to 151.)*
+
 **The negative control.** `const_lp`: **2388** wrapped calls, **0 of 9** readings
 moved. A constant setting is applied by the constructor and never passes through
 `_arm`, so scoping `_arm` cannot reach it — § 5.20 (ii)'s exact-zero row, live.

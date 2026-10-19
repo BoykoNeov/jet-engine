@@ -1,0 +1,8 @@
+180 flat-lp 656 K M1.57: specific thrust -1.40 N/(kg/s), M9 1.000
+281 flat-lp 588 K M1.20: specific thrust -12.85 N/(kg/s), M9 1.000
+318 flat-lp 603 K M1.42: specific thrust -30.04 N/(kg/s), M9 1.000
+371 flat-lp 601 K M1.55: specific thrust -38.86 N/(kg/s), M9 1.000
+418 flat-lp 613 K M1.28: specific thrust -8.45 N/(kg/s), M9 1.000
+547 flat-lp 576 K M1.18: specific thrust -23.45 N/(kg/s), M9 1.000
+828 flat-lp 615 K M1.56: specific thrust -53.30 N/(kg/s), M9 1.000
+906 flow/press 554 K M1.41: specific thrust -23.98 N/(kg/s), M9 1.000

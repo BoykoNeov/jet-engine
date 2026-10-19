@@ -1,0 +1,18 @@
+[package]
+name = "eqstart-probe"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+turbojet = { path = "W:/Claude_projects/jet engine/rust" }
+
+[profile.release]
+opt-level = 3
+
+[[bin]]
+name = "probe"
+path = "src/probe.rs"
+
+[[bin]]
+name = "gscan"
+path = "src/gscan.rs"

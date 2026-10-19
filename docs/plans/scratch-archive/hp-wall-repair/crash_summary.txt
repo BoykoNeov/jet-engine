@@ -1,0 +1,5 @@
+     19 DIFF refused->refused
+    378 DIFF refused->runs
+     24 same refused
+    779 same runs
+panics old/new: 0/0; slowest reply ms old/new: 119/161

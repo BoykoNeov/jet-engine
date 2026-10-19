@@ -1,0 +1,18 @@
+158 press/flow start  575 K T0 242 p0 24328 M 0.94 [both cool gen ] | steady ok (0.533,0.602) F=18.6 | bare eq ok | seeded ok
+180 flat-lp    start  656 K T0 291 p0 95097 M 1.57 [bleed ] | steady ERR efficiency cascade eta_o == eta_thermal*eta_p must hold unde | bare eq ERR rung-40 two-shaft closure does not bracket at
+281 flat-lp    start  588 K T0 297 p0 86946 M 1.20 [stator ] | steady ERR efficiency cascade eta_o == eta_thermal*eta_p must hold unde | bare eq ERR rung-40 two-shaft closure does not bracket at
+318 flat-lp    final  603 K T0 299 p0 98862 M 1.42 [bleed ] | steady ERR efficiency cascade eta_o == eta_thermal*eta_p must hold unde | bare eq ERR rung-40 two-shaft closure does not bracket at
+339 flow/press start  584 K T0 299 p0 88738 M 1.10 [none cool ] | steady ERR rung-103: below idle at Tt4=584: with the nozzle unchoked th | bare eq ERR rung-40 two-shaft closure does not bracket at
+349 flat-lp    final  584 K T0 282 p0 53737 M 0.29 [none cust ] | steady ok (0.297,0.599) F=24.5 | bare eq ok | seeded ok
+371 flat-lp    final  601 K T0 293 p0 83005 M 1.55 [stator cust ] | steady ERR efficiency cascade eta_o == eta_thermal*eta_p must hold unde | bare eq ERR rung-40 two-shaft closure does not bracket at
+399 tilted     start  598 K T0 268 p0 89288 M 0.46 [bleed gen ] | steady ok (0.465,0.609) F=55.5 | bare eq ok | seeded ok
+417 flow/press start  578 K T0 295 p0 97295 M 1.03 [bleed ] | steady ERR rung-103: below idle at Tt4=578: with the nozzle unchoked th | bare eq ERR rung-40 two-shaft closure does not bracket at
+418 flat-lp    start  613 K T0 301 p0 99537 M 1.28 [bleed ] | steady ERR efficiency cascade eta_o == eta_thermal*eta_p must hold unde | bare eq ERR rung-40 two-shaft closure does not bracket at
+477 tilted     final  564 K T0 293 p0 64297 M 1.14 [both ] | steady ERR rung-103: below idle at Tt4=564: with the nozzle unchoked th | bare eq ERR rung-40 two-shaft closure does not bracket at
+490 flat-lp    start  557 K T0 268 p0 64056 M 1.25 [both cool ] | steady ok (0.602,0.596) F=2.2 | bare eq ERR rung-40 two-shaft closure does not bracket at | seeded ok
+547 flat-lp    start  576 K T0 298 p0 72385 M 1.18 [bleed ] | steady ERR efficiency cascade eta_o == eta_thermal*eta_p must hold unde | bare eq ERR rung-40 two-shaft closure does not bracket at
+640 flat-lp    final  562 K T0 237 p0 23557 M 1.45 [stator ] | steady ok (0.605,0.596) F=10.9 | bare eq ERR rung-40 two-shaft closure does not bracket at | seeded ok
+712 flat-lp    start  556 K T0 301 p0 96531 M 0.86 [stator ] | steady ERR rung-103: below idle at Tt4=556: with the nozzle unchoked th | bare eq ERR rung-40 two-shaft closure does not bracket at
+828 flat-lp    final  615 K T0 308 p0 84210 M 1.56 [none ] | steady ERR efficiency cascade eta_o == eta_thermal*eta_p must hold unde | bare eq ERR rung-40 two-shaft closure does not bracket at
+906 flow/press final  554 K T0 270 p0 85044 M 1.41 [none cool ] | steady ERR efficiency cascade eta_o == eta_thermal*eta_p must hold unde | bare eq ERR rung-40 two-shaft closure does not bracket at
+909 press/flow start  560 K T0 237 p0 37278 M 1.54 [none gen ] | steady ok (0.525,0.601) F=9.7 | bare eq ERR rung-40 two-shaft closure does not bracket at | seeded ok

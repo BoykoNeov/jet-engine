@@ -1,0 +1,10 @@
+OLD
+flow/press | M0.85: lowest 510 | M1.6: lowest 610 | M2: lowest 690 | M2.6: lowest 810 | 11km M0.85: 500..1690
+press/flow | M0.85: lowest 520 | M1.6: lowest 620 | M2: lowest 690 | M2.6: lowest 820 | 11km M0.85: 500..2000
+tilted     | M0.85: lowest 510 | M1.6: lowest 620 | M2: lowest 680 | M2.6: lowest 820 | 11km M0.85: 500..2000
+flat-lp    | M0.85: lowest 750 | M1.6: lowest 980 | M2: lowest 1170 | M2.6: lowest 1520 | 11km M0.85: 650..2000
+NEW
+flow/press | M0.85: lowest 510 | M1.6: lowest 610 | M2: lowest 690 | M2.6: lowest 810 | 11km M0.85: 500..2000
+press/flow | M0.85: lowest 520 | M1.6: lowest 620 | M2: lowest 690 | M2.6: lowest 820 | 11km M0.85: 500..2000
+tilted     | M0.85: lowest 510 | M1.6: lowest 620 | M2: lowest 680 | M2.6: lowest 820 | 11km M0.85: 500..2000
+flat-lp    | M0.85: lowest 520 | M1.6: lowest 610 | M2: lowest 670 | M2.6: lowest 800 | 11km M0.85: 500..2000
