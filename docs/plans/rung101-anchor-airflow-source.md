@@ -21,11 +21,13 @@ Shipped as KNOBS: every prediction below is scored HIT/MISS, and a miss is a fin
 **Status:** § 0 measured on a scratch crate (`W:\temp\claude\rung101-probe`, to be archived in
 `docs/plans/scratch-archive/rung101/`) against the shipped crate at `54ee954`. **Disclosed:** every § 0 number is read
 on rung 100's OWN governed trajectories — the probe evaluated each candidate belief on the run rung 100's governor
-flew, open loop. The steady START is the device's own for every scored variant (generator off: the start is the
-steady point at the set throttle, whatever the belief), so start sizes transfer; the MOVE does not (the governor will
-follow the new belief, and a slow sensor feeds back: a low exhaust reading → too little thrust believed → more fuel
-→ more overshoot). So § 3 freezes SIZES only on starts, and signs / orderings / wide bars on the move. No rung-101
-code exists.
+flew, open loop. **Even the START is not the device's own** (corrected 2026-10-19, before any code, from the
+committed `604f6a2`, which said it was): under a carried table rung 98 CALIBRATES each end — the steady point where the
+belief equals the end's target — so a new belief moves the start. The start's miss is the belief's error at that
+moved point; the probe read it at rung 100's, a near-interpolation (the bars below were frozen with that margin and
+are not changed by this correction). The MOVE transfers less (the governor will follow the new belief, and a slow
+sensor feeds back: a low exhaust reading → too little thrust believed → more fuel → more overshoot). So § 3 freezes
+SIZES only on starts, and signs / orderings / wide bars on the move. No rung-101 code exists.
 
 ---
 
