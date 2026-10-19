@@ -29,6 +29,7 @@
 //! With the governor off the Controls run is rung 43's march, by dispatch. Governing the burner temperature IS rung
 //! 40's temperature-commanded march on the same machine — two code paths (`tests/rung95.rs`).
 
+use crate::airflow_source::SensorLag;
 use crate::engine::FlightCondition;
 use crate::fuel_transient::{point, FuelInstant, FuelLimiters, FuelPoint, FuelTransientCore, PointExtra};
 use crate::gas::Abort;
@@ -110,6 +111,9 @@ pub struct Governor {
     pub table: Vec<(f64, f64)>,
     /// RUNG 96: the control's table, when the law infers thrust from a reading (`lo`/`hi` are then thrusts).
     pub infer: Option<Table>,
+    /// RUNG 101: the exhaust sensor's lag, when the table reads a lagged sensor — the march then carries its reading as
+    /// a third state.
+    pub lag: Option<SensorLag>,
 }
 
 /// The step factors the bracket search walks out by, up and down.
@@ -301,6 +305,45 @@ fn root_or_clamp(
 pub fn try_governor_fuel(
     ft: &FuelTransientCore, flight: &FlightCondition, gov: &Governor, a: f64, b: f64, s: f64,
 ) -> Result<(f64, Clamp), Abort> {
+    try_governor_fuel_at(ft, flight, gov, a, b, s, None)
+}
+
+/// [`try_governor_fuel`] with the exhaust sensor's lagged reading `tm` (RUNG 101; `None`: unlagged, or no sensor). A
+/// table that reads the sensor believes a thrust that depends on the instant — its exhaust temperature, its fuel, its
+/// valve — so the demand cannot be worked out from `s` alone: each law's root is taken on the belief AT the trial
+/// fuel (anchor § 1; G6 measured each residual rising with fuel, one root). Every other table is rung 95/96's, by
+/// dispatch.
+pub fn try_governor_fuel_at(
+    ft: &FuelTransientCore, flight: &FlightCondition, gov: &Governor, a: f64, b: f64, s: f64, tm: Option<f64>,
+) -> Result<(f64, Clamp), Abort> {
+    if let Some(t) = gov.infer.as_ref().filter(|t| t.sensed()) {
+        let x0 = runnable(ft, flight, gov, a, b, s)?;
+        let f_dem = gov.thrust_demand(s);
+        let at = |mf: f64| ft.try_instant_fuel(flight, a, b, mf).map(|i| i.base);
+        return match gov.law {
+            Law::Epr => {
+                let r = |mf: f64| at(mf).and_then(|i| Ok(t.try_belief(ft, Reading::Epr, &i, tm)? - f_dem));
+                root_or_clamp(ft, flight, a, b, x0, &r)
+            }
+            Law::LpRate { tau } => {
+                let r = |mf: f64| at(mf).and_then(|i| {
+                    let nd = t.try_demand_at(ft, Reading::LpSpeed, f_dem, &i, tm)?;
+                    Ok(i.phi_lp_dot / ft.rho() - (nd - a) / tau)
+                });
+                root_or_clamp(ft, flight, a, b, x0, &r)
+            }
+            // The proportional law's fuel is its own fixed point here: the demanded fan speed falls with fuel (more
+            // fuel, more thrust believed at every row), so `mf − W(ν_dem)·[1 + K·(ν_dem − ν_L)]` rises strictly.
+            Law::LpProp { gain } => {
+                let r = |mf: f64| at(mf).and_then(|i| {
+                    let nd = t.try_demand_at(ft, Reading::LpSpeed, f_dem, &i, tm)?;
+                    Ok(mf - t.fuel_at_speed(nd) * (1.0 + gain * (nd - a)))
+                });
+                root_or_clamp(ft, flight, a, b, x0, &r)
+            }
+            law => unreachable!("only an inferred law reads the sensor: {law:?}"),
+        };
+    }
     let x0 = runnable(ft, flight, gov, a, b, s)?;
     // The proportional laws: rung 95's on the HP speed and its steady table, rung 96's on the LP speed and the
     // control's table.
@@ -405,11 +448,20 @@ pub fn try_der(
     ft: &FuelTransientCore, flight: &FlightCondition, gov: &Governor, lim: &FuelLimiters<'_>,
     metal: Option<&dyn Fn(&Instant2) -> f64>, a: f64, b: f64, s: f64,
 ) -> Result<GovDer, GovFailure> {
+    try_der_at(ft, flight, gov, lim, metal, a, b, s, None)
+}
+
+/// [`try_der`] with the exhaust sensor's lagged reading `tm` (RUNG 101).
+#[allow(clippy::too_many_arguments)]
+pub fn try_der_at(
+    ft: &FuelTransientCore, flight: &FlightCondition, gov: &Governor, lim: &FuelLimiters<'_>,
+    metal: Option<&dyn Fn(&Instant2) -> f64>, a: f64, b: f64, s: f64, tm: Option<f64>,
+) -> Result<GovDer, GovFailure> {
     assert!(lim.freeze.is_none() && lim.tau_gov.is_none() && lim.lag.is_none() && lim.s_off.is_none()
                 && lim.tau_rel.is_none(),
             "rung-95 governs rung 43's PLAIN min-select: no freeze, no lagged governor, no release lag or forced release");
     let fail = |call: GovCall, mf: f64| move |e: Abort| GovFailure { message: e.0, call, mf };
-    let (mf_gov, clamp) = try_governor_fuel(ft, flight, gov, a, b, s).map_err(fail(GovCall::Governor, f64::NAN))?;
+    let (mf_gov, clamp) = try_governor_fuel_at(ft, flight, gov, a, b, s, tm).map_err(fail(GovCall::Governor, f64::NAN))?;
     let i = ft.try_instant_fuel(flight, a, b, mf_gov).map_err(fail(GovCall::AtDemand, mf_gov))?;
     let floor = lim.floor();
     let mut caps: Vec<(f64, Leg)> = Vec::new();
@@ -455,6 +507,25 @@ pub fn try_rk_step(
     Ok((a + ds / 6.0 * (k1a + 2.0 * k2a + 2.0 * k3a + k4a), b + ds / 6.0 * (k1b + 2.0 * k2b + 2.0 * k3b + k4b)))
 }
 
+/// RUNG 101. The rest of one RK4 step of the three-state march — the shafts and the lagged sensor's reading `m`
+/// (`dm/ds = (Tt5 − m)/τ` at each stage's APPLIED instant) — from its opening slope `k1`, the march's own stages and
+/// arithmetic.
+#[allow(clippy::too_many_arguments)]
+pub fn try_rk_step_sensed(
+    ft: &FuelTransientCore, flight: &FlightCondition, gov: &Governor, lim: &FuelLimiters<'_>,
+    metal: Option<&dyn Fn(&Instant2) -> f64>, a: f64, b: f64, m: f64, s: f64, ds: f64, k1: (f64, f64, f64),
+) -> Result<(f64, f64, f64), GovFailure> {
+    let tau = gov.lag.expect("the three-state march is the lagged sensor's").tau;
+    let d = |a: f64, b: f64, m: f64, s: f64| try_der_at(ft, flight, gov, lim, metal, a, b, s, Some(m))
+        .map(|d| (d.da, d.db, (d.inst.base.tt5 - m) / tau));
+    let (k1a, k1b, k1m) = k1;
+    let (k2a, k2b, k2m) = d(a + ds / 2.0 * k1a, b + ds / 2.0 * k1b, m + ds / 2.0 * k1m, s + ds / 2.0)?;
+    let (k3a, k3b, k3m) = d(a + ds / 2.0 * k2a, b + ds / 2.0 * k2b, m + ds / 2.0 * k2m, s + ds / 2.0)?;
+    let (k4a, k4b, k4m) = d(a + ds * k3a, b + ds * k3b, m + ds * k3m, s + ds)?;
+    Ok((a + ds / 6.0 * (k1a + 2.0 * k2a + 2.0 * k3a + k4a), b + ds / 6.0 * (k1b + 2.0 * k2b + 2.0 * k3b + k4b),
+        m + ds / 6.0 * (k1m + 2.0 * k2m + 2.0 * k3m + k4m)))
+}
+
 /// What the governed march records at a point beyond the fuel march's fields.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct GovMark {
@@ -471,6 +542,9 @@ pub fn march(
     ft: &FuelTransientCore, flight: &FlightCondition, gov: &Governor, lim: &FuelLimiters<'_>,
     metal: Option<&dyn Fn(&Instant2) -> f64>, nu0: (f64, f64), s_end: f64, ds: f64,
 ) -> (Vec<FuelPoint>, Vec<GovMark>) {
+    if let Some(lag) = gov.lag {
+        return march_sensed(ft, flight, gov, lim, metal, nu0, lag, s_end, ds);
+    }
     let (mut pts, mut marks) = (Vec::new(), Vec::new());
     let (mut a, mut b) = nu0;
     let mut s = 0.0f64;
@@ -482,6 +556,29 @@ pub fn march(
         let Ok((a1, b1)) = try_rk_step(ft, flight, gov, lim, metal, a, b, s, ds, (d.da, d.db)) else { break };
         a = a1;
         b = b1;
+        s += ds;
+    }
+    (pts, marks)
+}
+
+/// RUNG 101. The governed march with the lagged exhaust sensor: [`march`]'s loop on three states, the sensor's
+/// reading started at the steady start's `Tt5` and recorded at every point ([`PointExtra::Sensor`]).
+#[allow(clippy::too_many_arguments)]
+fn march_sensed(
+    ft: &FuelTransientCore, flight: &FlightCondition, gov: &Governor, lim: &FuelLimiters<'_>,
+    metal: Option<&dyn Fn(&Instant2) -> f64>, nu0: (f64, f64), lag: SensorLag, s_end: f64, ds: f64,
+) -> (Vec<FuelPoint>, Vec<GovMark>) {
+    let (mut pts, mut marks) = (Vec::new(), Vec::new());
+    let ((mut a, mut b), mut m) = (nu0, lag.t0);
+    let mut s = 0.0f64;
+    let n_steps = (s_end / ds).round_ties_even() as i64;
+    for _ in 0..=n_steps {
+        let Ok(d) = try_der_at(ft, flight, gov, lim, metal, a, b, s, Some(m)) else { break };
+        pts.push(point(s, a, b, &d.inst, d.mf, d.mf_gov, PointExtra::Sensor { tm: m }));
+        marks.push(GovMark { clamp: d.clamp, leg: d.leg });
+        let k1 = (d.da, d.db, (d.inst.base.tt5 - m) / lag.tau);
+        let Ok((a1, b1, m1)) = try_rk_step_sensed(ft, flight, gov, lim, metal, a, b, m, s, ds, k1) else { break };
+        (a, b, m) = (a1, b1, m1);
         s += ds;
     }
     (pts, marks)

@@ -542,13 +542,17 @@ fn settings_round_trip_and_the_entry_point_answers() {
                                table_at: turbojet::corrected_tables::TableAt::Flight, corr_p: false, corr_t: true,
                                speed_corr: turbojet::mach_axis::SpeedCorr::Formula,
                                // Rung 100's hidden reduce settings, off their defaults so the reply writes them.
-                               low_grid: false, formula_choked: true };
+                               low_grid: false, formula_choked: true,
+                               // Rung 101's three, off their defaults likewise.
+                               airflow: turbojet::airflow_source::AirflowFrom::Exhaust, exhaust_lag: true,
+                               exhaust_tau: 0.75 };
     let back = ControlsSettings::from_json(&Json::parse(&s.to_json().dump_compact())).unwrap();
     assert_eq!(back, s);
     // At their defaults they are not written at all (every default reply keeps rung 99's shape), and read back.
     let d0 = ControlsSettings::defaults();
     let j0 = d0.to_json().dump_compact();
     assert!(!j0.contains("low_grid") && !j0.contains("formula_choked"));
+    assert!(!j0.contains("airflow") && !j0.contains("exhaust_lag") && !j0.contains("exhaust_tau"));
     assert_eq!(ControlsSettings::from_json(&Json::parse(&j0)).unwrap(), d0);
     let d = Json::parse(&call(r#"{"op":"controls_defaults"}"#));
     assert!(d.get("controls").is_some() && d.get("shapes").is_some());

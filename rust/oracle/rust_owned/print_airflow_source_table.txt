@@ -1,0 +1,28 @@
+
+THE AIRFLOW OFF THE LINE (rung 101): rung 100's formula with the air swallowed taken from its carried table,
+the speed grid's tables, or an exhaust-temperature sensor on the nozzle's own flow (the fuel metered and the air
+dumped taken off). The 700 K starting end's thrust over what the throttle asks, %, on the map curved along flow at
+LP, along pressure at HP, flown in 250 K, 50 kPa air:
+
+  Mach    read                    table speed tables       sensor
+  0.1     pressure ratio          +0.11        +0.00        +0.00
+  0.1     fan speed               -2.30        -2.44        -2.30
+  0.5     pressure ratio          -0.00        -0.28        +0.00
+  0.5     fan speed               -0.17        +0.04        -0.14
+  1.4     pressure ratio          -1.67        -0.01        +0.00
+  1.4     fan speed               -4.66        -6.70        -2.48
+
+  Along the move, the worst (true - believed)/true thrust, %, where the thrust is at least 20 N per kg/s, the
+  sensor instant and with a lag of one HP-shaft time constant:
+
+  Mach    read                    table speed tables       sensor  sensor, lag
+  0.1     pressure ratio          +2.66        +2.66        +0.00        +2.91
+  0.1     fan speed              +40.96       +40.98       +38.52       +40.55
+  1.4     pressure ratio         +39.41       +38.99        -0.00       +47.57
+  1.4     fan speed              +61.67       +61.90       +18.63       +61.61
+
+  The speed tables take the pressure ratio's steady miss to almost nothing, but not the move's: an accelerating
+  engine passes less air than any steady table says. The sensor reads the air itself, so on the pressure ratio the
+  belief is the true thrust at every instant - until the probe is slow, and then the move's error comes back, larger.
+  On the fan speed the formula's push is itself a guess: the speed tables remove an airflow error that had cancelled
+  part of it, so the start gets worse; the sensor, fed the same guessed pressure, cancels it instead.

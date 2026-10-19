@@ -129,6 +129,8 @@ fn every_element_the_script_looks_up_is_declared() {
                 // Rung 98's tables made at the design flight or this one.
                 "ctl-tat-" => looked_up.extend(["design", "flight"].map(|m| format!("{id}{m}"))),
                 "ctl-spd-" => looked_up.extend(["grid", "formula", "none"].map(|m| format!("{id}{m}"))),
+                // Rung 101's airflow source under the formula.
+                "ctl-air-" => looked_up.extend(["table", "grid", "exhaust"].map(|m| format!("{id}{m}"))),
                 "clq-" => looked_up.extend(["air", "st", "tsfc", "tt3", "speed"].map(|m| format!("{id}{m}"))),
                 _ => {
                     assert!(!id.ends_with('-'), "{helper}: the prefix #{id} has no expansion in this census");
@@ -180,7 +182,11 @@ fn js_list(t: &str, name: &str) -> Vec<String> {
 #[test]
 fn every_controls_knob_and_switch_is_a_setting_and_every_one_has_its_knob() {
     let t = read(TEMPLATE);
-    let d = turbojet::sandbox_controls::ControlsSettings::defaults().to_json();
+    // Rung 101's three keys are written only off their defaults, so the settings are read with them set.
+    let d = turbojet::sandbox_controls::ControlsSettings {
+        airflow: turbojet::airflow_source::AirflowFrom::Exhaust, exhaust_lag: true, exhaust_tau: 0.5,
+        ..turbojet::sandbox_controls::ControlsSettings::defaults()
+    }.to_json();
     let mut knobs: Vec<String> = js_map(&t, "CTL_NUM").into_iter().map(|(_, k)| k).collect();
     // Rung 93's part life is a number set from a dropdown of preset lives, not a slider.
     knobs.push("metal_life".to_string());

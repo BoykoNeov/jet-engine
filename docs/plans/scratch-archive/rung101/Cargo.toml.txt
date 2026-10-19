@@ -20,3 +20,27 @@ path = "src/fan.rs"
 [[bin]]
 name = "shape"
 path = "src/shape.rs"
+
+[[bin]]
+name = "smoke"
+path = "src/smoke.rs"
+
+[[bin]]
+name = "lagorder"
+path = "src/lagorder.rs"
+
+[[bin]]
+name = "score"
+path = "src/score.rs"
+
+[[bin]]
+name = "why6"
+path = "src/why6.rs"
+
+[[bin]]
+name = "crash101"
+path = "src/crash101.rs"
+
+[[bin]]
+name = "h8why"
+path = "src/h8why.rs"

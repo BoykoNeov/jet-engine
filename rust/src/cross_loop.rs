@@ -351,7 +351,7 @@ pub fn r67_integrate_fuel_cross(
 pub fn cross_extra(p: &FuelPoint) -> (usize, f64, f64) {
     match p.extra {
         PointExtra::CrossCascade { ic_iters, ic_res, ic_damp, .. } => (ic_iters, ic_res, ic_damp),
-        PointExtra::None | PointExtra::Asym { .. } | PointExtra::Valve { .. }
+        PointExtra::None | PointExtra::Sensor { .. } | PointExtra::Asym { .. } | PointExtra::Valve { .. }
         // SLICE AA: rung 68 is REFUSED here for rung 66's exact reason -- it iterates the joint
         // sweep UNDAMPED, so it carries `ic_iters`/`ic_res` and no `ic_damp`. Admitting it would
         // hand a reader a damping factor that integrator never computed.

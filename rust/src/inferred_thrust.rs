@@ -24,6 +24,7 @@
 //!
 //! With thrust read directly the governor is rung 95's, by dispatch; the table is built only for an inferred reading.
 
+use crate::airflow_source::Sensed;
 use crate::burner_hold::HoldRefusal;
 use crate::engine::FlightCondition;
 use crate::fuel_transient::FuelTransientCore;
@@ -124,6 +125,29 @@ impl Table {
         match &self.formula {
             None => Ok(self.inferred(r, v)),
             Some(m) => m.try_inferred(ft, self, r, v),
+        }
+    }
+
+    /// RUNG 101: whether the formula reads the exhaust sensor — its belief and demand then need the instant.
+    pub fn sensed(&self) -> bool { self.formula.as_ref().is_some_and(Formula::sensed) }
+
+    /// RUNG 101: the thrust the control believes at instant `i` — its reading there through [`Table::try_inferred`],
+    /// or under the exhaust sensor with the sensor's view of `i` (`tm` the lagged reading, `None` the instant's own).
+    pub fn try_belief(&self, ft: &FuelTransientCore, r: Reading, i: &Instant2, tm: Option<f64>) -> Result<f64, Abort> {
+        let v = self.read(r, i);
+        match self.formula.as_ref().filter(|m| m.sensed()) {
+            None => self.try_inferred(ft, r, v),
+            Some(m) => m.try_inferred_sensed(ft, self, r, v, Some(&Sensed::of(i, tm))),
+        }
+    }
+
+    /// RUNG 101: the reading the control demands for thrust `f` at instant `i` ([`Table::try_reading_at`], or under the
+    /// exhaust sensor with its view of `i`).
+    pub fn try_demand_at(&self, ft: &FuelTransientCore, r: Reading, f: f64, i: &Instant2, tm: Option<f64>)
+                         -> Result<f64, Abort> {
+        match self.formula.as_ref().filter(|m| m.sensed()) {
+            None => self.try_reading_at(ft, r, f),
+            Some(m) => m.try_reading_at_sensed(ft, self, r, f, Some(&Sensed::of(i, tm))),
         }
     }
 

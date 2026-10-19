@@ -1802,3 +1802,31 @@ scratch `scratch-archive/rung100/`.
   `a_knob_move_stops_a_running_controls_run_and_the_new_one_finishes` and `…_the_cooling_sweep_…` failed (the run had
   finished before the knob moved, "kills 8 -> 8"); both passed when `check.ps1` was rerun alone, as did all 403 page
   checks. Neither run reads a table. No earlier record of this pair failing.
+
+## 33. The airflow off the line — rung 101 (2026-10-19) — not a slice
+
+Rung 100's seam, scoped by the user on measured probes (memory `rung101-decisions`): under the *thrust recomputed*
+speed correction, where the formula gets the air swallowed — rung 100's table (the default), the speed tables, or an
+exhaust-temperature sensor on the nozzle's own flow; the sensor's lag a knob, off by default, in HP-shaft time
+constants; both readings. Anchor `604f6a2` (Status corrected `eab1563`); spec `docs/rung101-spec.md`; scratch
+`scratch-archive/rung101/`.
+
+- **Built** in `sandbox_controls` on `airflow_source.rs`: `ControlsSettings` gains `airflow` (`"table"` default,
+  `"grid"`, `"exhaust"`), `exhaust_lag` (off) and `exhaust_tau` (1.0, 0.05–5), written to a reply only off their
+  defaults, so every default reply keeps rung 100's shape; the page fills them in at the model's defaults (gated). The
+  Flight panel shows a three-way *air swallowed* toggle under *Thrust recomputed* only, and under the sensor its slow
+  checkbox and slider; the note says what each source knows. The gap row names whose guess it is; a new results row
+  says how far a slow probe fell behind the gas (the reply's `exhaust_tt5` / `exhaust_sensor`, written only with a
+  lagged sensor); `tables.speed.airflow` / `exhaust_tau` name the source off its default. Under the sensor the
+  `demand` column is worked out at each point's own instant.
+- **What the defaults moved:** nothing. Census against a clean worktree of `54ee954`: all 326 check requests (every
+  view) byte-equal. Crash map (seed 99, 1 500, keys at their defaults): 1 500 / 1 500 identical to the worktree, no
+  panic; a targeted map (seed 101, 600, every request inferring thrust under the formula) with the keys drawn: no panic,
+  118 differ, all on a non-table source (77 new numbers, 14 refusals now running, 23 refused both ways, 4 newly refused —
+  3 in the sensor's words, 1 in the formula's own). The map found a second defect in the sensor's end search (a loaded
+  engine with no steady point at the set throttle), fixed before the spec.
+- `check_requests` adds 9 (the grid's airflow at Mach 1.4 from 700 K on the pressure ratio and Mach 0.1 on the fan
+  speed; the sensor at Mach 1.4 from 700 K both readings, with the customer bleed at Mach 0.5, the fan-speed
+  proportional law; lagged at 1 τ (pressure ratio) and 0.5 τ (fan speed); a lag of 0.04 τ refused). `browser.mjs`
+  presses the sensor at Mach 1.4 from 700 K (the run matches native, the guess is nothing, the lag box shows) and then
+  the slow checkbox (matches native, the results show the probe behind the gas).

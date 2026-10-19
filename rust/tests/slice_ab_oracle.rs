@@ -606,6 +606,7 @@ fn put_point(c: &mut Cmp, p: &str, pt: &FuelPoint) {
     c.f(&format!("{p}/sp_thrust"), pt.sp_thrust);
     match pt.extra {
         PointExtra::None => {}
+        PointExtra::Sensor { .. } => panic!("rung 101's sensor march is no oracle route"),
         PointExtra::Asym { g, required } => {
             c.f(&format!("{p}/g"), g);
             c.f(&format!("{p}/required"), required);
@@ -759,6 +760,7 @@ fn point_bits(p: &FuelPoint) -> Vec<u64> {
                      u64::from(p.branch == Branch::Choked)];
     match p.extra {
         PointExtra::None => {}
+        PointExtra::Sensor { .. } => panic!("rung 101's sensor march is no oracle route"),
         PointExtra::Asym { g, required } => v.extend([g.to_bits(), required.to_bits()]),
         PointExtra::Valve { b, b_cmd } => v.extend([b.to_bits(), b_cmd.to_bits()]),
         PointExtra::Cascade { g, required, b, b_cmd, ic_iters, ic_res } =>

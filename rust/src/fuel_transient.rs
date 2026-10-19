@@ -711,6 +711,9 @@ pub struct FuelInstant {
 pub enum PointExtra {
     /// The bare march, the rung-46…51 arms, and rung 47's lagged twin — 14 keys.
     None,
+    /// RUNG 101's governed march with the lagged exhaust sensor — 15 keys: the sensor's reading, a march STATE (it
+    /// carries history, so a re-run step starts from the recorded one, as rung 65's valve).
+    Sensor { tm: f64 },
     /// Rung 52's asymmetric-lag twin — 16 keys.
     Asym { g: f64, required: f64 },
     /// RUNG 65's lagged-valve march — 16 keys, and a DIFFERENT two from rung 52's.
@@ -934,6 +937,7 @@ impl FuelPoint {
     pub fn key_count(&self) -> usize {
         match self.extra {
             PointExtra::None => 14,
+            PointExtra::Sensor { .. } => 15,
             PointExtra::Asym { .. } | PointExtra::Valve { .. } => 16,
             PointExtra::Cascade { .. } => 20,
             PointExtra::CrossCascade { .. } => 21,
@@ -1385,7 +1389,7 @@ pub fn asym_extra(p: &FuelPoint) -> (f64, f64) {
         // reader and report the wrong two of them. It stays REFUSING because Python raises
         // `KeyError` there; the two cascade arms above are admitted for exactly the opposite
         // reason.
-        PointExtra::None | PointExtra::Valve { .. } => panic!(
+        PointExtra::None | PointExtra::Sensor { .. } | PointExtra::Valve { .. } => panic!(
             "rung-52 lag_relief marched a trajectory with no `g` / `required`: the lag leg \
              did not dispatch to integrate_fuel_asym"),
     }

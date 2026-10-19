@@ -1604,7 +1604,7 @@ fn triple_window_extra(p: &FuelPoint) -> (f64, f64, Regime) {
             panic!(
             "rung-70's reader on a STATOR-LESS rung-72/74 trajectory: `v_regime` is `None` \
              because no stator solve ran, and there is no regime to report"),
-        PointExtra::None
+        PointExtra::None | PointExtra::Sensor { .. }
         | PointExtra::Asym { .. }
         | PointExtra::Valve { .. }
         | PointExtra::Cascade { .. }

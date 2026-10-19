@@ -1,0 +1,9 @@
+250 M1.2 750 plain: start choked   | rung100 +0.134% grid +0.042%
+250 M1.5 900 plain: start choked   | rung100 +0.328% grid +0.108%
+250 M1.5 750 plain: start choked   | rung100 -1.232% grid -2.090%
+250 M0.25 900 plain: start choked   | rung100 -0.069% grid -0.058%
+250 M0.25 750 plain: start choked   | rung100 -0.051% grid -0.034%
+250 M0.25 750 cool : start UNCHOKED | rung100 -1.935% grid -2.248%
+268.65 M1.3 900 plain: start choked   | rung100 +0.288% grid +0.165%
+268.65 M1.3 750 plain: start choked   | rung100 -0.722% grid -1.203%
+318.15 M0.2 900 plain: start UNCHOKED | rung100 -1.392% grid -1.551%

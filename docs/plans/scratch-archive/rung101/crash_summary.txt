@@ -1,0 +1,131 @@
+# Rung 101 crash maps (crash101.rs). Columns: request index, outcome without the keys -> with them.
+## seed 99, 1500, keys at defaults vs worktree 54ee954: 0 differ; panics new 0, base 0
+## seed 101, 600, CRASH_FORMULA, keys left out vs worktree: 0 differ
+## seed 99, 1500, keys drawn vs left out (new build): 4 differ
+## seed 101, 600, CRASH_FORMULA, keys drawn vs left out (final code): 118 differ, panics 0; by source:
+     39 exhaust	ran -> ran
+      3 exhaust	ran -> refused
+     14 exhaust	refused -> ran
+     16 exhaust	refused -> refused
+     38 grid	ran -> ran
+      1 grid	ran -> refused
+      7 grid	refused -> refused
+## every differing request:
+1	ran to the end	ran to the end
+17	ran to the end	ran to the end
+25	refused: At the starting throttle (1580 K): 331.0 N pe	ran to the end
+30	ran to the end	ran to the end
+34	ran, stopped early	ran, stopped early
+41	ran to the end	ran to the end
+44	ran to the end	ran to the end
+49	ran to the end	ran to the end
+51	refused: At the starting throttle (890 K): 12.9 N per 	ran to the end
+54	refused: The control's thrust formula at this flight s	ran to the end
+63	refused: [M 1.0-1.5] design-flight table	refused: At the starting throttle (1000 K), the contro
+67	refused: [M 0.0-0.5] design-flight table	refused: [M 0.0-0.5] design-flight table
+74	ran to the end	ran to the end
+75	ran to the end	ran to the end
+76	ran to the end	ran to the end
+86	refused: [M 0.5-1.0] design-flight table	refused: At the starting throttle (1150 K), the contro
+88	ran to the end	ran to the end
+95	ran to the end	ran to the end
+101	refused: [M 1.5-2.0] design-flight table	refused: At the starting throttle (1590 K), the contro
+112	ran to the end	ran to the end
+120	refused: At the starting throttle (1090 K): 56.0 N per	ran to the end
+124	ran to the end	ran to the end
+133	ran to the end	ran to the end
+138	ran to the end	ran to the end
+141	ran to the end	ran to the end
+143	ran to the end	ran to the end
+158	ran to the end	ran to the end
+159	ran to the end	ran to the end
+165	refused: [M 0.0-0.5] design-flight table	refused: At the starting throttle (660 K), the control
+166	ran to the end	ran to the end
+169	refused: At the starting throttle (1150 K): 562.7 N pe	ran to the end
+177	ran to the end	ran to the end
+179	refused: At the starting throttle (1550 K): 176.0 N pe	ran to the end
+183	ran to the end	ran to the end
+185	ran to the end	ran to the end
+193	refused: [M 1.5-2.0] design-flight table	refused: At the starting throttle (1600 K), the contro
+198	ran to the end	ran to the end
+199	refused: The control's thrust formula at this flight s	refused: At the starting throttle (1290 K), the contro
+215	ran to the end	ran to the end
+228	ran to the end	ran to the end
+273	ran to the end	ran to the end
+278	ran to the end	ran to the end
+284	refused: [M 1.5-2.0] design-flight table	refused: The control's thrust formula at this flight s
+286	refused: [M 1.0-1.5] design-flight table	refused: [M 1.0-1.5] design-flight table
+288	ran to the end	refused: At the starting throttle (1560 K): 211.5 N pe
+292	refused: [M 2.0-2.5] made at the design flight	refused: At the final throttle (960 K), the control ho
+296	ran to the end	ran to the end
+298	refused: At the final throttle (1340 K): The control's	refused: [M 2.0-2.5] made at the design flight
+302	ran to the end	ran to the end
+306	ran to the end	ran to the end
+315	ran to the end	ran to the end
+316	ran to the end	ran to the end
+322	ran to the end	ran to the end
+323	ran to the end	ran to the end
+325	ran to the end	ran to the end
+330	ran to the end	refused: At the final throttle (1180 K), the control h
+333	ran to the end	ran to the end
+337	ran to the end	ran to the end
+342	ran to the end	ran to the end
+347	ran to the end	ran to the end
+348	ran to the end	ran to the end
+352	ran, stopped early	ran, stopped early
+355	refused: At the final throttle (1620 K): The control's	refused: At the final throttle (1620 K), the control h
+356	ran to the end	ran to the end
+360	ran to the end	ran to the end
+362	refused: [M 0.0-0.5] design-flight table	refused: [M 0.0-0.5] design-flight table
+368	refused: [M 1.5-2.0] design-flight table	refused: At the starting throttle (1150 K): 72.1 N per
+370	refused: At the final throttle (1140 K): 333.1 N per k	ran to the end
+371	refused: [M 0.0-0.5] design-flight table	refused: At the starting throttle (990 K), the control
+379	ran, stopped early	ran, stopped early
+393	ran to the end	ran to the end
+394	refused: [M 0.0-0.5] design-flight table	refused: At the starting throttle (680 K), the control
+398	ran to the end	ran to the end
+399	ran to the end	ran to the end
+403	ran to the end	ran to the end
+406	refused: [M 2.5-3.0] made at the design flight	refused: The control's thrust formula at this flight s
+408	ran to the end	ran to the end
+411	ran to the end	ran to the end
+417	ran to the end	ran to the end
+428	ran to the end	ran to the end
+430	ran to the end	ran to the end
+432	refused: [M 1.0-1.5] design-flight table	refused: At the final throttle (770 K), the control ho
+438	ran to the end	ran to the end
+441	ran to the end	ran to the end
+442	refused: At the starting throttle (1080 K): 43.6 N per	ran to the end
+448	ran to the end	ran to the end
+451	refused: At the final throttle (1600 K): 704.7 N per k	ran, stopped early
+453	ran to the end	ran to the end
+454	refused: At the starting throttle (1260 K): The contro	ran, stopped early
+462	ran to the end	ran to the end
+470	ran to the end	ran to the end
+474	refused: At the starting throttle (1250 K): The contro	ran, stopped early
+477	ran to the end	ran to the end
+484	ran to the end	ran to the end
+485	ran to the end	refused: At the starting throttle (960 K), the control
+488	ran to the end	ran to the end
+493	refused: [M 1.0-1.5] design-flight table	refused: At the final throttle (1370 K), the control h
+499	ran to the end	ran to the end
+502	ran to the end	ran to the end
+506	refused: At the starting throttle (1660 K): 25.8 N per	ran to the end
+508	refused: [M 0.0-0.5] design-flight table	refused: At the starting throttle (640 K), the control
+510	ran, stopped early	ran, stopped early
+511	ran, stopped early	ran, stopped early
+523	ran to the end	refused: At the final throttle (630 K), the control ho
+524	refused: At the starting throttle (1660 K): The contro	refused: At the starting throttle (1660 K), the contro
+538	refused: At the starting throttle (1260 K): 70.1 N per	ran to the end
+540	ran to the end	ran to the end
+544	ran to the end	ran to the end
+547	ran to the end	ran to the end
+553	refused: [M 0.0-0.5] design-flight table	refused: [M 0.0-0.5] design-flight table
+556	refused: The control's thrust formula at this flight s	refused: At the starting throttle (990 K), the control
+558	ran to the end	ran to the end
+559	ran to the end	ran to the end
+562	ran to the end	ran to the end
+565	ran to the end	ran to the end
+567	ran to the end	ran to the end
+569	ran to the end	ran to the end
+572	refused: At the starting throttle (1380 K): 582.8 N pe	ran to the end

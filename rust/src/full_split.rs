@@ -510,7 +510,7 @@ fn full_window_extra(p: &FuelPoint) -> (f64, f64, Regime) {
         PointExtra::Shared { v_regime: None, .. } | PointExtra::Demand { v_regime: None, .. } =>
             panic!(
             "rung-71's reader on a STATOR-LESS rung-72/74 trajectory: no stator solve ran"),
-        PointExtra::None
+        PointExtra::None | PointExtra::Sensor { .. }
         | PointExtra::Asym { .. }
         | PointExtra::Valve { .. }
         | PointExtra::Cascade { .. }

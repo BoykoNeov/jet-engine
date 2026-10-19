@@ -713,7 +713,30 @@ footer p { max-width: 90ch; }
           <div class="toggle" role="group" aria-label="How the tables are corrected for flight speed">
             <button type="button" id="ctl-spd-grid" aria-pressed="true">Speed: tables at ten speeds</button>
             <button type="button" id="ctl-spd-formula" aria-pressed="false">Thrust recomputed</button>
-            <button type="button" id="ctl-spd-none" aria-pressed="false">Not corrected <small>rung 99</small></button></div></div>
+            <button type="button" id="ctl-spd-none" aria-pressed="false">Not corrected <small>rung 99</small></button></div>
+          <div id="ctl-air-box">
+            <div class="toggle" role="group" aria-label="Where the recomputed thrust gets the air the engine swallows">
+              <button type="button" id="ctl-air-table" aria-pressed="true">Air swallowed: from the table</button>
+              <button type="button" id="ctl-air-grid" aria-pressed="false">From the speed tables</button>
+              <button type="button" id="ctl-air-exhaust" aria-pressed="false">From an exhaust sensor <small>rung 101</small></button></div>
+            <div id="ctl-elag-box">
+              <label class="swrow"><input type="checkbox" id="ctl-exhaust_lag"> The sensor responds slowly</label>
+              <div id="ctl-etau-box">
+                <div class="knob"><label for="ctl-exhaust_tau">Sensor's response time <small>spool time constants</small></label><input type="number" id="ctl-exhaust_tau" step="0.05">
+                  <input type="range" id="ctl-exhaust_tau-r" min="0.05" max="5" step="0.05" aria-label="Exhaust sensor time constant slider">
+                  <div class="derived">The probe closes about two-thirds of the gap to the gas's temperature in this time. A real one
+                    takes about one to a few shaft time constants.</div></div></div></div>
+            <p class="note" id="ctl-air-note">With the thrust recomputed, the jet's push is exact; what is left is the air the
+              control believes the engine swallows, and where that comes from. From the table made at the design flight, it is
+              off wherever the engine runs off that table's line: a low throttle, flown slow or fast. From the speed tables, the
+              steady miss of the pressure-ratio reading falls to a few hundredths of a per cent, but not the miss during the
+              move: an accelerating engine passes less air than any steady table says. From an exhaust sensor, the nozzle's
+              own flow is worked out from its pressure and the exhaust temperature, and the fuel the control meters and the air
+              it dumps are taken off: read from the pressure ratio, the control then knows the true thrust at every moment.
+              A slow probe lags the gas, which heats as the engine accelerates, and the move's error comes back larger than the
+              tables'. Read from the fan speed the formula's push is itself a guess: the speed tables remove an airflow error
+              that had cancelled part of it, so its steady miss grows; the sensor, fed the same guessed pressure, cancels it
+              instead.</p></div></div>
         <p class="note" id="ctl-tables-note">A real control's tables (the thrust it reads from the pressure ratio or the fan
           speed, the acceleration schedule, the speed governor's fuel) are made once, at one flight, and read everywhere else
           through two corrections: thrust and fuel divided by how much denser the air at the engine is, speeds by the
@@ -1266,15 +1289,19 @@ const CTL_NUM = { "ctl-rho": "rho", "ctl-from": "from", "ctl-to": "to", "ctl-ram
                   "ctl-customer_share": "customer_share", "ctl-customer_amount": "customer_amount",
                   "ctl-cool_vane": "cool_vane", "ctl-cool_blade": "cool_blade",
                   "ctl-generator_power": "generator_power", "ctl-generator_share": "generator_share",
-                  "ctl-metal_year": "metal_year", "ctl-gov_tau": "gov_tau", "ctl-gov_gain": "gov_gain" };
+                  "ctl-metal_year": "metal_year", "ctl-gov_tau": "gov_tau", "ctl-gov_gain": "gov_gain",
+                  "ctl-exhaust_tau": "exhaust_tau" };
 const CTL_SW = ["redline_on", "gov_lag_on", "accel_on", "floor_on", "release_on", "metal_on", "hold_cap", "govern", "table_clean",
-                "corr_p", "corr_t"];
+                "corr_p", "corr_t", "exhaust_lag"];
 // Rung 98: the run reads a table -- rung 96's inferred thrust, rung 48's schedule, or rung 95's proportional speed law.
 const ctlTables = c => (c.govern === 1 && c.hold === "thrust" && c.thrust_by !== "true") || c.accel_on === 1
   || (c.govern === 1 && c.hold === "speed" && c.speed_law === "prop");
 // Rung 99: how the tables were corrected for flight speed, in words.
 const speedFor = sp => !sp ? "" : sp.corr === "none" ? "not corrected for flight speed"
-  : sp.corr === "formula" ? "thrust recomputed for this flight speed" + (!sp.fan_rows ? ""
+  : sp.corr === "formula" ? "thrust recomputed for this flight speed" + (!sp.airflow ? ""
+      // Rung 101: where the formula got the air swallowed.
+      : sp.airflow === "grid" ? ", the air swallowed from the speed tables"
+      : `, the air swallowed from an exhaust sensor${sp.exhaust_tau ? ` responding in ${fmt(sp.exhaust_tau, 3)} τ` : ""}`) + (!sp.fan_rows ? ""
       // Rung 100: the fan-speed formula's table row at each end, beside the end's own burner temperature.
       : `; at the fan speed of each end the formula settles on the table's engine at ${sp.fan_rows.map(q => !q ? "(none)"
           : `${fmt(q[0], 4)} K (the engine: ${fmt(q[1], 4)} K)`).join(" and ")}`)
@@ -1412,6 +1439,10 @@ function showSettings() {
     $("ctl-corr-box").hidden = C.table_at !== "design";
     // Rung 99: how a design-flight table is corrected for flight speed.
     for (const k of ["grid", "formula", "none"]) press("ctl-spd-" + k, C.speed_corr === k);
+    // Rung 101: where the recomputed thrust gets the air swallowed, and the exhaust sensor's lag.
+    $("ctl-air-box").hidden = C.speed_corr !== "formula";
+    for (const k of ["table", "grid", "exhaust"]) press("ctl-air-" + k, C.airflow === k);
+    $("ctl-elag-box").hidden = C.airflow !== "exhaust"; $("ctl-etau-box").hidden = C.exhaust_lag !== 1;
     press("ctl-slaw-rate", C.speed_law === "rate"); press("ctl-slaw-prop", C.speed_law === "prop");
     $("ctl-gtau-box").hidden = C.speed_law !== "rate"; $("ctl-ggain-box").hidden = C.speed_law !== "prop";
     $("ctl-cap-note").hidden = !C.hold_cap;
@@ -1979,7 +2010,9 @@ const CTL_ROWS = [
         // Rung 100: the push is worked out from the reading, so the rest is 0 in algebra at EVERY point (rounding in
         // arithmetic, under 1e-10 N per kg/s measured): read the number itself, against an absolute bar.
         const worst = Math.max(...r.gap_nozzle.map(v => v === null ? 0 : Math.abs(v)));
-        return `thrust recomputed: the table's guess of the air swallowed ${fmt(Math.max(...g), 3)} / ${fmt(Math.min(...g), 3)}; the rest
+        // Rung 101: whose guess it is.
+        const who = { grid: "the speed tables'", exhaust: "the exhaust sensor's" }[r.tables.speed.airflow] || "the table's";
+        return `thrust recomputed: ${who} guess of the air swallowed ${fmt(Math.max(...g), 3)} / ${fmt(Math.min(...g), 3)}; the rest
           ${worst <= 1e-9 ? "nothing (the jet's push is worked out from the pressure ratio, choked or not)"
             : `up to ${fmt(worst / d * 100, 3)}`}`; }
       // Rung 99's column: the rest is exactly 0 in algebra while the nozzle is choked (rounding in arithmetic): so ask
@@ -1989,6 +2022,8 @@ const CTL_ROWS = [
         ${r.choked.every(c => c) ? "nothing (the nozzle choked throughout)" : `up to ${fmt(Math.max(...rest), 3)} (where the nozzle is not choked)`}`; }
     const d = Math.abs(r.end.thrust - r.start.thrust) || 1, ram = r.gap_ram.filter(v => v !== null).map(v => v / d * 100);
     return `${fmt(Math.max(...ram), 3)} / ${fmt(Math.min(...ram), 3)}, and ${fmt(r.gap_nozzle[k] / d * 100, 3)} all through`; }],
+  ["The exhaust sensor behind the gas, most (K; rung 101)", r => !r.exhaust_sensor ? "no slow sensor"
+    : fmt(Math.max(...r.exhaust_tt5.map((t, i) => t === null || r.exhaust_sensor[i] === null ? 0 : t - r.exhaust_sensor[i])), 4)],
   ["Time to 90 % of the LP speed change (τ)", r => to90(r, "nu_lp"), 3],
   ["Time to 90 % of the HP speed change (τ)", r => to90(r, "nu_hp"), 3],
   ["Shaft speeds at the end, LP / HP (% of design)", r => `${fmt(r.nu_lp[r.nu_lp.length - 1] * 100, 4)} / ${fmt(r.nu_hp[r.nu_hp.length - 1] * 100, 4)}`],
@@ -2999,6 +3034,8 @@ function wire() {
   for (const a of ["design", "flight"]) cclick("ctl-tat-" + a, () => { C.table_at = a; });
   // Rung 99: how a design-flight table is corrected for flight speed.
   for (const k of ["grid", "formula", "none"]) cclick("ctl-spd-" + k, () => { C.speed_corr = k; });
+  // Rung 101: where the recomputed thrust gets the air swallowed.
+  for (const k of ["table", "grid", "exhaust"]) cclick("ctl-air-" + k, () => { C.airflow = k; });
   $("ctl-metal_life").addEventListener("change", () => { C.metal_life = +$("ctl-metal_life").value; scheduleCtl(); });
   // Cool the turbine (rung 93): its knobs write CL; the knob form and the sweep follow.
   $("mode-cooling").addEventListener("click", enterCooling);
@@ -3130,7 +3167,10 @@ window.sandbox = {
     const bd = (await model.ask(JSON.stringify({ op: "blade_defaults" }))).reply;
     B_DEFAULTS = bd.blades; TI64 = bd.ti64; B = clone(B_DEFAULTS);
     const cd = (await model.ask(JSON.stringify({ op: "controls_defaults" }))).reply;
-    C_DEFAULTS = cd.controls; CTL_DS = cd.ds; C = clone(C_DEFAULTS);
+    // Rung 101's three keys are written to a reply only off their defaults (so every default reply keeps rung 100's
+    // shape): the page fills them in at the model's defaults (`tests/rung101.rs` holds the two to each other).
+    C_DEFAULTS = Object.assign({ airflow: "table", exhaust_lag: 0, exhaust_tau: 1 }, cd.controls); CTL_DS = cd.ds;
+    C = clone(C_DEFAULTS);
     const kd = (await model.ask(JSON.stringify({ op: "cooling_defaults" }))).reply;
     CL_DEFAULTS = kd.cooling; CL_GRID = kd.grid; CL = clone(CL_DEFAULTS);
     const bd5 = (await model.ask(JSON.stringify({ op: "burner_defaults" }))).reply;

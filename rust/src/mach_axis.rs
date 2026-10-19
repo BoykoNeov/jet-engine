@@ -37,6 +37,7 @@
 //! Two slow slices (Mach 0.05, 0.15) before the eight — `low` off is rung 99's grid ([`GRID99`]) — and the formula
 //! read at the reading by [`crate::unchoked_formula`] — `choked` on is rung 99's column alone.
 
+use crate::airflow_source::{Air, AirflowFrom, Sensed};
 use crate::corrected_tables::{self as ct, Carry, RowFailure};
 use crate::engine::FlightCondition;
 use crate::fuel_transient::{AccelSchedule, FuelTransientCore};
@@ -117,20 +118,30 @@ pub enum Tables {
     /// Rung 98's carry, the thrust table's thrust recomputed for this flight: the model's nozzle area `a8` (per design
     /// airflow) and both flights' ambient pressure. `choked` is rung 99's column (rung 100's reduce setting); else
     /// RUNG 100's readers ([`crate::unchoked_formula`]) on the same carry.
-    Formula { carry: Carry, a8: f64, p0: f64, p0_d: f64, choked: bool },
+    /// RUNG 101: `air` is where the formula's airflow comes from, and `grid` the speed grid's two slices and weight
+    /// when it comes from there.
+    Formula { carry: Carry, a8: f64, p0: f64, p0_d: f64, choked: bool, air: AirflowFrom,
+              grid: Option<(Slice, Option<Slice>, f64)> },
 }
 
 impl Tables {
-    /// `low` is rung 100's grid with the slow slices; `choked` rung 99's formula column.
+    /// `low` is rung 100's grid with the slow slices; `choked` rung 99's formula column; `air` rung 101's airflow source.
     #[allow(clippy::too_many_arguments)]
     pub fn new(ft: &FuelTransientCore, design: &FlightCondition, flight: &FlightCondition, corr: SpeedCorr,
-               pressure: bool, temperature: bool, low: bool, choked: bool) -> Tables {
+               pressure: bool, temperature: bool, low: bool, choked: bool, air: AirflowFrom) -> Tables {
         let carry = |from: &FlightCondition| Carry::new(ft, from, flight, pressure, temperature);
         let g = grid(low);
         match corr {
             SpeedCorr::None => Tables::Design(carry(design)),
-            SpeedCorr::Formula => Tables::Formula { carry: carry(design), a8: ft.inner.inner.base.a8, p0: flight.p0,
-                                                    p0_d: design.p0, choked },
+            SpeedCorr::Formula => {
+                let slice = |j: usize| Slice { m: g[j], carry: carry(&slice_flight(design, g[j])) };
+                let grid = (air == AirflowFrom::Grid).then(|| {
+                    let (a, b, w) = bracket(g, flight.m0);
+                    (slice(a), b.map(slice), w)
+                });
+                Tables::Formula { carry: carry(design), a8: ft.inner.inner.base.a8, p0: flight.p0, p0_d: design.p0, choked,
+                                  air, grid }
+            }
             SpeedCorr::Grid => match bracket(g, flight.m0) {
                 (a, None, _) if g[a] == DESIGN_MACH => Tables::Design(carry(design)),
                 (a, b, w) => {
@@ -156,14 +167,33 @@ impl Tables {
                 let dt = ct::try_design_table(ft, c, lo, hi).map_err(|f| ct::row_words(what, c, lo, hi, &f))?;
                 Ok((c.thrust_table(&dt), Some(dt)))
             }
-            Tables::Formula { carry: c, a8, p0, p0_d, choked } => {
+            Tables::Formula { carry: c, a8, p0, p0_d, choked, air, grid } => {
                 let (dt, rows) = ct::try_design_table_rows(ft, c, lo, hi).map_err(|f| ct::row_words(what, c, lo, hi, &f))?;
                 let mut t = formula_table(c, &dt, *a8, *p0, *p0_d);
                 check_rise(&t.rows).map_err(|m| format!("The control's thrust table, recomputed for this flight speed: {m}"))?;
                 // RUNG 100: the formula read AT the reading — the jet's push from the pressure ratio, or the LP shaft
                 // rebalanced against this flight's air for the fan speed. Rung 99's column stays as the rows.
                 if !choked {
-                    t.formula = Some(uf::Formula::new(ft, c, &t, &rows, *p0, r)?);
+                    // RUNG 101: the air it believes swallowed — the carried table's, the speed grid's (its slices built
+                    // here, so their reach is the formula's), or the exhaust sensor's.
+                    let air = match air {
+                        AirflowFrom::Table => Air::Table,
+                        AirflowFrom::Grid => {
+                            let &(a, b, w) = grid.as_ref().expect("a grid airflow carries its slices");
+                            let (tg, _) = Tables::Grid { a, b, w }.thrust_table(ft, lo, hi, r)?;
+                            let x = |q: &Row| match r { Reading::Epr => q.epr, Reading::LpSpeed => q.nu_lp };
+                            let mut pairs: Vec<(f64, f64)> = tg.rows.iter().map(|q| (x(q), q.face)).collect();
+                            pairs.sort_by(|p, q| p.0.total_cmp(&q.0));
+                            Air::Grid(pairs)
+                        }
+                        AirflowFrom::Exhaust => {
+                            let gas = ft.inner.gas();
+                            let rg = gas.r_t_at(0.0);
+                            assert!(gas.r_t_at(0.05) == rg, "rung 101's sensor is the perfect gas's closed form");
+                            Air::Exhaust { r: rg }
+                        }
+                    };
+                    t.formula = Some(uf::Formula::new(ft, c, &t, &rows, *p0, r, air)?);
                 }
                 Ok((t, Some(dt)))
             }
@@ -230,9 +260,16 @@ impl Tables {
 
     /// The pressure-ratio control's gap split under the formula (anchor § 1): the AIRFLOW GUESS `V0·(ṁ̂ − ṁ_face)`,
     /// with `ṁ̂` the table's airflow at the reading, and THE REST — zero while the nozzle is choked.
-    pub fn formula_split(&self, table: &Table, i: &Instant2, f_true: f64, f_hat: f64) -> Option<(f64, f64)> {
+    /// RUNG 101: `ṁ̂` is the formula's own source's (the sensor's at the instant, `tm` its lagged reading).
+    pub fn formula_split(&self, table: &Table, i: &Instant2, f_true: f64, f_hat: f64, tm: Option<f64>)
+                         -> Option<(f64, f64)> {
         let Tables::Formula { carry, .. } = self else { return None };
-        let guess = carry.v0 * (table.face_at_epr(epr(i, table.pt2)) - face(i));
+        let e = epr(i, table.pt2);
+        let m_hat = match table.formula.as_ref() {
+            Some(f) => f.epr_air(table, e, Some(&Sensed::of(i, tm))),
+            None => table.face_at_epr(e),
+        };
+        let guess = carry.v0 * (m_hat - face(i));
         Some((guess, f_true - f_hat - guess))
     }
 }

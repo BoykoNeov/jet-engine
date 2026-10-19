@@ -34,3 +34,4 @@ the speed-table airflow makes the FAN reading's start WORSE (B's push error and 
 in-move +55 → +21 %). A lag of only 0.25 HP-τ costs +2…+75 % in-move on EPR; at ≥ 1 τ often worse than the tables.
 **User answers:** offer the speed tables on fan speed anyway ("show the result"); lag knob in HP-shaft τ.
 **Default (user):** the OLD TABLE (rung 100) — nothing existing moves; the speed tables and the exhaust sensor are opt-in, shown only under the *formula* speed correction.
+**Status 2026-10-19:** rung 101 BUILT ([[rung101-airflow-source]]; spec `docs/rung101-spec.md`, plan § 33).

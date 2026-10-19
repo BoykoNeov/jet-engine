@@ -1,0 +1,24 @@
+M1.4 700 Epr table    pts 126 start -1.7014% move +39.412% max|F−F̂| 1.35e2 t 0.47s
+M1.4 700 Epr grid     pts 126 start -0.0083% move +38.994% max|F−F̂| 1.34e2 t 0.38s
+M1.4 700 Epr exh      pts 126 start -0.0000% move -0.000% max|F−F̂| 1.25e-12 t 0.60s | vs thrust_by:true worst 7.09e-15 (n 126 / 126)
+M1.4 700 Epr exh-lag1 pts 126 start -0.0000% move +47.570% max|F−F̂| 1.59e2 t 0.26s
+M1.4 700 N1 table    pts 126 start -4.8891% move +61.674% max|F−F̂| 2.03e2 t 0.28s
+M1.4 700 N1 grid     pts 126 start -7.1754% move +61.898% max|F−F̂| 2.03e2 t 0.28s
+M1.4 700 N1 exh      pts 126 start -2.5381% move +18.630% max|F−F̂| 7.97e1 t 0.57s
+M1.4 700 N1 exh-lag1 pts 126 start -2.5381% move +61.613% max|F−F̂| 2.09e2 t 1.50s
+M0.1 700 Epr table    pts 126 start +0.1060% move +2.658% max|F−F̂| 6.68e0 t 1.35s
+M0.1 700 Epr grid     pts 126 start +0.0030% move +2.665% max|F−F̂| 6.72e0 t 1.27s
+M0.1 700 Epr exh      pts 126 start -0.0000% move +0.000% max|F−F̂| 4.55e-12 t 1.21s | vs thrust_by:true worst 3.85e-14 (n 126 / 126)
+M0.1 700 Epr exh-lag1 pts 126 start -0.0000% move +2.909% max|F−F̂| 5.82e0 t 1.41s
+M0.1 700 N1 table    pts 126 start -2.3501% move +40.956% max|F−F̂| 2.09e2 t 1.62s
+M0.1 700 N1 grid     pts 126 start -2.5007% move +40.981% max|F−F̂| 2.09e2 t 0.79s
+M0.1 700 N1 exh      pts 126 start -2.3514% move +38.519% max|F−F̂| 2.01e2 t 0.80s
+M0.1 700 N1 exh-lag1 pts 126 start -2.3514% move +40.552% max|F−F̂| 2.06e2 t 0.83s
+M0.5 1000 Epr table    pts 126 start -0.0231% move +5.338% max|F−F̂| 2.48e1 t 0.32s
+M0.5 1000 Epr grid     pts 126 start -0.0010% move +5.358% max|F−F̂| 2.49e1 t 0.34s
+M0.5 1000 Epr exh      pts 126 start -0.0000% move -0.000% max|F−F̂| 1.36e-12 t 0.33s | vs thrust_by:true worst 6.70e-15 (n 126 / 126)
+M0.5 1000 Epr exh-lag1 pts 126 start -0.0000% move +6.001% max|F−F̂| 2.69e1 t 0.31s
+M0.5 1000 N1 table    pts 126 start -0.0704% move +28.182% max|F−F̂| 1.54e2 t 0.30s
+M0.5 1000 N1 grid     pts 126 start -0.0551% move +28.190% max|F−F̂| 1.54e2 t 0.34s
+M0.5 1000 N1 exh      pts 126 start -0.0448% move +21.391% max|F−F̂| 1.26e2 t 0.91s
+M0.5 1000 N1 exh-lag1 pts 126 start -0.0448% move +27.435% max|F−F̂| 1.48e2 t 0.92s

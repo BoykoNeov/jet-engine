@@ -272,6 +272,8 @@ fn put_traj(c: &mut Cmp, p: &str, pts: &[FuelPoint]) {
     c.d(&format!("{p}/point_keys"), last.key_count() as u64);
     let extra_names: &[&str] = match last.extra {
         PointExtra::None => &[],
+        // Rung 101's lagged-sensor route: unreachable from a slice-S cell, named so the next route breaks the build too.
+        PointExtra::Sensor { .. } => &["tm"],
         // Python sorts the extra keys, so this order is the source's and not a choice.
         PointExtra::Asym { .. } => &["g", "required"],
         // Rung 65's route, added at slice Y. Named rather than swept into a `_` arm so the next

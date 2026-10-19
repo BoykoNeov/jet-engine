@@ -237,7 +237,7 @@ pub fn r65_b_at_point(core: &ScheduledStatorCore, flight: &FlightCondition, p: &
         | PointExtra::Shared { b, .. }
         // SLICE AF (9 of 31): rung 74 carries the valve POSITION unchanged.
         | PointExtra::Demand { b, .. } => b,
-        PointExtra::None | PointExtra::Asym { .. } => panic!(
+        PointExtra::None | PointExtra::Sensor { .. } | PointExtra::Asym { .. } => panic!(
             "rung-65: a lagged valve's position is a march STATE and cannot be recovered from a \
              trajectory point that did not record it. This point came from a different \
              integrator."),
@@ -799,7 +799,7 @@ pub fn valve_of(p: &FuelPoint) -> (f64, f64) {
         | PointExtra::Shared { b, b_cmd, .. }
         // SLICE AF (10 of 31): and the command beside it.
         | PointExtra::Demand { b, b_cmd, .. } => (b, b_cmd),
-        PointExtra::None | PointExtra::Asym { .. } =>
+        PointExtra::None | PointExtra::Sensor { .. } | PointExtra::Asym { .. } =>
             panic!("rung-65 reader on a trajectory with no valve state: this march did not \
                     dispatch to r65_integrate_fuel_valve_lag"),
     }

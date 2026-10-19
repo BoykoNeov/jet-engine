@@ -642,7 +642,44 @@ try {
       [...document.getElementById('ctl-table').tBodies[0].rows].some(t => /^The control's tables/.test(t.cells[0].textContent)
         && /settles on the table's engine at/.test(t.cells[1].textContent))]; })()`);
   check('below_choke_the_fan_speed_formula_names_the_table_rows_it_settles_on', u2On && !u2c && u2r[0] === 2 && u2r[1], (u2c || '') + JSON.stringify(u2r));
-  await ev(`window.sandbox.controls({govern: 0, hold: 'tt4', thrust_by: 'true', M0: 0.85, table_at: 'design', speed_corr: 'grid'}).then(r => r.run)`);
+  // Rung 101: the formula's airflow from the exhaust sensor, at Mach 1.4 from 700 K. Its toggle shows under the
+  // formula only; pressed, the run matches native, the gap's guess is the sensor's and is nothing (read off the number,
+  // absolute: the belief is the true thrust at every point). Then the sensor slowed to one shaft time constant: the
+  // run matches native, and the results say how far the probe fell behind the gas.
+  const r101Native = lagged => (() => { for (const l of readFileSync(nativeTxt, 'utf8').split(/\r?\n/)) {
+    const [rq, out] = l.split('\t'); if (!out || !rq.startsWith('{"op":"controls"')) continue;
+    const c = JSON.parse(rq).controls;
+    if (c.M0 === 1.4 && c.from === 700 && c.thrust_by === 'epr' && c.govern === 1 && c.speed_corr === 'formula'
+        && c.airflow === 'exhaust' && c.customer === 'off' && (c.exhaust_lag === 1) === lagged
+        && (!lagged || c.exhaust_tau === undefined)) return JSON.parse(out);
+  } })();
+  await ev(`window.sandbox.controls({M0: 1.4, thrust_by: 'epr'}).then(r => r.run)`);
+  await waitFor(`window.sandbox.ctlState === 'done' && window.sandbox.last.controls && window.sandbox.last.controls.M0 === 1.4
+      && window.sandbox.last.controls.thrust_by === 'epr'`, 60000);
+  const airVis = await ev(`[document.getElementById('ctl-air-box').hidden, document.getElementById('ctl-elag-box').hidden]`);
+  await ev(`document.getElementById('ctl-air-exhaust').click()`);
+  const x1On = await waitFor(`window.sandbox.ctlState === 'done' && window.sandbox.last.controls && window.sandbox.last.controls.airflow === 'exhaust'
+      && window.sandbox.last.controls.M0 === 1.4`, 60000);
+  const x1Nat = r101Native(false);
+  const x1c = x1On ? (x1Nat ? close(await ev('window.sandbox.last'), x1Nat) : 'no native answer') : 'no run';
+  const x1r = await ev(`(() => { const r = window.sandbox.last; return [r.tables.speed.airflow,
+      Math.max(...r.gap_ram.map(v => v === null ? 0 : Math.abs(v))), document.getElementById('ctl-elag-box').hidden,
+      [...document.getElementById('ctl-table').tBodies[0].rows].some(t => /^That gap's two parts/.test(t.cells[0].textContent)
+        && /the exhaust sensor's guess of the air swallowed/.test(t.cells[1].textContent))]; })()`);
+  check('the_exhaust_sensor_reads_the_air_swallowed_and_the_belief_is_the_true_thrust', x1On && !x1c && airVis[0] === false
+        && airVis[1] === true && x1r[0] === 'exhaust' && x1r[1] <= 1e-9 && x1r[2] === false && x1r[3], (x1c || '') + JSON.stringify([airVis, x1r]));
+  await ev(`document.getElementById('ctl-exhaust_lag').click()`);
+  const x2On = await waitFor(`window.sandbox.ctlState === 'done' && window.sandbox.last.controls && window.sandbox.last.controls.exhaust_lag === 1`, 60000);
+  const x2Nat = r101Native(true);
+  const x2c = x2On ? (x2Nat ? close(await ev('window.sandbox.last'), x2Nat) : 'no native answer') : 'no run';
+  const x2r = await ev(`(() => { const r = window.sandbox.last; return [(r.exhaust_sensor || []).length, document.getElementById('ctl-etau-box').hidden,
+      [...document.getElementById('ctl-table').tBodies[0].rows].some(t => /^The exhaust sensor behind the gas/.test(t.cells[0].textContent)
+        && +t.cells[1].textContent.replace(/,/g, '') > 0)]; })()`);
+  check('a_slow_exhaust_sensor_falls_behind_the_gas_and_the_run_matches_native', x2On && !x2c && x2r[0] === 126 && x2r[1] === false && x2r[2],
+        (x2c || '') + JSON.stringify(x2r));
+  if (process.env.SANDBOX_SHOTS) await shot('controls-airflow');
+  await ev(`window.sandbox.controls({govern: 0, hold: 'tt4', thrust_by: 'true', M0: 0.85, table_at: 'design', speed_corr: 'grid',
+      airflow: 'table', exhaust_lag: 0}).then(r => r.run)`);
   // Rung 97: at sea level on a +40 K day the 700 K start has the nozzle unchoked. The run matches native, its unchoked
   // stretch is drawn thin and dashed under the full-width choked one, the legend says so, and the table counts it.
   // check_requests holds this run (rung 97's first entry); find its native answer by its settings, not its spelling.

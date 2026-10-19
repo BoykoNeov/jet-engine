@@ -43,6 +43,7 @@ use crate::inferred_thrust as inf;
 use crate::corrected_tables::{Carry, TableAt};
 use crate::mach_axis::{self as ma, SpeedCorr, Tables};
 use crate::unchoked_formula::Formula;
+use crate::airflow_source::{self as af, AirflowFrom, SensorLag};
 use crate::engine::FlightCondition;
 use crate::fuel_transient::{r43_cut_below_ceiling, release_weight, AccelSchedule, AsymmetricLag, FuelInstant, FuelLimiters,
                             FuelPoint, FuelTransientCore, PointExtra, SurgeLimiter};
@@ -271,6 +272,12 @@ pub struct ControlsSettings {
     /// Written to a reply only when not at their defaults, so every default reply is rung 99's in shape.
     pub low_grid: bool,
     pub formula_choked: bool,
+    /// RUNG 101: where the formula (`speed_corr: formula`) gets the air swallowed — rung 100's table (the default),
+    /// the speed grid's, or the exhaust-temperature sensor; and that sensor's lag (off by default; HP-shaft τ). Written to
+    /// a reply only off their defaults, so every default reply is rung 100's in shape.
+    pub airflow: AirflowFrom,
+    pub exhaust_lag: bool,
+    pub exhaust_tau: f64,
     /// The flight FLOWN (plan § 27): ambient static temperature, K, and pressure, Pa — the page's altitude and
     /// deviation from the standard day, linked to these through the standard atmosphere as on *Fly it*. The hardware
     /// stays captured at the DESIGN flight ([`ControlsSettings::design_flight`]). The defaults ARE the design flight,
@@ -397,6 +404,7 @@ impl ControlsSettings {
             thrust_by: ThrustBy::True, table_clean: true,
             table_at: TableAt::Design, corr_p: true, corr_t: true, speed_corr: SpeedCorr::Grid,
             low_grid: true, formula_choked: false,
+            airflow: AirflowFrom::Table, exhaust_lag: false, exhaust_tau: 1.0,
             t0: fd.t0, p0: fd.p0, m0: fd.m0,
         }
     }
@@ -551,6 +559,10 @@ impl ControlsSettings {
         if let Json::Obj(kv) = &mut j {
             if !self.low_grid { kv.push(("low_grid".into(), b(false))); }
             if self.formula_choked { kv.push(("formula_choked".into(), b(true))); }
+            // Rung 101's three, likewise.
+            if self.airflow != AirflowFrom::Table { kv.push(("airflow".into(), Json::from(self.airflow.key()))); }
+            if self.exhaust_lag { kv.push(("exhaust_lag".into(), b(true))); }
+            if self.exhaust_tau != 1.0 { kv.push(("exhaust_tau".into(), Json::Float(self.exhaust_tau))); }
         }
         j
     }
@@ -598,6 +610,7 @@ impl ControlsSettings {
                           ("cool_blade", &mut s.cool_blade), ("generator_share", &mut s.generator_share),
                           ("generator_power", &mut s.generator_power), ("metal_year", &mut s.metal_year),
                           ("metal_life", &mut s.metal_life), ("gov_tau", &mut s.gov_tau), ("gov_gain", &mut s.gov_gain),
+                          ("exhaust_tau", &mut s.exhaust_tau),
                           ("T0", &mut s.t0), ("p0", &mut s.p0), ("M0", &mut s.m0)] {
             num(k, into)?;
         }
@@ -618,7 +631,7 @@ impl ControlsSettings {
                           ("release_on", &mut s.release_on), ("metal_on", &mut s.metal_on), ("hold_cap", &mut s.hold_cap),
                           ("govern", &mut s.govern), ("table_clean", &mut s.table_clean),
                           ("corr_p", &mut s.corr_p), ("corr_t", &mut s.corr_t), ("low_grid", &mut s.low_grid),
-                          ("formula_choked", &mut s.formula_choked)] {
+                          ("formula_choked", &mut s.formula_choked), ("exhaust_lag", &mut s.exhaust_lag)] {
             flag(k, into)?;
         }
         if let Some(t) = text("floor_spool")? { s.floor_spool = spool(&t)?; }
@@ -664,6 +677,10 @@ impl ControlsSettings {
         if let Some(t) = text("speed_corr")? {
             s.speed_corr = SpeedCorr::ALL.into_iter().find(|a| a.key() == t)
                 .ok_or_else(|| format!("unknown speed correction {t:?} (\"grid\", \"formula\" or \"none\")"))?;
+        }
+        if let Some(t) = text("airflow")? {
+            s.airflow = AirflowFrom::ALL.into_iter().find(|a| a.key() == t)
+                .ok_or_else(|| format!("unknown airflow source {t:?} (\"table\", \"grid\" or \"exhaust\")"))?;
         }
         if let Some(t) = text("hold")? {
             s.hold = Hold::ALL.into_iter().find(|h| h.key() == t)
@@ -764,7 +781,8 @@ pub fn controls_precheck(s: &ControlsSettings) -> Result<(), DoesNotRun> {
                  ("customer_share", s.customer_share), ("customer_amount", s.customer_amount),
                  ("cool_vane", s.cool_vane), ("cool_blade", s.cool_blade),
                  ("generator_share", s.generator_share), ("generator_power", s.generator_power),
-                 ("gov_tau", s.gov_tau), ("gov_gain", s.gov_gain), ("T0", s.t0), ("p0", s.p0), ("M0", s.m0)];
+                 ("gov_tau", s.gov_tau), ("gov_gain", s.gov_gain), ("exhaust_tau", s.exhaust_tau), ("T0", s.t0),
+                 ("p0", s.p0), ("M0", s.m0)];
     if let Some((k, _)) = named.iter().find(|(_, v)| !v.is_finite()) {
         return Err(DoesNotRun(format!("Setting {k} is not a number.")));
     }
@@ -773,6 +791,14 @@ pub fn controls_precheck(s: &ControlsSettings) -> Result<(), DoesNotRun> {
     }
     if s.m0 <= 0.0 {
         return no("The flight Mach number must be above zero.");
+    }
+    // Rung 101: the exhaust sensor's lag, where it acts — its reading is a march state, stepped by the march's RK4,
+    // which is stable above 0.0072 τ at this step; the floor keeps a seventh of that edge.
+    if s.exhaust_lag && !(s.exhaust_tau >= af::TAU_MIN && s.exhaust_tau <= af::TAU_MAX) {
+        return Err(DoesNotRun(format!(
+            "The exhaust sensor's lag must be between {} and {} shaft time constants: below that the march's step is \
+             too coarse to follow the probe, and a probe slower than that misses the whole move.",
+            af::TAU_MIN, af::TAU_MAX)));
     }
     // Rung 94: the metal cap binds a FLOATING burner, so it needs a hold, the metal read, and cooling (uncooled, the
     // 1985 metals allow about 990 K — below every opening throttle, so the cap would clamp both ends).
@@ -1104,7 +1130,7 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
     // table with its thrust recomputed for this flight speed. `carry` stays rung 98's (the air against the design's).
     // Rung 100: two slow slices in the grid, the formula read at the reading (each with its hidden reduce setting).
     let tables = s.carried().then(|| Tables::new(&core.fuel, &fd, &fl, s.speed_corr, s.corr_p, s.corr_t, s.low_grid,
-                                                 s.formula_choked));
+                                                 s.formula_choked, s.airflow));
     let carry = s.carried().then(|| Carry::new(&core.fuel, &fd, &fl, s.corr_p, s.corr_t));
     let clean = match (s.calibrated() && tables.is_none(), unloaded.as_ref()) {
         (true, Some(de)) => {
@@ -1220,6 +1246,21 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
                 }
             };
             let calibrate = |which: &str, t_set: f64, target: f64| -> Result<(Instant2, Option<HoldInfo>), DoesNotRun> {
+                // Rung 101: the exhaust sensor's belief depends on the steady point itself (its exhaust temperature and
+                // fuel), so the end is where the steady BELIEF equals the target — not a reading worked out beforehand.
+                // The search starts AT the set throttle and steps out from it: rung 94's root walks up from its floor
+                // (600 K), and the fan-speed formula cannot be read that far below its rows (the first score refused 19
+                // cells so, `docs/rung101-spec.md`), where the reading alone, read without the sensor, always can.
+                if table.sensed() {
+                    let f_at = |t: f64| core.fuel.inner.try_equilibrium(&fl, t, None)
+                        .and_then(|(i, _, _)| table.try_belief(&core.fuel, r, &i, None));
+                    let t = sensed_end_root(&f_at, target, t_set).map_err(|m| DoesNotRun(format!(
+                        "At the {which} throttle ({t_set:.0} K), the control holding the thrust its exhaust sensor \
+                         believes: {m}")))?;
+                    let i = steady(which, t)?;
+                    let achieved = held(&i);
+                    return Ok((i, Some(HoldInfo { set: t_set, target, achieved, capped: false })));
+                }
                 let want = table.try_reading_at(&core.fuel, r, target).map_err(|e| DoesNotRun(format!(
                     "At the {which} throttle ({t_set:.0} K): {}", e.0)))?;
                 let q_at = |t: f64| core.fuel.inner.try_equilibrium(&fl, t, None).map(|(i, _, _)| table.read(r, &i));
@@ -1280,8 +1321,11 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
                     "The control's table has a throttle with no steady point between the ends: {}",
                     endpoint_words(&e.0))))?),
             };
+            // Rung 101: a lagged exhaust sensor's reading is the march's third state, started at the steady start's.
+            let lag = (s.exhaust_lag && infer.as_ref().is_some_and(inf::Table::sensed))
+                .then(|| SensorLag { tau: s.exhaust_tau, t0: start.tt5 });
             Some(Governor { law, lo: target(&start, hold_start, s.from), hi: target(&end, hold_end_info, s.to),
-                            ramp: s.ramp, mf_lo, mf_hi, table, infer })
+                            ramp: s.ramp, mf_lo, mf_hi, table, infer, lag })
         }
     };
     Ok(ControlsSolver { settings: *s, core, flight: fl, start, end, mf_lo, mf_hi, accel, hold_start, hold_end: hold_end_info,
@@ -1306,8 +1350,18 @@ fn speed_json(s: &ControlsSettings, t: Option<&Tables>) -> Json {
         _ => (Vec::new(), Json::Null),
     };
     let extended = matches!(t, Some(Tables::Grid { b: Some(_), w, .. }) if *w < 0.0 || *w > 1.0);
-    jobj! { "corr" => s.speed_corr.key(), "slices" => Json::List(slices), "weight" => w,
-            "extended" => Json::Int(extended as i64), "split" => split }
+    let mut j = jobj! { "corr" => s.speed_corr.key(), "slices" => Json::List(slices), "weight" => w,
+                        "extended" => Json::Int(extended as i64), "split" => split };
+    // Rung 101: where the formula got the air swallowed, written only off rung 100's table (and the lag with it).
+    if let (Some(Tables::Formula { air, choked: false, .. }), Json::Obj(kv)) = (t, &mut j) {
+        if *air != AirflowFrom::Table {
+            kv.push(("airflow".into(), Json::from(air.key())));
+            if *air == AirflowFrom::Exhaust && s.exhaust_lag {
+                kv.push(("exhaust_tau".into(), Json::Float(s.exhaust_tau)));
+            }
+        }
+    }
+    j
 }
 
 /// Plain words for an endpoint's failed steady solve — the four messages the crash map found
@@ -1412,11 +1466,26 @@ impl ControlsSolver {
     }
 
     /// Rung 95: one governed derivative evaluation — the model's own [`gv::try_der`], its failure in this view's terms.
-    pub fn gov_der(&self, a: f64, b: f64, s: f64) -> Result<gv::GovDer, Failure> {
+    pub fn gov_der(&self, a: f64, b: f64, s: f64) -> Result<gv::GovDer, Failure> { self.gov_der_at(a, b, s, None) }
+
+    /// Rung 101: [`ControlsSolver::gov_der`] with the lagged exhaust sensor's reading `tm`.
+    pub fn gov_der_at(&self, a: f64, b: f64, s: f64, tm: Option<f64>) -> Result<gv::GovDer, Failure> {
         let g = self.governor.as_ref().expect("the governed route has its governor");
         let over = |i: &Instant2| self.metal_over(i);
         let metal: Option<&dyn Fn(&Instant2) -> f64> = if self.settings.metal_leg() { Some(&over) } else { None };
-        gv::try_der(&self.core.fuel, &self.flight, g, &self.limiters(), metal, a, b, s)
+        gv::try_der_at(&self.core.fuel, &self.flight, g, &self.limiters(), metal, a, b, s, tm)
+            .map_err(|f| gov_failure(f, a, b, s))
+    }
+
+    /// Rung 101: the lagged exhaust sensor, when the governor carries one.
+    pub fn sensor_lag(&self) -> Option<SensorLag> { self.governor.as_ref().and_then(|g| g.lag) }
+
+    /// Rung 101: the rest of one three-state governed RK4 step — the model's own [`gv::try_rk_step_sensed`].
+    pub fn gov_step_sensed(&self, a: f64, b: f64, m: f64, s: f64, k1: (f64, f64, f64)) -> Result<(f64, f64, f64), Failure> {
+        let g = self.governor.as_ref().expect("the governed route has its governor");
+        let over = |i: &Instant2| self.metal_over(i);
+        let metal: Option<&dyn Fn(&Instant2) -> f64> = if self.settings.metal_leg() { Some(&over) } else { None };
+        gv::try_rk_step_sensed(&self.core.fuel, &self.flight, g, &self.limiters(), metal, a, b, m, s, DS, k1)
             .map_err(|f| gov_failure(f, a, b, s))
     }
 
@@ -1707,7 +1776,12 @@ pub fn replay_step(sv: &ControlsSolver, p: &FuelPoint) -> Option<Result<(f64, f6
     let ds = DS;
     Some(match sv.route() {
         Route::GovLag => return None,
-        Route::Governor => sv.gov_der(a, b, s).and_then(|d| sv.gov_step(a, b, s, (d.da, d.db))).map(|(a, b)| (a, b, 0.0)),
+        // Rung 101: the lagged sensor's reading is a march state, re-run from the recorded one (the third value).
+        Route::Governor => match (p.extra, sv.sensor_lag()) {
+            (PointExtra::Sensor { tm }, Some(lag)) => sv.gov_der_at(a, b, s, Some(tm))
+                .and_then(|d| sv.gov_step_sensed(a, b, tm, s, (d.da, d.db, (d.inst.base.tt5 - tm) / lag.tau))),
+            _ => sv.gov_der(a, b, s).and_then(|d| sv.gov_step(a, b, s, (d.da, d.db))).map(|(a, b)| (a, b, 0.0)),
+        },
         Route::Plain => (|| {
             let (k1a, k1b) = der_plain(sv, a, b, sched(s), s)?;
             let mfm = sched(s + ds / 2.0);
@@ -1767,7 +1841,7 @@ pub fn stop_reason(sv: &ControlsSolver, points: &[FuelPoint]) -> Option<Stop> {
         let (a, b) = (sv.start.nu_lp, sv.start.nu_hp);
         let failure = match sv.route() {
             Route::GovLag => None,
-            Route::Governor => sv.gov_der(a, b, 0.0).err(),
+            Route::Governor => sv.gov_der_at(a, b, 0.0, sv.sensor_lag().map(|l| l.t0)).err(),
             Route::Plain => der_plain(sv, a, b, sched(0.0), 0.0).err(),
             Route::Release => der_release(sv, a, b, 0.0, 0.0).err(),
             // The march starts the valve at its command (rung 65's equilibrium start), solved before
@@ -1786,7 +1860,7 @@ pub fn stop_reason(sv: &ControlsSolver, points: &[FuelPoint]) -> Option<Stop> {
             match sv.route() {
                 Route::Release => der_release(sv, a, b, g, s).err(),
                 Route::ValveLag => der_valve_lag(sv, a, b, g, s).err(),
-                Route::Governor => sv.gov_der(a, b, s).err(),
+                Route::Governor => sv.gov_der_at(a, b, s, sv.sensor_lag().map(|_| g)).err(),
                 _ => der_plain(sv, a, b, sched(s), s).err(),
             }.or_else(|| Some(Failure { message: "the march stopped, but re-running its last step does not fail".into(),
                                         call: Call::AtApplied, mf: f64::NAN, nu_lp: f64::NAN, nu_hp: f64::NAN,
@@ -2042,6 +2116,12 @@ pub struct PointRead {
     /// its gap `F_true − F̂` split into the RAM-DRAG part and the NOZZLE part (anchor § 1).
     pub gap_ram: Option<f64>,
     pub gap_nozzle: Option<f64>,
+    /// Rung 101: the gas's temperature at the nozzle inlet, and a lagged exhaust sensor's reading of it (`None` unless
+    /// the sensor lags).
+    pub tt5: f64,
+    pub sensor: Option<f64>,
+    /// Rung 101: under the exhaust sensor, the reading the control demands HERE (its belief depends on the instant).
+    pub demand: Option<f64>,
 }
 
 impl ControlsSolver {
@@ -2070,10 +2150,19 @@ impl ControlsSolver {
             let (tt2, _, _) = self.core.fuel.inner.inlet(&self.flight);
             l.target(self.core.v_of(Spool::Lp, p.nu_lp, p.nu_hp, Some(tt2)))
         });
+        // Rung 101: a lagged exhaust sensor's reading at this point is the march's recorded state.
+        let tm = match p.extra { PointExtra::Sensor { tm } => Some(tm), _ => None };
+        let demand = match self.governor.as_ref().and_then(|g| Some((g, g.infer.as_ref().filter(|t| t.sensed())?, g.law.reading()?))) {
+            Some((g, t, r)) => Some(t.try_demand_at(&self.core.fuel, r, g.thrust_demand(p.s), i, tm)?),
+            None => None,
+        };
         let (reading, inferred) = match self.governor.as_ref().and_then(|g| Some((g.infer.as_ref()?, g.law.reading()?))) {
             Some((t, r)) => {
                 let v = t.read(r, i);
-                (Some(v), Some(t.try_inferred(&self.core.fuel, r, v)?))
+                (Some(v), Some(match t.sensed() {
+                    true => t.try_belief(&self.core.fuel, r, i, tm)?,
+                    false => t.try_inferred(&self.core.fuel, r, v)?,
+                }))
             }
             None => (None, None),
         };
@@ -2086,7 +2175,7 @@ impl ControlsSolver {
             (Some(tb @ Tables::Formula { .. }), _, _, Some(f_hat))
                 if (s.corr_p || !s.formula_choked) && s.thrust_by == ThrustBy::Epr => {
                 let t = self.governor.as_ref().and_then(|g| g.infer.as_ref()).expect("an inferred run reads its table");
-                tb.formula_split(t, i, Self::thrust(i), f_hat).map_or((None, None), |(a, b)| (Some(a), Some(b)))
+                tb.formula_split(t, i, Self::thrust(i), f_hat, tm).map_or((None, None), |(a, b)| (Some(a), Some(b)))
             }
             _ => (None, None),
         };
@@ -2127,7 +2216,7 @@ impl ControlsSolver {
             bleed: i.close.bleed.unwrap_or(0.0), floor, valve, holder, customer: i.close.customer.unwrap_or(0.0),
             metal: s.metal_at(i),
             res_redline, res_accel, res_floor,
-            reading, inferred, gap_ram, gap_nozzle,
+            reading, inferred, gap_ram, gap_nozzle, tt5: i.tt5, sensor: tm, demand,
         })
     }
 }
@@ -2174,7 +2263,7 @@ pub fn controls_json(sv: &ControlsSolver, o: &ControlsOutcome) -> Json {
         Some(l) => ((l.nu_lp - sv.end.nu_lp).abs(), (l.nu_hp - sv.end.nu_hp).abs()),
         None => (f64::NAN, f64::NAN),
     };
-    jobj! {
+    let mut j = jobj! {
         "ok" => Json::Int(1),
         "controls" => o.settings.to_json(),
         "ambient" => crate::sandbox::ambient_json(o.settings.t0, o.settings.p0),
@@ -2223,6 +2312,8 @@ pub fn controls_json(sv: &ControlsSolver, o: &ControlsOutcome) -> Json {
         "demand" => match &sv.governor {
             None => Json::Null,
             // Rung 100: through the formula when the table carries one — it ran at every one of these points.
+            // Rung 101: under the exhaust sensor, worked out at each point's own instant.
+            Some(g) if g.infer.as_ref().is_some_and(inf::Table::sensed) => rcol(&|r| r.demand.unwrap_or(f64::NAN)),
             Some(g) => col(&|x| g.try_demand(&sv.core.fuel, x.s).unwrap_or(f64::NAN)),
         },
         // Rung 96: an inferred thrust — what the control reads, the thrust it believes, the thrust the throttle asks,
@@ -2273,7 +2364,62 @@ pub fn controls_json(sv: &ControlsSolver, o: &ControlsOutcome) -> Json {
             None => Json::Null,
             Some(l) => jobj! { "vane" => l.vane, "blade" => l.blade, "factor" => l.factor },
         },
+    };
+    // Rung 101: with a lagged exhaust sensor, the gas's exhaust temperature and the sensor's reading of it (written only
+    // then, so every other reply keeps rung 100's shape).
+    if let (Some(_), Json::Obj(kv)) = (sv.sensor_lag(), &mut j) {
+        kv.push(("exhaust_tt5".into(), rcol(&|r| r.tt5)));
+        kv.push(("exhaust_sensor".into(), rcol(&|r| r.sensor.unwrap_or(f64::NAN))));
     }
+    j
+}
+
+/// RUNG 101: the burner temperature at which the steady belief `f_at` equals `target`, searched from the set throttle
+/// `t0` — stepped by rung 94's grid toward the target (the belief rises with the burner temperature) between rung 94's
+/// bounds, then bisected to its tolerance.
+fn sensed_end_root(f_at: &dyn Fn(f64) -> Result<f64, Abort>, target: f64, t0: f64) -> Result<f64, String> {
+    let at = |t: f64| f_at(t).map_err(|e| format!("at {t:.0} K the engine or its sensor's belief has no answer ({})", e.0));
+    // A loaded engine (a generator, a valve) can have no steady point at the set throttle itself — the reason its end
+    // is calibrated at all: start from the nearest grid temperature that answers, upward first (the crash map's four).
+    let (t0, q0) = match at(t0) {
+        Ok(q) => (t0, q),
+        Err(first) => {
+            let n = ((HOLD_HI - HOLD_LO) / bh::GRID).ceil() as i32;
+            (1..=n).flat_map(|k| [t0 + k as f64 * bh::GRID, t0 - k as f64 * bh::GRID])
+                .filter(|t| (HOLD_LO..=HOLD_HI).contains(t))
+                .find_map(|t| at(t).ok().map(|q| (t, q)))
+                .ok_or(first)?
+        }
+    };
+    if q0 == target {
+        return Ok(t0);
+    }
+    let step = if q0 > target { -bh::GRID } else { bh::GRID };
+    let (mut a, mut qa) = (t0, q0);
+    let (mut b, mut qb);
+    loop {
+        b = (a + step).clamp(HOLD_LO, HOLD_HI);
+        qb = at(b)?;
+        if (qb > target) != (qa > target) || qb == target {
+            break;
+        }
+        if b == HOLD_LO || b == HOLD_HI {
+            return Err(format!("the belief does not reach {target:.1} N per kg/s between {HOLD_LO:.0} and {HOLD_HI:.0} K"));
+        }
+        (a, qa) = (b, qb);
+    }
+    let (mut lo, mut hi) = if a < b { (a, b) } else { (b, a) };
+    let rising = |q: f64| q > target;
+    let lo_above = rising(if a < b { qa } else { qb });
+    for _ in 0..bh::MAX_HALVINGS {
+        if hi - lo <= bh::T_TOL {
+            break;
+        }
+        let mid = 0.5 * (lo + hi);
+        if rising(at(mid)?) == lo_above { lo = mid } else { hi = mid }
+    }
+    let (ql, qh) = (at(lo)?, at(hi)?);
+    Ok(if (ql - target).abs() <= (qh - target).abs() { lo } else { hi })
 }
 
 /// Plain words for a model CRASH in this view (`explain` with `"view":"controls"`). The crash map's
@@ -2480,6 +2626,24 @@ pub fn check_requests() -> Vec<String> {
         fx(slow(0.05, ThrustBy::N1)),
         fx(ControlsSettings { m0: 1.4, govern: true, hold: Hold::Thrust, thrust_by: ThrustBy::N1, ..d }),
         at(0.0, 0.0, fx(ControlsSettings { m0: 0.1, from: 600.0, ..slow(0.1, ThrustBy::N1) })),
+    ] {
+        out.push(req(s));
+    }
+    // Rung 101: the formula's airflow from the speed tables and from the exhaust sensor, on both readings — the sensor
+    // instant (the pressure ratio's belief the true thrust) and slow (the third state), the fan-speed proportional law
+    // under it (its own root), the customer bleed beside it (the overboard term), and the lag refused below its floor.
+    let src = |s: ControlsSettings, a: AirflowFrom| ControlsSettings { airflow: a, ..fx(s) };
+    let lag = |s: ControlsSettings, tau: f64| ControlsSettings { exhaust_lag: true, exhaust_tau: tau, ..src(s, AirflowFrom::Exhaust) };
+    for s in [
+        src(slow(1.4, ThrustBy::Epr), AirflowFrom::Grid),
+        src(slow(0.1, ThrustBy::N1), AirflowFrom::Grid),
+        src(slow(1.4, ThrustBy::Epr), AirflowFrom::Exhaust),
+        src(ControlsSettings { customer: CustomerMode::Share, ..slow(0.5, ThrustBy::Epr) }, AirflowFrom::Exhaust),
+        src(slow(1.4, ThrustBy::N1), AirflowFrom::Exhaust),
+        src(ControlsSettings { speed_law: SpeedLaw::Prop, ..slow(1.4, ThrustBy::N1) }, AirflowFrom::Exhaust),
+        lag(slow(1.4, ThrustBy::Epr), 1.0),
+        lag(slow(0.5, ThrustBy::N1), 0.5),
+        lag(slow(0.5, ThrustBy::Epr), 0.04),
     ] {
         out.push(req(s));
     }

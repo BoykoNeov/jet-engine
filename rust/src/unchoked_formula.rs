@@ -26,7 +26,13 @@
 //!
 //! `Tables::Formula { choked: true, .. }` (the request's `formula_choked`) never builds a [`Formula`]: rung 99's
 //! column is read off the rows, bit for bit.
+//!
+//! # Rung 101
+//!
+//! Each reader carries an airflow source ([`crate::airflow_source`]): the carried table's column (rung 100), the speed
+//! grid's, or the exhaust sensor's — which needs the instant ([`Sensed`]), so its readers are the `_sensed` ones.
 
+use crate::airflow_source::{sensed_air, Air, Sensed};
 use crate::corrected_tables::Carry;
 use crate::fuel_transient::FuelTransientCore;
 use crate::gas::{powp, Abort};
@@ -86,9 +92,11 @@ pub struct GasGen {
     /// The LP turbine's specific power in that steady state — the LP load the shaft carries there.
     pub w: f64,
     pub face: f64,
-    /// At the build: the fan speed this row holds against the flight's air, and the thrust believed there.
+    /// At the build: the fan speed this row holds against the flight's air, and the thrust believed there (NaN under the
+    /// exhaust sensor, which needs the instant); RUNG 101: the nozzle-inlet pressure B believes there.
     pub nu_x: f64,
     pub f_hat: f64,
+    pub pt5_x: f64,
 }
 
 /// The LP turbine's fuel/air ratio: the burner's, diluted by rung 91's cooling air where it rejoins.
@@ -113,12 +121,13 @@ fn lin_by(rows: &[GasGen], x: impl Fn(&GasGen) -> f64, y: impl Fn(&GasGen) -> f6
 }
 
 /// The fan-speed formula at row parameter `x`: the fan speed held, the thrust believed, the LP turbine's re-solved
-/// pressure ratio.
+/// pressure ratio, and (rung 101) the nozzle-inlet pressure it believes.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct AtRow {
     pub nu: f64,
     pub f_hat: f64,
     pub pi_lpt: f64,
+    pub pt5: f64,
 }
 
 /// The pressure ratio's root tolerance (a pressure ratio near 2), and the row parameter's (K).
@@ -128,28 +137,36 @@ const TOL_X: f64 = 1e-10;
 /// The formula's readers.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Formula {
-    /// The pressure ratio: `F̂(e) = push(π_n·e·pt2) − V0·ṁ̂(e)`; `rows` are `(e, F̂)` at the table's rows, rising.
-    Epr { push: Push, rows: Vec<(f64, f64)> },
+    /// The pressure ratio: `F̂(e) = push(π_n·e·pt2) − V0·ṁ̂(e)`; `rows` are `(e, F̂)` at the table's rows, rising (`F̂`
+    /// NaN under the exhaust sensor); `air` is rung 101's source of `ṁ̂`.
+    Epr { push: Push, rows: Vec<(f64, f64)>, air: Air },
     /// The fan speed: the LP shaft rebalanced on the rows (rising in `x`); `k` turns `x` into this flight's burner
     /// temperature (rung 98's row translation).
-    Fan { push: Push, rows: Vec<GasGen>, k: f64 },
+    Fan { push: Push, rows: Vec<GasGen>, k: f64, air: Air },
 }
 
 impl Formula {
-    /// The readers on the carried table `t` (rung 99's rows, this flight's `pt2`/`V0`), its design equilibria `eqs`.
-    pub fn new(ft: &FuelTransientCore, c: &Carry, t: &Table, eqs: &[Instant2], p0: f64, r: Reading)
+    /// The readers on the carried table `t` (rung 99's rows, this flight's `pt2`/`V0`), its design equilibria `eqs`,
+    /// the airflow from `air` (rung 101; rung 100's is [`Air::Table`]).
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(ft: &FuelTransientCore, c: &Carry, t: &Table, eqs: &[Instant2], p0: f64, r: Reading, air: Air)
                -> Result<Formula, String> {
         let push = Push::new(ft, p0);
+        let sensed = matches!(air, Air::Exhaust { .. });
         let no_rise = |what: &str| format!(
             "The control's thrust formula at this flight speed: {what}, so a reading cannot be turned back into thrust.");
         match r {
             Reading::Epr => {
-                let mut rows: Vec<(f64, f64)> = t.rows.iter().map(|w| (w.epr, epr_f_hat(&push, t, w.epr))).collect();
+                let mut f = Formula::Epr { push, rows: Vec::new(), air };
+                let mut rows: Vec<(f64, f64)> = t.rows.iter().map(|w| (w.epr, f.epr_belief(t, w.epr, None))).collect();
                 rows.sort_by(|a, b| a.0.total_cmp(&b.0));
-                if !rows.windows(2).all(|w| w[1].1 > w[0].1) {
+                if !sensed && !rows.windows(2).all(|w| w[1].1 > w[0].1) {
                     return Err(no_rise("the jet's push less the intake's drag does not rise with the pressure ratio"));
                 }
-                Ok(Formula::Epr { push, rows })
+                if let Formula::Epr { rows: r, .. } = &mut f {
+                    *r = rows;
+                }
+                Ok(f)
             }
             Reading::LpSpeed => {
                 assert!(eqs.iter().all(|i| i.close.wgas.is_none()), "rung 100's fan formula reads the machine's own gas");
@@ -157,17 +174,18 @@ impl Formula {
                 let mut rows: Vec<GasGen> = eqs.iter().map(|i| GasGen {
                     x: i.tt4, nu: i.nu_lp * c.t, pt45: i.pi_hpt * i.close.pt4 * c.d, tt45: i.tt45 * t2, f45: f45(i),
                     eta: i.eta_lpt, w: i.pt_lp, face: face(i) * c.d / c.t, nu_x: f64::NAN, f_hat: f64::NAN,
+                    pt5_x: f64::NAN,
                 }).collect();
                 rows.sort_by(|a, b| a.x.total_cmp(&b.x));
                 if !rows.windows(2).all(|w| w[1].w > w[0].w && w[1].nu > w[0].nu) {
                     return Err(no_rise("the table's LP power and fan speed do not rise together"));
                 }
-                let mut f = Formula::Fan { push, rows: rows.clone(), k: c.k };
+                let mut f = Formula::Fan { push, rows: rows.clone(), k: c.k, air };
                 for g in rows.iter_mut() {
                     let a = f.at_row(ft, t.v0, g.x).map_err(|e| f.fan_words(g.x, &e))?;
-                    (g.nu_x, g.f_hat) = (a.nu, a.f_hat);
+                    (g.nu_x, g.f_hat, g.pt5_x) = (a.nu, a.f_hat, a.pt5);
                 }
-                if !rows.windows(2).all(|w| w[1].nu_x > w[0].nu_x && w[1].f_hat > w[0].f_hat) {
+                if !rows.windows(2).all(|w| w[1].nu_x > w[0].nu_x && (sensed || w[1].f_hat > w[0].f_hat)) {
                     return Err(no_rise("against this flight's air the table's engine does not rise in fan speed and \
                                         thrust together"));
                 }
@@ -179,9 +197,40 @@ impl Formula {
         }
     }
 
+    /// RUNG 101: the pressure-ratio formula's belief at reading `e` — the push less the ram drag of the source's air
+    /// (`s` the sensor's view of the instant; without it the sensor's belief is NaN).
+    pub fn epr_belief(&self, t: &Table, e: f64, s: Option<&Sensed>) -> f64 {
+        let Formula::Epr { push, air, .. } = self else { unreachable!("the pressure-ratio belief") };
+        match air {
+            Air::Table => epr_f_hat(push, t, e),
+            Air::Grid(g) => push.at(e * t.pt2) - t.v0 * Air::grid_at(g, e),
+            Air::Exhaust { .. } => push.at(e * t.pt2) - t.v0 * self.epr_air(t, e, s),
+        }
+    }
+
+    /// RUNG 101: the air the pressure-ratio formula credits at reading `e` — the gap split's `ṁ̂`.
+    pub fn epr_air(&self, t: &Table, e: f64, s: Option<&Sensed>) -> f64 {
+        let Formula::Epr { push, air, .. } = self else { unreachable!("the pressure-ratio airflow") };
+        match air {
+            Air::Table => t.face_at_epr(e),
+            Air::Grid(g) => Air::grid_at(g, e),
+            Air::Exhaust { r } => s.map_or(f64::NAN, |s| sensed_air(push, *r, e * t.pt2, s)),
+        }
+    }
+
+    /// Whether this formula's air is the exhaust sensor's (its readers then need the instant).
+    pub fn sensed(&self) -> bool {
+        matches!(self, Formula::Epr { air: Air::Exhaust { .. }, .. } | Formula::Fan { air: Air::Exhaust { .. }, .. })
+    }
+
     /// The fan-speed formula at row parameter `x` (anchor § 1).
     pub fn at_row(&self, ft: &FuelTransientCore, v0: f64, x: f64) -> Result<AtRow, Abort> {
-        let Formula::Fan { push, rows, .. } = self else { unreachable!("the pressure ratio has no rows to rebalance") };
+        self.at_row_sensed(ft, v0, x, None)
+    }
+
+    /// [`Formula::at_row`] with the sensor's view of the instant (rung 101; `None` leaves the sensor's `F̂` NaN).
+    pub fn at_row_sensed(&self, ft: &FuelTransientCore, v0: f64, x: f64, s: Option<&Sensed>) -> Result<AtRow, Abort> {
+        let Formula::Fan { push, rows, air, .. } = self else { unreachable!("the pressure ratio has no rows to rebalance") };
         let col = |y: fn(&GasGen) -> f64| lin_by(rows, |g| g.x, y, x);
         let (pt45, tt45, f45, eta, w) = (col(|g| g.pt45), col(|g| g.tt45), col(|g| g.f45), col(|g| g.eta), col(|g| g.w));
         let (base, gas) = (&ft.inner.inner.base, ft.inner.gas());
@@ -190,35 +239,62 @@ impl Formula {
         // The row's LP power at the re-solved work: exactly the row's own where the re-solve IS the pin.
         let h45 = gas.h_t(tt45, f45);
         let w_u = w * ((h45 - gas.h_t(tt5, f45)) / (h45 - gas.h_t(pin.2, f45)));
-        Ok(AtRow { nu: lin_by(rows, |g| g.w, |g| g.nu, w_u), f_hat: push.at(pi * pt45) - v0 * col(|g| g.face), pi_lpt: pi })
+        let nu = lin_by(rows, |g| g.w, |g| g.nu, w_u);
+        let pt5 = pi * pt45;
+        let f_hat = match air {
+            Air::Table => push.at(pi * pt45) - v0 * col(|g| g.face),
+            Air::Grid(g) => push.at(pt5) - v0 * Air::grid_at(g, nu),
+            Air::Exhaust { r } => s.map_or(f64::NAN, |s| push.at(pt5) - v0 * sensed_air(push, *r, pt5, s)),
+        };
+        Ok(AtRow { nu, f_hat, pi_lpt: pi, pt5 })
     }
 
     /// The thrust the control believes at reading `v` (`t`: the table it was built on).
     pub fn try_inferred(&self, ft: &FuelTransientCore, t: &Table, r: Reading, v: f64) -> Result<f64, Abort> {
+        self.try_inferred_sensed(ft, t, r, v, None)
+    }
+
+    /// [`Formula::try_inferred`] with the sensor's view of the instant (rung 101).
+    pub fn try_inferred_sensed(&self, ft: &FuelTransientCore, t: &Table, r: Reading, v: f64, s: Option<&Sensed>)
+                               -> Result<f64, Abort> {
         match (self, r) {
-            (Formula::Epr { push, .. }, Reading::Epr) => Ok(epr_f_hat(push, t, v)),
-            (Formula::Fan { .. }, Reading::LpSpeed) => self.try_fan_root(ft, t, v).map(|(_, a)| a.f_hat),
+            (Formula::Epr { .. }, Reading::Epr) => Ok(self.epr_belief(t, v, s)),
+            (Formula::Fan { .. }, Reading::LpSpeed) => self.try_fan_root_sensed(ft, t, v, s).map(|(_, a)| a.f_hat),
             _ => unreachable!("a formula reads the reading it was built for"),
         }
     }
 
     /// The reading the control demands for thrust `f`.
     pub fn try_reading_at(&self, ft: &FuelTransientCore, t: &Table, r: Reading, f: f64) -> Result<f64, Abort> {
+        self.try_reading_at_sensed(ft, t, r, f, None)
+    }
+
+    /// [`Formula::try_reading_at`] with the sensor's view of the instant (rung 101): under the sensor the rows' beliefs
+    /// are worked out with it, else they are the build's.
+    pub fn try_reading_at_sensed(&self, ft: &FuelTransientCore, t: &Table, r: Reading, f: f64, s: Option<&Sensed>)
+                                 -> Result<f64, Abort> {
+        let sensed = self.sensed();
         match (self, r) {
-            (Formula::Epr { push, rows }, Reading::Epr) => {
-                let g = |e: f64| Ok(epr_f_hat(push, t, e) - f);
+            (Formula::Epr { rows, .. }, Reading::Epr) => {
+                let g = |e: f64| Ok(self.epr_belief(t, e, s) - f);
                 let (e0, en) = (rows[0].0, rows[rows.len() - 1].0);
                 let span = (en - e0) / (rows.len() - 1) as f64;
-                let (a, b, ga, gb) = bracket(rows.iter().map(|&(e, h)| (e, h - f)).collect(), span, g, "pressure ratio")
+                let at = |&(e, h): &(f64, f64)| (e, if sensed { self.epr_belief(t, e, s) } else { h } - f);
+                let (a, b, ga, gb) = bracket(rows.iter().map(at).collect(), span, g, "pressure ratio")
                     .map_err(|m| Abort(m.replace("{asked}", &format!("{f:.1} N per kg/s"))))?;
                 if ga == 0.0 { return Ok(a) }
                 if gb == 0.0 { return Ok(b) }
                 try_illinois(g, a, b, ga, gb, TOL_EPR, ILLINOIS_MAXIT)
             }
-            (Formula::Fan { rows, .. }, Reading::LpSpeed) => {
-                let g = |x: f64| self.at_row(ft, t.v0, x).map(|a| a.f_hat - f);
+            (Formula::Fan { push, rows, air, .. }, Reading::LpSpeed) => {
+                let g = |x: f64| self.at_row_sensed(ft, t.v0, x, s).map(|a| a.f_hat - f);
                 let span = (rows[rows.len() - 1].x - rows[0].x) / (rows.len() - 1) as f64;
-                let (a, b, ga, gb) = bracket(rows.iter().map(|q| (q.x, q.f_hat - f)).collect(), span, g, "row")
+                let row_f = |q: &GasGen| match (air, s) {
+                    (Air::Exhaust { r }, Some(s)) => push.at(q.pt5_x) - t.v0 * sensed_air(push, *r, q.pt5_x, s),
+                    (Air::Exhaust { .. }, None) => f64::NAN,
+                    _ => q.f_hat,
+                };
+                let (a, b, ga, gb) = bracket(rows.iter().map(|q| (q.x, row_f(q) - f)).collect(), span, g, "row")
                     .map_err(|m| Abort(self.fan_root_words(&m.replace("{asked}", &format!("a thrust of {f:.1} N per kg/s")))))?;
                 let x = if ga == 0.0 { a } else if gb == 0.0 { b } else { try_illinois(g, a, b, ga, gb, TOL_X, ILLINOIS_MAXIT)? };
                 self.at_row(ft, t.v0, x).map(|a| a.nu)
@@ -230,9 +306,16 @@ impl Formula {
     /// The fan-speed formula at fan speed `nu`: the row parameter it settles on and the formula there. Where the LP
     /// turbine stays choked at the table's own row for `nu`, that row (anchor G9).
     pub fn try_fan_root(&self, ft: &FuelTransientCore, t: &Table, nu: f64) -> Result<(f64, AtRow), Abort> {
+        self.try_fan_root_sensed(ft, t, nu, None)
+    }
+
+    /// [`Formula::try_fan_root`] with the sensor's view of the instant (rung 101: the root in `x` does not depend on
+    /// it — only the thrust believed there does).
+    pub fn try_fan_root_sensed(&self, ft: &FuelTransientCore, t: &Table, nu: f64, s: Option<&Sensed>)
+                               -> Result<(f64, AtRow), Abort> {
         let Formula::Fan { rows, .. } = self else { unreachable!("a fan-speed root needs the fan formula") };
         let x_nu = lin_by(rows, |g| g.nu, |g| g.x, nu);
-        let at = self.at_row(ft, t.v0, x_nu)?;
+        let at = self.at_row_sensed(ft, t.v0, x_nu, s)?;
         if (at.nu - nu).abs() <= 1e-14 * nu.abs() {
             return Ok((x_nu, at));
         }
@@ -241,7 +324,7 @@ impl Formula {
         let (a, b, ga, gb) = bracket(rows.iter().map(|q| (q.x, q.nu_x - nu)).collect(), span, g, "row")
             .map_err(|m| Abort(self.fan_root_words(&m.replace("{asked}", &format!("a fan speed of {:.2} %", 100.0 * nu)))))?;
         let x = if ga == 0.0 { a } else if gb == 0.0 { b } else { try_illinois(g, a, b, ga, gb, TOL_X, ILLINOIS_MAXIT)? };
-        Ok((x, self.at_row(ft, t.v0, x)?))
+        Ok((x, self.at_row_sensed(ft, t.v0, x, s)?))
     }
 
     /// This flight's burner temperature of row parameter `x` (rung 98's translation undone).
@@ -259,7 +342,13 @@ impl Formula {
     }
 
     fn fan_root_words(&self, m: &str) -> String {
-        format!("The control's fan-speed formula: {m}; make the tables at this flight instead.")
+        match self.sensed() {
+            // Rung 101: the sensor moves the thrust believed at every row, so a demand can leave the rows at a fuel the
+            // run never settles on (anchor G6's named risk).
+            true => format!("The control's fan-speed formula, with the exhaust sensor: {m} at the exhaust temperature and \
+                             fuel flow it reads; make the tables at this flight instead."),
+            false => format!("The control's fan-speed formula: {m}; make the tables at this flight instead."),
+        }
     }
 }
 
