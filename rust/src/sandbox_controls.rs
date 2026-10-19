@@ -2076,7 +2076,8 @@ impl StopKind {
                  state, so the sandbox cannot re-run the failed step to say why the run stopped here. The points \
                  before the stop are the model's own.",
             StopKind::Afterburner =>
-                "The lit afterburner stopped the run: with it put out, this step runs. Behind a held nozzle the \
+                "The lit afterburner stopped the run: either it refused here in its own words, or this step runs with \
+                 it put out. Behind a held nozzle the \
                  afterburner's hot gas needs engine pressure to get out, and a limiter cutting the main fuel, or the \
                  shafts slowing, can take the engine below the point where it can — the model keeps both turbine \
                  throats choked, so there it has no running point (a real engine would stall). Or the afterburner \

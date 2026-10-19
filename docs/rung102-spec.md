@@ -277,7 +277,7 @@ flight and 5 km Mach 0.6, 900 → 1350 K, `Tt7` 1900, light-off 0.30 and 3.50; �
 | C7 held, end: LP flow margin above unlit, pressure margin below | 48 | 40 | flow 24/24; pressure MISS ×8 (`flat-lp`) |
 | C8 held, end: both HP margins above unlit | 48 | 48 | |
 | C9 ×1.2 strictly between ×1 and *match* | 72 | 72 | |
-| C10 light-off below choke (650/700 K, Mach 0.5) | 15 | 15 | the held lit nozzle chokes within two steps |
+| C10 light-off below choke (650/700 K, Mach 0.5) | 15 | 15 | the held lit nozzle chokes within two steps — the unchoked lit branch ran only there, and no gate checks it independently (the instrument reads choked instants) |
 | C11 the HP-speed governor holds HP speed, the LP slows | 6 | 6 | HP within 0.26 %; LP −70 … −89 % |
 | C12 the redline through a late held light-off | 3 | 0 | MISS ×3: the lean wall (below) |
 
@@ -290,9 +290,18 @@ wall as the LP slows (named: "the lit afterburner stopped the run"); the named r
 late, the least settled) held (−29.7 % is its smallest); C1's (the slow flight) held with margin; C3's (`ρ` 0.5 mid-slam)
 held.
 
+**The headline's own check (run after scoring, at the final review; reported, not scored — `tt4hold.txt`).** Part B
+and Part C differ in TWO things, the throttle and the shaft count, so "the throttle decides the sign" needed a run
+that changes only the throttle: the same two-shaft Controls engine, governed to HOLD `Tt4` all along the move, lit at
+0.5 behind a held nozzle. Lit thrust is BELOW unlit at all three slams tried (×0.871, ×0.885, ×0.893 — the default
+slam, settle 6, and `tilted` 900 → 1350), crosses above at ×1.15 (×1.110–1.130), and ×1.549–1.593 by the rule — Part B's
+picture on two shafts. With `Tt4` held the LP shaft slows much further (to 29–40 % of its speed against 60–62 % metered):
+the core has no extra heat to give. So on one engine the throttle alone flips the sign.
+
 **Cost** (§ 5.4: 3× the same request fitted-unlit, the page's reply, best of 9). Default slam held ×1.42, ×1.15 ×1.56,
 *match* ×1.04; with the redline / schedule / floor / release on ×0.37–1.54 (a held run that stops is cheap); settle 6
-×1.44. **The trigger fired once: the HP-speed governor with the nozzle held, ×3.76** (378 ms against 101). The census says
+×1.44. **The trigger fired once: the HP-speed governor with the nozzle held, ×3.76** (378 ms against 101) — and it
+shipped above the bar, a DEVIATION from § 5.4's frozen rule ("sped up before shipping"), not its outcome. The census says
 why, and it is not the LP relation: the governor rides the lean wall for the rest of the run, evaluating 3.3× the
 instants (20 181 against 6 089), each 1.28× dearer; the planned fix (Part B's bracket) cannot reach a cost made of more
 instants. Two deterministic changes were measured: a bracket from the unlit root (44 bisections a solve — slower, removed)

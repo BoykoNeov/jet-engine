@@ -1,6 +1,6 @@
-# Rung 102 pre-anchor probes (scratch crate `W:\temp\claude\rung102-probe`, against `884e60a`)
+# Rung 102 probes, scoring and census (archived here; the scratch crates they ran in were temporary and are deleted)
 
-Each `*.rs` is a `[[bin]]` of `Cargo.toml.txt`; its output is the same-named `*.txt`. All are afterburners bolted on
+Each `*.rs` is a `[[bin]]` of `Cargo.toml.txt` (Part C's of `Cargo_c.toml.txt` / `Cargo_cscore.toml.txt`; the first ran against `884e60a`); its output is the same-named `*.txt`. All are afterburners bolted on
 BESIDE the shipped code by the probe, not rung 102's device.
 
 - `design.rs` → `design.txt` (CPG/TPG/reacting, then `design_eq.txt` after the run was cut to reacting+equilibrium):
@@ -57,3 +57,5 @@ Part C, against the SHIPPED code (a third crate, `Cargo_cscore.toml.txt`, on the
   relation, and against not fitted) — compared to the last digit, printed in the session.
 - `crashctl.rs` (`gen`: every check request + 1 200 seeded Controls requests not fitted / fitted / lit; `cmp`) →
   `census_c.txt`.
+- `tt4hold.rs` → `tt4hold.txt`: the final review's check of the headline — the Controls engine with `Tt4` HELD (governed), lit
+  held / ×1.15 / *match* against unlit.
