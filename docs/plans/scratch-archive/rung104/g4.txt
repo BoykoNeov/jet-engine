@@ -1,0 +1,24 @@
+design M.85 Tt4 550: refused inverse: root not bracketed
+design M.85 Tt4   600 UNCHOKD  103: piH 0.42533 piL 0.68543 M9 0.944 | ellipse dpiH +9.70e-3 dpiL -9.59e-3 (0.02s) | 1 row dpiH +4.04e-3 dpiL -4.02e-3 (0.03s) | 2 rows dpiH +5.82e-3 dpiL -5.78e-3 (89.53s)
+design M.85 Tt4   650 choked   103: piH 0.42567 piL 0.68352 M9 1.000 | ellipse dpiH +7.73e-3 dpiL -7.65e-3 (0.02s) | 1 row dpiH +2.74e-3 dpiL -2.73e-3 (0.04s) | 2 rows dpiH +4.18e-3 dpiL -4.15e-3 (73.94s)
+design M.85 Tt4   700 choked   103: piH 0.42604 piL 0.68373 M9 1.000 | ellipse dpiH +7.24e-3 dpiL -7.18e-3 (0.03s) | 1 row dpiH +2.58e-3 dpiL -2.57e-3 (0.05s) | 2 rows dpiH +3.92e-3 dpiL -3.89e-3 (67.78s)
+design M.85 Tt4   800 choked   103: piH 0.42688 piL 0.68419 M9 1.000 | ellipse dpiH +6.20e-3 dpiL -6.15e-3 (0.02s) | 1 row dpiH +2.21e-3 dpiL -2.20e-3 (0.03s) | 2 rows dpiH +3.35e-3 dpiL -3.33e-3 (79.32s)
+design M.85 Tt4   900 choked   103: piH 0.42784 piL 0.68473 M9 1.000 | ellipse dpiH +5.08e-3 dpiL -5.04e-3 (0.02s) | 1 row dpiH +1.81e-3 dpiL -1.81e-3 (0.04s) | 2 rows dpiH +2.73e-3 dpiL -2.72e-3 (74.84s)
+design M.85 Tt4  1000 choked   103: piH 0.42889 piL 0.68534 M9 1.000 | ellipse dpiH +3.95e-3 dpiL -3.93e-3 (0.02s) | 1 row dpiH +1.41e-3 dpiL -1.40e-3 (0.03s) | 2 rows dpiH +2.11e-3 dpiL -2.11e-3 (64.61s)
+design M.85 Tt4  1200 choked   103: piH 0.43104 piL 0.68671 M9 1.000 | ellipse dpiH +1.95e-3 dpiL -1.94e-3 (0.02s) | 1 row dpiH +6.75e-4 dpiL -6.73e-4 (0.04s) | 2 rows none
+SLS M0 Tt4 550: refused inverse: root not bracketed
+SLS M0 Tt4 600: refused speed-line bracket fails for (m=0.27305059700574286, tau_c=1
+SLS M0 Tt4 650: refused efficiency cascade eta_o == eta_thermal*eta_p must hold unde
+SLS M0 Tt4 700: refused efficiency cascade eta_o == eta_thermal*eta_p must hold unde
+SLS M0 Tt4 800: refused efficiency cascade eta_o == eta_thermal*eta_p must hold unde
+SLS M0 Tt4 900: refused efficiency cascade eta_o == eta_thermal*eta_p must hold unde
+SLS M0 Tt4 1000: refused efficiency cascade eta_o == eta_thermal*eta_p must hold unde
+SLS M0 Tt4 1200: refused efficiency cascade eta_o == eta_thermal*eta_p must hold unde
+hot M.3 Tt4 550: refused inverse: root not bracketed
+hot M.3 Tt4 600: refused speed-line bracket fails for (m=0.2624253322972882, tau_c=1.
+hot M.3 Tt4   650 UNCHOKD  103: piH 0.42568 piL 0.95467 M9 0.502 | ellipse none | 1 row none | 2 rows none
+hot M.3 Tt4   700 UNCHOKD  103: piH 0.42603 piL 0.84095 M9 0.593 | ellipse none | 1 row none | 2 rows none
+hot M.3 Tt4   800 UNCHOKD  103: piH 0.42683 piL 0.72656 M9 0.767 | ellipse dpiH +3.75e-2 dpiL -3.61e-2 (0.02s) | 1 row dpiH +2.65e-2 dpiL -2.58e-2 (0.04s) | 2 rows dpiH +3.23e-2 dpiL -3.13e-2 (73.61s)
+hot M.3 Tt4   900 UNCHOKD  103: piH 0.42778 piL 0.68854 M9 0.925 | ellipse dpiH +7.96e-3 dpiL -7.88e-3 (0.02s) | 1 row dpiH +3.93e-3 dpiL -3.91e-3 (0.04s) | 2 rows dpiH +5.34e-3 dpiL -5.30e-3 (75.19s)
+hot M.3 Tt4  1000 choked   103: piH 0.42882 piL 0.68529 M9 1.000 | ellipse dpiH +4.02e-3 dpiL -4.00e-3 (0.02s) | 1 row dpiH +1.43e-3 dpiL -1.43e-3 (0.04s) | 2 rows dpiH +2.15e-3 dpiL -2.14e-3 (67.87s)
+hot M.3 Tt4  1200 choked   103: piH 0.43097 piL 0.68666 M9 1.000 | ellipse dpiH +2.02e-3 dpiL -2.01e-3 (0.02s) | 1 row dpiH +6.98e-4 dpiL -6.96e-4 (0.04s) | 2 rows none

@@ -1,0 +1,20 @@
+CPG: design pt5/pt45 0.688448  pt45/pt4 0.430510
+  Tt4   700 matcher piH 0.430510 piL 0.688448 | rel diff (piH piL): pin +2.665e-15 -5.440e-15 | ellipse +2.665e-15 -5.440e-15 | nozzle +2.665e-15 -5.440e-15
+  Tt4   800 matcher piH 0.430510 piL 0.688448 | rel diff (piH piL): pin +2.665e-15 -5.440e-15 | ellipse +2.665e-15 -5.440e-15 | nozzle +2.665e-15 -5.440e-15
+  Tt4   900 matcher piH 0.430510 piL 0.688448 | rel diff (piH piL): pin +2.665e-15 -5.440e-15 | ellipse +2.665e-15 -5.440e-15 | nozzle +2.665e-15 -5.440e-15
+  Tt4  1000 matcher piH 0.430510 piL 0.688448 | rel diff (piH piL): pin +2.665e-15 -5.440e-15 | ellipse +2.665e-15 -5.440e-15 | nozzle +2.665e-15 -5.440e-15
+  Tt4  1100 matcher piH 0.430510 piL 0.688448 | rel diff (piH piL): pin +2.665e-15 -5.440e-15 | ellipse +2.665e-15 -5.440e-15 | nozzle +2.665e-15 -5.440e-15
+  Tt4  1200 matcher piH 0.430510 piL 0.688448 | rel diff (piH piL): pin +2.665e-15 -5.440e-15 | ellipse +2.665e-15 -5.440e-15 | nozzle +2.665e-15 -5.440e-15
+  Tt4  1300 matcher piH 0.430510 piL 0.688448 | rel diff (piH piL): pin +2.665e-15 -5.440e-15 | ellipse +2.665e-15 -5.440e-15 | nozzle +2.665e-15 -5.440e-15
+  Tt4  1400 matcher piH 0.430510 piL 0.688448 | rel diff (piH piL): pin +2.665e-15 -5.440e-15 | ellipse +2.665e-15 -5.440e-15 | nozzle +2.665e-15 -5.440e-15
+  Tt4  1500 matcher piH 0.430510 piL 0.688448 | rel diff (piH piL): pin +2.665e-15 -5.440e-15 | ellipse +2.665e-15 -5.440e-15 | nozzle +2.665e-15 -5.440e-15
+reacting-eq: design pt5/pt45 0.688661  pt45/pt4 0.433459
+  Tt4   700 matcher piH 0.426043 piL 0.683727 | rel diff (piH piL): pin +6.173e-14 +1.693e-12 | ellipse +7.244e-3 -7.179e-3 | nozzle +2.279e-2 -2.224e-2
+  Tt4   800 matcher piH 0.426883 piL 0.684188 | rel diff (piH piL): pin -1.354e-14 -2.398e-14 | ellipse +6.197e-3 -6.148e-3 | nozzle +1.954e-2 -1.913e-2
+  Tt4   900 matcher piH 0.427843 piL 0.684726 | rel diff (piH piL): pin -3.220e-15 -4.718e-14 | ellipse +5.079e-3 -5.044e-3 | nozzle +1.608e-2 -1.580e-2
+  Tt4  1000 matcher piH 0.428894 piL 0.685337 | rel diff (piH piL): pin -1.365e-12 +1.044e-14 | ellipse +3.951e-3 -3.928e-3 | nozzle +1.261e-2 -1.243e-2
+  Tt4  1100 matcher piH 0.429990 piL 0.686006 | rel diff (piH piL): pin +1.793e-12 -5.773e-14 | ellipse +2.884e-3 -2.871e-3 | nozzle +9.331e-3 -9.228e-3
+  Tt4  1200 matcher piH 0.431045 piL 0.686714 | rel diff (piH piL): pin +1.501e-12 +4.115e-12 | ellipse +1.949e-3 -1.942e-3 | nozzle +6.449e-3 -6.396e-3
+  Tt4  1300 matcher piH 0.431957 piL 0.687432 | rel diff (piH piL): pin +3.217e-13 +2.149e-12 | ellipse +1.206e-3 -1.203e-3 | nozzle +4.057e-3 -4.033e-3
+  Tt4  1400 matcher piH 0.432739 piL 0.688106 | rel diff (piH piL): pin +5.871e-13 -2.438e-12 | ellipse +6.017e-4 -6.003e-4 | nozzle +1.960e-3 -1.952e-3
+  Tt4  1500 matcher piH 0.433459 piL 0.688661 | rel diff (piH piL): pin +1.603e-13 -1.024e-12 | ellipse +1.603e-13 -9.667e-13 | nozzle +3.306e-13 -5.912e-13

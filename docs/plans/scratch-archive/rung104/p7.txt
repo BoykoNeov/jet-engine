@@ -1,0 +1,66 @@
+== (A) hand-written perfect-gas solve, ELLIPSE, rung 38's engine (no map) and rung 39's on flat maps
+SL M0.30       450 shipped PANIC | hand: NO ROOT
+SL M0.30       500 shipped PANIC | hand piH 0.72512 piL 0.89058 sign changes 2
+SL M0.30       550 M9 0.445 piH 0.55749 piL 0.81784 | hand piH 0.55749 piL 0.81784 | rel diff 38 2.10e-13 39 2.10e-13 | sign changes 2
+SL M0.30       600 M9 0.556 piH 0.49534 piL 0.76865 | hand piH 0.49534 piL 0.76865 | rel diff 38 8.83e-14 39 8.83e-14 | sign changes 2
+SL M0.30       650 M9 0.661 piH 0.46284 piL 0.73345 | hand piH 0.46284 piL 0.73345 | rel diff 38 3.43e-14 39 3.43e-14 | sign changes 2
+SL M0.30       700 M9 0.759 piH 0.44507 piL 0.71020 | hand piH 0.44507 piL 0.71020 | rel diff 38 1.57e-14 39 1.42e-14 | sign changes 1
+SL M0.30       750 M9 0.850 piH 0.43567 piL 0.69647 | hand piH 0.43567 piL 0.69647 | rel diff 38 4.84e-15 39 4.84e-15 | sign changes 1
+SL M0.30       800 M9 0.935 piH 0.43142 piL 0.68989 | hand piH 0.43142 piL 0.68989 | rel diff 38 2.06e-15 39 2.06e-15 | sign changes 1
+SL+40 M0.85    450 shipped PANIC | hand piH 0.50900 piL 0.78120 sign changes 1
+SL+40 M0.85    500 shipped PANIC | hand piH 0.48314 piL 0.75640 sign changes 1
+SL+40 M0.85    550 shipped PANIC | hand piH 0.46332 piL 0.73403 sign changes 1
+SL+40 M0.85    600 shipped PANIC | hand piH 0.44909 piL 0.71575 sign changes 1
+SL+40 M0.85    650 M9 0.806 piH 0.43958 piL 0.70231 | hand piH 0.43958 piL 0.70231 | rel diff 38 8.08e-15 39 8.08e-15 | sign changes 1
+SL+40 M0.85    700 M9 0.879 piH 0.43384 piL 0.69367 | hand piH 0.43384 piL 0.69367 | rel diff 38 3.07e-15 39 3.07e-15 | sign changes 1
+SL+40 M0.85    750 M9 0.949 piH 0.43106 piL 0.68933 | hand piH 0.43106 piL 0.68933 | rel diff 38 1.75e-15 39 1.75e-15 | sign changes 1
+SL+40 M0.85    800 M9 1.000 piH 0.43051 piL 0.68845 | hand piH 0.43057 piL 0.68854 | rel diff 38 1.47e-4 39 1.41e-4 | sign changes 1
+design         450 shipped PANIC | hand piH 0.45153 piL 0.71903 sign changes 1
+design         500 M9 0.813 piH 0.43880 piL 0.70116 | hand piH 0.43880 piL 0.70116 | rel diff 38 1.75e-14 39 1.75e-14 | sign changes 1
+design         550 M9 0.908 piH 0.43238 piL 0.69140 | hand piH 0.43238 piL 0.69140 | rel diff 38 3.43e-15 39 3.43e-15 | sign changes 1
+design         600 M9 0.998 piH 0.43051 piL 0.68845 | hand piH 0.43051 piL 0.68845 | rel diff 38 6.92e-16 39 6.76e-16 | sign changes 1
+design         650 M9 1.000 piH 0.43051 piL 0.68845 | hand piH 0.43189 piL 0.69063 | rel diff 38 3.53e-3 39 3.20e-3 | sign changes 1
+design         700 M9 1.000 piH 0.43051 piL 0.68845 | hand piH 0.43561 piL 0.69638 | rel diff 38 1.38e-2 39 1.17e-2 | sign changes 1
+design         750 M9 1.000 piH 0.43051 piL 0.68845 | hand piH 0.44103 piL 0.70443 | rel diff 38 2.96e-2 39 2.39e-2 | sign changes 1
+design         800 M9 1.000 piH 0.43051 piL 0.68845 | hand piH 0.44769 piL 0.71384 | rel diff 38 5.01e-2 39 3.84e-2 | sign changes 1
+worst unchoked relative difference: 2.10e-13
+== (B) the shipped joint residual over pi_HPT at the converged outer state, Controls engine, map tilted
+Ellipse SL+40 M0.85    650 M9 0.773 piH 0.44329 sign changes 1 (ends +1.252e-4 -3.042e-5) resid at root +9.22e-19
+Ellipse SL+40 M0.85    700 M9 0.846 piH 0.43600 sign changes 1 (ends +1.097e-4 -3.042e-5) resid at root +2.71e-19
+Ellipse SL+40 M0.85    750 M9 0.918 piH 0.43199 sign changes 1 (ends +9.234e-5 -3.042e-5) resid at root +2.85e-19
+Ellipse SL+40 M0.85    800 M9 0.987 piH 0.43055 sign changes 1 (ends +8.392e-5 -3.042e-5) resid at root +4.07e-20
+Ellipse SL M0.30       550 M9 0.374 piH 0.62519 sign changes 1 (ends +1.252e-4 -2.703e-5) resid at root +6.79e-18
+Ellipse SL M0.30       600 M9 0.504 piH 0.52012 sign changes 1 (ends +1.252e-4 -3.040e-5) resid at root +3.87e-18
+Ellipse SL M0.30       650 M9 0.617 piH 0.47442 sign changes 1 (ends +1.252e-4 -3.042e-5) resid at root +1.51e-18
+Ellipse SL M0.30       700 M9 0.722 piH 0.45074 sign changes 1 (ends +1.252e-4 -3.042e-5) resid at root +1.33e-18
+Ellipse SL M0.30       750 M9 0.819 piH 0.43830 sign changes 1 (ends +1.252e-4 -3.042e-5) resid at root +5.96e-19
+Ellipse SL M0.30       800 M9 0.908 piH 0.43238 sign changes 1 (ends +9.393e-5 -3.042e-5) resid at root +4.34e-19
+Ellipse SL M0.30       850 M9 0.990 piH 0.43053 sign changes 1 (ends +8.362e-5 -3.042e-5) resid at root +0.00e0
+Ellipse design         550 M9 0.876 piH 0.43399 sign changes 1 (ends +1.003e-4 -3.042e-5) resid at root +2.71e-19
+Ellipse design         600 M9 0.968 piH 0.43073 sign changes 1 (ends +8.588e-5 -3.042e-5) resid at root +1.36e-20
+TwoRows SL+40 M0.85    650 M9 0.773 piH 0.44218 sign changes 1 (ends +1.252e-4 -3.042e-5) resid at root +7.18e-19
+TwoRows SL+40 M0.85    700 M9 0.846 piH 0.43550 sign changes 1 (ends +1.090e-4 -3.042e-5) resid at root +2.85e-19
+TwoRows SL+40 M0.85    750 M9 0.918 piH 0.43186 sign changes 1 (ends +9.132e-5 -3.042e-5) resid at root +2.71e-19
+TwoRows SL+40 M0.85    800 M9 0.987 piH 0.43054 sign changes 1 (ends +8.286e-5 -3.042e-5) resid at root +2.71e-20
+TwoRows SL M0.30       550 M9 0.377 piH 0.61558 sign changes 1 (ends +1.252e-4 -2.754e-5) resid at root +6.77e-18
+TwoRows SL M0.30       600 M9 0.505 piH 0.51467 sign changes 1 (ends +1.252e-4 -3.041e-5) resid at root +3.37e-18
+TwoRows SL M0.30       650 M9 0.618 piH 0.47118 sign changes 1 (ends +1.252e-4 -3.042e-5) resid at root +1.65e-18
+TwoRows SL M0.30       700 M9 0.722 piH 0.44904 sign changes 1 (ends +1.252e-4 -3.042e-5) resid at root +1.04e-18
+TwoRows SL M0.30       750 M9 0.819 piH 0.43760 sign changes 1 (ends +1.252e-4 -3.042e-5) resid at root +3.52e-19
+TwoRows SL M0.30       800 M9 0.908 piH 0.43221 sign changes 1 (ends +9.292e-5 -3.042e-5) resid at root +4.20e-19
+TwoRows SL M0.30       850 M9 0.990 piH 0.43053 sign changes 1 (ends +8.256e-5 -3.042e-5) resid at root -1.22e-19
+TwoRows design         550 M9 0.876 piH 0.43367 sign changes 1 (ends +9.945e-5 -3.042e-5) resid at root +1.90e-19
+TwoRows design         600 M9 0.968 piH 0.43071 sign changes 1 (ends +8.481e-5 -3.042e-5) resid at root +1.08e-19
+OneRow SL+40 M0.85    650 M9 0.773 piH 0.44016 sign changes 1 (ends +1.252e-4 -3.042e-5) resid at root +4.20e-19
+OneRow SL+40 M0.85    700 M9 0.846 piH 0.43456 sign changes 1 (ends +1.081e-4 -3.042e-5) resid at root +9.49e-20
+OneRow SL+40 M0.85    750 M9 0.918 piH 0.43159 sign changes 1 (ends +8.985e-5 -3.042e-5) resid at root +1.08e-19
+OneRow SL+40 M0.85    800 M9 0.987 piH 0.43054 sign changes 1 (ends +8.130e-5 -3.042e-5) resid at root -1.36e-20
+OneRow SL M0.30       550 M9 0.382 piH 0.60192 sign changes 1 (ends +1.252e-4 -2.827e-5) resid at root +6.69e-18
+OneRow SL M0.30       600 M9 0.508 piH 0.50610 sign changes 1 (ends +1.252e-4 -3.042e-5) resid at root +3.23e-18
+OneRow SL M0.30       650 M9 0.620 piH 0.46570 sign changes 1 (ends +1.252e-4 -3.042e-5) resid at root +1.72e-18
+OneRow SL M0.30       700 M9 0.723 piH 0.44601 sign changes 1 (ends +1.252e-4 -3.042e-5) resid at root +1.33e-18
+OneRow SL M0.30       750 M9 0.819 piH 0.43630 sign changes 1 (ends +1.252e-4 -3.042e-5) resid at root +2.44e-19
+OneRow SL M0.30       800 M9 0.908 piH 0.43187 sign changes 1 (ends +9.148e-5 -3.042e-5) resid at root +2.03e-19
+OneRow SL M0.30       850 M9 0.990 piH 0.43053 sign changes 1 (ends +8.101e-5 -3.042e-5) resid at root +8.13e-20
+OneRow design         550 M9 0.876 piH 0.43306 sign changes 1 (ends +9.820e-5 -3.042e-5) resid at root +2.03e-19
+OneRow design         600 M9 0.968 piH 0.43067 sign changes 1 (ends +8.326e-5 -3.042e-5) resid at root +1.36e-20

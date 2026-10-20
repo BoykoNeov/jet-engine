@@ -1,0 +1,646 @@
+diff --git a/rust/src/afterburner.rs b/rust/src/afterburner.rs
+index 469b98b..a002159 100644
+--- a/rust/src/afterburner.rs
++++ b/rust/src/afterburner.rs
+@@ -1263,19 +1263,24 @@ impl LitAb {
+     ) -> Result<(f64, f64, f64), Abort> {
+         C_LP.with(|c| c.set(c.get() + 1));
+         let a8 = s_now * self.ab.a8_dry;
+-        let mfp45 = try_choked_mfp(gas, tt45, f45)?;
+-        let mdot5 = base.a45 * pt45 * mfp45 / powp(tt45, 0.5);
++        // RUNG 104: the LP turbine's `W45` — the choked vane's `A45·MFP*(Tt45)` under the pin, else the law's at `π`.
++        let law = base.turbine_law.get() != crate::turbine_law::TurbineLaw::Pin;
++        let mfp45 = if law { f64::NAN } else { try_choked_mfp(gas, tt45, f45)? };
++        let w_pin = base.a45_pin() * mfp45;
++        let w45 = |pi: f64| -> Result<f64, Abort> { if law { base.w45(gas, pi, tt45, f45, eta) } else { Ok(w_pin) } };
+         let trial = |pi: f64, name: bool| -> Result<(f64, f64, FlowState, AbDetail), Abort> {
+             let (tau, tt5) = base.try_tau_of(gas, tt45, f45, pi, eta)?;
++            // The pin's literal old order (bit for bit), else the law's flow at this `π`.
++            let mdot5 = if law { pt45 * w45(pi)? / powp(tt45, 0.5) } else { base.a45_pin() * pt45 * mfp45 / powp(tt45, 0.5) };
+             let s5 = FlowState { tt: tt5, pt: pi * pt45, mdot: mdot5, far: f45 };
+             let (s7, d) = self.burn(gas, &s5, name)?;
+             Ok((tau, tt5, s7, d))
+         };
+         // A refusal inside the search, put into words at the trial that failed.
+         let named = |pi: f64, e: Abort| -> Abort { if is_refusal(&e) { trial(pi, true).err().unwrap_or(e) } else { e } };
+-        let rhs = base.a45 * mfp45 / ((1.0 + f45) * a8 * self.ab.pi_n);
+         let resid = |pi: f64| -> Result<f64, Abort> {
+             let (_, _, s7, d) = trial(pi, false)?;
++            let rhs = w45(pi)? / ((1.0 + f45) * a8 * self.ab.pi_n);
+             Ok(pi * d.pi_ab * powp(tt45 / s7.tt, 0.5) - rhs * (1.0 + s7.far) / try_choked_mfp(gas, s7.tt, s7.far)?)
+         };
+         // The residual rises with π_LPT: below zero at the top (stepped down past refusals), the gas cannot leave the
+diff --git a/rust/src/bleed.rs b/rust/src/bleed.rs
+index e88ed40..fd73e67 100644
+--- a/rust/src/bleed.rs
++++ b/rust/src/bleed.rs
+@@ -238,10 +238,9 @@ pub fn try_cascade_bleed(
+     let mfp4 = try_choked_mfp(wgas, tt4, f)?;
+     let (mut eta_hpt, mut eta_lpt) = (base.eta_hpt, base.eta_lpt);
+     for turb_pass in 0..TwoSpoolMapCore::TURB_MAX {
+-        let (pi_hpt, tau_hpt, tt45) = base.try_solve_choked_turbine(
+-            wgas, tt4, f, base.a4, base.a45, 1.0, eta_hpt)?;
+-        let (pi_lpt, tau_lpt, tt5) = crate::steady_unchoked::try_lp_steady(
+-            base, wgas, tt45, f, eta_lpt, pi_hpt)?;
++        let ((pi_hpt, tau_hpt, tt45), (pi_lpt, tau_lpt, tt5)) = base.try_turbine_pair(
++            wgas, tt4, f, eta_hpt,
++            |tt45, pi_hpt| Ok((crate::steady_unchoked::try_lp_steady(base, wgas, tt45, f, eta_lpt, pi_hpt)?, eta_lpt)))?;
+ 
+         // ENERGY. (1) the LP balance: the LPT drives mdot_2 with (1-b)*mdot_2*(1+f) of gas.
+         // `(1-b)` sits BETWEEN eta_m and (1+f), which is not rung 39's product with a factor
+diff --git a/rust/src/bleed_transient.rs b/rust/src/bleed_transient.rs
+index 5a5d63c..2ed9c5d 100644
+--- a/rust/src/bleed_transient.rs
++++ b/rust/src/bleed_transient.rs
+@@ -972,14 +972,14 @@ pub fn r62_powers_body(
+     let core = &t.inner;
+     let (wgas, f) = (c.gas(core), c.f);
+     let nu_hpt = nu_hp * powp(core.tt4_d / tt4, 0.5);
+-    let (pi_hpt, _, tt45) = core.base.try_solve_choked_turbine(
+-        wgas, tt4, f, core.base.a4, core.base.a45, 1.0,
+-        core.map_hp().eta_t_at(core.base.eta_hpt, nu_hpt))?;
+-    let nu_lpt = nu_lp * powp(core.tt45_d / tt45, 0.5);
+-    // RUNG 97: the pin while the nozzle stays choked, else the subsonic root.
+-    let (_, _, tt5) = crate::unchoked_lp::try_lp_turbine(
+-        &core.base, wgas, tt45, f, core.map_lp().eta_t_at(core.base.eta_lpt, nu_lpt), pi_hpt * c.pt4,
+-        flight.p0)?;
++    // RUNG 97: the pin while the nozzle stays choked, else the subsonic root. RUNG 104: one joint solve under a law.
++    let lp_eta = |tt45: f64| core.map_lp().eta_t_at(core.base.eta_lpt, nu_lp * powp(core.tt45_d / tt45, 0.5));
++    let ((_, _, tt45), (_, _, tt5)) = core.base.try_turbine_pair(
++        wgas, tt4, f, core.map_hp().eta_t_at(core.base.eta_hpt, nu_hpt),
++        |tt45, pi_hpt| {
++            let e = lp_eta(tt45);
++            Ok((crate::unchoked_lp::try_lp_turbine(&core.base, wgas, tt45, f, e, pi_hpt * c.pt4, flight.p0)?, e))
++        })?;
+     // HP: both sides are CORE flow, so (1-b) cancels — rung 42's bleed-INVARIANT form.
+     let pt_hp = core.base.eta_m * (1.0 + f) * (wgas.h_t(tt4, f) - wgas.h_t(tt45, f));
+     let pc_hp = wgas.h_c(c.tt3) - wgas.h_c(c.tt25);
+@@ -1032,13 +1032,16 @@ pub fn r62_tail_body(
+ 
+     let nu_hpt = nu_hp * powp(core.tt4_d / tt4, 0.5);
+     let eta_hpt = core.map_hp().eta_t_at(core.base.eta_hpt, nu_hpt);
+-    let (pi_hpt, tau_hpt, tt45) = core.base.try_solve_choked_turbine(
+-        wgas, tt4, f, core.base.a4, core.base.a45, 1.0, eta_hpt)?;
++    // RUNG 97: the pin while the nozzle stays choked, else the subsonic root. RUNG 104: one joint solve under a law.
++    let lp_eta = |tt45: f64| core.map_lp().eta_t_at(core.base.eta_lpt, nu_lp * powp(core.tt45_d / tt45, 0.5));
++    let ((pi_hpt, tau_hpt, tt45), (pi_lpt, tau_lpt, tt5)) = core.base.try_turbine_pair(
++        wgas, tt4, f, eta_hpt,
++        |tt45, pi_hpt| {
++            let e = lp_eta(tt45);
++            Ok((crate::unchoked_lp::try_lp_turbine(&core.base, wgas, tt45, f, e, pi_hpt * c.pt4, flight.p0)?, e))
++        })?;
+     let nu_lpt = nu_lp * powp(core.tt45_d / tt45, 0.5);
+-    let eta_lpt = core.map_lp().eta_t_at(core.base.eta_lpt, nu_lpt);
+-    // RUNG 97: the pin while the nozzle stays choked, else the subsonic root.
+-    let (pi_lpt, tau_lpt, tt5) = crate::unchoked_lp::try_lp_turbine(
+-        &core.base, wgas, tt45, f, eta_lpt, pi_hpt * c.pt4, flight.p0)?;
++    let eta_lpt = lp_eta(tt45);
+ 
+     let mdot_core = c.mdot_air;
+     let mdot_face = c.mdot_face.expect("rung-62 _instant_tail indexes c['mdot_face']");
+diff --git a/rust/src/customer_bleed.rs b/rust/src/customer_bleed.rs
+index 8276847..8e87278 100644
+--- a/rust/src/customer_bleed.rs
++++ b/rust/src/customer_bleed.rs
+@@ -244,10 +244,9 @@ pub fn try_cascade_customer(
+     let mfp4 = try_choked_mfp(wgas, tt4, f)?;
+     let (mut eta_hpt, mut eta_lpt) = (base.eta_hpt, base.eta_lpt);
+     for _ in 0..TwoSpoolMapCore::TURB_MAX {
+-        let (pi_hpt, tau_hpt, tt45) = base.try_solve_choked_turbine(
+-            wgas, tt4, f, base.a4, base.a45, 1.0, eta_hpt)?;
+-        let (pi_lpt, tau_lpt, tt5) = crate::steady_unchoked::try_lp_steady(
+-            base, wgas, tt45, f, eta_lpt, pi_hpt)?;
++        let ((pi_hpt, tau_hpt, tt45), (pi_lpt, tau_lpt, tt5)) = base.try_turbine_pair(
++            wgas, tt4, f, eta_hpt,
++            |tt45, pi_hpt| Ok((crate::steady_unchoked::try_lp_steady(base, wgas, tt45, f, eta_lpt, pi_hpt)?, eta_lpt)))?;
+ 
+         // (3) the LP balance: the LPT drives the face air with (1-b)(1-c)(1+f) of gas.
+         let dh_lpt = base.eta_m * (1.0 - b) * (1.0 - c) * (1.0 + f)
+@@ -729,13 +728,16 @@ fn turbines(
+     let core = &t.inner;
+     let nu_hpt = nu_hp * powp(core.tt4_d / tt4, 0.5);
+     let eta_hpt = core.map_hp().eta_t_at(core.base.eta_hpt, nu_hpt);
+-    let (pi_hpt, tau_hpt, tt45) = core.base.try_solve_choked_turbine(
+-        wgas, tt4, f, core.base.a4, core.base.a45, 1.0, eta_hpt)?;
++    // RUNG 97: the pin while the nozzle stays choked, else the subsonic root. RUNG 104: one joint solve under a law.
++    let lp_eta = |tt45: f64| core.map_lp().eta_t_at(core.base.eta_lpt, nu_lp * powp(core.tt45_d / tt45, 0.5));
++    let ((pi_hpt, tau_hpt, tt45), (pi_lpt, tau_lpt, tt5)) = core.base.try_turbine_pair(
++        wgas, tt4, f, eta_hpt,
++        |tt45, pi_hpt| {
++            let e = lp_eta(tt45);
++            Ok((crate::unchoked_lp::try_lp_turbine(&core.base, wgas, tt45, f, e, pi_hpt * pt4, p0)?, e))
++        })?;
+     let nu_lpt = nu_lp * powp(core.tt45_d / tt45, 0.5);
+-    let eta_lpt = core.map_lp().eta_t_at(core.base.eta_lpt, nu_lpt);
+-    // RUNG 97: the pin while the nozzle stays choked, else the subsonic root.
+-    let (pi_lpt, tau_lpt, tt5) = crate::unchoked_lp::try_lp_turbine(
+-        &core.base, wgas, tt45, f, eta_lpt, pi_hpt * pt4, p0)?;
++    let eta_lpt = lp_eta(tt45);
+     Ok([pi_hpt, tau_hpt, tt45, pi_lpt, tau_lpt, tt5, eta_hpt, eta_lpt, nu_hpt, nu_lpt])
+ }
+ 
+diff --git a/rust/src/lib.rs b/rust/src/lib.rs
+index 22840c0..f924507 100644
+--- a/rust/src/lib.rs
++++ b/rust/src/lib.rs
+@@ -197,6 +197,7 @@ pub mod three_levers;
+ pub mod threshold_law;
+ pub mod turbine_cooling;
+ pub mod two_lag;
++pub mod turbine_law;
+ pub mod two_spool;
+ pub mod two_spool_transient;
+ pub mod valve_reference;
+diff --git a/rust/src/shaft_offtake.rs b/rust/src/shaft_offtake.rs
+index 731f313..639ba5e 100644
+--- a/rust/src/shaft_offtake.rs
++++ b/rust/src/shaft_offtake.rs
+@@ -47,7 +47,7 @@ use crate::customer_bleed::{hp_eta_loop_customer, lp_eta_loop_customer, Customer
+ use crate::engine::{FlightCondition, Performance};
+ use crate::fuel_transient::{FuelCloseState, FuelTransientCore};
+ use crate::gas::{powp, Abort, FlowState, Gas};
+-use crate::turbine_cooling::{check_root, customer_raw, hpc_from_burner, mix, try_solve_cooled_hpt,
++use crate::turbine_cooling::{check_root, customer_raw, hpc_from_burner, mix,
+                              CooledHpt, TurbineCooling};
+ use crate::two_spool::{
+     Cascade, CascadeMap, TwoSpoolCore, TwoSpoolEngine, TwoSpoolHooks, TwoSpoolMapCore,
+@@ -267,9 +267,10 @@ fn try_cascade_loaded(
+     let mfp4 = try_choked_mfp(wgas, tt4, f)?;
+     let (mut eta_hpt, mut eta_lpt, mut tt3) = (base.eta_hpt, base.eta_lpt, tt3_seed);
+     for _ in 0..TwoSpoolCore::MAX {
+-        let hpt = try_solve_cooled_hpt(base, wgas, tt4, f, burner, e1, e2, tt3, eta_hpt)?;
+-        let (pi_lpt, tau_lpt, tt5) = crate::steady_unchoked::try_lp_steady(
+-            base, wgas, hpt.tt45, hpt.f45, eta_lpt, hpt.pi_hpt)?;
++        let (hpt, (pi_lpt, tau_lpt, tt5)) = crate::turbine_cooling::try_cooled_pair(
++            base, wgas, tt4, f, burner, e1, e2, tt3, eta_hpt,
++            |tt45, f45, pi_hpt| Ok((crate::steady_unchoked::try_lp_steady(base, wgas, tt45, f45, eta_lpt, pi_hpt)?,
++                                    eta_lpt)))?;
+ 
+         // The LP balance, per FACE air: the LPT passes (1-b)(G + eps) of gas; the LP load comes off.
+         let g = burner * (1.0 + f);
+diff --git a/rust/src/steady_unchoked.rs b/rust/src/steady_unchoked.rs
+index 8d94c9e..21d7885 100644
+--- a/rust/src/steady_unchoked.rs
++++ b/rust/src/steady_unchoked.rs
+@@ -60,7 +60,7 @@ pub fn try_lp_steady(
+     core: &TwoSpoolCore, gas: &Gas, tt45: f64, f45: f64, eta_lpt: f64, pi_hpt: f64,
+ ) -> Result<(f64, f64, f64), Abort> {
+     match core.steady_lp.get() {
+-        SteadyLp::Pin => core.try_solve_choked_turbine(gas, tt45, f45, core.a45, core.a8, core.pi_n, eta_lpt),
++        SteadyLp::Pin => core.try_lp_choked(gas, tt45, f45, eta_lpt),
+         SteadyLp::Free { pt4, p0 } => crate::unchoked_lp::try_lp_turbine(core, gas, tt45, f45, eta_lpt, pi_hpt * pt4, p0),
+         SteadyLp::Held(pi) => {
+             let (tau, tt5) = core.try_tau_of(gas, tt45, f45, pi, eta_lpt)?;
+diff --git a/rust/src/turbine_cooling.rs b/rust/src/turbine_cooling.rs
+index d4c1c32..ebb66c5 100644
+--- a/rust/src/turbine_cooling.rs
++++ b/rust/src/turbine_cooling.rs
+@@ -206,7 +206,7 @@ pub fn try_solve_cooled_hpt(
+     let f45 = fuel / (burner + e1 + e2);
+     let tt41 = mixed_tt(gas, g, tt4, f, e1, tt3, f41);
+     let mfp4 = try_choked_mfp(gas, tt4, f)?;
+-    let rhs0 = base.a4 * mfp4 * (g + e1 + e2) / (base.a45 * g);
++    let rhs0 = base.a4 * mfp4 * (g + e1 + e2) / (base.a45_pin() * g);
+     let at = |pi: f64| -> Result<(f64, f64, f64, f64), Abort> {
+         let (tau, tt44) = base.try_tau_of(gas, tt41, f41, pi, eta)?;
+         let tt45 = mixed_tt(gas, g + e1, tt44, f41, e2, tt3, f45);
+@@ -238,6 +238,40 @@ pub fn try_solve_cooled_hpt(
+     Ok(CooledHpt { pi_hpt, tau_rotor, tt41, tt44, tt45, f41, f45 })
+ }
+ 
++/// RUNG 104: the cooled HP turbine AND the LP turbine — `lp(Tt45, f45, π_HPT)` is the variant's LP step, returning its
++/// result and the LP efficiency it used. `Pin`: [`try_solve_cooled_hpt`] then `lp`, literally the old order. A law: the
++/// cooled residual with `A45·MFP(Tt45)` replaced by the law's `W45` at the LP turbine's own `x`.
++#[allow(clippy::too_many_arguments, clippy::type_complexity)]
++pub fn try_cooled_pair(
++    base: &TwoSpoolCore, gas: &Gas, tt4: f64, f: f64, burner: f64, e1: f64, e2: f64, tt3: f64, eta: f64,
++    lp: impl Fn(f64, f64, f64) -> Result<((f64, f64, f64), f64), Abort>,
++) -> Result<(CooledHpt, (f64, f64, f64)), Abort> {
++    if base.turbine_law.get() == crate::turbine_law::TurbineLaw::Pin {
++        let hpt = try_solve_cooled_hpt(base, gas, tt4, f, burner, e1, e2, tt3, eta)?;
++        let (l, _) = lp(hpt.tt45, hpt.f45, hpt.pi_hpt)?;
++        return Ok((hpt, l));
++    }
++    let g = burner * (1.0 + f);
++    let fuel = burner * f;
++    let f41 = fuel / (burner + e1);
++    let f45 = fuel / (burner + e1 + e2);
++    let tt41 = mixed_tt(gas, g, tt4, f, e1, tt3, f41);
++    let mfp4 = try_choked_mfp(gas, tt4, f)?;
++    // `W45 = k·√(Tt45/Tt4)/π` — the A4 flow plus both coolants through the law's vane; the uncooled pair's form.
++    let k = base.a4 * mfp4 * (g + e1 + e2) / g;
++    let tt45_at = |pi: f64| -> Result<(f64, f64, f64), Abort> {
++        let (tau, tt44) = base.try_tau_of(gas, tt41, f41, pi, eta)?;
++        Ok((tau, tt44, mixed_tt(gas, g + e1, tt44, f41, e2, tt3, f45)))
++    };
++    let pi_hpt = base.try_joint_hp(gas, k, tt4, |pi| {
++        let (_, _, tt45) = tt45_at(pi)?;
++        Ok((tt45, lp(tt45, f45, pi).map(|((x, _, _), eta_l)| (x, eta_l)), f45))
++    })?;
++    let (tau_rotor, tt44, tt45) = tt45_at(pi_hpt)?;
++    let (l, _) = lp(tt45, f45, pi_hpt)?;
++    Ok((CooledHpt { pi_hpt, tau_rotor, tt41, tt44, tt45, f41, f45 }, l))
++}
++
+ // =========================================================================================
+ // DISPATCH COUNTERS
+ // =========================================================================================
+@@ -309,9 +343,10 @@ pub fn try_cascade_cooled(
+     let mfp4 = try_choked_mfp(wgas, tt4, f)?;
+     let (mut eta_hpt, mut eta_lpt, mut tt3) = (base.eta_hpt, base.eta_lpt, tt3_seed);
+     for _ in 0..TwoSpoolCore::MAX {
+-        let hpt = try_solve_cooled_hpt(base, wgas, tt4, f, burner, e1, e2, tt3, eta_hpt)?;
+-        let (pi_lpt, tau_lpt, tt5) = crate::steady_unchoked::try_lp_steady(
+-            base, wgas, hpt.tt45, hpt.f45, eta_lpt, hpt.pi_hpt)?;
++        let (hpt, (pi_lpt, tau_lpt, tt5)) = try_cooled_pair(
++            base, wgas, tt4, f, burner, e1, e2, tt3, eta_hpt,
++            |tt45, f45, pi_hpt| Ok((crate::steady_unchoked::try_lp_steady(base, wgas, tt45, f45, eta_lpt, pi_hpt)?,
++                                    eta_lpt)))?;
+ 
+         // The LP balance, per FACE air: the LPT passes (1-b)(G + eps) of gas.
+         let g = burner * (1.0 + f);
+@@ -863,13 +898,17 @@ fn turbines(
+                         fuel / (burner + cool.vane));
+     let nu_hpt = nu_hp * powp(core.tt4_d / tt41, 0.5);
+     let eta_hpt = core.map_hp().eta_t_at(core.base.eta_hpt, nu_hpt);
+-    let hpt = try_solve_cooled_hpt(&core.base, wgas, tt4, f, burner, cool.vane, cool.blade, c.tt3,
+-                                   eta_hpt)?;
+-    let nu_lpt = nu_lp * powp(core.tt45_d / hpt.tt45, 0.5);
+-    let eta_lpt = core.map_lp().eta_t_at(core.base.eta_lpt, nu_lpt);
+     // RUNG 97: the pin while the nozzle stays choked, else the subsonic root — at the cooled `Tt45`/`f45`.
+-    let (pi_lpt, tau_lpt, tt5) = crate::unchoked_lp::try_lp_turbine(
+-        &core.base, wgas, hpt.tt45, hpt.f45, eta_lpt, hpt.pi_hpt * c.pt4, p0)?;
++    // RUNG 104: one joint solve under a law.
++    let lp_eta = |tt45: f64| core.map_lp().eta_t_at(core.base.eta_lpt, nu_lp * powp(core.tt45_d / tt45, 0.5));
++    let (hpt, (pi_lpt, tau_lpt, tt5)) = try_cooled_pair(
++        &core.base, wgas, tt4, f, burner, cool.vane, cool.blade, c.tt3, eta_hpt,
++        |tt45, f45, pi_hpt| {
++            let e = lp_eta(tt45);
++            Ok((crate::unchoked_lp::try_lp_turbine(&core.base, wgas, tt45, f45, e, pi_hpt * c.pt4, p0)?, e))
++        })?;
++    let nu_lpt = nu_lp * powp(core.tt45_d / hpt.tt45, 0.5);
++    let eta_lpt = lp_eta(hpt.tt45);
+     Ok(Turbines { hpt, pi_lpt, tau_lpt, tt5, eta_hpt, eta_lpt, nu_hpt, nu_lpt })
+ }
+ 
+diff --git a/rust/src/two_spool.rs b/rust/src/two_spool.rs
+index 10df070..412fc01 100644
+--- a/rust/src/two_spool.rs
++++ b/rust/src/two_spool.rs
+@@ -324,13 +324,22 @@ pub struct TwoSpoolEngine {
+     /// designed dry); rung 38's core opens its nozzle throat by `1/π_fh` and puts the flame holders in the nozzle's
+     /// loss when it is fitted, and lights it at the fit's moment of a march.
+     pub afterburner: Option<crate::afterburner::TwoShaftFit>,
++    /// RUNG 104: the LP turbine's flow law — copied into every core built from this engine (a sibling keeps it).
++    pub turbine_law: crate::turbine_law::TurbineLaw,
+ }
+ 
+ impl TwoSpoolEngine {
+     pub fn new(gas: Gas, components: Vec<(&'static str, Component)>, eta_m: f64) -> Self {
+         let fs_engine = Engine::new(gas.clone(), Vec::new(), eta_m);
+         TwoSpoolEngine { gas, components, eta_m, fs_engine, customer: None, cooling: None,
+-                         offtake: None, afterburner: None }
++                         offtake: None, afterburner: None,
++                         turbine_law: crate::turbine_law::TurbineLaw::default() }
++    }
++
++    /// RUNG 104: the same engine with its LP turbine on `law`.
++    pub fn with_turbine_law(mut self, law: crate::turbine_law::TurbineLaw) -> Self {
++        self.turbine_law = law;
++        self
+     }
+ 
+     /// RUNG 102 (Part C): the same engine with an afterburner fitted behind its LP turbine. The design run is unchanged
+@@ -674,7 +683,7 @@ pub struct TwoSpoolCore {
+     /// HP turbine NGV throat area, m².
+     pub a4: f64,
+     /// LP turbine NGV throat area, m² — **the third throat, and rung 38's structural novelty.**
+-    pub a45: f64,
++    a45: f64,
+     /// Nozzle throat area, m².
+     pub a8: f64,
+     /// The design run, kept because rung 39 reads five further stations off it.
+@@ -732,6 +741,10 @@ pub struct TwoSpoolCore {
+     /// RUNG 103: `true` skips the unchoked refusal and keeps the pin — "the old model" with its numbers. For the rung's
+     /// scoring only; nothing on the page or the CLI sets it.
+     pub pin_past_choke: std::cell::Cell<bool>,
++    /// RUNG 104: the LP turbine's flow law (`crate::turbine_law`), from the design engine.
++    pub turbine_law: std::cell::Cell<crate::turbine_law::TurbineLaw>,
++    /// RUNG 104: the law's design capture.
++    pub lp_capacity: crate::turbine_law::LpCapacity,
+ }
+ 
+ impl TwoSpoolCore {
+@@ -784,6 +797,9 @@ impl TwoSpoolCore {
+ 
+     pub fn gas(&self) -> &Gas { &self.fs_engine.gas }
+ 
++    /// RUNG 104: `A45` for the PIN law only (the old code). Every other reader goes through `crate::turbine_law`.
++    pub fn a45_pin(&self) -> f64 { self.a45 }
++
+     pub fn freestream_for(&self, flight: &FlightCondition) -> (FlowState, f64) {
+         self.fs_engine.freestream(flight, self.mdot_air_design)
+     }
+@@ -820,6 +836,7 @@ impl TwoSpoolCore {
+         let customer = design_engine.customer;
+         let cooling = design_engine.cooling;
+         let offtake = design_engine.offtake;
++        let turbine_law = design_engine.turbine_law;
+ 
+         let by = |label: &str| -> Component {
+             design_engine.components.iter().find(|(l, _)| *l == label)
+@@ -867,6 +884,8 @@ impl TwoSpoolCore {
+         let mdot4_r = mdot_design * (1.0 + f_design);   // total mass through every throat
+         let a4 = mdot4_r * powp(s4.tt, 0.5) / (s4.pt * choked_mfp(&gas, s4.tt, f_design));
+         let a45 = mdot4_r * powp(s45.tt, 0.5) / (s45.pt * choked_mfp(&gas, s45.tt, f_design));
++        let lp_capacity =
++            crate::turbine_law::LpCapacity::capture(&gas, f_design, s4.pt, s45.tt, s45.pt, s5.pt, eta_lpt, a45);
+         let (tt9_r, pt9_r) = (s5.tt, pi_n * s5.pt);     // Tt9 = Tt5; pt9 = pi_n * pt5
+         let a8 = mdot4_r * powp(tt9_r, 0.5) / (pt9_r * choked_mfp(&gas, tt9_r, f_design));
+         // RUNG 102: fitted, the unlit duct costs the flame holders' loss, so the dry throat opens by 1/π_fh — the same
+@@ -898,6 +917,8 @@ impl TwoSpoolCore {
+             steady_lp: std::cell::Cell::new(crate::steady_unchoked::SteadyLp::Pin),
+             dispatching: std::cell::Cell::new(false),
+             pin_past_choke: std::cell::Cell::new(false),
++            turbine_law: std::cell::Cell::new(turbine_law),
++            lp_capacity,
+         }
+     }
+ 
+@@ -1093,11 +1114,12 @@ impl TwoSpoolCore {
+     ) -> Result<Cascade, Abort> {
+         counters::bump_cascade();
+         // Step 1 (★-HP): tau_HPT from (A4, A45) alone.
+-        let (pi_hpt, tau_hpt, tt45) =
+-            self.try_solve_choked_turbine(wgas, tt4, f, self.a4, self.a45, 1.0, self.eta_hpt)?;
+         // Step 2 (★-LP): tau_LPT from (A45, A8) alone — needs the nozzle choked (rung 103: or the re-solve's root).
+-        let (pi_lpt, tau_lpt, tt5) = crate::steady_unchoked::try_lp_steady(
+-            self, wgas, tt45, f, self.eta_lpt, pi_hpt)?;
++        // RUNG 104: under a flow law the two are one joint solve (the pin: the old order, literally).
++        let ((pi_hpt, tau_hpt, tt45), (pi_lpt, tau_lpt, tt5)) = self.try_turbine_pair(
++            wgas, tt4, f, self.eta_hpt,
++            |tt45, pi_hpt| Ok((crate::steady_unchoked::try_lp_steady(self, wgas, tt45, f, self.eta_lpt, pi_hpt)?,
++                               self.eta_lpt)))?;
+ 
+         // Step 3: LP shaft balance -> pi_LPC. NO reference to the HP spool.
+         let dh_lpt = self.eta_m * (1.0 + f) * (wgas.h_t(tt45, f) - wgas.h_t(tt5, f));
+@@ -1599,10 +1621,10 @@ impl TwoSpoolMapCore {
+         let (mut eta_hpt, mut eta_lpt) = (self.base.eta_hpt, self.base.eta_lpt);
+         for turb_pass in 0..Self::TURB_MAX {
+             // Steps 1–2: both turbines pinned by geometry, at the current turbine efficiencies.
+-            let (pi_hpt, tau_hpt, tt45) = self.base.try_solve_choked_turbine(
+-                wgas, tt4, f, self.base.a4, self.base.a45, 1.0, eta_hpt)?;
+-            let (pi_lpt, tau_lpt, tt5) = crate::steady_unchoked::try_lp_steady(
+-                &self.base, wgas, tt45, f, eta_lpt, pi_hpt)?;
++            let ((pi_hpt, tau_hpt, tt45), (pi_lpt, tau_lpt, tt5)) = self.base.try_turbine_pair(
++                wgas, tt4, f, eta_hpt,
++                |tt45, pi_hpt| Ok((crate::steady_unchoked::try_lp_steady(&self.base, wgas, tt45, f, eta_lpt, pi_hpt)?,
++                                   eta_lpt)))?;
+ 
+             // ENERGY (map-free): the LP balance fixes Tt25, the HP balance fixes Tt3 onto it.
+             let dh_lpt = self.base.eta_m * (1.0 + f) * (wgas.h_t(tt45, f) - wgas.h_t(tt5, f));
+diff --git a/rust/src/two_spool_transient.rs b/rust/src/two_spool_transient.rs
+index ad5fc4b..f4ec489 100644
+--- a/rust/src/two_spool_transient.rs
++++ b/rust/src/two_spool_transient.rs
+@@ -2244,13 +2244,16 @@ fn r40_try_instant_tail(
+     // Both turbines pinned by GEOMETRY (rung 38's choke chained twice) — no shaft balance.
+     let nu_hpt = nu_hp * powp(core.tt4_d / tt4, 0.5);
+     let eta_hpt = core.map_hp().eta_t_at(core.base.eta_hpt, nu_hpt);
+-    let (pi_hpt, tau_hpt, tt45) = core.base.try_solve_choked_turbine(
+-        wgas, tt4, f, core.base.a4, core.base.a45, 1.0, eta_hpt)?;
++    // RUNG 97: the pin while the nozzle stays choked, else the subsonic root. RUNG 104: one joint solve under a law.
++    let lp_eta = |tt45: f64| core.map_lp().eta_t_at(core.base.eta_lpt, nu_lp * powp(core.tt45_d / tt45, 0.5));
++    let ((pi_hpt, tau_hpt, tt45), (pi_lpt, tau_lpt, tt5)) = core.base.try_turbine_pair(
++        wgas, tt4, f, eta_hpt,
++        |tt45, pi_hpt| {
++            let e = lp_eta(tt45);
++            Ok((crate::unchoked_lp::try_lp_turbine(&core.base, wgas, tt45, f, e, pi_hpt * c.pt4, flight.p0)?, e))
++        })?;
+     let nu_lpt = nu_lp * powp(core.tt45_d / tt45, 0.5);
+-    let eta_lpt = core.map_lp().eta_t_at(core.base.eta_lpt, nu_lpt);
+-    // RUNG 97: the pin while the nozzle stays choked, else the subsonic root.
+-    let (pi_lpt, tau_lpt, tt5) = crate::unchoked_lp::try_lp_turbine(
+-        &core.base, wgas, tt45, f, eta_lpt, pi_hpt * c.pt4, flight.p0)?;
++    let eta_lpt = lp_eta(tt45);
+ 
+     // Specific powers, per unit AIR mass, per shaft.
+     let pt_hp = core.base.eta_m * (1.0 + f) * (wgas.h_t(tt4, f) - wgas.h_t(tt45, f));
+@@ -2297,13 +2300,13 @@ fn r40_powers(
+     let core = &t.inner;
+     let (wgas, f) = (c.gas(core), c.f);
+     let nu_hpt = nu_hp * powp(core.tt4_d / tt4, 0.5);
+-    let (pi_hpt, _, tt45) = core.base.try_solve_choked_turbine(
+-        wgas, tt4, f, core.base.a4, core.base.a45, 1.0,
+-        core.map_hp().eta_t_at(core.base.eta_hpt, nu_hpt))?;
+-    let nu_lpt = nu_lp * powp(core.tt45_d / tt45, 0.5);
+-    let (_, _, tt5) = crate::unchoked_lp::try_lp_turbine(
+-        &core.base, wgas, tt45, f, core.map_lp().eta_t_at(core.base.eta_lpt, nu_lpt), pi_hpt * c.pt4,
+-        flight.p0)?;
++    let lp_eta = |tt45: f64| core.map_lp().eta_t_at(core.base.eta_lpt, nu_lp * powp(core.tt45_d / tt45, 0.5));
++    let ((_, _, tt45), (_, _, tt5)) = core.base.try_turbine_pair(
++        wgas, tt4, f, core.map_hp().eta_t_at(core.base.eta_hpt, nu_hpt),
++        |tt45, pi_hpt| {
++            let e = lp_eta(tt45);
++            Ok((crate::unchoked_lp::try_lp_turbine(&core.base, wgas, tt45, f, e, pi_hpt * c.pt4, flight.p0)?, e))
++        })?;
+     let pt_hp = core.base.eta_m * (1.0 + f) * (wgas.h_t(tt4, f) - wgas.h_t(tt45, f));
+     let pt_lp = core.base.eta_m * (1.0 + f) * (wgas.h_t(tt45, f) - wgas.h_t(tt5, f));
+     let pc_hp = wgas.h_c(c.tt3) - wgas.h_c(c.tt25);
+diff --git a/rust/src/unchoked_formula.rs b/rust/src/unchoked_formula.rs
+index 505138c..4f48ac4 100644
+--- a/rust/src/unchoked_formula.rs
++++ b/rust/src/unchoked_formula.rs
+@@ -234,7 +234,7 @@ impl Formula {
+         let col = |y: fn(&GasGen) -> f64| lin_by(rows, |g| g.x, y, x);
+         let (pt45, tt45, f45, eta, w) = (col(|g| g.pt45), col(|g| g.tt45), col(|g| g.f45), col(|g| g.eta), col(|g| g.w));
+         let (base, gas) = (&ft.inner.inner.base, ft.inner.gas());
+-        let pin = base.try_solve_choked_turbine(gas, tt45, f45, base.a45, base.a8, base.pi_n, eta)?;
++        let pin = base.try_lp_choked(gas, tt45, f45, eta)?;
+         let (pi, _, tt5) = try_lp_turbine(base, gas, tt45, f45, eta, pt45, push.p0)?;
+         // The row's LP power at the re-solved work: exactly the row's own where the re-solve IS the pin.
+         let h45 = gas.h_t(tt45, f45);
+diff --git a/rust/src/unchoked_lp.rs b/rust/src/unchoked_lp.rs
+index faf9e54..511ff24 100644
+--- a/rust/src/unchoked_lp.rs
++++ b/rust/src/unchoked_lp.rs
+@@ -41,7 +41,8 @@ pub fn try_lp_turbine(
+             return x.try_lp_turbine(base, gas, tt45, f45, eta_lpt, pt45, p0, s);
+         }
+     }
+-    let pin = base.try_solve_choked_turbine(gas, tt45, f45, base.a45, base.a8, base.pi_n, eta_lpt)?;
++    // RUNG 104: the choked-nozzle root under the core's law (the pin: rung 38's (★-LP), literally).
++    let pin = base.try_lp_choked(gas, tt45, f45, eta_lpt)?;
+     if base.lp_pinned.get() {
+         return Ok(pin);
+     }
+@@ -50,8 +51,10 @@ pub fn try_lp_turbine(
+     if matches!(at(pin.0, pin.2), Ok(e) if e.p9 > p0 + 1e-6) {
+         return Ok(pin);
+     }
+-    let supply = base.a45 * pt45 * try_choked_mfp(gas, tt45, f45)? / powp(tt45, 0.5);
++    let law = base.turbine_law.get() != crate::turbine_law::TurbineLaw::Pin;
++    let supply0 = if law { f64::NAN } else { base.a45_pin() * pt45 * try_choked_mfp(gas, tt45, f45)? / powp(tt45, 0.5) };
+     let resid = |pi: f64| -> Result<(f64, f64, f64), Abort> {
++        let supply = if law { base.w45(gas, pi, tt45, f45, eta_lpt)? * pt45 / powp(tt45, 0.5) } else { supply0 };
+         let (tau, tt5) = base.try_tau_of(gas, tt45, f45, pi, eta_lpt)?;
+         let demand = match at(pi, tt5) {
+             Ok(e) => base.a8 * (e.p9 / (gas.r_t_at(f45) * e.t9)) * e.v9,
+@@ -64,6 +67,15 @@ pub fn try_lp_turbine(
+             "rung-97: the nozzle cannot pass the LP turbine's flow against {p0:.0} Pa even with the turbine nearly \
+              unexpanded (pi_LPT {PI_TOP}) — the engine has no operating point at this instant")));
+     }
++    if law {
++        // RUNG 104: the supply moves with `π` here, so each trial costs a law call — a false-position search, not
++        // rung 97's 45 halvings (the pin keeps those, literally).
++        let rlo = resid(pin.0)?.0;
++        let rhi = resid(PI_TOP)?.0;
++        let pi = crate::turbine_law::illinois_known(|p| resid(p).map(|r| r.0), pin.0, rlo, PI_TOP, rhi, TwoSpoolCore::TOL)?;
++        let (_, tau, tt5) = resid(pi)?;
++        return Ok((pi, tau, tt5));
++    }
+     let (mut lo, mut hi) = (pin.0, PI_TOP);
+     for _ in 0..TwoSpoolCore::MAX {
+         let mid = 0.5 * (lo + hi);
+diff --git a/rust/tests/rung100.rs b/rust/tests/rung100.rs
+index 87f22e9..0c82fec 100644
+--- a/rust/tests/rung100.rs
++++ b/rust/tests/rung100.rs
+@@ -160,7 +160,7 @@ fn the_fan_formula_rebalances_the_lp_shaft_at_an_unchoked_end() {
+         let (a, b) = seg(x, |r| r.x);
+         y(a) + (y(b) - y(a)) * (x - a.x) / (b.x - a.x)
+     };
+-    let pin = base.try_solve_choked_turbine(gas, g(|r| r.tt45), g(|r| r.f45), base.a45, base.a8, base.pi_n, g(|r| r.eta)).unwrap();
++    let pin = base.try_solve_choked_turbine(gas, g(|r| r.tt45), g(|r| r.f45), base.a45_pin(), base.a8, base.pi_n, g(|r| r.eta)).unwrap();
+     assert!(at.pi_lpt > pin.0 + 1e-3, "re-solved {} vs choked {}", at.pi_lpt, pin.0);
+ }
+ 
+diff --git a/rust/tests/rung102.rs b/rust/tests/rung102.rs
+index 48a236c..5763949 100644
+--- a/rust/tests/rung102.rs
++++ b/rust/tests/rung102.rs
+@@ -565,11 +565,11 @@ fn part_c_an_independent_instrument_agrees_on_the_held_lit_turbine() {
+         assert_eq!(i.branch, turbojet::matcher::Branch::Choked, "a choked lit point");
+         let (gas, f, tt45, eta) = (base.gas(), i.close.f, i.tt45, i.eta_lpt);
+         let pt45 = i.pi_hpt * i.close.pt4;
+-        let mdot5 = base.a45 * pt45 * choked_mfp(gas, tt45, f) / tt45.sqrt();
++        let mdot5 = base.a45_pin() * pt45 * choked_mfp(gas, tt45, f) / tt45.sqrt();
+         let a8 = x.s_now().unwrap() * x.ab.a8_dry;
+         let (mut k, mut pi) = (1.0, 0.0);
+         for _ in 0..200 {
+-            let (p_new, _, tt5) = base.try_solve_choked_turbine(gas, tt45, f, base.a45, a8 * k, x.ab.pi_n, eta).unwrap();
++            let (p_new, _, tt5) = base.try_solve_choked_turbine(gas, tt45, f, base.a45_pin(), a8 * k, x.ab.pi_n, eta).unwrap();
+             let (s7, d) = x.burn(gas, &FlowState { tt: tt5, pt: p_new * pt45, mdot: mdot5, far: f }, true).unwrap();
+             k = d.pi_ab * (tt5 / s7.tt).sqrt() * choked_mfp(gas, s7.tt, s7.far) / choked_mfp(gas, tt5, f) * (1.0 + f) / (1.0 + s7.far);
+             if (p_new - pi).abs() < 1e-15 { break; }
+diff --git a/rust/tests/rung103.rs b/rust/tests/rung103.rs
+index b7f44c1..bf7851c 100644
+--- a/rust/tests/rung103.rs
++++ b/rust/tests/rung103.rs
+@@ -258,7 +258,7 @@ fn hand_cpg(c: &TwoSpoolCore, fl: &FlightCondition, tt4: f64) -> (f64, f64, f64)
+     let pt2 = c.pi_d_max * ram_recovery(fl.m0) * fl.p0 * (tt2 / fl.t0).powf(1.0 / ec);
+     let tt_out = |tin: f64, pi: f64, eta: f64| tin * (1.0 - eta * (1.0 - pi.powf(et)));
+     // HP pin: pi*sqrt(Tt4/Tt45) = A4/A45 (one gas, one MFP*).
+-    let k = c.a4 / c.a45;
++    let k = c.a4 / c.a45_pin();
+     let (mut lo, mut hi) = (0.05, 0.9999);
+     for _ in 0..200 {
+         let mid = 0.5 * (lo + hi);
+@@ -284,7 +284,7 @@ fn hand_cpg(c: &TwoSpoolCore, fl: &FlightCondition, tt4: f64) -> (f64, f64, f64)
+             if done { break }
+         }
+         let pt45 = pi_hpt * pt4;
+-        let supply = c.a45 * pt45 * mfp / tt45.sqrt();
++        let supply = c.a45_pin() * pt45 * mfp / tt45.sqrt();
+         let pt9 = c.pi_n * pi_lpt * pt45;
+         let m9 = (((pt9 / fl.p0).powf(et) - 1.0) / (0.5 * (gt - 1.0))).max(0.0).sqrt();
+         let t9 = tt5 / (1.0 + 0.5 * (gt - 1.0) * m9 * m9);
+diff --git a/rust/tests/rung38.rs b/rust/tests/rung38.rs
+index 34bca2b..4d89402 100644
+--- a/rust/tests/rung38.rs
++++ b/rust/tests/rung38.rs
+@@ -127,8 +127,8 @@ fn bare_cascade(m: &turbojet::two_spool::TwoSpoolCore, gas: &Gas, tt4: f64)
+         (pi_t, tau_of(pi_t))
+     };
+ 
+-    let (_, tau_hpt) = bisect(m.a4 / m.a45, eta_hpt);
+-    let (_, tau_lpt) = bisect(m.a45 / (m.a8 * pi_n), eta_lpt);
++    let (_, tau_hpt) = bisect(m.a4 / m.a45_pin(), eta_hpt);
++    let (_, tau_lpt) = bisect(m.a45_pin() / (m.a8 * pi_n), eta_lpt);
+     let tt45 = tt4 * tau_hpt;
+     let tt5 = tt45 * tau_lpt;
+ 
+diff --git a/rust/tests/rung39.rs b/rust/tests/rung39.rs
+index 749ff26..3e7d372 100644
+--- a/rust/tests/rung39.rs
++++ b/rust/tests/rung39.rs
+@@ -245,7 +245,7 @@ fn gate3_independent_cpg_map_cascade() {
+     };
+ 
+     let c = &m.core().base;
+-    let (area_hp, area_lp) = (c.a4 / c.a45, c.a45 / (c.a8 * pi_n));
++    let (area_hp, area_lp) = (c.a4 / c.a45_pin(), c.a45_pin() / (c.a8 * pi_n));
+ 
+     let bare = |tt4: f64| -> (f64, f64, f64, f64, f64, f64) {
+         let tau_hpt = turbine(area_hp, eta_hpt);
+diff --git a/rust/tests/rung40.rs b/rust/tests/rung40.rs
+index 2f427d5..d9133dc 100644
+--- a/rust/tests/rung40.rs
++++ b/rust/tests/rung40.rs
+@@ -309,7 +309,7 @@ fn gate3_independent_cpg_two_shaft_closure() {
+     };
+ 
+     let b = &t.inner.base;
+-    let (area_hp, area_lp) = (b.a4 / b.a45, b.a45 / (b.a8 * PI_N));
++    let (area_hp, area_lp) = (b.a4 / b.a45_pin(), b.a45_pin() / (b.a8 * PI_N));
+     let tau_hpt = turbine(area_hp, ETA_HPT);
+     let tau_lpt = turbine(area_lp, ETA_LPT);
+ 
+diff --git a/rust/tests/rung44.rs b/rust/tests/rung44.rs
+index 8029d4b..ab43d9c 100644
+--- a/rust/tests/rung44.rs
++++ b/rust/tests/rung44.rs
+@@ -452,7 +452,7 @@ fn gate2_bare_math_accel_excursion_sign_ordering_and_slaving() {
+     };
+ 
+     let b = &t.inner.base;
+-    let (area_hp, area_lp) = (b.a4 / b.a45, b.a45 / (b.a8 * PI_N));
++    let (area_hp, area_lp) = (b.a4 / b.a45_pin(), b.a45_pin() / (b.a8 * PI_N));
+     let tau_hpt = turbine(area_hp, ETA_HPT);
+     let tau_lpt = turbine(area_lp, ETA_LPT);
+ 
+diff --git a/rust/tests/rung97.rs b/rust/tests/rung97.rs
+index bc4b8d8..8ac1f2d 100644
+--- a/rust/tests/rung97.rs
++++ b/rust/tests/rung97.rs
+@@ -43,7 +43,7 @@ fn choked_instants_keep_the_pin_bit_for_bit_and_the_switch_restores_it_where_unc
+     let p = pinned(&sv, i);
+     let base = &tr(&sv).inner.base;
+     let g = i.close.gas(&tr(&sv).inner);
+-    let pin = base.try_solve_choked_turbine(g, i.tt45, i.close.f, base.a45, base.a8, base.pi_n, i.eta_lpt).unwrap();
++    let pin = base.try_solve_choked_turbine(g, i.tt45, i.close.f, base.a45_pin(), base.a8, base.pi_n, i.eta_lpt).unwrap();
+     assert_eq!(p.pi_lpt.to_bits(), pin.0.to_bits());
+     assert_eq!((p.pi_hpt.to_bits(), p.tt45.to_bits()), (i.pi_hpt.to_bits(), i.tt45.to_bits()), "the HP turbine is untouched");
+     assert!(i.pi_lpt / p.pi_lpt - 1.0 > 1e-3, "{} vs {}", i.pi_lpt, p.pi_lpt);
+@@ -72,7 +72,7 @@ fn the_root_matches_a_hand_written_perfect_gas_solve() {
+         };
+         assert!((mfp_star(i.tt45) / try_choked_mfp(g, i.tt45, f).unwrap() - 1.0).abs() < 1e-12);
+         let (pt45, p0) = (i.pi_hpt * i.close.pt4, sv.flight.p0);
+-        let supply = base.a45 * pt45 * mfp_star(i.tt45) / i.tt45.sqrt();
++        let supply = base.a45_pin() * pt45 * mfp_star(i.tt45) / i.tt45.sqrt();
+         let resid = |pi: f64| {
+             let tt5 = i.tt45 - i.eta_lpt * (i.tt45 - i.tt45 * pi.powf(ge));
+             let pt9 = base.pi_n * pi * pt45;
+diff --git a/rust/tests/two_spool_oracle.rs b/rust/tests/two_spool_oracle.rs
+index 454f0aa..5f17629 100644
+--- a/rust/tests/two_spool_oracle.rs
++++ b/rust/tests/two_spool_oracle.rs
+@@ -205,7 +205,7 @@ fn rust_values() -> Vec<(String, f64)> {
+         let m = matcher38(g);
+         let c = m.core();
+         v.push((format!("hw/{g}/A4"), c.a4));
+-        v.push((format!("hw/{g}/A45"), c.a45));
++        v.push((format!("hw/{g}/A45"), c.a45_pin()));
+         v.push((format!("hw/{g}/A8"), c.a8));
+         v.push((format!("hw/{g}/f_design"), c.f_design));
+         v.push((format!("hw/{g}/pi_d_max"), c.pi_d_max));

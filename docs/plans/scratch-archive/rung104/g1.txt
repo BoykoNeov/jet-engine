@@ -1,0 +1,177 @@
+CPG flat design M.85 Tt4    600  refused: rung-39 two-spool map match at Tt4=600, M0=0.85: nozzle UNCHOKED -- OU
+CPG flat design M.85 Tt4    700  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+CPG flat design M.85 Tt4    800  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+CPG flat design M.85 Tt4    900  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+CPG flat design M.85 Tt4   1000  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+CPG flat design M.85 Tt4   1100  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+CPG flat design M.85 Tt4   1200  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+CPG flat design M.85 Tt4   1300  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+CPG flat design M.85 Tt4   1400  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+CPG flat design M.85 Tt4   1500  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+CPG flat design M.85 Tt4   1600  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+CPG flat SLS M0 Tt4    600  refused: rung-39 two-spool map match at Tt4=600, M0=0.00: nozzle UNCHOKED -- OU
+CPG flat SLS M0 Tt4    700  refused: rung-39 two-spool map match at Tt4=700, M0=0.00: nozzle UNCHOKED -- OU
+CPG flat SLS M0 Tt4    800  refused: rung-39 two-spool map match at Tt4=800, M0=0.00: nozzle UNCHOKED -- OU
+CPG flat SLS M0 Tt4    900  refused: efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE d
+CPG flat SLS M0 Tt4   1000  refused: efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE d
+CPG flat SLS M0 Tt4   1100  refused: efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE d
+CPG flat SLS M0 Tt4   1200  refused: efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE d
+CPG flat SLS M0 Tt4   1300  refused: efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE d
+CPG flat SLS M0 Tt4   1400  refused: efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE d
+CPG flat SLS M0 Tt4   1500  refused: efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE d
+CPG flat SLS M0 Tt4   1600  refused: efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE d
+CPG flat hot M.3 Tt4    600  refused: rung-39 two-spool map match at Tt4=600, M0=0.30: nozzle UNCHOKED -- OU
+CPG flat hot M.3 Tt4    700  refused: rung-39 two-spool map match at Tt4=700, M0=0.30: nozzle UNCHOKED -- OU
+CPG flat hot M.3 Tt4    800  refused: rung-39 two-spool map match at Tt4=800, M0=0.30: nozzle UNCHOKED -- OU
+CPG flat hot M.3 Tt4    900  refused: rung-39 two-spool map match at Tt4=900, M0=0.30: nozzle UNCHOKED -- OU
+CPG flat hot M.3 Tt4   1000  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+CPG flat hot M.3 Tt4   1100  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+CPG flat hot M.3 Tt4   1200  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+CPG flat hot M.3 Tt4   1300  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+CPG flat hot M.3 Tt4   1400  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+CPG flat hot M.3 Tt4   1500  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+CPG flat hot M.3 Tt4   1600  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+CPG flat M2 36k Tt4    600  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+CPG flat M2 36k Tt4    700  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+CPG flat M2 36k Tt4    800  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+CPG flat M2 36k Tt4    900  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+CPG flat M2 36k Tt4   1000  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+CPG flat M2 36k Tt4   1100  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+CPG flat M2 36k Tt4   1200  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+CPG flat M2 36k Tt4   1300  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+CPG flat M2 36k Tt4   1400  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+CPG flat M2 36k Tt4   1500  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+CPG flat M2 36k Tt4   1600  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+CPG mixed design M.85 Tt4    600  refused: rung-39 two-spool map match at Tt4=600, M0=0.85: nozzle UNCHOKED -- OU
+CPG mixed design M.85 Tt4    700  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+CPG mixed design M.85 Tt4    800  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+CPG mixed design M.85 Tt4    900  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+CPG mixed design M.85 Tt4   1000  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+CPG mixed design M.85 Tt4   1100  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+CPG mixed design M.85 Tt4   1200  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+CPG mixed design M.85 Tt4   1300  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+CPG mixed design M.85 Tt4   1400  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+CPG mixed design M.85 Tt4   1500  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+CPG mixed design M.85 Tt4   1600  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+CPG mixed SLS M0 Tt4    600  refused: rung-39 two-spool map match at Tt4=600, M0=0.00: nozzle UNCHOKED -- OU
+CPG mixed SLS M0 Tt4    700  refused: rung-39 two-spool map match at Tt4=700, M0=0.00: nozzle UNCHOKED -- OU
+CPG mixed SLS M0 Tt4    800  refused: rung-39 two-spool map match at Tt4=800, M0=0.00: nozzle UNCHOKED -- OU
+CPG mixed SLS M0 Tt4    900  refused: efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE d
+CPG mixed SLS M0 Tt4   1000  refused: efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE d
+CPG mixed SLS M0 Tt4   1100  refused: efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE d
+CPG mixed SLS M0 Tt4   1200  refused: efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE d
+CPG mixed SLS M0 Tt4   1300  refused: efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE d
+CPG mixed SLS M0 Tt4   1400  refused: efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE d
+CPG mixed SLS M0 Tt4   1500  refused: efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE d
+CPG mixed SLS M0 Tt4   1600  refused: efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE d
+CPG mixed hot M.3 Tt4    600  refused: rung-39 two-spool map match at Tt4=600, M0=0.30: nozzle UNCHOKED -- OU
+CPG mixed hot M.3 Tt4    700  refused: rung-39 two-spool map match at Tt4=700, M0=0.30: nozzle UNCHOKED -- OU
+CPG mixed hot M.3 Tt4    800  refused: rung-39 two-spool map match at Tt4=800, M0=0.30: nozzle UNCHOKED -- OU
+CPG mixed hot M.3 Tt4    900  refused: rung-39 two-spool map match at Tt4=900, M0=0.30: nozzle UNCHOKED -- OU
+CPG mixed hot M.3 Tt4   1000  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+CPG mixed hot M.3 Tt4   1100  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+CPG mixed hot M.3 Tt4   1200  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+CPG mixed hot M.3 Tt4   1300  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+CPG mixed hot M.3 Tt4   1400  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+CPG mixed hot M.3 Tt4   1500  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+CPG mixed hot M.3 Tt4   1600  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+CPG mixed M2 36k Tt4    600  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+CPG mixed M2 36k Tt4    700  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+CPG mixed M2 36k Tt4    800  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+CPG mixed M2 36k Tt4    900  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+CPG mixed M2 36k Tt4   1000  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+CPG mixed M2 36k Tt4   1100  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+CPG mixed M2 36k Tt4   1200  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+CPG mixed M2 36k Tt4   1300  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+CPG mixed M2 36k Tt4   1400  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+CPG mixed M2 36k Tt4   1500  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+CPG mixed M2 36k Tt4   1600  LPT pt45/pt5 1.4525  bound(M5=.6) 1.8243  crit 1.8324  LP bound/crit 0.996  | HPT pt4/pt45 2.3228 bound 2.9174 crit 1.8324 HP bound/crit 1.592
+reacting-eq flat design M.85 Tt4    600  refused: rung-39 two-spool map match at Tt4=600, M0=0.85: nozzle UNCHOKED -- OU
+reacting-eq flat design M.85 Tt4    700  LPT pt45/pt5 1.4626  bound(M5=.6) 1.8600  crit 1.8781  LP bound/crit 0.990  | HPT pt4/pt45 2.3472 bound 2.9826 crit 1.8695 HP bound/crit 1.595
+reacting-eq flat design M.85 Tt4    800  LPT pt45/pt5 1.4616  bound(M5=.6) 1.8561  crit 1.8718  LP bound/crit 0.992  | HPT pt4/pt45 2.3426 bound 2.9720 crit 1.8619 HP bound/crit 1.596
+reacting-eq flat design M.85 Tt4    900  LPT pt45/pt5 1.4604  bound(M5=.6) 1.8517  crit 1.8652  LP bound/crit 0.993  | HPT pt4/pt45 2.3373 bound 2.9603 crit 1.8548 HP bound/crit 1.596
+reacting-eq flat design M.85 Tt4   1000  LPT pt45/pt5 1.4591  bound(M5=.6) 1.8471  crit 1.8585  LP bound/crit 0.994  | HPT pt4/pt45 2.3316 bound 2.9480 crit 1.8487 HP bound/crit 1.595
+reacting-eq flat design M.85 Tt4   1100  LPT pt45/pt5 1.4577  bound(M5=.6) 1.8423  crit 1.8523  LP bound/crit 0.995  | HPT pt4/pt45 2.3256 bound 2.9358 crit 1.8439 HP bound/crit 1.592
+reacting-eq flat design M.85 Tt4   1200  LPT pt45/pt5 1.4562  bound(M5=.6) 1.8376  crit 1.8469  LP bound/crit 0.995  | HPT pt4/pt45 2.3199 bound 2.9246 crit 1.8395 HP bound/crit 1.590
+reacting-eq flat design M.85 Tt4   1300  LPT pt45/pt5 1.4547  bound(M5=.6) 1.8333  crit 1.8425  LP bound/crit 0.995  | HPT pt4/pt45 2.3150 bound 2.9151 crit 1.8355 HP bound/crit 1.588
+reacting-eq flat design M.85 Tt4   1400  LPT pt45/pt5 1.4533  bound(M5=.6) 1.8295  crit 1.8384  LP bound/crit 0.995  | HPT pt4/pt45 2.3109 bound 2.9068 crit 1.8318 HP bound/crit 1.587
+reacting-eq flat design M.85 Tt4   1500  LPT pt45/pt5 1.4521  bound(M5=.6) 1.8262  crit 1.8346  LP bound/crit 0.995  | HPT pt4/pt45 2.3070 bound 2.8991 crit 1.8284 HP bound/crit 1.586
+reacting-eq flat design M.85 Tt4   1600  LPT pt45/pt5 1.4510  bound(M5=.6) 1.8231  crit 1.8310  LP bound/crit 0.996  | HPT pt4/pt45 2.3034 bound 2.8920 crit 1.8252 HP bound/crit 1.584
+reacting-eq flat SLS M0 Tt4    600  refused: rung-39 two-spool map match at Tt4=600, M0=0.00: nozzle UNCHOKED -- OU
+reacting-eq flat SLS M0 Tt4    700  refused: rung-39 two-spool map match at Tt4=700, M0=0.00: nozzle UNCHOKED -- OU
+reacting-eq flat SLS M0 Tt4    800  refused: rung-39 two-spool map match at Tt4=800, M0=0.00: nozzle UNCHOKED -- OU
+reacting-eq flat SLS M0 Tt4    900  refused: efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE d
+reacting-eq flat SLS M0 Tt4   1000  refused: efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE d
+reacting-eq flat SLS M0 Tt4   1100  refused: efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE d
+reacting-eq flat SLS M0 Tt4   1200  refused: efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE d
+reacting-eq flat SLS M0 Tt4   1300  refused: efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE d
+reacting-eq flat SLS M0 Tt4   1400  refused: efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE d
+reacting-eq flat SLS M0 Tt4   1500  refused: efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE d
+reacting-eq flat SLS M0 Tt4   1600  refused: efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE d
+reacting-eq flat hot M.3 Tt4    600  refused: rung-39 two-spool map match at Tt4=600, M0=0.30: nozzle UNCHOKED -- OU
+reacting-eq flat hot M.3 Tt4    700  refused: rung-39 two-spool map match at Tt4=700, M0=0.30: nozzle UNCHOKED -- OU
+reacting-eq flat hot M.3 Tt4    800  refused: rung-39 two-spool map match at Tt4=800, M0=0.30: nozzle UNCHOKED -- OU
+reacting-eq flat hot M.3 Tt4    900  refused: rung-39 two-spool map match at Tt4=900, M0=0.30: nozzle UNCHOKED -- OU
+reacting-eq flat hot M.3 Tt4   1000  LPT pt45/pt5 1.4592  bound(M5=.6) 1.8474  crit 1.8589  LP bound/crit 0.994  | HPT pt4/pt45 2.3320 bound 2.9488 crit 1.8491 HP bound/crit 1.595
+reacting-eq flat hot M.3 Tt4   1100  LPT pt45/pt5 1.4578  bound(M5=.6) 1.8426  crit 1.8527  LP bound/crit 0.995  | HPT pt4/pt45 2.3260 bound 2.9366 crit 1.8443 HP bound/crit 1.592
+reacting-eq flat hot M.3 Tt4   1200  LPT pt45/pt5 1.4563  bound(M5=.6) 1.8380  crit 1.8473  LP bound/crit 0.995  | HPT pt4/pt45 2.3203 bound 2.9254 crit 1.8399 HP bound/crit 1.590
+reacting-eq flat hot M.3 Tt4   1300  LPT pt45/pt5 1.4548  bound(M5=.6) 1.8337  crit 1.8429  LP bound/crit 0.995  | HPT pt4/pt45 2.3154 bound 2.9159 crit 1.8359 HP bound/crit 1.588
+reacting-eq flat hot M.3 Tt4   1400  LPT pt45/pt5 1.4534  bound(M5=.6) 1.8299  crit 1.8388  LP bound/crit 0.995  | HPT pt4/pt45 2.3112 bound 2.9076 crit 1.8322 HP bound/crit 1.587
+reacting-eq flat hot M.3 Tt4   1500  LPT pt45/pt5 1.4522  bound(M5=.6) 1.8265  crit 1.8350  LP bound/crit 0.995  | HPT pt4/pt45 2.3074 bound 2.8999 crit 1.8288 HP bound/crit 1.586
+reacting-eq flat hot M.3 Tt4   1600  LPT pt45/pt5 1.4511  bound(M5=.6) 1.8235  crit 1.8314  LP bound/crit 0.996  | HPT pt4/pt45 2.3038 bound 2.8928 crit 1.8256 HP bound/crit 1.585
+reacting-eq flat M2 36k Tt4    600  refused: efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE d
+reacting-eq flat M2 36k Tt4    700  LPT pt45/pt5 1.4628  bound(M5=.6) 1.8608  crit 1.8792  LP bound/crit 0.990  | HPT pt4/pt45 2.3481 bound 2.9846 crit 1.8706 HP bound/crit 1.596
+reacting-eq flat M2 36k Tt4    800  LPT pt45/pt5 1.4618  bound(M5=.6) 1.8569  crit 1.8730  LP bound/crit 0.991  | HPT pt4/pt45 2.3436 bound 2.9741 crit 1.8630 HP bound/crit 1.596
+reacting-eq flat M2 36k Tt4    900  LPT pt45/pt5 1.4607  bound(M5=.6) 1.8526  crit 1.8663  LP bound/crit 0.993  | HPT pt4/pt45 2.3383 bound 2.9624 crit 1.8559 HP bound/crit 1.596
+reacting-eq flat M2 36k Tt4   1000  LPT pt45/pt5 1.4594  bound(M5=.6) 1.8480  crit 1.8597  LP bound/crit 0.994  | HPT pt4/pt45 2.3326 bound 2.9502 crit 1.8498 HP bound/crit 1.595
+reacting-eq flat M2 36k Tt4   1100  LPT pt45/pt5 1.4580  bound(M5=.6) 1.8432  crit 1.8534  LP bound/crit 0.994  | HPT pt4/pt45 2.3267 bound 2.9380 crit 1.8450 HP bound/crit 1.592
+reacting-eq flat M2 36k Tt4   1200  LPT pt45/pt5 1.4565  bound(M5=.6) 1.8386  crit 1.8481  LP bound/crit 0.995  | HPT pt4/pt45 2.3210 bound 2.9268 crit 1.8406 HP bound/crit 1.590
+reacting-eq flat M2 36k Tt4   1300  LPT pt45/pt5 1.4550  bound(M5=.6) 1.8343  crit 1.8436  LP bound/crit 0.995  | HPT pt4/pt45 2.3161 bound 2.9173 crit 1.8366 HP bound/crit 1.588
+reacting-eq flat M2 36k Tt4   1400  LPT pt45/pt5 1.4536  bound(M5=.6) 1.8304  crit 1.8395  LP bound/crit 0.995  | HPT pt4/pt45 2.3119 bound 2.9090 crit 1.8329 HP bound/crit 1.587
+reacting-eq flat M2 36k Tt4   1500  LPT pt45/pt5 1.4524  bound(M5=.6) 1.8271  crit 1.8357  LP bound/crit 0.995  | HPT pt4/pt45 2.3081 bound 2.9013 crit 1.8295 HP bound/crit 1.586
+reacting-eq flat M2 36k Tt4   1600  LPT pt45/pt5 1.4513  bound(M5=.6) 1.8240  crit 1.8322  LP bound/crit 0.996  | HPT pt4/pt45 2.3045 bound 2.8942 crit 1.8263 HP bound/crit 1.585
+reacting-eq mixed design M.85 Tt4    600  refused: rung-39 two-spool map match at Tt4=600, M0=0.85: nozzle UNCHOKED -- OU
+reacting-eq mixed design M.85 Tt4    700  LPT pt45/pt5 1.4626  bound(M5=.6) 1.8600  crit 1.8781  LP bound/crit 0.990  | HPT pt4/pt45 2.3472 bound 2.9826 crit 1.8695 HP bound/crit 1.595
+reacting-eq mixed design M.85 Tt4    800  LPT pt45/pt5 1.4616  bound(M5=.6) 1.8561  crit 1.8718  LP bound/crit 0.992  | HPT pt4/pt45 2.3426 bound 2.9720 crit 1.8619 HP bound/crit 1.596
+reacting-eq mixed design M.85 Tt4    900  LPT pt45/pt5 1.4604  bound(M5=.6) 1.8517  crit 1.8652  LP bound/crit 0.993  | HPT pt4/pt45 2.3373 bound 2.9603 crit 1.8548 HP bound/crit 1.596
+reacting-eq mixed design M.85 Tt4   1000  LPT pt45/pt5 1.4591  bound(M5=.6) 1.8471  crit 1.8585  LP bound/crit 0.994  | HPT pt4/pt45 2.3316 bound 2.9480 crit 1.8487 HP bound/crit 1.595
+reacting-eq mixed design M.85 Tt4   1100  LPT pt45/pt5 1.4577  bound(M5=.6) 1.8423  crit 1.8523  LP bound/crit 0.995  | HPT pt4/pt45 2.3256 bound 2.9358 crit 1.8439 HP bound/crit 1.592
+reacting-eq mixed design M.85 Tt4   1200  LPT pt45/pt5 1.4562  bound(M5=.6) 1.8376  crit 1.8469  LP bound/crit 0.995  | HPT pt4/pt45 2.3199 bound 2.9246 crit 1.8395 HP bound/crit 1.590
+reacting-eq mixed design M.85 Tt4   1300  LPT pt45/pt5 1.4547  bound(M5=.6) 1.8333  crit 1.8425  LP bound/crit 0.995  | HPT pt4/pt45 2.3150 bound 2.9151 crit 1.8355 HP bound/crit 1.588
+reacting-eq mixed design M.85 Tt4   1400  LPT pt45/pt5 1.4533  bound(M5=.6) 1.8295  crit 1.8384  LP bound/crit 0.995  | HPT pt4/pt45 2.3109 bound 2.9068 crit 1.8318 HP bound/crit 1.587
+reacting-eq mixed design M.85 Tt4   1500  LPT pt45/pt5 1.4521  bound(M5=.6) 1.8262  crit 1.8346  LP bound/crit 0.995  | HPT pt4/pt45 2.3070 bound 2.8991 crit 1.8284 HP bound/crit 1.586
+reacting-eq mixed design M.85 Tt4   1600  LPT pt45/pt5 1.4510  bound(M5=.6) 1.8231  crit 1.8310  LP bound/crit 0.996  | HPT pt4/pt45 2.3034 bound 2.8920 crit 1.8252 HP bound/crit 1.584
+reacting-eq mixed SLS M0 Tt4    600  refused: rung-39 two-spool map match at Tt4=600, M0=0.00: nozzle UNCHOKED -- OU
+reacting-eq mixed SLS M0 Tt4    700  refused: rung-39 two-spool map match at Tt4=700, M0=0.00: nozzle UNCHOKED -- OU
+reacting-eq mixed SLS M0 Tt4    800  refused: rung-39 two-spool map match at Tt4=800, M0=0.00: nozzle UNCHOKED -- OU
+reacting-eq mixed SLS M0 Tt4    900  refused: efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE d
+reacting-eq mixed SLS M0 Tt4   1000  refused: efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE d
+reacting-eq mixed SLS M0 Tt4   1100  refused: efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE d
+reacting-eq mixed SLS M0 Tt4   1200  refused: efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE d
+reacting-eq mixed SLS M0 Tt4   1300  refused: efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE d
+reacting-eq mixed SLS M0 Tt4   1400  refused: efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE d
+reacting-eq mixed SLS M0 Tt4   1500  refused: efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE d
+reacting-eq mixed SLS M0 Tt4   1600  refused: efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE d
+reacting-eq mixed hot M.3 Tt4    600  refused: nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=100520 Pa
+reacting-eq mixed hot M.3 Tt4    700  refused: rung-39 two-spool map match at Tt4=700, M0=0.30: nozzle UNCHOKED -- OU
+reacting-eq mixed hot M.3 Tt4    800  refused: rung-39 two-spool map match at Tt4=800, M0=0.30: nozzle UNCHOKED -- OU
+reacting-eq mixed hot M.3 Tt4    900  refused: rung-39 two-spool map match at Tt4=900, M0=0.30: nozzle UNCHOKED -- OU
+reacting-eq mixed hot M.3 Tt4   1000  LPT pt45/pt5 1.4592  bound(M5=.6) 1.8474  crit 1.8589  LP bound/crit 0.994  | HPT pt4/pt45 2.3320 bound 2.9488 crit 1.8491 HP bound/crit 1.595
+reacting-eq mixed hot M.3 Tt4   1100  LPT pt45/pt5 1.4578  bound(M5=.6) 1.8426  crit 1.8527  LP bound/crit 0.995  | HPT pt4/pt45 2.3260 bound 2.9366 crit 1.8443 HP bound/crit 1.592
+reacting-eq mixed hot M.3 Tt4   1200  LPT pt45/pt5 1.4563  bound(M5=.6) 1.8380  crit 1.8473  LP bound/crit 0.995  | HPT pt4/pt45 2.3203 bound 2.9254 crit 1.8399 HP bound/crit 1.590
+reacting-eq mixed hot M.3 Tt4   1300  LPT pt45/pt5 1.4548  bound(M5=.6) 1.8337  crit 1.8429  LP bound/crit 0.995  | HPT pt4/pt45 2.3154 bound 2.9159 crit 1.8359 HP bound/crit 1.588
+reacting-eq mixed hot M.3 Tt4   1400  LPT pt45/pt5 1.4534  bound(M5=.6) 1.8299  crit 1.8388  LP bound/crit 0.995  | HPT pt4/pt45 2.3112 bound 2.9076 crit 1.8322 HP bound/crit 1.587
+reacting-eq mixed hot M.3 Tt4   1500  LPT pt45/pt5 1.4522  bound(M5=.6) 1.8265  crit 1.8350  LP bound/crit 0.995  | HPT pt4/pt45 2.3074 bound 2.8999 crit 1.8288 HP bound/crit 1.586
+reacting-eq mixed hot M.3 Tt4   1600  LPT pt45/pt5 1.4511  bound(M5=.6) 1.8235  crit 1.8314  LP bound/crit 0.996  | HPT pt4/pt45 2.3038 bound 2.8928 crit 1.8256 HP bound/crit 1.585
+reacting-eq mixed M2 36k Tt4    600  refused: efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE d
+reacting-eq mixed M2 36k Tt4    700  LPT pt45/pt5 1.4628  bound(M5=.6) 1.8608  crit 1.8792  LP bound/crit 0.990  | HPT pt4/pt45 2.3481 bound 2.9846 crit 1.8706 HP bound/crit 1.596
+reacting-eq mixed M2 36k Tt4    800  LPT pt45/pt5 1.4618  bound(M5=.6) 1.8569  crit 1.8730  LP bound/crit 0.991  | HPT pt4/pt45 2.3436 bound 2.9741 crit 1.8630 HP bound/crit 1.596
+reacting-eq mixed M2 36k Tt4    900  LPT pt45/pt5 1.4607  bound(M5=.6) 1.8526  crit 1.8663  LP bound/crit 0.993  | HPT pt4/pt45 2.3383 bound 2.9624 crit 1.8559 HP bound/crit 1.596
+reacting-eq mixed M2 36k Tt4   1000  LPT pt45/pt5 1.4594  bound(M5=.6) 1.8480  crit 1.8597  LP bound/crit 0.994  | HPT pt4/pt45 2.3326 bound 2.9502 crit 1.8498 HP bound/crit 1.595
+reacting-eq mixed M2 36k Tt4   1100  LPT pt45/pt5 1.4580  bound(M5=.6) 1.8432  crit 1.8534  LP bound/crit 0.994  | HPT pt4/pt45 2.3267 bound 2.9380 crit 1.8450 HP bound/crit 1.592
+reacting-eq mixed M2 36k Tt4   1200  LPT pt45/pt5 1.4565  bound(M5=.6) 1.8386  crit 1.8481  LP bound/crit 0.995  | HPT pt4/pt45 2.3210 bound 2.9268 crit 1.8406 HP bound/crit 1.590
+reacting-eq mixed M2 36k Tt4   1300  LPT pt45/pt5 1.4550  bound(M5=.6) 1.8343  crit 1.8436  LP bound/crit 0.995  | HPT pt4/pt45 2.3161 bound 2.9173 crit 1.8366 HP bound/crit 1.588
+reacting-eq mixed M2 36k Tt4   1400  LPT pt45/pt5 1.4536  bound(M5=.6) 1.8304  crit 1.8395  LP bound/crit 0.995  | HPT pt4/pt45 2.3119 bound 2.9090 crit 1.8329 HP bound/crit 1.587
+reacting-eq mixed M2 36k Tt4   1500  LPT pt45/pt5 1.4524  bound(M5=.6) 1.8271  crit 1.8357  LP bound/crit 0.995  | HPT pt4/pt45 2.3081 bound 2.9013 crit 1.8295 HP bound/crit 1.586
+reacting-eq mixed M2 36k Tt4   1600  LPT pt45/pt5 1.4513  bound(M5=.6) 1.8240  crit 1.8322  LP bound/crit 0.996  | HPT pt4/pt45 2.3045 bound 2.8942 crit 1.8263 HP bound/crit 1.585
+WORST LP bound/crit 0.9957   WORST HP bound/crit 1.5964

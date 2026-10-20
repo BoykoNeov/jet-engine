@@ -1,0 +1,105 @@
+SL+40 M0.85    550 old      REFUSED efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE definition
+SL+40 M0.85    550 97       REFUSED rung-103: below idle at Tt4=550: with the nozzle unchoked the engine makes more drag than 
+SL+40 M0.85    550 ellipse  REFUSED rung-103: below idle at Tt4=550: with the nozzle unchoked the engine makes more drag than 
+SL+40 M0.85    550 2rows    REFUSED rung-103: below idle at Tt4=550: with the nozzle unchoked the engine makes more drag than 
+SL+40 M0.85    550 1row     REFUSED rung-103: below idle at Tt4=550: with the nozzle unchoked the engine makes more drag than 
+SL+40 M0.85    600 old      REFUSED efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE definition
+SL+40 M0.85    600 97       REFUSED rung-103: below idle at Tt4=600: with the nozzle unchoked the engine makes more drag than 
+SL+40 M0.85    600 ellipse  REFUSED rung-103: below idle at Tt4=600: with the nozzle unchoked the engine makes more drag than 
+SL+40 M0.85    600 2rows    REFUSED rung-103: below idle at Tt4=600: with the nozzle unchoked the engine makes more drag than 
+SL+40 M0.85    600 1row     REFUSED rung-103: below idle at Tt4=600: with the nozzle unchoked the engine makes more drag than 
+SL+40 M0.85    650 old      M9 0.757 NL 0.57662 NH 0.64189 piH 0.43051 piL 0.68845 F     4.43 | vs old: NL +0.000% NH +0.000% F +0.000% | vs 97: NL +7.361% NH +0.114% F -51.903%
+SL+40 M0.85    650 97       M9 0.775 NL 0.53708 NH 0.64116 piH 0.43051 piL 0.72763 F     9.21 | vs old: NL -6.856% NH -0.114% F +107.914% | vs 97: NL +0.000% NH +0.000% F +0.000%
+SL+40 M0.85    650 ellipse  M9 0.773 NL 0.55679 NH 0.62993 piH 0.44329 piL 0.70768 F     8.65 | vs old: NL -3.439% NH -1.863% F +95.158% | vs 97: NL +3.669% NH -1.751% F -6.135%
+SL+40 M0.85    650 2rows    M9 0.773 NL 0.55513 NH 0.63090 piH 0.44218 piL 0.70936 F     8.70 | vs old: NL -3.727% NH -1.713% F +96.237% | vs 97: NL +3.360% NH -1.601% F -5.616%
+SL+40 M0.85    650 1row     M9 0.773 NL 0.55207 NH 0.63266 piH 0.44016 piL 0.71246 F     8.78 | vs old: NL -4.257% NH -1.438% F +98.222% | vs 97: NL +2.791% NH -1.326% F -4.662%
+SL+40 M0.85    700 old      M9 0.841 NL 0.59904 NH 0.66350 piH 0.43051 piL 0.68845 F    31.79 | vs old: NL +0.000% NH +0.000% F +0.000% | vs 97: NL +3.081% NH +0.044% F -4.509%
+SL+40 M0.85    700 97       M9 0.847 NL 0.58113 NH 0.66321 piH 0.43051 piL 0.70556 F    33.29 | vs old: NL -2.989% NH -0.044% F +4.722% | vs 97: NL +0.000% NH +0.000% F +0.000%
+SL+40 M0.85    700 ellipse  M9 0.846 NL 0.58985 NH 0.65809 piH 0.43600 piL 0.69697 F    32.98 | vs old: NL -1.534% NH -0.816% F +3.740% | vs 97: NL +1.500% NH -0.773% F -0.937%
+SL+40 M0.85    700 2rows    M9 0.846 NL 0.58906 NH 0.65855 piH 0.43550 piL 0.69775 F    33.01 | vs old: NL -1.665% NH -0.746% F +3.829% | vs 97: NL +1.365% NH -0.702% F -0.853%
+SL+40 M0.85    700 1row     M9 0.846 NL 0.58759 NH 0.65942 piH 0.43456 piL 0.69920 F    33.06 | vs old: NL -1.911% NH -0.615% F +3.995% | vs 97: NL +1.111% NH -0.571% F -0.694%
+SL+40 M0.85    750 old      M9 0.917 NL 0.62110 NH 0.68483 piH 0.43051 piL 0.68845 F    60.32 | vs old: NL +0.000% NH +0.000% F +0.000% | vs 97: NL +0.825% NH +0.010% F -0.373%
+SL+40 M0.85    750 97       M9 0.918 NL 0.61602 NH 0.68476 piH 0.43051 piL 0.69313 F    60.54 | vs old: NL -0.818% NH -0.010% F +0.375% | vs 97: NL +0.000% NH +0.000% F +0.000%
+SL+40 M0.85    750 ellipse  M9 0.918 NL 0.61846 NH 0.68330 piH 0.43199 piL 0.69079 F    60.44 | vs old: NL -0.425% NH -0.224% F +0.205% | vs 97: NL +0.396% NH -0.214% F -0.169%
+SL+40 M0.85    750 2rows    M9 0.918 NL 0.61823 NH 0.68344 piH 0.43186 piL 0.69101 F    60.45 | vs old: NL -0.462% NH -0.204% F +0.221% | vs 97: NL +0.359% NH -0.194% F -0.153%
+SL+40 M0.85    750 1row     M9 0.918 NL 0.61780 NH 0.68370 piH 0.43159 piL 0.69142 F    60.47 | vs old: NL -0.532% NH -0.166% F +0.251% | vs 97: NL +0.289% NH -0.156% F -0.123%
+SL+40 M0.85    800 old      M9 0.987 NL 0.64287 NH 0.70589 piH 0.43051 piL 0.68845 F    90.38 | vs old: NL +0.000% NH +0.000% F +0.000% | vs 97: NL +0.020% NH +0.000% F -0.000%
+SL+40 M0.85    800 97       M9 0.987 NL 0.64275 NH 0.70589 piH 0.43051 piL 0.68856 F    90.38 | vs old: NL -0.020% NH -0.000% F +0.000% | vs 97: NL +0.000% NH +0.000% F +0.000%
+SL+40 M0.85    800 ellipse  M9 0.987 NL 0.64281 NH 0.70585 piH 0.43055 piL 0.68850 F    90.38 | vs old: NL -0.010% NH -0.005% F -0.003% | vs 97: NL +0.009% NH -0.005% F -0.003%
+SL+40 M0.85    800 2rows    M9 0.987 NL 0.64280 NH 0.70586 piH 0.43054 piL 0.68851 F    90.38 | vs old: NL -0.011% NH -0.005% F -0.002% | vs 97: NL +0.009% NH -0.005% F -0.003%
+SL+40 M0.85    800 1row     M9 0.987 NL 0.64279 NH 0.70586 piH 0.43054 piL 0.68852 F    90.38 | vs old: NL -0.013% NH -0.004% F -0.002% | vs 97: NL +0.007% NH -0.004% F -0.002%
+SL+40 M0.85    850 old      M9 1.000 NL 0.66440 NH 0.72670 piH 0.43051 piL 0.68845 F   122.24 | vs old: NL +0.000% NH +0.000% F +0.000% | vs 97: NL +0.000% NH +0.000% F +0.000%
+SL+40 M0.85    850 97       M9 1.000 NL 0.66440 NH 0.72670 piH 0.43051 piL 0.68845 F   122.24 | vs old: NL +0.000% NH +0.000% F +0.000% | vs 97: NL +0.000% NH +0.000% F +0.000%
+SL+40 M0.85    850 ellipse  M9 1.000 NL 0.66440 NH 0.72670 piH 0.43051 piL 0.68845 F   122.24 | vs old: NL +0.000% NH -0.000% F +0.000% | vs 97: NL +0.000% NH -0.000% F +0.000%
+SL+40 M0.85    850 2rows    M9 1.000 NL 0.66440 NH 0.72670 piH 0.43051 piL 0.68845 F   122.24 | vs old: NL +0.000% NH -0.000% F +0.000% | vs 97: NL +0.000% NH -0.000% F +0.000%
+SL+40 M0.85    850 1row     M9 1.000 NL 0.66440 NH 0.72670 piH 0.43051 piL 0.68845 F   122.24 | vs old: NL +0.000% NH -0.000% F -0.000% | vs 97: NL +0.000% NH -0.000% F -0.000%
+SL M0.30       550 old      REFUSED efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE definition
+SL M0.30       550 97       REFUSED rung-97: the nozzle cannot pass the LP turbine's flow against 101325 Pa even with the turb
+SL M0.30       550 ellipse  M9 0.374 NL 0.35517 NH 0.43528 piH 0.62519 piL 0.85456 F    14.78
+SL M0.30       550 2rows    M9 0.377 NL 0.34802 NH 0.44200 piH 0.61558 piL 0.86078 F    15.26
+SL M0.30       550 1row     M9 0.382 NL 0.33709 NH 0.45159 piH 0.60192 piL 0.87014 F    15.94
+SL M0.30       600 old      M9 0.451 NL 0.55547 NH 0.61166 piH 0.43051 piL 0.68845 F    40.11 | vs old: NL +0.000% NH +0.000% F +0.000% | vs 97: NL +78.586% NH +0.331% F -14.989%
+SL M0.30       600 97       M9 0.536 NL 0.31104 NH 0.60964 piH 0.43051 piL 0.90998 F    47.18 | vs old: NL -44.005% NH -0.330% F +17.632% | vs 97: NL +0.000% NH +0.000% F +0.000%
+SL M0.30       600 ellipse  M9 0.504 NL 0.44707 NH 0.53350 piH 0.52012 piL 0.79061 F    39.81 | vs old: NL -19.516% NH -12.778% F -0.740% | vs 97: NL +43.733% NH -12.489% F -15.619%
+SL M0.30       600 2rows    M9 0.505 NL 0.44077 NH 0.53782 piH 0.51467 piL 0.79666 F    40.21 | vs old: NL -20.649% NH -12.071% F +0.270% | vs 97: NL +41.710% NH -11.780% F -14.760%
+SL M0.30       600 1row     M9 0.508 NL 0.43054 NH 0.54468 piH 0.50610 piL 0.80641 F    40.87 | vs old: NL -22.491% NH -10.949% F +1.892% | vs 97: NL +38.419% NH -10.655% F -13.381%
+SL M0.30       650 old      M9 0.599 NL 0.57984 NH 0.63524 piH 0.43051 piL 0.68845 F    76.94 | vs old: NL +0.000% NH +0.000% F +0.000% | vs 97: NL +28.868% NH +0.139% F +2.788%
+SL M0.30       650 97       M9 0.632 NL 0.44995 NH 0.63436 piH 0.43051 piL 0.81041 F    74.85 | vs old: NL -22.401% NH -0.139% F -2.713% | vs 97: NL +0.000% NH +0.000% F +0.000%
+SL M0.30       650 ellipse  M9 0.617 NL 0.51582 NH 0.59367 piH 0.47442 piL 0.74696 F    70.43 | vs old: NL -11.042% NH -6.544% F -8.458% | vs 97: NL +14.639% NH -6.414% F -5.906%
+SL M0.30       650 2rows    M9 0.618 NL 0.51146 NH 0.59655 piH 0.47118 piL 0.75125 F    70.74 | vs old: NL -11.794% NH -6.091% F -8.060% | vs 97: NL +13.670% NH -5.960% F -5.496%
+SL M0.30       650 1row     M9 0.620 NL 0.50394 NH 0.60145 piH 0.46570 piL 0.75863 F    71.26 | vs old: NL -13.091% NH -5.319% F -7.376% | vs 97: NL +11.998% NH -5.187% F -4.794%
+SL M0.30       700 old      M9 0.717 NL 0.60390 NH 0.65846 piH 0.43051 piL 0.68845 F   112.69 | vs old: NL +0.000% NH +0.000% F +0.000% | vs 97: NL +12.050% NH +0.042% F +4.066%
+SL M0.30       700 97       M9 0.728 NL 0.53896 NH 0.65819 piH 0.43051 piL 0.74841 F   108.29 | vs old: NL -10.754% NH -0.042% F -3.907% | vs 97: NL +0.000% NH +0.000% F +0.000%
+SL M0.30       700 ellipse  M9 0.722 NL 0.57023 NH 0.63801 piH 0.45074 piL 0.71798 F   106.02 | vs old: NL -5.576% NH -3.106% F -5.926% | vs 97: NL +5.802% NH -3.065% F -2.101%
+SL M0.30       700 2rows    M9 0.722 NL 0.56772 NH 0.63967 piH 0.44904 piL 0.72043 F   106.20 | vs old: NL -5.991% NH -2.854% F -5.762% | vs 97: NL +5.337% NH -2.814% F -1.930%
+SL M0.30       700 1row     M9 0.723 NL 0.56321 NH 0.64264 piH 0.44601 piL 0.72484 F   106.53 | vs old: NL -6.739% NH -2.403% F -5.466% | vs 97: NL +4.499% NH -2.363% F -1.622%
+SL M0.30       750 old      M9 0.818 NL 0.62773 NH 0.68135 piH 0.43051 piL 0.68845 F   149.42 | vs old: NL +0.000% NH +0.000% F +0.000% | vs 97: NL +4.464% NH +0.004% F +2.259%
+SL M0.30       750 97       M9 0.821 NL 0.60090 NH 0.68132 piH 0.43051 piL 0.71243 F   146.12 | vs old: NL -4.273% NH -0.004% F -2.209% | vs 97: NL +0.000% NH +0.000% F +0.000%
+SL M0.30       750 ellipse  M9 0.819 NL 0.61342 NH 0.67303 piH 0.43830 piL 0.70043 F   145.18 | vs old: NL -2.280% NH -1.222% F -2.839% | vs 97: NL +2.083% NH -1.218% F -0.644%
+SL M0.30       750 2rows    M9 0.819 NL 0.61231 NH 0.67377 piH 0.43760 piL 0.70149 F   145.26 | vs old: NL -2.457% NH -1.113% F -2.783% | vs 97: NL +1.898% NH -1.109% F -0.587%
+SL M0.30       750 1row     M9 0.819 NL 0.61024 NH 0.67515 piH 0.43630 piL 0.70348 F   145.42 | vs old: NL -2.786% NH -0.910% F -2.678% | vs 97: NL +1.554% NH -0.907% F -0.480%
+SL M0.30       800 old      M9 0.908 NL 0.65139 NH 0.70393 piH 0.43051 piL 0.68845 F   188.06 | vs old: NL +0.000% NH +0.000% F +0.000% | vs 97: NL +1.060% NH -0.003% F +0.658%
+SL M0.30       800 97       M9 0.909 NL 0.64456 NH 0.70395 piH 0.43051 piL 0.69433 F   186.83 | vs old: NL -1.048% NH +0.003% F -0.654% | vs 97: NL +0.000% NH +0.000% F +0.000%
+SL M0.30       800 ellipse  M9 0.908 NL 0.64769 NH 0.70184 piH 0.43238 piL 0.69140 F   186.60 | vs old: NL -0.568% NH -0.298% F -0.780% | vs 97: NL +0.486% NH -0.300% F -0.127%
+SL M0.30       800 2rows    M9 0.908 NL 0.64740 NH 0.70203 piH 0.43221 piL 0.69167 F   186.62 | vs old: NL -0.613% NH -0.270% F -0.769% | vs 97: NL +0.440% NH -0.272% F -0.115%
+SL M0.30       800 1row     M9 0.908 NL 0.64685 NH 0.70241 piH 0.43187 piL 0.69219 F   186.66 | vs old: NL -0.697% NH -0.216% F -0.746% | vs 97: NL +0.355% NH -0.219% F -0.093%
+SL M0.30       850 old      M9 0.990 NL 0.67496 NH 0.72623 piH 0.43051 piL 0.68845 F   229.19 | vs old: NL +0.000% NH +0.000% F +0.000% | vs 97: NL +0.012% NH -0.000% F +0.008%
+SL M0.30       850 97       M9 0.990 NL 0.67488 NH 0.72623 piH 0.43051 piL 0.68851 F   229.17 | vs old: NL -0.012% NH +0.000% F -0.008% | vs 97: NL +0.000% NH +0.000% F +0.000%
+SL M0.30       850 ellipse  M9 0.990 NL 0.67492 NH 0.72621 piH 0.43053 piL 0.68848 F   229.17 | vs old: NL -0.006% NH -0.003% F -0.009% | vs 97: NL +0.005% NH -0.003% F -0.001%
+SL M0.30       850 2rows    M9 0.990 NL 0.67492 NH 0.72621 piH 0.43053 piL 0.68848 F   229.17 | vs old: NL -0.007% NH -0.003% F -0.009% | vs 97: NL +0.005% NH -0.003% F -0.001%
+SL M0.30       850 1row     M9 0.990 NL 0.67491 NH 0.72622 piH 0.43053 piL 0.68849 F   229.17 | vs old: NL -0.008% NH -0.002% F -0.009% | vs 97: NL +0.004% NH -0.002% F -0.001%
+design         550 old      M9 0.873 NL 0.53092 NH 0.58699 piH 0.43051 piL 0.68845 F    21.34 | vs old: NL +0.000% NH +0.000% F +0.000% | vs 97: NL +1.944% NH +0.027% F -1.776%
+design         550 97       M9 0.877 NL 0.52080 NH 0.58684 piH 0.43051 piL 0.69936 F    21.73 | vs old: NL -1.906% NH -0.027% F +1.808% | vs 97: NL +0.000% NH +0.000% F +0.000%
+design         550 ellipse  M9 0.876 NL 0.52569 NH 0.58393 piH 0.43399 piL 0.69390 F    21.62 | vs old: NL -0.985% NH -0.521% F +1.310% | vs 97: NL +0.940% NH -0.495% F -0.489%
+design         550 2rows    M9 0.876 NL 0.52524 NH 0.58420 piH 0.43367 piL 0.69440 F    21.63 | vs old: NL -1.069% NH -0.476% F +1.356% | vs 97: NL +0.853% NH -0.449% F -0.444%
+design         550 1row     M9 0.876 NL 0.52440 NH 0.58470 piH 0.43306 piL 0.69535 F    21.65 | vs old: NL -1.229% NH -0.390% F +1.442% | vs 97: NL +0.691% NH -0.363% F -0.360%
+design         600 old      M9 0.968 NL 0.55588 NH 0.61114 piH 0.43051 piL 0.68845 F    40.23 | vs old: NL +0.000% NH +0.000% F +0.000% | vs 97: NL +0.123% NH +0.001% F -0.014%
+design         600 97       M9 0.968 NL 0.55519 NH 0.61113 piH 0.43051 piL 0.68915 F    40.23 | vs old: NL -0.123% NH -0.001% F +0.014% | vs 97: NL +0.000% NH +0.000% F +0.000%
+design         600 ellipse  M9 0.968 NL 0.55552 NH 0.61094 piH 0.43073 piL 0.68880 F    40.22 | vs old: NL -0.064% NH -0.034% F -0.007% | vs 97: NL +0.059% NH -0.032% F -0.021%
+design         600 2rows    M9 0.968 NL 0.55549 NH 0.61095 piH 0.43071 piL 0.68883 F    40.22 | vs old: NL -0.070% NH -0.031% F -0.005% | vs 97: NL +0.053% NH -0.029% F -0.019%
+design         600 1row     M9 0.968 NL 0.55543 NH 0.61099 piH 0.43067 piL 0.68889 F    40.23 | vs old: NL -0.080% NH -0.025% F -0.001% | vs 97: NL +0.043% NH -0.023% F -0.015%
+design         650 old      M9 1.000 NL 0.58043 NH 0.63489 piH 0.43051 piL 0.68845 F    60.55 | vs old: NL +0.000% NH +0.000% F +0.000% | vs 97: NL +0.000% NH +0.000% F +0.000%
+design         650 97       M9 1.000 NL 0.58043 NH 0.63489 piH 0.43051 piL 0.68845 F    60.55 | vs old: NL +0.000% NH +0.000% F +0.000% | vs 97: NL +0.000% NH +0.000% F +0.000%
+design         650 ellipse  M9 1.000 NL 0.58043 NH 0.63489 piH 0.43051 piL 0.68845 F    60.55 | vs old: NL +0.000% NH +0.000% F -0.000% | vs 97: NL +0.000% NH +0.000% F -0.000%
+design         650 2rows    M9 1.000 NL 0.58043 NH 0.63489 piH 0.43051 piL 0.68845 F    60.55 | vs old: NL +0.000% NH +0.000% F -0.000% | vs 97: NL +0.000% NH +0.000% F -0.000%
+design         650 1row     M9 1.000 NL 0.58043 NH 0.63489 piH 0.43051 piL 0.68845 F    60.55 | vs old: NL +0.000% NH +0.000% F -0.000% | vs 97: NL +0.000% NH +0.000% F -0.000%
+design         700 old      M9 1.000 NL 0.60469 NH 0.65827 piH 0.43051 piL 0.68845 F    82.49 | vs old: NL +0.000% NH +0.000% F +0.000% | vs 97: NL +0.000% NH +0.000% F +0.000%
+design         700 97       M9 1.000 NL 0.60469 NH 0.65827 piH 0.43051 piL 0.68845 F    82.49 | vs old: NL +0.000% NH +0.000% F +0.000% | vs 97: NL +0.000% NH +0.000% F +0.000%
+design         700 ellipse  M9 1.000 NL 0.60469 NH 0.65827 piH 0.43051 piL 0.68845 F    82.49 | vs old: NL +0.000% NH +0.000% F -0.000% | vs 97: NL +0.000% NH +0.000% F -0.000%
+design         700 2rows    M9 1.000 NL 0.60469 NH 0.65827 piH 0.43051 piL 0.68845 F    82.49 | vs old: NL +0.000% NH +0.000% F -0.000% | vs 97: NL +0.000% NH +0.000% F -0.000%
+design         700 1row     M9 1.000 NL 0.60469 NH 0.65827 piH 0.43051 piL 0.68845 F    82.49 | vs old: NL +0.000% NH +0.000% F -0.000% | vs 97: NL +0.000% NH +0.000% F -0.000%
+design         750 old      M9 1.000 NL 0.62874 NH 0.68132 piH 0.43051 piL 0.68845 F   106.16 | vs old: NL +0.000% NH +0.000% F +0.000% | vs 97: NL +0.000% NH +0.000% F +0.000%
+design         750 97       M9 1.000 NL 0.62874 NH 0.68132 piH 0.43051 piL 0.68845 F   106.16 | vs old: NL +0.000% NH +0.000% F +0.000% | vs 97: NL +0.000% NH +0.000% F +0.000%
+design         750 ellipse  M9 1.000 NL 0.62874 NH 0.68132 piH 0.43051 piL 0.68845 F   106.16 | vs old: NL +0.000% NH -0.000% F -0.000% | vs 97: NL +0.000% NH -0.000% F -0.000%
+design         750 2rows    M9 1.000 NL 0.62874 NH 0.68132 piH 0.43051 piL 0.68845 F   106.16 | vs old: NL +0.000% NH -0.000% F -0.000% | vs 97: NL +0.000% NH -0.000% F -0.000%
+design         750 1row     M9 1.000 NL 0.62874 NH 0.68132 piH 0.43051 piL 0.68845 F   106.16 | vs old: NL +0.000% NH -0.000% F -0.000% | vs 97: NL +0.000% NH -0.000% F -0.000%
+design         800 old      M9 1.000 NL 0.65264 NH 0.70406 piH 0.43051 piL 0.68845 F   131.68 | vs old: NL +0.000% NH +0.000% F +0.000% | vs 97: NL +0.000% NH +0.000% F +0.000%
+design         800 97       M9 1.000 NL 0.65264 NH 0.70406 piH 0.43051 piL 0.68845 F   131.68 | vs old: NL +0.000% NH +0.000% F +0.000% | vs 97: NL +0.000% NH +0.000% F +0.000%
+design         800 ellipse  M9 1.000 NL 0.65264 NH 0.70406 piH 0.43051 piL 0.68845 F   131.68 | vs old: NL +0.000% NH -0.000% F +0.000% | vs 97: NL +0.000% NH -0.000% F +0.000%
+design         800 2rows    M9 1.000 NL 0.65264 NH 0.70406 piH 0.43051 piL 0.68845 F   131.68 | vs old: NL +0.000% NH -0.000% F -0.000% | vs 97: NL +0.000% NH -0.000% F -0.000%
+design         800 1row     M9 1.000 NL 0.65264 NH 0.70406 piH 0.43051 piL 0.68845 F   131.68 | vs old: NL +0.000% NH -0.000% F -0.000% | vs 97: NL +0.000% NH -0.000% F -0.000%
+design         850 old      M9 1.000 NL 0.67647 NH 0.72652 piH 0.43051 piL 0.68845 F   159.13 | vs old: NL +0.000% NH +0.000% F +0.000% | vs 97: NL +0.000% NH +0.000% F +0.000%
+design         850 97       M9 1.000 NL 0.67647 NH 0.72652 piH 0.43051 piL 0.68845 F   159.13 | vs old: NL +0.000% NH +0.000% F +0.000% | vs 97: NL +0.000% NH +0.000% F +0.000%
+design         850 ellipse  M9 1.000 NL 0.67647 NH 0.72652 piH 0.43051 piL 0.68845 F   159.13 | vs old: NL +0.000% NH +0.000% F +0.000% | vs 97: NL +0.000% NH +0.000% F +0.000%
+design         850 2rows    M9 1.000 NL 0.67647 NH 0.72652 piH 0.43051 piL 0.68845 F   159.13 | vs old: NL +0.000% NH +0.000% F +0.000% | vs 97: NL +0.000% NH +0.000% F +0.000%
+design         850 1row     M9 1.000 NL 0.67647 NH 0.72652 piH 0.43051 piL 0.68845 F   159.13 | vs old: NL +0.000% NH +0.000% F -0.000% | vs 97: NL +0.000% NH +0.000% F -0.000%

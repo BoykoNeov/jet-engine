@@ -1,0 +1,5 @@
+flat   design     800:cccc 900:cccc 1000:cccc 1100:cccc 1200:cccc 1300:cccc 1400:cccc
+flat   2km M0.80  800:cccc 900:cccc 1000:cccc 1100:cccc 1200:cccc 1300:cccc 1400:cccc
+steep  design     800:cccc 900:cccc 1000:cccc 1100:cccc 1200:cccc 1300:cccc 1400:cccc
+steep  2km M0.80  800:cccc 900:cccc 1000:cccc 1100:cccc 1200:cccc 1300:cccc 1400:cccc
+per Tt4: pin / one row / two rows / ellipse — c choked, u unchoked, x refused

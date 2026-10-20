@@ -1,0 +1,12 @@
+  700 ellipse    0.048 s  pairs      7 pair-evals      65 w45      798 interstage         0  piH 0.429129
+  700 2rows      0.167 s  pairs      8 pair-evals      80 w45     1230 interstage     12798  piH 0.427711
+  750 ellipse    0.059 s  pairs      8 pair-evals      76 w45      901 interstage         0  piH 0.429318
+  750 2rows      0.108 s  pairs      8 pair-evals      78 w45     1042 interstage      8791  piH 0.427998
+  800 ellipse    0.044 s  pairs      8 pair-evals      72 w45      864 interstage         0  piH 0.429528
+  800 2rows      4.911 s  pairs    200 pair-evals    2894 w45    45430 interstage    473657  piH 0.428311
+  850 ellipse    0.040 s  pairs      8 pair-evals      73 w45      919 interstage         0  piH 0.429761
+  850 2rows     15.726 s  pairs    200 pair-evals    3476 w45    56789 interstage    680857  piH 0.428650
+  900 ellipse    0.043 s  pairs      8 pair-evals      82 w45     1066 interstage         0  piH 0.430016
+  900 2rows      5.691 s  pairs    200 pair-evals    2413 w45    38211 interstage    470943  piH 0.429012
+ 1000 ellipse    0.034 s  pairs      8 pair-evals      95 w45     1132 interstage         0  piH 0.430588
+ 1000 2rows      0.147 s  pairs      8 pair-evals      96 w45     1410 interstage     15285  piH 0.429800

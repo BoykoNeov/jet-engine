@@ -1,0 +1,19 @@
+steep      plain      SL+20 M0.60 pSSSSS  2km M0.50 SSSSSc  SL-10 M0.40 SSSSSc  scored 15
+steep      bleed      SL+20 M0.60 xSSSSS  2km M0.50 SSSSSc  SL-10 M0.40 SSSSSc  scored 15
+steep      customer   SL+20 M0.60 xSSSSS  2km M0.50 SSSSSc  SL-10 M0.40 SSSSSS  scored 16
+steep      cooling    SL+20 M0.60 pSSSSS  2km M0.50 SSSSSc  SL-10 M0.40 SSSSSS  scored 16
+steep      gen-HP     SL+20 M0.60 xxSSSS  2km M0.50 xxSSSS  SL-10 M0.40 xxSSSS  scored 12
+steep      gen-LP     SL+20 M0.60 xxSSSS  2km M0.50 xxSSSc  SL-10 M0.40 xxSSSS  scored 11
+flat-eta   plain      SL+20 M0.60 pSSSSc  2km M0.50 SSSScc  SL-10 M0.40 SSSSSc  scored 13
+flat-eta   bleed      SL+20 M0.60 pSSSSS  2km M0.50 SSSSSc  SL-10 M0.40 SSSSSc  scored 15
+flat-eta   customer   SL+20 M0.60 pSSSSS  2km M0.50 SSSSSc  SL-10 M0.40 SSSSSc  scored 15
+flat-eta   cooling    SL+20 M0.60 pSSSSS  2km M0.50 SSSSSc  SL-10 M0.40 SSSSSS  scored 16
+flat-eta   gen-HP     SL+20 M0.60 xSSSSS  2km M0.50 xSSSSc  SL-10 M0.40 xSSSSc  scored 13
+flat-eta   gen-LP     SL+20 M0.60 xpSSSS  2km M0.50 xxSSSc  SL-10 M0.40 xpSSSc  scored 10
+flow/press plain      SL+20 M0.60 pSSSSS  2km M0.50 SSSSSc  SL-10 M0.40 SSSSSc  scored 15
+flow/press bleed      SL+20 M0.60 xSSSSS  2km M0.50 SSSSSc  SL-10 M0.40 SSSSSc  scored 15
+flow/press customer   SL+20 M0.60 xSSSSS  2km M0.50 SSSSSc  SL-10 M0.40 SSSSSS  scored 16
+flow/press cooling    SL+20 M0.60 pSSSSS  2km M0.50 SSSSSc  SL-10 M0.40 SSSSSS  scored 16
+flow/press gen-HP     SL+20 M0.60 xxSSSS  2km M0.50 xxSSSc  SL-10 M0.40 xxSSSS  scored 11
+flow/press gen-LP     SL+20 M0.60 xxSSSS  2km M0.50 xxSSSc  SL-10 M0.40 xxSSSS  scored 11
+S scored, c choked, p a reference refused, x the ellipse refused; total scored 251

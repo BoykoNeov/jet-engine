@@ -1,0 +1,38 @@
+[package]
+name = "rung104-probe2"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+turbojet = { path = "W:/temp/claude/rung104/wt/rust" }
+
+[profile.release]
+opt-level = 3
+
+[[bin]]
+name = "p5"
+path = "src/p5.rs"
+
+[[bin]]
+name = "p6"
+path = "src/p6.rs"
+
+[[bin]]
+name = "p7"
+path = "src/p7.rs"
+
+[[bin]]
+name = "p9"
+path = "src/p9.rs"
+
+[[bin]]
+name = "p10"
+path = "src/p10.rs"
+
+[[bin]]
+name = "p11"
+path = "src/p11.rs"
+
+[[bin]]
+name = "p12"
+path = "src/p12.rs"

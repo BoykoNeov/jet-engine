@@ -1,0 +1,28 @@
+[pairs 0 pair-evals 0 w45 0 interstage 0] pin      default 1000->1400         0.0098 s  points  126 stop None
+[pairs 0 pair-evals 0 w45 0 interstage 0] pin      SL+40 M0.85 700->1400      0.0095 s  points  126 stop None
+[pairs 0 pair-evals 0 w45 0 interstage 0] pin      SL+40 M0.85 1400->700      0.0115 s  points  126 stop None
+[pairs 0 pair-evals 0 w45 0 interstage 0] pin      governed thrust            0.1039 s  points  126 stop None
+[pairs 0 pair-evals 0 w45 0 interstage 0] pin      cooling 0.05/0.03          0.0100 s  points  126 stop None
+[pairs 0 pair-evals 0 w45 0 interstage 0] pin      generator HP               0.0091 s  points  126 stop None
+[pairs 0 pair-evals 0 w45 0 interstage 0] pin      customer share             0.0088 s  points  126 stop None
+[pairs 535 pair-evals 1812 w45 12930 interstage 0] ellipse  default 1000->1400         0.0051 s  points  126 stop None
+[pairs 538 pair-evals 2164 w45 40677 interstage 0] ellipse  SL+40 M0.85 700->1400      0.0112 s  points  126 stop None
+[pairs 538 pair-evals 3359 w45 150393 interstage 0] ellipse  SL+40 M0.85 1400->700      0.0359 s  points  126 stop None
+[pairs 6192 pair-evals 21062 w45 149528 interstage 0] ellipse  governed thrust            0.0594 s  points  126 stop None
+[pairs 535 pair-evals 5527 w45 30237 interstage 0] ellipse  cooling 0.05/0.03          0.0080 s  points  126 stop None
+[pairs 535 pair-evals 1809 w45 12970 interstage 0] ellipse  generator HP               0.0051 s  points  126 stop None
+[pairs 535 pair-evals 1878 w45 13473 interstage 0] ellipse  customer share             0.0051 s  points  126 stop None
+[pairs 535 pair-evals 1992 w45 15296 interstage 80070] two      default 1000->1400         0.0171 s  points  126 stop None
+[pairs 538 pair-evals 2271 w45 42518 interstage 306737] two      SL+40 M0.85 700->1400      0.0530 s  points  126 stop None
+[pairs 538 pair-evals 3573 w45 154408 interstage 1239670] two      SL+40 M0.85 1400->700      0.2152 s  points  126 stop None
+[pairs 6157 pair-evals 22463 w45 172832 interstage 914498] two      governed thrust            0.2614 s  points  126 stop None
+[pairs 535 pair-evals 5820 w45 35086 interstage 184348] two      cooling 0.05/0.03          0.0479 s  points  126 stop None
+[pairs 535 pair-evals 1958 w45 15163 interstage 79484] two      generator HP               0.0228 s  points  126 stop None
+[pairs 535 pair-evals 2006 w45 15310 interstage 80776] two      customer share             0.0230 s  points  126 stop None
+[pairs 535 pair-evals 1837 w45 14871 interstage 0] one      default 1000->1400         0.0062 s  points  126 stop None
+[pairs 538 pair-evals 2106 w45 41458 interstage 0] one      SL+40 M0.85 700->1400      0.0140 s  points  126 stop None
+[pairs 538 pair-evals 3407 w45 152855 interstage 0] one      SL+40 M0.85 1400->700      0.0453 s  points  126 stop None
+[pairs 6152 pair-evals 20884 w45 171983 interstage 0] one      governed thrust            0.0713 s  points  126 stop None
+[pairs 535 pair-evals 5699 w45 35868 interstage 0] one      cooling 0.05/0.03          0.0123 s  points  126 stop None
+[pairs 535 pair-evals 1809 w45 14866 interstage 0] one      generator HP               0.0075 s  points  126 stop None
+[pairs 535 pair-evals 1836 w45 14950 interstage 0] one      customer share             0.0067 s  points  126 stop None

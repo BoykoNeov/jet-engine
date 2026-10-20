@@ -1,0 +1,30 @@
+[package]
+name = "rung104-probe"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+turbojet = { path = "W:/Claude_projects/jet engine/rust" }
+
+[profile.release]
+opt-level = 3
+
+[[bin]]
+name = "g1"
+path = "src/g1.rs"
+
+[[bin]]
+name = "g2"
+path = "src/g2.rs"
+
+[[bin]]
+name = "g3"
+path = "src/g3.rs"
+
+[[bin]]
+name = "g4"
+path = "src/g4.rs"
+
+[[bin]]
+name = "pin_golden"
+path = "src/pin_golden.rs"
