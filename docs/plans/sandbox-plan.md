@@ -2074,7 +2074,7 @@ state (the shafts hold a steady speed; the drag of the air swallowed is larger t
   480 K), Mach 1.6 570–590 K, Mach 2 640–670 K, Mach 2.6 780–800 K, standard sea level 510–520 K, +40 K 550–570 K
   (every variant within these). Such a stop said only "an internal check"; it is now its own kind, `low_speed`, with
   plain words — the closure found no burner state between the walls (lean and rich are named only within 2× of their
-  walls; the crash map's sit at 0.71–1.05). **The march's low-speed closure itself is OPEN** — the next repair offered.
+  walls; the crash map's sit at 0.71–1.05). **The march's low-speed closure itself is OPEN** — the next repair offered. **CORRECTED by § 40 (2026-10-20):** 1 553 of the 1 691 first-step stops were starts LEANER than the closure's lean wall (0.004), the other 138 roots within one scan step under it — a wall, not "no burner state"; the stop was named for want of a recorded point.
 - **Runs past the old reach — CHECKED, kept (a side agent's third note):** a governed run the old code refused with
   "Make the tables at this flight" now runs, and the note read the −4 441 above as its belief's miss. It is not: it is
   the RAM part alone, and the nozzle part (+4 724) nearly cancels it — at that cell the belief misses by +283 N per kg/s
@@ -2106,3 +2106,48 @@ state (the shafts hold a steady speed; the drag of the air swallowed is larger t
   its warning the rule's number; `refuse` refuses each). `browser.mjs`: the note appears below idle and is gone at
   960 K. `sandbox_controls.rs`: the `low_speed` stop driven (480 K at the design flight).
 - Probes archived: `docs/plans/scratch-archive/idle-warn/`.
+
+## 40. The fuel closures' lean wall follows the run (2026-10-20) — a solver repair, not a slice, not a rung
+
+§ 39's open item, offered and chosen. **The cause (probes 1–2):** rung 43's fuel closure (and rungs 62/90/91's bled
+twins) scans the LP-face flow up from the flow where the mixture hits `F_CAP` 0.065 to where it hits `F_FLOOR` 0.004.
+That floor is a SEARCH bound — rung 43 (Python `engine.py:4625`) chose it to keep the scan off the region past the root
+where the maps go non-physical; nothing anchors it to combustion. A steady start can burn leaner (1.5–4.3 g/kg at the
+six probed flights near the lowest throttle that builds, ~0.1 g/kg at Mach 1.6–2), so the march's first closure could
+not reach its own start: of the 1 691 first-step stops, 1 553 starts were leaner than the wall and 138 had their root
+within one scan step (0.04) under it — every one accounted for. The 163 slams that stopped later all ended at the RICH
+wall (last mixture 0.061–0.065).
+- **The user's two choices** (asked in plain terms): relax the wall in the pages rather than refuse such starts; and
+  tie it to the run — `TwoSpoolCore::lean_wall: Cell<Option<f64>>`, `None` everywhere by default (the old code, every
+  Python-held oracle), set by the Controls view to **half the leaner steady end's mixture when that is under 0.004**.
+  A run whose ends both burn at 0.008 or richer keeps 0.004, so a fast power cut from such ends still stops lean as
+  before. Hidden reduce setting `lean: old`. The stator lever's siblings carry it (`at_setting`).
+- **Why it is safe:** the scan takes the first sign change upward from the rich wall, so lowering the lean wall only
+  extends it past the old one — a closure that bracketed before brackets on the same samples. Run, not argued:
+  `tests/lean_wall.rs` holds a 560 K design-flight start (wall lowered to ~3 g/kg, old slam complete) bit for bit
+  against `lean: old` on all five closure variants. **A caller that treated a failed lean trial as information does
+  move**: in rung 101's crash map 18 governed runs that completed both times differ — 3 at rounding (≤ 3e-14), 15
+  governed power cuts whose fuel had been resting AT the old wall (leanest mixture 0.0040–0.0046) and now cut as deep
+  as the governor asks (to 1.2–3.7 g/kg). The old wall was silently shaping those runs.
+- **What moved (probe 3, five variants × six flights × four maps, starts 400–1300 K):** the lowest start whose whole
+  default slam finishes drops 80–190 K at every flight but the design flight, to within 0–20 K of the lowest that
+  builds; at the design flight (20 cells) it does not move — the low starts now leave the start and stop RICH after
+  11–21 steps (the default slam has no acceleration schedule; with it on, every flat-LP … tilted start 400–560 K runs
+  to the end). Of the 1 691 first-step stops one is left: the customer bleed at sea level +40 K from 440 K, whose LP
+  shaft starts at 15 % speed (5 K higher, 38 %) — its mixture is above the run's wall, so it keeps `low_speed`, the
+  kind now driven by it. Where the first step now solves it lands on the start's own state (mixture to ≤ 2e-15).
+- **The crash maps** (against `e4d9756`): rung 101's (seed 99, 1 500) — 129 replies differ: 27 lean stops, 18
+  low-speed, 4 cause-unknown and 3 "other" now run to the end; 5 low-speed now reach a later floor-unreachable stop; 9
+  floor-unreachable or lean stops come at another step; 41 first-step stops (39 floor-unreachable, 2 redline-floor)
+  only gain a mixture read off the start (was null); 3 lean stops only reworded; 1 floor stop's re-run names another
+  instant (its fuel search reaches leaner); the 18 governed runs above. No panic. Seed 36's (1 200):
+  58 differ, all fast power cuts to a low end that stopped lean — 20 now run, 10 run further and stop lean at the run's
+  wall, 28 only reworded; every changed march bit-equal to the old one for as long as the old one ran.
+- **The words:** a stop with no recorded point now reads its mixture off the start (`run_mixture`), so § 39's case
+  (480 K at the design flight) is named LEAN under `lean: old`; the lean stop's words and the page's help name the run's
+  wall ("0.004, or half the leaner steady end's mixture when that is lower").
+- **The gate:** `tests/lean_wall.rs` (the default slam sets no wall and is the old run; the lowered wall moves no run
+  the old one solved, five closures; sea level 450 K leaves its lean start on every closure, its first point the start;
+  the design flight's 480 K now meets the rich wall and the acceleration schedule takes it; the crawling-LP case is
+  `low_speed`; the hidden setting round-trips). `sandbox_controls.rs`: `low_speed` driven by the crawling-LP case.
+- Probes archived: `docs/plans/scratch-archive/low-speed/`.

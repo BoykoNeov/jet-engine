@@ -800,7 +800,8 @@ pub fn r91_try_close_fuel(
     // the cooling extraction as well as rung 62's 1/(1-b).
     let face_at = |f_wall: f64| hpc_from_burner(cb, eps, mdot_fuel / f_wall, mdot_d) / (1.0 - b);
     let lo0 = face_at(FuelTransientCore::F_CAP) * powp(tt2, 0.5) / (c.mcorr_lp_d * pt2);
-    let hi0 = face_at(FuelTransientCore::F_FLOOR) * powp(tt2, 0.5) / (c.mcorr_lp_d * pt2);
+    // Plan § 40: the Controls view's per-run lean wall, where it sets one.
+    let hi0 = face_at(c.base.lean_wall.get().unwrap_or(FuelTransientCore::F_FLOOR)) * powp(tt2, 0.5) / (c.mcorr_lp_d * pt2);
     let wall_map = c.map_lp().phi_max(0.1) * n_lp;
     let cap = 2.5f64.min(wall_map).min(hi0);
     let mut m = lo0.max(0.02);

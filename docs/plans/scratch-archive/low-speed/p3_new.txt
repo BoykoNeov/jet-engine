@@ -1,0 +1,122 @@
+plain | design | flow/press: builds Some(400.0), whole slam Some(530.0); 400:11p,f=0.0623 410:11p,f=0.0599 420:12p,f=0.0632 430:12p,f=0.0609 440:13p,f=0.0633 450:13p,f=0.0612 460:14p,f=0.0630 470:15p,f=0.0642 480:16p,f=0.0649 490:16p,f=0.0630 500:17p,f=0.0635 510:19p,f=0.0650 520:20p,f=0.0645
+plain | design | press/flow: builds Some(400.0), whole slam Some(550.0); 400:10p,f=0.0625 410:10p,f=0.0598 420:11p,f=0.0641 430:11p,f=0.0614 440:12p,f=0.0646 450:12p,f=0.0620 460:13p,f=0.0643 470:13p,f=0.0619 480:14p,f=0.0636 490:15p,f=0.0647 500:15p,f=0.0626 510:16p,f=0.0633 520:17p,f=0.0636 530:19p,f=0.0650 540:20p,f=0.0644
+plain | design | tilted: builds Some(400.0), whole slam Some(560.0); 400:10p,f=0.0618 410:10p,f=0.0593 420:11p,f=0.0639 430:11p,f=0.0613 440:12p,f=0.0648 450:12p,f=0.0623 460:13p,f=0.0648 470:13p,f=0.0625 480:14p,f=0.0643 490:14p,f=0.0622 500:15p,f=0.0635 510:16p,f=0.0642 520:17p,f=0.0646 530:18p,f=0.0646 540:19p,f=0.0643 550:22p,f=0.0650
+plain | design | flat-lp: builds Some(400.0), whole slam Some(540.0); 400:11p,f=0.0629 410:11p,f=0.0604 420:12p,f=0.0636 430:12p,f=0.0612 440:13p,f=0.0636 450:13p,f=0.0613 460:14p,f=0.0631 470:15p,f=0.0644 480:15p,f=0.0624 490:16p,f=0.0633 500:17p,f=0.0638 510:18p,f=0.0639 520:19p,f=0.0638 530:21p,f=0.0645
+plain | M1.6 | flow/press: builds Some(400.0), whole slam Some(400.0);
+plain | M1.6 | press/flow: builds Some(400.0), whole slam Some(400.0);
+plain | M1.6 | tilted: builds Some(400.0), whole slam Some(400.0);
+plain | M1.6 | flat-lp: builds Some(410.0), whole slam Some(410.0);
+plain | M2 | flow/press: builds Some(480.0), whole slam Some(480.0);
+plain | M2 | press/flow: builds Some(480.0), whole slam Some(480.0);
+plain | M2 | tilted: builds Some(480.0), whole slam Some(480.0);
+plain | M2 | flat-lp: builds Some(480.0), whole slam Some(480.0);
+plain | M2.6 | flow/press: builds Some(630.0), whole slam Some(630.0);
+plain | M2.6 | press/flow: builds Some(630.0), whole slam Some(630.0);
+plain | M2.6 | tilted: builds Some(630.0), whole slam Some(630.0);
+plain | M2.6 | flat-lp: builds Some(630.0), whole slam Some(630.0);
+plain | SL std | flow/press: builds Some(400.0), whole slam Some(400.0);
+plain | SL std | press/flow: builds Some(400.0), whole slam Some(420.0); 400:14p,f=0.0642 410:15p,f=0.0639
+plain | SL std | tilted: builds Some(400.0), whole slam Some(420.0); 400:14p,f=0.0630 410:16p,f=0.0645
+plain | SL std | flat-lp: builds Some(400.0), whole slam Some(410.0); 400:17p,f=0.0647
+plain | SL+40 | flow/press: builds Some(440.0), whole slam Some(440.0);
+plain | SL+40 | press/flow: builds Some(430.0), whole slam Some(450.0); 430:17p,f=0.0647 440:18p,f=0.0644
+plain | SL+40 | tilted: builds Some(440.0), whole slam Some(450.0); 440:19p,f=0.0645
+plain | SL+40 | flat-lp: builds Some(430.0), whole slam Some(440.0); 430:19p,f=0.0641
+bleed lever | design | flow/press: builds Some(400.0), whole slam Some(550.0); 400:11p,f=0.0632 410:11p,f=0.0610 420:12p,f=0.0644 430:12p,f=0.0621 440:13p,f=0.0647 450:13p,f=0.0626 460:14p,f=0.0644 470:14p,f=0.0625 480:15p,f=0.0638 490:16p,f=0.0647 500:16p,f=0.0629 510:17p,f=0.0634 520:18p,f=0.0636 530:20p,f=0.0647 540:22p,f=0.0648
+bleed lever | design | press/flow: builds Some(400.0), whole slam Some(570.0); 400:10p,f=0.0638 410:10p,f=0.0612 420:10p,f=0.0588 430:11p,f=0.0632 440:11p,f=0.0607 450:12p,f=0.0641 460:12p,f=0.0617 470:13p,f=0.0642 480:13p,f=0.0619 490:14p,f=0.0638 500:14p,f=0.0617 510:15p,f=0.0630 520:16p,f=0.0639 530:17p,f=0.0643 540:18p,f=0.0644 550:19p,f=0.0643 560:21p,f=0.0648
+bleed lever | design | tilted: builds Some(400.0), whole slam Some(570.0); 400:10p,f=0.0628 410:10p,f=0.0604 420:10p,f=0.0581 430:11p,f=0.0627 440:11p,f=0.0604 450:12p,f=0.0638 460:12p,f=0.0616 470:13p,f=0.0642 480:13p,f=0.0621 490:14p,f=0.0640 500:14p,f=0.0620 510:15p,f=0.0634 520:16p,f=0.0643 530:17p,f=0.0647 540:18p,f=0.0648 550:19p,f=0.0646 560:20p,f=0.0642
+bleed lever | design | flat-lp: builds Some(400.0), whole slam Some(560.0); 400:11p,f=0.0646 410:11p,f=0.0622 420:11p,f=0.0600 430:12p,f=0.0633 440:12p,f=0.0611 450:13p,f=0.0637 460:13p,f=0.0616 470:14p,f=0.0635 480:15p,f=0.0649 490:15p,f=0.0630 500:16p,f=0.0640 510:17p,f=0.0645 520:18p,f=0.0648 530:19p,f=0.0648 540:20p,f=0.0645 550:22p,f=0.0648
+bleed lever | M1.6 | flow/press: builds Some(400.0), whole slam Some(400.0);
+bleed lever | M1.6 | press/flow: builds Some(400.0), whole slam Some(400.0);
+bleed lever | M1.6 | tilted: builds Some(400.0), whole slam Some(400.0);
+bleed lever | M1.6 | flat-lp: builds Some(400.0), whole slam Some(400.0);
+bleed lever | M2 | flow/press: builds Some(480.0), whole slam Some(480.0);
+bleed lever | M2 | press/flow: builds Some(480.0), whole slam Some(480.0);
+bleed lever | M2 | tilted: builds Some(480.0), whole slam Some(480.0);
+bleed lever | M2 | flat-lp: builds Some(470.0), whole slam Some(470.0);
+bleed lever | M2.6 | flow/press: builds Some(620.0), whole slam Some(620.0);
+bleed lever | M2.6 | press/flow: builds Some(620.0), whole slam Some(620.0);
+bleed lever | M2.6 | tilted: builds Some(620.0), whole slam Some(620.0);
+bleed lever | M2.6 | flat-lp: builds Some(610.0), whole slam Some(610.0);
+bleed lever | SL std | flow/press: builds Some(400.0), whole slam Some(400.0);
+bleed lever | SL std | press/flow: builds Some(400.0), whole slam Some(420.0); 400:14p,f=0.0638 410:15p,f=0.0637
+bleed lever | SL std | tilted: builds Some(400.0), whole slam Some(420.0); 400:15p,f=0.0648 410:16p,f=0.0642
+bleed lever | SL std | flat-lp: builds Some(400.0), whole slam Some(410.0); 400:17p,f=0.0649
+bleed lever | SL+40 | flow/press: builds Some(430.0), whole slam Some(430.0);
+bleed lever | SL+40 | press/flow: builds Some(430.0), whole slam Some(450.0); 430:17p,f=0.0632 440:19p,f=0.0646
+bleed lever | SL+40 | tilted: builds Some(430.0), whole slam Some(450.0); 430:18p,f=0.0637 440:20p,f=0.0644
+bleed lever | SL+40 | flat-lp: builds Some(430.0), whole slam Some(440.0); 430:20p,f=0.0645
+stator lever | design | flow/press: builds Some(400.0), whole slam Some(540.0); 400:11p,f=0.0616 410:12p,f=0.0650 420:12p,f=0.0626 430:12p,f=0.0603 440:13p,f=0.0628 450:14p,f=0.0646 460:14p,f=0.0625 470:15p,f=0.0639 480:16p,f=0.0647 490:16p,f=0.0629 500:17p,f=0.0634 510:18p,f=0.0637 520:20p,f=0.0649 530:21p,f=0.0644
+stator lever | design | press/flow: builds Some(400.0), whole slam Some(560.0); 400:10p,f=0.0609 410:10p,f=0.0582 420:11p,f=0.0624 430:11p,f=0.0598 440:12p,f=0.0629 450:12p,f=0.0604 460:13p,f=0.0627 470:14p,f=0.0645 480:14p,f=0.0622 490:15p,f=0.0634 500:16p,f=0.0642 510:17p,f=0.0646 520:18p,f=0.0647 530:19p,f=0.0646 540:20p,f=0.0642 550:23p,f=0.0648
+stator lever | design | tilted: builds Some(400.0), whole slam Some(560.0); 400:10p,f=0.0608 410:10p,f=0.0583 420:11p,f=0.0628 430:11p,f=0.0603 440:12p,f=0.0637 450:12p,f=0.0612 460:13p,f=0.0638 470:13p,f=0.0615 480:14p,f=0.0634 490:15p,f=0.0648 500:15p,f=0.0627 510:16p,f=0.0636 520:17p,f=0.0641 530:18p,f=0.0643 540:19p,f=0.0642 550:21p,f=0.0648
+stator lever | design | flat-lp: builds Some(400.0), whole slam Some(540.0); 400:11p,f=0.0623 410:11p,f=0.0598 420:12p,f=0.0630 430:12p,f=0.0606 440:13p,f=0.0631 450:14p,f=0.0649 460:14p,f=0.0627 470:15p,f=0.0640 480:16p,f=0.0649 490:16p,f=0.0629 500:17p,f=0.0635 510:18p,f=0.0638 520:20p,f=0.0650 530:21p,f=0.0644
+stator lever | M1.6 | flow/press: builds Some(410.0), whole slam Some(410.0);
+stator lever | M1.6 | press/flow: builds Some(400.0), whole slam Some(400.0);
+stator lever | M1.6 | tilted: builds Some(400.0), whole slam Some(400.0);
+stator lever | M1.6 | flat-lp: builds Some(410.0), whole slam Some(410.0);
+stator lever | M2 | flow/press: builds Some(480.0), whole slam Some(480.0);
+stator lever | M2 | press/flow: builds Some(480.0), whole slam Some(480.0);
+stator lever | M2 | tilted: builds Some(480.0), whole slam Some(480.0);
+stator lever | M2 | flat-lp: builds Some(480.0), whole slam Some(480.0);
+stator lever | M2.6 | flow/press: builds Some(630.0), whole slam Some(630.0);
+stator lever | M2.6 | press/flow: builds Some(630.0), whole slam Some(630.0);
+stator lever | M2.6 | tilted: builds Some(630.0), whole slam Some(630.0);
+stator lever | M2.6 | flat-lp: builds Some(630.0), whole slam Some(630.0);
+stator lever | SL std | flow/press: builds Some(400.0), whole slam Some(400.0);
+stator lever | SL std | press/flow: builds Some(400.0), whole slam Some(420.0); 400:14p,f=0.0637 410:15p,f=0.0635
+stator lever | SL std | tilted: builds Some(400.0), whole slam Some(420.0); 400:14p,f=0.0628 410:16p,f=0.0646
+stator lever | SL std | flat-lp: builds Some(400.0), whole slam Some(410.0); 400:16p,f=0.0639
+stator lever | SL+40 | flow/press: builds Some(430.0), whole slam Some(430.0);
+stator lever | SL+40 | press/flow: builds Some(430.0), whole slam Some(460.0); 430:17p,f=0.0645 440:18p,f=0.0642 450:20p,f=0.0645
+stator lever | SL+40 | tilted: builds Some(430.0), whole slam Some(460.0); 430:17p,f=0.0631 440:19p,f=0.0646 450:22p,f=0.0649
+stator lever | SL+40 | flat-lp: builds Some(430.0), whole slam Some(450.0); 430:19p,f=0.0646 440:21p,f=0.0646
+customer | design | flow/press: builds Some(400.0), whole slam Some(550.0); 400:11p,f=0.0616 410:11p,f=0.0594 420:12p,f=0.0627 430:12p,f=0.0605 440:13p,f=0.0631 450:13p,f=0.0610 460:14p,f=0.0629 470:15p,f=0.0643 480:15p,f=0.0623 490:16p,f=0.0633 500:17p,f=0.0638 510:18p,f=0.0640 520:19p,f=0.0640 530:21p,f=0.0647 540:24p,f=0.0649
+customer | design | press/flow: builds Some(400.0), whole slam Some(560.0); 400:10p,f=0.0618 410:10p,f=0.0592 420:11p,f=0.0638 430:11p,f=0.0612 440:12p,f=0.0646 450:12p,f=0.0620 460:13p,f=0.0645 470:13p,f=0.0620 480:14p,f=0.0638 490:14p,f=0.0616 500:15p,f=0.0629 510:16p,f=0.0637 520:17p,f=0.0641 530:18p,f=0.0641 540:19p,f=0.0640 550:21p,f=0.0645
+customer | design | tilted: builds Some(400.0), whole slam Some(570.0); 400:10p,f=0.0606 410:10p,f=0.0582 420:11p,f=0.0629 430:11p,f=0.0605 440:12p,f=0.0641 450:12p,f=0.0618 460:13p,f=0.0644 470:13p,f=0.0622 480:14p,f=0.0641 490:14p,f=0.0620 500:15p,f=0.0634 510:16p,f=0.0643 520:17p,f=0.0648 530:18p,f=0.0649 540:19p,f=0.0647 550:20p,f=0.0643 560:23p,f=0.0649
+customer | design | flat-lp: builds Some(400.0), whole slam Some(550.0); 400:11p,f=0.0626 410:11p,f=0.0602 420:12p,f=0.0636 430:12p,f=0.0612 440:13p,f=0.0638 450:13p,f=0.0615 460:14p,f=0.0634 470:15p,f=0.0648 480:15p,f=0.0628 490:16p,f=0.0638 500:17p,f=0.0644 510:18p,f=0.0646 520:19p,f=0.0646 530:20p,f=0.0644 540:22p,f=0.0649
+customer | M1.6 | flow/press: builds Some(400.0), whole slam Some(400.0);
+customer | M1.6 | press/flow: builds Some(400.0), whole slam Some(400.0);
+customer | M1.6 | tilted: builds Some(400.0), whole slam Some(400.0);
+customer | M1.6 | flat-lp: builds Some(400.0), whole slam Some(400.0);
+customer | M2 | flow/press: builds Some(480.0), whole slam Some(480.0);
+customer | M2 | press/flow: builds Some(470.0), whole slam Some(470.0);
+customer | M2 | tilted: builds Some(480.0), whole slam Some(480.0);
+customer | M2 | flat-lp: builds Some(470.0), whole slam Some(470.0);
+customer | M2.6 | flow/press: builds Some(620.0), whole slam Some(620.0);
+customer | M2.6 | press/flow: builds Some(620.0), whole slam Some(620.0);
+customer | M2.6 | tilted: builds Some(620.0), whole slam Some(620.0);
+customer | M2.6 | flat-lp: builds Some(610.0), whole slam Some(610.0);
+customer | SL std | flow/press: builds Some(400.0), whole slam Some(400.0);
+customer | SL std | press/flow: builds Some(400.0), whole slam Some(430.0); 400:14p,f=0.0648 410:15p,f=0.0649 420:16p,f=0.0642
+customer | SL std | tilted: builds Some(400.0), whole slam Some(430.0); 400:14p,f=0.0630 410:15p,f=0.0634 420:18p,f=0.0649
+customer | SL std | flat-lp: builds Some(400.0), whole slam Some(420.0); 400:16p,f=0.0647 410:18p,f=0.0649
+customer | SL+40 | flow/press: builds Some(450.0), whole slam Some(450.0);
+customer | SL+40 | press/flow: builds Some(440.0), whole slam Some(470.0); 440:17p,f=0.0633 450:19p,f=0.0649 460:21p,f=0.0647
+customer | SL+40 | tilted: builds Some(440.0), whole slam Some(460.0); 440:0p,f=NaN 450:20p,f=0.0646
+customer | SL+40 | flat-lp: builds Some(450.0), whole slam Some(460.0); 450:23p,f=0.0650
+cooling | design | flow/press: builds Some(400.0), whole slam Some(550.0); 400:11p,f=0.0601 410:12p,f=0.0638 420:12p,f=0.0615 430:13p,f=0.0643 440:13p,f=0.0622 450:14p,f=0.0642 460:14p,f=0.0622 470:15p,f=0.0637 480:16p,f=0.0648 490:16p,f=0.0630 500:17p,f=0.0637 510:18p,f=0.0641 520:19p,f=0.0641 530:20p,f=0.0640 540:22p,f=0.0645
+cooling | design | press/flow: builds Some(400.0), whole slam Some(570.0); 400:10p,f=0.0597 410:11p,f=0.0645 420:11p,f=0.0618 430:11p,f=0.0593 440:12p,f=0.0628 450:12p,f=0.0604 460:13p,f=0.0630 470:14p,f=0.0650 480:14p,f=0.0627 490:15p,f=0.0641 500:15p,f=0.0621 510:16p,f=0.0631 520:17p,f=0.0637 530:18p,f=0.0639 540:19p,f=0.0639 550:21p,f=0.0647 560:24p,f=0.0650
+cooling | design | tilted: builds Some(400.0), whole slam Some(570.0); 400:10p,f=0.0590 410:11p,f=0.0639 420:11p,f=0.0615 430:11p,f=0.0592 440:12p,f=0.0629 450:12p,f=0.0607 460:13p,f=0.0635 470:13p,f=0.0613 480:14p,f=0.0635 490:14p,f=0.0615 500:15p,f=0.0630 510:16p,f=0.0641 520:17p,f=0.0648 530:17p,f=0.0630 540:18p,f=0.0634 550:20p,f=0.0648 560:21p,f=0.0643
+cooling | design | flat-lp: builds Some(400.0), whole slam Some(560.0); 400:11p,f=0.0608 410:12p,f=0.0644 420:12p,f=0.0620 430:13p,f=0.0648 440:13p,f=0.0625 450:14p,f=0.0646 460:14p,f=0.0624 470:15p,f=0.0640 480:15p,f=0.0621 490:16p,f=0.0632 500:17p,f=0.0640 510:18p,f=0.0644 520:19p,f=0.0645 530:20p,f=0.0645 540:21p,f=0.0642 550:23p,f=0.0645
+cooling | M1.6 | flow/press: builds Some(400.0), whole slam Some(400.0);
+cooling | M1.6 | press/flow: builds Some(400.0), whole slam Some(400.0);
+cooling | M1.6 | tilted: builds Some(400.0), whole slam Some(400.0);
+cooling | M1.6 | flat-lp: builds Some(400.0), whole slam Some(400.0);
+cooling | M2 | flow/press: builds Some(470.0), whole slam Some(470.0);
+cooling | M2 | press/flow: builds Some(470.0), whole slam Some(470.0);
+cooling | M2 | tilted: builds Some(470.0), whole slam Some(470.0);
+cooling | M2 | flat-lp: builds Some(470.0), whole slam Some(470.0);
+cooling | M2.6 | flow/press: builds Some(620.0), whole slam Some(620.0);
+cooling | M2.6 | press/flow: builds Some(620.0), whole slam Some(620.0);
+cooling | M2.6 | tilted: builds Some(620.0), whole slam Some(620.0);
+cooling | M2.6 | flat-lp: builds Some(620.0), whole slam Some(620.0);
+cooling | SL std | flow/press: builds Some(400.0), whole slam Some(400.0);
+cooling | SL std | press/flow: builds Some(400.0), whole slam Some(420.0); 400:14p,f=0.0630 410:15p,f=0.0633
+cooling | SL std | tilted: builds Some(400.0), whole slam Some(420.0); 400:15p,f=0.0644 410:16p,f=0.0642
+cooling | SL std | flat-lp: builds Some(400.0), whole slam Some(410.0); 400:17p,f=0.0650
+cooling | SL+40 | flow/press: builds Some(430.0), whole slam Some(430.0);
+cooling | SL+40 | press/flow: builds Some(420.0), whole slam Some(460.0); 420:16p,f=0.0629 430:17p,f=0.0637 440:18p,f=0.0638 450:20p,f=0.0647
+cooling | SL+40 | tilted: builds Some(420.0), whole slam Some(460.0); 420:17p,f=0.0639 430:18p,f=0.0643 440:19p,f=0.0642 450:21p,f=0.0645
+cooling | SL+40 | flat-lp: builds Some(420.0), whole slam Some(450.0); 420:18p,f=0.0640 430:19p,f=0.0640 440:21p,f=0.0647
+stops below the whole-slam floor: at the first step 1, ending rich (last f > 0.055) 372, other 0
+first point vs the start's own mixture, worst relative difference: 1.981e-15

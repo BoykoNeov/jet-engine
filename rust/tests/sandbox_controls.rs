@@ -416,9 +416,11 @@ fn every_kind_of_stop_the_crash_map_found_is_driven_and_worded() {
     // A 4 % cut on a fast slam (plan § 12.10) whose cut fuel does NOT solve either: still a rich stop.
     let (sv, o) = run(NOT_THE_CHECK);
     assert_eq!(stop_kind(&sv, &o), StopKind::Rich, "{:?}", o.stop);
-    for (j, want, wall) in [(LEAN, StopKind::Lean, FuelTransientCore::F_FLOOR), (RICH, StopKind::Rich, FuelTransientCore::F_CAP)] {
+    for (j, want) in [(LEAN, StopKind::Lean), (RICH, StopKind::Rich)] {
         let (sv, o) = run(j);
         assert_eq!(stop_kind(&sv, &o), want, "{:?}", o.stop);
+        // Plan § 40: the lean wall is the run's own.
+        let wall = if want == StopKind::Lean { lean_wall(&sv) } else { FuelTransientCore::F_CAP };
         // The split is honest only if the failing trial sits by its own wall (crash map: 0.71–1.05).
         let x = trial_mixture(o.stop.as_ref().unwrap().failure.as_ref().unwrap(), o.points.last()).unwrap();
         assert!((0.5..2.0).contains(&(x / wall)), "{want:?}: trial mixture {x} against the wall {wall}");
@@ -427,11 +429,16 @@ fn every_kind_of_stop_the_crash_map_found_is_driven_and_worded() {
     assert_eq!(sv.route(), Route::GovLag);
     assert_eq!(stop_kind(&sv, &o), StopKind::Unknown);
     // Every kind has words, and a stop's words reach the page.
-    // Plan § 39: a slam from a low throttle whose fuel closure finds no burner state at all — here at the design
-    // flight from 480 K (just above idle), at its first step — is named for that, not "an internal check".
-    let flat = CONTROL_SHAPES.iter().position(|&k| k == "flat-lp").unwrap();
-    let (sv, o) = controls(&ControlsSettings { shape: flat, from: 480.0, ..ControlsSettings::defaults() }).unwrap();
-    assert!(o.points.len() <= 1, "the slam stops at once ({} points)", o.points.len());
+    // Plan § 39: a slam from a low throttle whose fuel closure finds no burner state at all is named for that, not "an
+    // internal check". Plan § 40: § 39's case (480 K at the design flight) was a start leaner than the lean wall, and
+    // now runs (`tests/lean_wall.rs`); the one left is the customer bleed at sea level +40 K from 440 K, the LP shaft
+    // at 15 % speed.
+    let (t_sl, p_sl) = turbojet::atmosphere::standard(0.0);
+    let tilted = CONTROL_SHAPES.iter().position(|&k| k == "tilted").unwrap();
+    let (sv, o) = controls(&ControlsSettings { shape: tilted, t0: t_sl + 40.0, p0: p_sl, m0: 0.85,
+                                               customer: CustomerMode::Share, from: 440.0,
+                                               ..ControlsSettings::defaults() }).unwrap();
+    assert!(o.points.is_empty(), "the slam stops at once ({} points)", o.points.len());
     assert_eq!(stop_kind(&sv, &o), StopKind::LowSpeed, "{:?}", o.stop);
     let st = controls_json(&sv, &o);
     assert!(matches!(st.get("stop").unwrap().get("words"), Some(Json::Str(w)) if w == StopKind::LowSpeed.words()));
@@ -563,6 +570,8 @@ fn settings_round_trip_and_the_entry_point_answers() {
                                low_grid: false, formula_choked: true,
                                // The below-idle rule (plans §§ 38–39), off its default likewise.
                                idle: turbojet::two_spool::IdleRule::Refuse,
+                               // The lean wall (plan § 40), off its default likewise.
+                               lean_old: true,
                                // Rung 101's three, off their defaults likewise.
                                airflow: turbojet::airflow_source::AirflowFrom::Exhaust, exhaust_lag: true,
                                exhaust_tau: 0.75,

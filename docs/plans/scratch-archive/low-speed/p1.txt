@@ -1,0 +1,44 @@
+flow/press 400: start f=0.00271 m_lp=0.2628 nu=(0.3326,0.5080) mf_lo=0.00071 | pts 0/126 fmin=inf last f=NaN mf=NaN | rung-43 fuel closure does not bracket at nu=(0.3326,0.5080), mdot_fuel=0.00071 - off the modeled speed-line re
+flow/press 420: start f=0.00311 m_lp=0.2732 nu=(0.3687,0.5187) mf_lo=0.00085 | pts 0/126 fmin=inf last f=NaN mf=NaN | rung-43 fuel closure does not bracket at nu=(0.3687,0.5187), mdot_fuel=0.00085 - off the modeled speed-line re
+flow/press 440: start f=0.00352 m_lp=0.2838 nu=(0.4011,0.5292) mf_lo=0.00100 | pts 0/126 fmin=inf last f=NaN mf=NaN | rung-43 fuel closure does not bracket at nu=(0.4011,0.5292), mdot_fuel=0.00100 - off the modeled speed-line re
+flow/press 460: start f=0.00393 m_lp=0.2946 nu=(0.4303,0.5395) mf_lo=0.00116 | pts 0/126 fmin=inf last f=NaN mf=NaN | rung-43 fuel closure does not bracket at nu=(0.4303,0.5395), mdot_fuel=0.00116 - off the modeled speed-line re
+flow/press 480: start f=0.00434 m_lp=0.3054 nu=(0.4566,0.5497) mf_lo=0.00133 | pts 0/126 fmin=inf last f=NaN mf=NaN | rung-43 fuel closure does not bracket at nu=(0.4566,0.5497), mdot_fuel=0.00133 - off the modeled speed-line re
+flow/press 500: start f=0.00476 m_lp=0.3162 nu=(0.4801,0.5598) mf_lo=0.00150 | pts 17/126 fmin=0.00476 last f=0.06347 mf=0.01552 | rung-43 fuel closure does not bracket at nu=(0.5871,0.6434), mdot_fuel=0.01640 - off the modeled speed-line re
+flow/press 520: start f=0.00519 m_lp=0.3267 nu=(0.5011,0.5698) mf_lo=0.00169 | pts 20/126 fmin=0.00519 last f=0.06449 mf=0.01819 | rung-43 fuel closure does not bracket at nu=(0.6342,0.6784), mdot_fuel=0.01906 - off the modeled speed-line re
+flow/press 540: start f=0.00562 m_lp=0.3370 nu=(0.5198,0.5796) mf_lo=0.00189 | pts 126/126 fmin=0.00562 last f=0.02606 mf=0.02341 | 
+flow/press 560: start f=0.00606 m_lp=0.3470 nu=(0.5362,0.5894) mf_lo=0.00210 | pts 126/126 fmin=0.00606 last f=0.02605 mf=0.02341 | 
+flow/press 580: start f=0.00650 m_lp=0.3566 nu=(0.5506,0.5990) mf_lo=0.00232 | pts 126/126 fmin=0.00650 last f=0.02605 mf=0.02341 | 
+flow/press 600: start f=0.00696 m_lp=0.3657 nu=(0.5630,0.6085) mf_lo=0.00254 | pts 126/126 fmin=0.00696 last f=0.02604 mf=0.02341 | 
+press/flow 400: start f=0.00271 m_lp=0.2637 nu=(0.3276,0.5102) mf_lo=0.00071 | pts 0/126 fmin=inf last f=NaN mf=NaN | rung-43 fuel closure does not bracket at nu=(0.3276,0.5102), mdot_fuel=0.00071 - off the modeled speed-line re
+press/flow 420: start f=0.00311 m_lp=0.2739 nu=(0.3607,0.5212) mf_lo=0.00085 | pts 0/126 fmin=inf last f=NaN mf=NaN | rung-43 fuel closure does not bracket at nu=(0.3607,0.5212), mdot_fuel=0.00085 - off the modeled speed-line re
+press/flow 440: start f=0.00352 m_lp=0.2845 nu=(0.3909,0.5322) mf_lo=0.00100 | pts 0/126 fmin=inf last f=NaN mf=NaN | rung-43 fuel closure does not bracket at nu=(0.3909,0.5322), mdot_fuel=0.00100 - off the modeled speed-line re
+press/flow 460: start f=0.00392 m_lp=0.2953 nu=(0.4184,0.5429) mf_lo=0.00116 | pts 0/126 fmin=inf last f=NaN mf=NaN | rung-43 fuel closure does not bracket at nu=(0.4184,0.5429), mdot_fuel=0.00116 - off the modeled speed-line re
+press/flow 480: start f=0.00434 m_lp=0.3063 nu=(0.4433,0.5535) mf_lo=0.00133 | pts 0/126 fmin=inf last f=NaN mf=NaN | rung-43 fuel closure does not bracket at nu=(0.4433,0.5535), mdot_fuel=0.00133 - off the modeled speed-line re
+press/flow 500: start f=0.00476 m_lp=0.3172 nu=(0.4657,0.5639) mf_lo=0.00151 | pts 15/126 fmin=0.00476 last f=0.06258 mf=0.01377 | rung-43 fuel closure does not bracket at nu=(0.5521,0.6324), mdot_fuel=0.01465 - off the modeled speed-line re
+press/flow 520: start f=0.00518 m_lp=0.3279 nu=(0.4858,0.5742) mf_lo=0.00170 | pts 17/126 fmin=0.00518 last f=0.06360 mf=0.01559 | rung-43 fuel closure does not bracket at nu=(0.5873,0.6579), mdot_fuel=0.01646 - off the modeled speed-line re
+press/flow 540: start f=0.00561 m_lp=0.3384 nu=(0.5037,0.5843) mf_lo=0.00190 | pts 20/126 fmin=0.00561 last f=0.06439 mf=0.01824 | rung-43 fuel closure does not bracket at nu=(0.6306,0.6930), mdot_fuel=0.01910 - off the modeled speed-line re
+press/flow 560: start f=0.00605 m_lp=0.3485 nu=(0.5194,0.5943) mf_lo=0.00211 | pts 126/126 fmin=0.00605 last f=0.02601 mf=0.02341 | 
+press/flow 580: start f=0.00650 m_lp=0.3581 nu=(0.5332,0.6041) mf_lo=0.00233 | pts 126/126 fmin=0.00650 last f=0.02600 mf=0.02341 | 
+press/flow 600: start f=0.00696 m_lp=0.3673 nu=(0.5451,0.6139) mf_lo=0.00256 | pts 126/126 fmin=0.00696 last f=0.02600 mf=0.02341 | 
+tilted 400: start f=0.00271 m_lp=0.2635 nu=(0.3308,0.5092) mf_lo=0.00071 | pts 0/126 fmin=inf last f=NaN mf=NaN | rung-43 fuel closure does not bracket at nu=(0.3308,0.5092), mdot_fuel=0.00071 - off the modeled speed-line re
+tilted 420: start f=0.00311 m_lp=0.2735 nu=(0.3652,0.5200) mf_lo=0.00085 | pts 0/126 fmin=inf last f=NaN mf=NaN | rung-43 fuel closure does not bracket at nu=(0.3652,0.5200), mdot_fuel=0.00085 - off the modeled speed-line re
+tilted 440: start f=0.00352 m_lp=0.2838 nu=(0.3964,0.5307) mf_lo=0.00100 | pts 0/126 fmin=inf last f=NaN mf=NaN | rung-43 fuel closure does not bracket at nu=(0.3964,0.5307), mdot_fuel=0.00100 - off the modeled speed-line re
+tilted 460: start f=0.00393 m_lp=0.2944 nu=(0.4247,0.5412) mf_lo=0.00116 | pts 0/126 fmin=inf last f=NaN mf=NaN | rung-43 fuel closure does not bracket at nu=(0.4247,0.5412), mdot_fuel=0.00116 - off the modeled speed-line re
+tilted 480: start f=0.00434 m_lp=0.3051 nu=(0.4503,0.5516) mf_lo=0.00132 | pts 0/126 fmin=inf last f=NaN mf=NaN | rung-43 fuel closure does not bracket at nu=(0.4503,0.5516), mdot_fuel=0.00132 - off the modeled speed-line re
+tilted 500: start f=0.00476 m_lp=0.3157 nu=(0.4734,0.5618) mf_lo=0.00150 | pts 15/126 fmin=0.00476 last f=0.06346 mf=0.01377 | rung-43 fuel closure does not bracket at nu=(0.5603,0.6299), mdot_fuel=0.01464 - off the modeled speed-line re
+tilted 520: start f=0.00519 m_lp=0.3262 nu=(0.4940,0.5719) mf_lo=0.00169 | pts 17/126 fmin=0.00519 last f=0.06457 mf=0.01559 | rung-43 fuel closure does not bracket at nu=(0.5911,0.6508), mdot_fuel=0.01602 - off the modeled speed-line re
+tilted 540: start f=0.00562 m_lp=0.3365 nu=(0.5124,0.5819) mf_lo=0.00189 | pts 19/126 fmin=0.00562 last f=0.06426 mf=0.01738 | rung-43 fuel closure does not bracket at nu=(0.6299,0.6808), mdot_fuel=0.01824 - off the modeled speed-line re
+tilted 560: start f=0.00606 m_lp=0.3465 nu=(0.5287,0.5917) mf_lo=0.00210 | pts 126/126 fmin=0.00606 last f=0.02603 mf=0.02340 | 
+tilted 580: start f=0.00650 m_lp=0.3560 nu=(0.5429,0.6015) mf_lo=0.00232 | pts 126/126 fmin=0.00650 last f=0.02602 mf=0.02340 | 
+tilted 600: start f=0.00696 m_lp=0.3652 nu=(0.5552,0.6111) mf_lo=0.00254 | pts 126/126 fmin=0.00696 last f=0.02602 mf=0.02340 | 
+flat-lp 400: start f=0.00270 m_lp=0.2652 nu=(0.3608,0.5081) mf_lo=0.00072 | pts 0/126 fmin=inf last f=NaN mf=NaN | rung-43 fuel closure does not bracket at nu=(0.3608,0.5081), mdot_fuel=0.00072 - off the modeled speed-line re
+flat-lp 420: start f=0.00310 m_lp=0.2764 nu=(0.4055,0.5188) mf_lo=0.00086 | pts 0/126 fmin=inf last f=NaN mf=NaN | rung-43 fuel closure does not bracket at nu=(0.4055,0.5188), mdot_fuel=0.00086 - off the modeled speed-line re
+flat-lp 440: start f=0.00350 m_lp=0.2878 nu=(0.4448,0.5292) mf_lo=0.00101 | pts 0/126 fmin=inf last f=NaN mf=NaN | rung-43 fuel closure does not bracket at nu=(0.4448,0.5292), mdot_fuel=0.00101 - off the modeled speed-line re
+flat-lp 460: start f=0.00391 m_lp=0.2993 nu=(0.4794,0.5396) mf_lo=0.00117 | pts 0/126 fmin=inf last f=NaN mf=NaN | rung-43 fuel closure does not bracket at nu=(0.4794,0.5396), mdot_fuel=0.00117 - off the modeled speed-line re
+flat-lp 480: start f=0.00433 m_lp=0.3108 nu=(0.5100,0.5498) mf_lo=0.00134 | pts 0/126 fmin=inf last f=NaN mf=NaN | rung-43 fuel closure does not bracket at nu=(0.5100,0.5498), mdot_fuel=0.00134 - off the modeled speed-line re
+flat-lp 500: start f=0.00475 m_lp=0.3220 nu=(0.5368,0.5599) mf_lo=0.00153 | pts 17/126 fmin=0.00475 last f=0.06376 mf=0.01554 | rung-43 fuel closure does not bracket at nu=(0.6384,0.6433), mdot_fuel=0.01641 - off the modeled speed-line re
+flat-lp 520: start f=0.00517 m_lp=0.3328 nu=(0.5602,0.5698) mf_lo=0.00172 | pts 19/126 fmin=0.00517 last f=0.06383 mf=0.01734 | rung-43 fuel closure does not bracket at nu=(0.6769,0.6690), mdot_fuel=0.01821 - off the modeled speed-line re
+flat-lp 540: start f=0.00561 m_lp=0.3434 nu=(0.5806,0.5797) mf_lo=0.00193 | pts 126/126 fmin=0.00561 last f=0.02601 mf=0.02342 | 
+flat-lp 560: start f=0.00605 m_lp=0.3534 nu=(0.5981,0.5894) mf_lo=0.00214 | pts 126/126 fmin=0.00605 last f=0.02601 mf=0.02342 | 
+flat-lp 580: start f=0.00650 m_lp=0.3630 nu=(0.6131,0.5990) mf_lo=0.00236 | pts 126/126 fmin=0.00650 last f=0.02601 mf=0.02342 | 
+flat-lp 600: start f=0.00696 m_lp=0.3721 nu=(0.6257,0.6086) mf_lo=0.00259 | pts 126/126 fmin=0.00696 last f=0.02600 mf=0.02342 | 

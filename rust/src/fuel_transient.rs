@@ -4096,7 +4096,9 @@ fn r43_try_close_fuel(
     // The two walls. `lo0` is the flow at which f hits its physical CEILING, `hi0` the flow at
     // which it hits the FLOOR — and `hi0` is the third arm of a `min` rung 40 spells with two.
     let lo0 = mdot_fuel * powp(tt2, 0.5) / (FuelTransientCore::F_CAP * c.mcorr_lp_d * pt2);
-    let hi0 = mdot_fuel * powp(tt2, 0.5) / (FuelTransientCore::F_FLOOR * c.mcorr_lp_d * pt2);
+    // Plan § 40: the Controls view's per-run wall, where it sets one.
+    let f_floor = c.base.lean_wall.get().unwrap_or(FuelTransientCore::F_FLOOR);
+    let hi0 = mdot_fuel * powp(tt2, 0.5) / (f_floor * c.mcorr_lp_d * pt2);
     // Python's `min(a, b, c)` spelled as the fold it IS, so the arm classification and the
     // value come out of one statement. `f64::min` would differ on NaN and would not say which
     // arm bound. Measured 24 033 / 200 193 / 3 663 — all three live.

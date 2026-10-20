@@ -1191,7 +1191,8 @@ footer p { max-width: 90ch; }
   both together (rung 86), each scheduled on shaft speed. Each run is the model's own march, step for step. A run that stops early shows the
   points it has and why, by kind: the floor could no longer be held by any fuel cut; the model's every-step check at the
   full scheduled fuel had no answer while a limiter held the fuel far below it (a limit of the model's method); the
-  mixture became leaner or richer than the model's fuel solver searches (0.004 and 0.065 kg of fuel per kg of air). With
+  mixture became leaner or richer than the model's fuel solver searches (0.004 kg of fuel per kg of air, or half the
+  leaner steady end's mixture when that is lower, and 0.065). With
   the temperature limiter's lag on, the model does not record the lag's state, so a stop there is reported without a cause.
   Time is in the high-pressure shaft's response time τ; the bleed thrust counts the dumped air's full ram drag. The
   engine can be flown at another altitude, air temperature and Mach number: its hardware stays as designed, every

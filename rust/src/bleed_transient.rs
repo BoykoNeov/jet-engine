@@ -877,8 +877,10 @@ pub fn r62_close_fuel_body(
     // physical root at large `b`. That factor is rung 62's, not rung 43's.
     let lo0 = mdot_fuel * powp(tt2, 0.5)
         / (FuelTransientCore::F_CAP * (1.0 - b) * c.mcorr_lp_d * pt2);
+    // Plan § 40: the Controls view's per-run lean wall, where it sets one.
+    let f_floor = c.base.lean_wall.get().unwrap_or(FuelTransientCore::F_FLOOR);
     let hi0 = mdot_fuel * powp(tt2, 0.5)
-        / (FuelTransientCore::F_FLOOR * (1.0 - b) * c.mcorr_lp_d * pt2);
+        / (f_floor * (1.0 - b) * c.mcorr_lp_d * pt2);
     let wall_map = c.map_lp().phi_max(0.1) * n_lp;
     let mut cap = 2.5f64;
     let mut arm = &HI_WALL_LITERAL;

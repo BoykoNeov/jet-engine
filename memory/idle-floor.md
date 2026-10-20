@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 516d97f0-e1bb-4745-a47b-1809cca9649e
-  modified: 2026-10-20T00:46:25.730Z
+  modified: 2026-10-20T01:41:21.210Z
 ---
 
 **UPDATE 2026-10-20 (§ 39, user decision on a side agent's heads-up): the Controls page WARNS instead.**
@@ -13,7 +13,7 @@ metadata:
 below-idle root from either start; reply's start/end carry `below_idle` = thrust per inlet air; page note) }`.
 Controls hidden setting `idle`: warn/refuse/old; rungs 98/99 tests use `old`. Found: the march's fuel closure stops
 slams that start low ("other" stop, 1 691 of 1 854 at the first step) — whole-slam floors are 20–80 K above the
-build floors; OPEN, offered as the next repair. Below text is § 38's (refuse everywhere), kept as history.
+build floors; REPAIRED 2026-10-20 by [[lean-wall-repair]] (it was the lean wall, not low speed). Below text is § 38's (refuse everywhere), kept as history.
 
 Page rule (not a rung), 2026-10-19, closing [[low-start-repair]]'s open item. User said "ok do it" to my
 recommendation: probe the 3 leftover "off the maps" refusals first, then the consistent-refusal switch (not

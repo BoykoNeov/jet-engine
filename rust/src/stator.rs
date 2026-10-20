@@ -485,6 +485,8 @@ impl VariableStatorCore {
         s.core.base.below_choke.set(self.core.base.below_choke.get());
         // Plan § 38: and the below-idle rule.
         s.core.base.idle_rule.set(self.core.base.idle_rule.get());
+        // Plan § 40: and the fuel closures' lean wall.
+        s.core.base.lean_wall.set(self.core.base.lean_wall.get());
         s
     }
 

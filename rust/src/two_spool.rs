@@ -718,6 +718,12 @@ pub struct TwoSpoolCore {
     /// THE BELOW-IDLE RULE (sandbox plan §§ 38–39) — what a steady point with no positive net thrust gets.
     /// [`IdleRule::Old`] by default (the old code: § 37's rule); the sandbox views choose another.
     pub idle_rule: std::cell::Cell<IdleRule>,
+    /// THE FUEL CLOSURES' LEAN WALL (sandbox plan § 40) — the leanest burner mixture the fuel-metered closures (rungs
+    /// 43/62/90/91) scan to. `None` by default: rung 43's `F_FLOOR` (0.004), a search bound, not a combustion limit. The
+    /// Controls view sets it per run to half the leaner steady end's mixture when that is under it, so a slam can leave a
+    /// start leaner than 0.004. Lowering it only extends the scan past the old wall: a closure that bracketed before
+    /// brackets on the same samples.
+    pub lean_wall: std::cell::Cell<Option<f64>>,
     /// RUNG 103: how the steady cascades solve the LP turbine right now — [`crate::steady_unchoked::SteadyLp`]. `Pin`
     /// except for the length of one re-solve (or the independent-root gate's held search).
     pub steady_lp: std::cell::Cell<crate::steady_unchoked::SteadyLp>,
@@ -888,6 +894,7 @@ impl TwoSpoolCore {
             ab_last: std::cell::Cell::new(None),
             below_choke: std::cell::Cell::new(false),
             idle_rule: std::cell::Cell::new(IdleRule::Old),
+            lean_wall: std::cell::Cell::new(None),
             steady_lp: std::cell::Cell::new(crate::steady_unchoked::SteadyLp::Pin),
             dispatching: std::cell::Cell::new(false),
             pin_past_choke: std::cell::Cell::new(false),

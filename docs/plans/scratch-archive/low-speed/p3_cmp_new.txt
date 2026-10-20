@@ -1,0 +1,120 @@
+plain | design | flow/press | builds 400.0 | whole slam 530.0 -> 530.0 lower_by 0
+plain | design | press/flow | builds 400.0 | whole slam 550.0 -> 550.0 lower_by 0
+plain | design | tilted | builds 400.0 | whole slam 560.0 -> 560.0 lower_by 0
+plain | design | flat-lp | builds 400.0 | whole slam 540.0 -> 540.0 lower_by 0
+plain | M1.6 | flow/press | builds 400.0 | whole slam 590.0 -> 400.0 lower_by 190
+plain | M1.6 | press/flow | builds 400.0 | whole slam 590.0 -> 400.0 lower_by 190
+plain | M1.6 | tilted | builds 400.0 | whole slam 590.0 -> 400.0 lower_by 190
+plain | M1.6 | flat-lp | builds 410.0 | whole slam 590.0 -> 410.0 lower_by 180
+plain | M2 | flow/press | builds 480.0 | whole slam 650.0 -> 480.0 lower_by 170
+plain | M2 | press/flow | builds 480.0 | whole slam 670.0 -> 480.0 lower_by 190
+plain | M2 | tilted | builds 480.0 | whole slam 650.0 -> 480.0 lower_by 170
+plain | M2 | flat-lp | builds 480.0 | whole slam 670.0 -> 480.0 lower_by 190
+plain | M2.6 | flow/press | builds 630.0 | whole slam 800.0 -> 630.0 lower_by 170
+plain | M2.6 | press/flow | builds 630.0 | whole slam 790.0 -> 630.0 lower_by 160
+plain | M2.6 | tilted | builds 630.0 | whole slam 800.0 -> 630.0 lower_by 170
+plain | M2.6 | flat-lp | builds 630.0 | whole slam 790.0 -> 630.0 lower_by 160
+plain | SL std | flow/press | builds 400.0 | whole slam 520.0 -> 400.0 lower_by 120
+plain | SL std | press/flow | builds 400.0 | whole slam 520.0 -> 420.0 lower_by 100
+plain | SL std | tilted | builds 400.0 | whole slam 520.0 -> 420.0 lower_by 100
+plain | SL std | flat-lp | builds 400.0 | whole slam 520.0 -> 410.0 lower_by 110
+plain | SL+40 | flow/press | builds 440.0 | whole slam 570.0 -> 440.0 lower_by 130
+plain | SL+40 | press/flow | builds 430.0 | whole slam 570.0 -> 450.0 lower_by 120
+plain | SL+40 | tilted | builds 440.0 | whole slam 570.0 -> 450.0 lower_by 120
+plain | SL+40 | flat-lp | builds 430.0 | whole slam 570.0 -> 440.0 lower_by 130
+bleed lever | design | flow/press | builds 400.0 | whole slam 550.0 -> 550.0 lower_by 0
+bleed lever | design | press/flow | builds 400.0 | whole slam 570.0 -> 570.0 lower_by 0
+bleed lever | design | tilted | builds 400.0 | whole slam 570.0 -> 570.0 lower_by 0
+bleed lever | design | flat-lp | builds 400.0 | whole slam 560.0 -> 560.0 lower_by 0
+bleed lever | M1.6 | flow/press | builds 400.0 | whole slam 570.0 -> 400.0 lower_by 170
+bleed lever | M1.6 | press/flow | builds 400.0 | whole slam 570.0 -> 400.0 lower_by 170
+bleed lever | M1.6 | tilted | builds 400.0 | whole slam 570.0 -> 400.0 lower_by 170
+bleed lever | M1.6 | flat-lp | builds 400.0 | whole slam 570.0 -> 400.0 lower_by 170
+bleed lever | M2 | flow/press | builds 480.0 | whole slam 650.0 -> 480.0 lower_by 170
+bleed lever | M2 | press/flow | builds 480.0 | whole slam 650.0 -> 480.0 lower_by 170
+bleed lever | M2 | tilted | builds 480.0 | whole slam 650.0 -> 480.0 lower_by 170
+bleed lever | M2 | flat-lp | builds 470.0 | whole slam 650.0 -> 470.0 lower_by 180
+bleed lever | M2.6 | flow/press | builds 620.0 | whole slam 800.0 -> 620.0 lower_by 180
+bleed lever | M2.6 | press/flow | builds 620.0 | whole slam 800.0 -> 620.0 lower_by 180
+bleed lever | M2.6 | tilted | builds 620.0 | whole slam 800.0 -> 620.0 lower_by 180
+bleed lever | M2.6 | flat-lp | builds 610.0 | whole slam 800.0 -> 610.0 lower_by 190
+bleed lever | SL std | flow/press | builds 400.0 | whole slam 520.0 -> 400.0 lower_by 120
+bleed lever | SL std | press/flow | builds 400.0 | whole slam 520.0 -> 420.0 lower_by 100
+bleed lever | SL std | tilted | builds 400.0 | whole slam 520.0 -> 420.0 lower_by 100
+bleed lever | SL std | flat-lp | builds 400.0 | whole slam 520.0 -> 410.0 lower_by 110
+bleed lever | SL+40 | flow/press | builds 430.0 | whole slam 550.0 -> 430.0 lower_by 120
+bleed lever | SL+40 | press/flow | builds 430.0 | whole slam 550.0 -> 450.0 lower_by 100
+bleed lever | SL+40 | tilted | builds 430.0 | whole slam 550.0 -> 450.0 lower_by 100
+bleed lever | SL+40 | flat-lp | builds 430.0 | whole slam 550.0 -> 440.0 lower_by 110
+stator lever | design | flow/press | builds 400.0 | whole slam 540.0 -> 540.0 lower_by 0
+stator lever | design | press/flow | builds 400.0 | whole slam 560.0 -> 560.0 lower_by 0
+stator lever | design | tilted | builds 400.0 | whole slam 560.0 -> 560.0 lower_by 0
+stator lever | design | flat-lp | builds 400.0 | whole slam 540.0 -> 540.0 lower_by 0
+stator lever | M1.6 | flow/press | builds 410.0 | whole slam 590.0 -> 410.0 lower_by 180
+stator lever | M1.6 | press/flow | builds 400.0 | whole slam 590.0 -> 400.0 lower_by 190
+stator lever | M1.6 | tilted | builds 400.0 | whole slam 590.0 -> 400.0 lower_by 190
+stator lever | M1.6 | flat-lp | builds 410.0 | whole slam 590.0 -> 410.0 lower_by 180
+stator lever | M2 | flow/press | builds 480.0 | whole slam 650.0 -> 480.0 lower_by 170
+stator lever | M2 | press/flow | builds 480.0 | whole slam 670.0 -> 480.0 lower_by 190
+stator lever | M2 | tilted | builds 480.0 | whole slam 650.0 -> 480.0 lower_by 170
+stator lever | M2 | flat-lp | builds 480.0 | whole slam 670.0 -> 480.0 lower_by 190
+stator lever | M2.6 | flow/press | builds 630.0 | whole slam 800.0 -> 630.0 lower_by 170
+stator lever | M2.6 | press/flow | builds 630.0 | whole slam 790.0 -> 630.0 lower_by 160
+stator lever | M2.6 | tilted | builds 630.0 | whole slam 800.0 -> 630.0 lower_by 170
+stator lever | M2.6 | flat-lp | builds 630.0 | whole slam 790.0 -> 630.0 lower_by 160
+stator lever | SL std | flow/press | builds 400.0 | whole slam 520.0 -> 400.0 lower_by 120
+stator lever | SL std | press/flow | builds 400.0 | whole slam 520.0 -> 420.0 lower_by 100
+stator lever | SL std | tilted | builds 400.0 | whole slam 520.0 -> 420.0 lower_by 100
+stator lever | SL std | flat-lp | builds 400.0 | whole slam 520.0 -> 410.0 lower_by 110
+stator lever | SL+40 | flow/press | builds 430.0 | whole slam 570.0 -> 430.0 lower_by 140
+stator lever | SL+40 | press/flow | builds 430.0 | whole slam 570.0 -> 460.0 lower_by 110
+stator lever | SL+40 | tilted | builds 430.0 | whole slam 570.0 -> 460.0 lower_by 110
+stator lever | SL+40 | flat-lp | builds 430.0 | whole slam 570.0 -> 450.0 lower_by 120
+customer | design | flow/press | builds 400.0 | whole slam 550.0 -> 550.0 lower_by 0
+customer | design | press/flow | builds 400.0 | whole slam 560.0 -> 560.0 lower_by 0
+customer | design | tilted | builds 400.0 | whole slam 570.0 -> 570.0 lower_by 0
+customer | design | flat-lp | builds 400.0 | whole slam 550.0 -> 550.0 lower_by 0
+customer | M1.6 | flow/press | builds 400.0 | whole slam 580.0 -> 400.0 lower_by 180
+customer | M1.6 | press/flow | builds 400.0 | whole slam 580.0 -> 400.0 lower_by 180
+customer | M1.6 | tilted | builds 400.0 | whole slam 580.0 -> 400.0 lower_by 180
+customer | M1.6 | flat-lp | builds 400.0 | whole slam 580.0 -> 400.0 lower_by 180
+customer | M2 | flow/press | builds 480.0 | whole slam 660.0 -> 480.0 lower_by 180
+customer | M2 | press/flow | builds 470.0 | whole slam 660.0 -> 470.0 lower_by 190
+customer | M2 | tilted | builds 480.0 | whole slam 660.0 -> 480.0 lower_by 180
+customer | M2 | flat-lp | builds 470.0 | whole slam 660.0 -> 470.0 lower_by 190
+customer | M2.6 | flow/press | builds 620.0 | whole slam 780.0 -> 620.0 lower_by 160
+customer | M2.6 | press/flow | builds 620.0 | whole slam 780.0 -> 620.0 lower_by 160
+customer | M2.6 | tilted | builds 620.0 | whole slam 780.0 -> 620.0 lower_by 160
+customer | M2.6 | flat-lp | builds 610.0 | whole slam 780.0 -> 610.0 lower_by 170
+customer | SL std | flow/press | builds 400.0 | whole slam 510.0 -> 400.0 lower_by 110
+customer | SL std | press/flow | builds 400.0 | whole slam 510.0 -> 430.0 lower_by 80
+customer | SL std | tilted | builds 400.0 | whole slam 510.0 -> 430.0 lower_by 80
+customer | SL std | flat-lp | builds 400.0 | whole slam 510.0 -> 420.0 lower_by 90
+customer | SL+40 | flow/press | builds 450.0 | whole slam 560.0 -> 450.0 lower_by 110
+customer | SL+40 | press/flow | builds 440.0 | whole slam 560.0 -> 470.0 lower_by 90
+customer | SL+40 | tilted | builds 440.0 | whole slam 560.0 -> 460.0 lower_by 100
+customer | SL+40 | flat-lp | builds 450.0 | whole slam 560.0 -> 460.0 lower_by 100
+cooling | design | flow/press | builds 400.0 | whole slam 550.0 -> 550.0 lower_by 0
+cooling | design | press/flow | builds 400.0 | whole slam 570.0 -> 570.0 lower_by 0
+cooling | design | tilted | builds 400.0 | whole slam 570.0 -> 570.0 lower_by 0
+cooling | design | flat-lp | builds 400.0 | whole slam 560.0 -> 560.0 lower_by 0
+cooling | M1.6 | flow/press | builds 400.0 | whole slam 580.0 -> 400.0 lower_by 180
+cooling | M1.6 | press/flow | builds 400.0 | whole slam 580.0 -> 400.0 lower_by 180
+cooling | M1.6 | tilted | builds 400.0 | whole slam 580.0 -> 400.0 lower_by 180
+cooling | M1.6 | flat-lp | builds 400.0 | whole slam 580.0 -> 400.0 lower_by 180
+cooling | M2 | flow/press | builds 470.0 | whole slam 640.0 -> 470.0 lower_by 170
+cooling | M2 | press/flow | builds 470.0 | whole slam 640.0 -> 470.0 lower_by 170
+cooling | M2 | tilted | builds 470.0 | whole slam 640.0 -> 470.0 lower_by 170
+cooling | M2 | flat-lp | builds 470.0 | whole slam 660.0 -> 470.0 lower_by 190
+cooling | M2.6 | flow/press | builds 620.0 | whole slam 780.0 -> 620.0 lower_by 160
+cooling | M2.6 | press/flow | builds 620.0 | whole slam 780.0 -> 620.0 lower_by 160
+cooling | M2.6 | tilted | builds 620.0 | whole slam 780.0 -> 620.0 lower_by 160
+cooling | M2.6 | flat-lp | builds 620.0 | whole slam 780.0 -> 620.0 lower_by 160
+cooling | SL std | flow/press | builds 400.0 | whole slam 510.0 -> 400.0 lower_by 110
+cooling | SL std | press/flow | builds 400.0 | whole slam 510.0 -> 420.0 lower_by 90
+cooling | SL std | tilted | builds 400.0 | whole slam 510.0 -> 420.0 lower_by 90
+cooling | SL std | flat-lp | builds 400.0 | whole slam 510.0 -> 410.0 lower_by 100
+cooling | SL+40 | flow/press | builds 430.0 | whole slam 560.0 -> 430.0 lower_by 130
+cooling | SL+40 | press/flow | builds 420.0 | whole slam 560.0 -> 460.0 lower_by 100
+cooling | SL+40 | tilted | builds 420.0 | whole slam 560.0 -> 460.0 lower_by 100
+cooling | SL+40 | flat-lp | builds 420.0 | whole slam 560.0 -> 450.0 lower_by 110

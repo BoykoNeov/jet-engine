@@ -282,6 +282,10 @@ pub struct ControlsSettings {
     /// run starts from it and the page warns, whichever start found it); `Refuse` (§ 38's floor); `Old` (§ 37's rule, the
     /// reduce setting rungs 98/99's tests read their anchored cells with). Written to a reply only off the default.
     pub idle: IdleRule,
+    /// The fuel closures' lean wall (sandbox plan § 40), hidden: `false` by default (the user's choice — the wall drops to
+    /// half the leaner steady end's mixture when that is under rung 43's 0.004, so a slam can leave a lean start); `true`
+    /// keeps 0.004 (the old code, request key `lean: old`). Written to a reply only off the default.
+    pub lean_old: bool,
     /// RUNG 101: where the formula (`speed_corr: formula`) gets the air swallowed — rung 100's table (the default),
     /// the speed grid's, or the exhaust-temperature sensor; and that sensor's lag (off by default; HP-shaft τ). Written to
     /// a reply only off their defaults, so every default reply is rung 100's in shape.
@@ -422,7 +426,7 @@ impl ControlsSettings {
             govern: false, speed_law: SpeedLaw::Rate, gov_tau: 0.1, gov_gain: 20.0,
             thrust_by: ThrustBy::True, table_clean: true,
             table_at: TableAt::Design, corr_p: true, corr_t: true, speed_corr: SpeedCorr::Grid,
-            low_grid: true, formula_choked: false, idle: IdleRule::Accept,
+            low_grid: true, formula_choked: false, idle: IdleRule::Accept, lean_old: false,
             airflow: AirflowFrom::Table, exhaust_lag: false, exhaust_tau: 1.0,
             t0: fd.t0, p0: fd.p0, m0: fd.m0,
             ab: None, tt7: AB_TT7, light_at: AB_LIGHT_AT, a8_ratio: 1.0, a8_match: false,
@@ -581,6 +585,8 @@ impl ControlsSettings {
             if self.formula_choked { kv.push(("formula_choked".into(), b(true))); }
             // The below-idle floor's, likewise (plan § 38).
             if self.idle != IdleRule::Accept { kv.push(("idle".into(), Json::from(idle_key(self.idle)))); }
+            // The lean wall's (plan § 40), likewise.
+            if self.lean_old { kv.push(("lean".into(), Json::from("old"))); }
             // Rung 101's three, likewise.
             if self.airflow != AirflowFrom::Table { kv.push(("airflow".into(), Json::from(self.airflow.key()))); }
             if self.exhaust_lag { kv.push(("exhaust_lag".into(), b(true))); }
@@ -669,6 +675,13 @@ impl ControlsSettings {
         if let Some(t) = text("idle")? {
             s.idle = [IdleRule::Accept, IdleRule::Refuse, IdleRule::Old].into_iter().find(|r| idle_key(*r) == t)
                 .ok_or_else(|| format!("unknown below-idle rule {t:?} (\"warn\", \"refuse\" or \"old\")"))?;
+        }
+        if let Some(t) = text("lean")? {
+            s.lean_old = match t.as_str() {
+                "run" => false,
+                "old" => true,
+                _ => return Err(format!("unknown lean wall {t:?} (\"run\" or \"old\")")),
+            };
         }
         if let Some(t) = text("generator_by")? {
             s.generator_by = GeneratorBy::ALL.into_iter().find(|m| m.key() == t)
@@ -1397,6 +1410,15 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
         }
     };
     let (mf_lo, mf_hi) = (start.close.f * start.close.mdot_air, end.close.f * end.close.mdot_air);
+    // Plan § 40: rung 43's lean wall (0.004) is a search bound, and a steady end can burn leaner (down to ~0.0001 at
+    // Mach 1.6–2 near the lowest throttle that builds): the march's first closure could not reach its own start. The
+    // wall drops to half the leaner end's mixture there; a run whose ends both burn at 0.008 or richer keeps 0.004.
+    if !s.lean_old {
+        let wall = 0.5 * start.close.f.min(end.close.f);
+        if wall < FuelTransientCore::F_FLOOR {
+            core.fuel.inner.inner.base.lean_wall.set(Some(wall));
+        }
+    }
     let accel = match s.accel_on {
         false => None,
         true => {
@@ -2111,10 +2133,10 @@ impl StopKind {
                  the engine, the shafts slow, and the flow coefficient falls further. Lower the floor (with the \
                  stator schedule on, try the floor that watches blade incidence).",
             StopKind::Lean =>
-                "The fuel fell faster than the air: on this power cut the mixture got leaner than 0.004 kg of fuel \
-                 per kg of air, the leanest the model's fuel-metered solver searches, so the run stops. (A real \
-                 burner has a lean blow-out limit too; this one is the solver's search bound, not a combustion \
-                 model.) Cut the throttle more slowly, or not so far.",
+                "The fuel fell faster than the air: on this power cut the mixture got leaner than the leanest the \
+                 model's fuel-metered solver searches (0.004 kg of fuel per kg of air, or half the leaner steady end's \
+                 mixture when that is lower), so the run stops. (A real burner has a lean blow-out limit too; this one \
+                 is the solver's search bound, not a combustion model.) Cut the throttle more slowly, or not so far.",
             StopKind::Rich =>
                 "The fuel arrived faster than the shafts could bring in air to burn it: the mixture would need more \
                  than 0.065 kg of fuel per kg of air, the richest the model's fuel-metered solver searches (burning \
@@ -2148,6 +2170,21 @@ impl StopKind {
 pub fn trial_mixture(f: &Failure, last: Option<&FuelPoint>) -> Option<f64> {
     let l = last?;
     (f.mf.is_finite() && l.mf > 0.0).then(|| f.mf * l.f / l.mf)
+}
+
+/// [`trial_mixture`], or — for a stop at the first step, before any point was recorded — the same estimate off the
+/// run's steady start (its fuel over its mixture is its LP-face air flow). Plan § 40: § 39 named a first-step stop "no
+/// burner state" for want of a point to read; 1 553 of its 1 691 were starts leaner than the lean wall.
+pub fn run_mixture(sv: &ControlsSolver, f: &Failure, last: Option<&FuelPoint>) -> Option<f64> {
+    match last {
+        Some(_) => trial_mixture(f, last),
+        None => (f.mf.is_finite() && sv.mf_lo > 0.0).then(|| f.mf * sv.start.close.f / sv.mf_lo),
+    }
+}
+
+/// The lean wall this run's fuel closures scan to (plan § 40): rung 43's 0.004, or the lower one the view set.
+pub fn lean_wall(sv: &ControlsSolver) -> f64 {
+    sv.core.fuel.inner.inner.base.lean_wall.get().unwrap_or(FuelTransientCore::F_FLOOR)
 }
 
 /// Classify a re-run failure by its message and, for a failed fuel closure, by its mixture.
@@ -2185,9 +2222,10 @@ pub fn classify(sv: &ControlsSolver, stop: &Stop, last: Option<&FuelPoint>) -> S
         return StopKind::Other;
     }
     // Plan § 39: a wall is named only near it (the crash map's lean and rich stops sit at 0.71–1.05 of their walls);
-    // a closure that failed between them, or before any point was recorded, found no burner state at all.
-    match trial_mixture(f, last) {
-        Some(x) if x < lean_rich_split() && x < 2.0 * FuelTransientCore::F_FLOOR => StopKind::Lean,
+    // a closure that failed between them found no burner state at all. Plan § 40: the lean wall is the run's own, and a
+    // stop at the first step reads its mixture off the start.
+    match run_mixture(sv, f, last) {
+        Some(x) if x < lean_rich_split() && x < 2.0 * lean_wall(sv) => StopKind::Lean,
         Some(x) if x >= lean_rich_split() && x > 0.5 * FuelTransientCore::F_CAP => StopKind::Rich,
         _ => StopKind::LowSpeed,
     }
@@ -2479,7 +2517,7 @@ pub fn controls_json(sv: &ControlsSolver, o: &ControlsOutcome) -> Json {
                     "message" => f.map(|f| Json::Str(f.message.clone())).unwrap_or(Json::Null),
                     "s_last" => num_or_null(st.s_last),
                     "s" => f.map(|f| num_or_null(f.s)).unwrap_or(Json::Null),
-                    "mixture" => f.and_then(|f| trial_mixture(f, last)).map(num_or_null).unwrap_or(Json::Null),
+                    "mixture" => f.and_then(|f| run_mixture(sv, f, last)).map(num_or_null).unwrap_or(Json::Null),
                     "min_fuel_fraction" => num_or_null(p.iter().map(|x| x.mf / x.mf_sched).fold(f64::INFINITY, f64::min)),
                 }
             }
