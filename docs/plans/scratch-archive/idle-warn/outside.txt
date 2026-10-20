@@ -1,0 +1,21 @@
+   Epr None T0 288.1 M 3.3 shape 0 from 1150: 13 of 126 outside, furthest 0.627
+   Epr None T0 288.1 M 3.3 shape 1 from 1150: 13 of 126 outside, furthest 0.619
+   Epr None T0 288.1 M 3.3 shape 2 from 1150: 13 of 126 outside, furthest 0.626
+   Epr None T0 288.1 M 3.3 shape 3 from 1150: 13 of 126 outside, furthest 0.632
+   Epr None T0 250.0 M 3.3 shape 0 from 1000: 7 of 126 outside, furthest 0.283
+   Epr None T0 250.0 M 3.3 shape 0 from 1150: 7 of 126 outside, furthest 0.252
+   Epr None T0 250.0 M 3.3 shape 1 from 1000: 7 of 126 outside, furthest 0.276
+   Epr None T0 250.0 M 3.3 shape 1 from 1150: 8 of 126 outside, furthest 0.255
+   Epr None T0 250.0 M 3.3 shape 2 from 1000: 7 of 126 outside, furthest 0.281
+   Epr None T0 250.0 M 3.3 shape 2 from 1150: 7 of 126 outside, furthest 0.254
+   Epr None T0 250.0 M 3.3 shape 3 from 1000: 7 of 126 outside, furthest 0.285
+   Epr None T0 250.0 M 3.3 shape 3 from 1150: 8 of 126 outside, furthest 0.266
+   Epr None T0 318.1 M 3 shape 0 from 1150: 5 of 126 outside, furthest 0.245
+   Epr None T0 318.1 M 3 shape 1 from 1150: 6 of 126 outside, furthest 0.250
+   Epr None T0 318.1 M 3 shape 2 from 1150: 6 of 126 outside, furthest 0.250
+   Epr None T0 318.1 M 3 shape 3 from 1150: 6 of 126 outside, furthest 0.257
+   Epr None T0 318.1 M 3.3 shape 3 from 1150: 20 of 126 outside, furthest 1.233
+Epr None: past the old reach 73 runs, 42 with points outside the rows (904 of 9198 points, furthest 1.233 of the table's span); reached before 44 runs, 16 with (43 of 5544, furthest 0.134)
+Epr Grid: past the old reach 26 runs, 25 with points outside the rows (2525 of 3276 points, furthest 0.035 of the table's span); reached before 91 runs, 83 with (6352 of 11466, furthest 0.035)
+N1 None: past the old reach 32 runs, 6 with points outside the rows (192 of 4032 points, furthest 0.140 of the table's span); reached before 44 runs, 16 with (86 of 5544, furthest 0.155)
+N1 Grid: past the old reach 26 runs, 25 with points outside the rows (2200 of 3276 points, furthest 0.032 of the table's span); reached before 91 runs, 51 with (4528 of 11466, furthest 0.032)

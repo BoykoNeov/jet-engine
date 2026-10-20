@@ -17,6 +17,8 @@ All `[[bin]]`s of one scratch crate built against the repo (the § 39 code). The
   shapes, starts 850/1000/1150 K) the old code refused as beyond the tables' reach, which the page now runs: the worst
   belief-vs-thrust miss along each, against runs that reached before at the same flights. `split.rs` → `split.txt` —
   rung 98's Mach-3 sea-level cell: the gap's ram part (−4 441) and nozzle part (+4 724), the gap itself +283 → −38.
+- `outside.rs` → `outside.txt` — the same runs: how many points read the control's table outside its rows, and how
+  far (as a share of the table's span), against the runs that reached before.
 - `stops.rs` — the last of a throwaway series: which sea-level low-start starts march to the end (540 K flat-LP, 550 K
   flow/press, the bleed lever at 520/560 K — all do).
 - The crash maps: `../rung101/crash101.rs` (seed 99, 1 500) and `../idle-floor/crash.rs` (seed 36, 1 200), unchanged,

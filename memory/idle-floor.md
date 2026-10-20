@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 516d97f0-e1bb-4745-a47b-1809cca9649e
-  modified: 2026-10-19T23:34:39.171Z
+  modified: 2026-10-20T00:46:25.730Z
 ---
 
 **UPDATE 2026-10-20 (§ 39, user decision on a side agent's heads-up): the Controls page WARNS instead.**
@@ -42,6 +42,11 @@ the change reaches, and state the slice a count covers.
 **Lesson 1c — "it builds" is not "it runs".** I quoted the page's lowest starts from `build()` (the steady ends
 only); a side agent noticed the slam itself stopped from 480–540 K at the design flight. Measure the product's
 whole action (`controls()`, march length == expected) before quoting a floor.
+
+**Lesson 1d — a quoted number may be one part of a sum.** A side agent read rung 98's Mach-3 cell's −4 441 N per
+kg/s as the belief's miss; it was the gap's RAM part, which the nozzle part (+4 724) cancels — the miss was +283 → −38.
+I nearly wrote the old refusal's reason from memory too ("a read outside the rows"); the code said "a row could not be
+built". Before answering a number, read what it sums with; before writing a mechanism, read the code that fires it.
 
 **Lesson 2 — compare page replies structurally.** The replies are JSON with `—` escapes; a sed diff on the
 plain-text sentence matched nothing and reported every change as "OTHER". Match on an ASCII-safe pattern.

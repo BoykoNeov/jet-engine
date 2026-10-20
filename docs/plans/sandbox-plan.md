@@ -2082,8 +2082,14 @@ state (the shafts hold a steady speed; the drag of the air swallowed is larger t
   850/1000/1150 K; `scratch-archive/idle-warn/gap.rs`), the worst miss along a run past the old reach is 120–535 N per
   kg/s (median 160–255), against 100–215 (median 100–140) for runs that reached before at the same flights — larger, as
   the reading goes further from where the table was made, not a different kind; every such run finishes. The reach
-  refusal guarded a table read OUTSIDE its rows (a clamp, rung 98's lesson); those reads are now inside rows below idle,
-  so no new refusal or note — the page already shows the belief, the gap and its two parts.
+  refusal fired when a table ROW could not be built — the run's throttle, translated to the design flight, had no
+  steady point there (below idle); those rows now build. Do the runs read inside the rows (`outside.rs`, the advisor's
+  check)? Under the page's default speed grid, yes as much as before: points past an end row lie within 3.5 % of the
+  table's span in both groups. Under no speed correction with the pressure-ratio reading, 17 runs at Mach 3–3.3 read
+  5–20 of their 126 points up to 0.25–1.23 spans past an end (before: at most 0.13), where the lookup carries the end
+  segment on in a straight line (not a clamp; for the gross push exact, rung 96's G3) — and their worst miss, 121–320,
+  is no larger than their neighbours' (the group's largest, 374, stays within 0.2 of a span). So no new refusal or note — the page already shows the belief, the gap and its
+  two parts. (Offered to the user: a note when a reading leaves the table, if wanted.)
 - **What moved** (both crash maps, against `6e49d33` — before § 38 — and `1f57583` — § 38):
   - against `6e49d33`, rung 101's map (seed 99, 1 500): 118 requests, every one a refusal before — 27 now run to the
     end with the warning, 63 run and stop early (23 at a fuel closure — now `low_speed` —, 5 cause-unknown on the
