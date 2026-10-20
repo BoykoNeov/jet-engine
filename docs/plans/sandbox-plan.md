@@ -2121,7 +2121,7 @@ wall (last mixture 0.061–0.065).
   tie it to the run — `TwoSpoolCore::lean_wall: Cell<Option<f64>>`, `None` everywhere by default (the old code, every
   Python-held oracle), set by the Controls view to **half the leaner steady end's mixture when that is under 0.004**.
   A run whose ends both burn at 0.008 or richer keeps 0.004, so a fast power cut from such ends still stops lean as
-  before. Hidden reduce setting `lean: old`. The stator lever's siblings carry it (`at_setting`).
+  before. **But a cut to an end leaner than 0.008 does move** (27 + 20 lean stops now run, 15 governed cuts go deeper — the crash maps below): more than the option's words to the user said ("power cuts still stop lean as today"); reported and asked. Hidden reduce setting `lean: old`. The stator lever's siblings carry it (`at_setting`).
 - **Why it is safe:** the scan takes the first sign change upward from the rich wall, so lowering the lean wall only
   extends it past the old one — a closure that bracketed before brackets on the same samples. Run, not argued:
   `tests/lean_wall.rs` holds a 560 K design-flight start (wall lowered to ~3 g/kg, old slam complete) bit for bit
@@ -2132,7 +2132,7 @@ wall (last mixture 0.061–0.065).
 - **What moved (probe 3, five variants × six flights × four maps, starts 400–1300 K):** the lowest start whose whole
   default slam finishes drops 80–190 K at every flight but the design flight, to within 0–20 K of the lowest that
   builds; at the design flight (20 cells) it does not move — the low starts now leave the start and stop RICH after
-  11–21 steps (the default slam has no acceleration schedule; with it on, every flat-LP … tilted start 400–560 K runs
+  11–21 steps (the default slam has no acceleration schedule; with it on, the plain engine's starts 400–560 K on all four maps run — probe 4; the other variants not measured —
   to the end). Of the 1 691 first-step stops one is left: the customer bleed at sea level +40 K from 440 K, whose LP
   shaft starts at 15 % speed (5 K higher, 38 %) — its mixture is above the run's wall, so it keeps `low_speed`, the
   kind now driven by it. Where the first step now solves it lands on the start's own state (mixture to ≤ 2e-15).
