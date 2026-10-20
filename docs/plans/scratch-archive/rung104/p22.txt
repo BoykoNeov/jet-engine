@@ -1,0 +1,32 @@
+r39 turb     M0.85   600  (refused on one side)
+r39 turb     M0.85   900  eta_lpt-0.90 -1.44e-4  worst law-vs-pin 6.40e-6 (pi_hpc)  n_hp -3.49e-6  n_lp +4.06e-6
+r39 turb     M0.85  1100  eta_lpt-0.90 -7.60e-5  worst law-vs-pin 3.98e-6 (pi_hpc)  n_hp -2.04e-6  n_lp +2.08e-6
+r39 turb     M0.85  1500  eta_lpt-0.90 +0.00e0  worst law-vs-pin 0.00e0 ()  n_hp +0.00e0  n_lp +0.00e0
+r39 turb     M1.60   600  eta_lpt-0.90 -2.45e-4  worst law-vs-pin 7.21e-6 (n_lp)  n_hp -4.40e-6  n_lp +7.21e-6
+r39 turb     M1.60   900  eta_lpt-0.90 -2.08e-4  worst law-vs-pin 7.28e-6 (pi_hpc)  n_hp -4.43e-6  n_lp +6.03e-6
+r39 turb     M1.60  1100  eta_lpt-0.90 -1.60e-4  worst law-vs-pin 6.70e-6 (pi_hpc)  n_hp -3.75e-6  n_lp +4.57e-6
+r39 turb     M1.60  1500  eta_lpt-0.90 -5.77e-5  worst law-vs-pin 3.12e-6 (pi_hpc)  n_hp -1.58e-6  n_lp +1.57e-6
+page flow    M0.85   600  (refused on one side)
+page flow    M0.85   900  eta_lpt-0.90 -1.44e-4  worst law-vs-pin 6.40e-6 (pi_hpc)  n_hp -3.49e-6  n_lp +4.06e-6
+page flow    M0.85  1100  eta_lpt-0.90 -7.60e-5  worst law-vs-pin 3.98e-6 (pi_hpc)  n_hp -2.04e-6  n_lp +2.08e-6
+page flow    M0.85  1500  eta_lpt-0.90 +0.00e0  worst law-vs-pin 0.00e0 ()  n_hp +0.00e0  n_lp +0.00e0
+page flow    M1.60   600  eta_lpt-0.90 -2.45e-4  worst law-vs-pin 7.21e-6 (n_lp)  n_hp -4.40e-6  n_lp +7.21e-6
+page flow    M1.60   900  eta_lpt-0.90 -2.08e-4  worst law-vs-pin 7.28e-6 (pi_hpc)  n_hp -4.43e-6  n_lp +6.03e-6
+page flow    M1.60  1100  eta_lpt-0.90 -1.60e-4  worst law-vs-pin 6.70e-6 (pi_hpc)  n_hp -3.75e-6  n_lp +4.57e-6
+page flow    M1.60  1500  eta_lpt-0.90 -5.77e-5  worst law-vs-pin 3.12e-6 (pi_hpc)  n_hp -1.58e-6  n_lp +1.57e-6
+page press   M0.85   600  (refused on one side)
+page press   M0.85   900  eta_lpt-0.90 -2.37e-4  worst law-vs-pin 1.07e-5 (pi_hpc)  n_hp -6.08e-6  n_lp +6.25e-6
+page press   M0.85  1100  eta_lpt-0.90 -1.24e-4  worst law-vs-pin 6.58e-6 (pi_hpc)  n_hp -3.57e-6  n_lp +3.14e-6
+page press   M0.85  1500  eta_lpt-0.90 +0.00e0  worst law-vs-pin 0.00e0 ()  n_hp +0.00e0  n_lp +0.00e0
+page press   M1.60   600  eta_lpt-0.90 -4.08e-4  worst law-vs-pin 1.14e-5 (n_lp)  n_hp -7.47e-6  n_lp +1.14e-5
+page press   M1.60   900  eta_lpt-0.90 -3.46e-4  worst law-vs-pin 1.23e-5 (pi_hpc)  n_hp -7.70e-6  n_lp +9.48e-6
+page press   M1.60  1100  eta_lpt-0.90 -2.67e-4  worst law-vs-pin 1.13e-5 (pi_hpc)  n_hp -6.59e-6  n_lp +7.13e-6
+page press   M1.60  1500  eta_lpt-0.90 -9.65e-5  worst law-vs-pin 5.26e-6 (pi_hpc)  n_hp -2.83e-6  n_lp +2.42e-6
+page tilted  M0.85   600  (refused on one side)
+page tilted  M0.85   900  eta_lpt-0.90 -1.85e-4  worst law-vs-pin 8.32e-6 (pi_hpc)  n_hp -4.62e-6  n_lp +5.09e-6
+page tilted  M0.85  1100  eta_lpt-0.90 -9.82e-5  worst law-vs-pin 5.20e-6 (pi_hpc)  n_hp -2.74e-6  n_lp +2.60e-6
+page tilted  M0.85  1500  eta_lpt-0.90 +0.00e0  worst law-vs-pin 0.00e0 ()  n_hp +0.00e0  n_lp +0.00e0
+page tilted  M1.60   600  eta_lpt-0.90 -3.10e-4  worst law-vs-pin 8.99e-6 (n_lp)  n_hp -5.63e-6  n_lp +8.99e-6
+page tilted  M1.60   900  eta_lpt-0.90 -2.65e-4  worst law-vs-pin 9.41e-6 (pi_hpc)  n_hp -5.78e-6  n_lp +7.57e-6
+page tilted  M1.60  1100  eta_lpt-0.90 -2.06e-4  worst law-vs-pin 8.73e-6 (pi_hpc)  n_hp -4.96e-6  n_lp +5.75e-6
+page tilted  M1.60  1500  eta_lpt-0.90 -7.57e-5  worst law-vs-pin 4.13e-6 (pi_hpc)  n_hp -2.15e-6  n_lp +1.99e-6

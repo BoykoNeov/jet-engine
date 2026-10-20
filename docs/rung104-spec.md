@@ -186,7 +186,10 @@ differ from Python. **87 458 of 263 647 keys retired (33 %); 176 189 still held 
 **Where they sit:** every retired key is on the thermally-perfect, reacting, Fork B or equilibrium gas — except **264
 keys at eight perfect-gas cells of rung 39's `turb` map** (`a_t = 0.02`, the turbine efficiency off its design value):
 there the LP turbine's expansion leaves its design value even with the nozzle choked, so the vane leaves its design point
-and the law differs from the pin for real (the shortcut's `η_LPT` condition). No perfect-gas key at design efficiency moved.
+and the law differs from the pin for real (the shortcut's `η_LPT` condition) — by a few parts per million: `η_LPT` off
+design by up to 4e−4, speeds and `π_HPC` 2–12e−6, the same on the pages' surge-realistic maps (`p22.txt`; not search
+rounding, which is ~1e−14). No perfect-gas key at design efficiency moved. The views that carry the law (Controls,
+Blades, Cooling) run maps with no turbine term, so § 4's "the same run, choked" holds there bit for bit.
 
 **Counts the law moves** (not values, so not in a list) are held as the Rust-owned numbers they now are, Python's on the
 pin build: slice M's bisection pass sets (31 joins the ladder's, 25 and 27 the root's); the fuel transient's Newton pass

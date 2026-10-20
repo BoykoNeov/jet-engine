@@ -5,13 +5,13 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 608a4dc7-68b6-4be6-be9a-6ef698d34bc2
-  modified: 2026-10-20T12:38:02.181Z
+  modified: 2026-10-20T13:42:21.857Z
 ---
 
 Picked 2026-10-20 from my post-103 list ("the turbine-throat check"). NB I first mis-described it as the HP turbine's
 vanes; it is `A45`, the LP turbine's NGV — corrected to the user.
 
-**Probe facts (W:\temp\claude\rung104\g1.txt, g2.txt):** LP turbine total ratio 1.451–1.463 on the whole choked
+**Probe facts (`docs/plans/scratch-archive/rung104/g1.txt`, `g2.txt`):** LP turbine total ratio 1.451–1.463 on the whole choked
 running line; even if the vane took the whole drop to exit static at M5=0.6 it reaches only 0.990–0.996 of the
 critical ratio — A45 is NEVER choked, design point included. HP NGV bound 1.58–1.60× critical (borderline with
 reaction — a concession, not built). With the nozzle choked, CPG: pin ≡ any design-captured law to 1e-15 (the choked

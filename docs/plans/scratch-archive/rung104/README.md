@@ -32,3 +32,5 @@ Archived 2026-10-20 before any rung-104 code entered the repo (the anchor: `docs
 * `r9_r2_.txt` / `r9_r4_.txt` — R9, the red check (the joint search forced back to the pin's HP ratio): R2 passes, R4
   fails.
 * `gate_r1a.log` — R1a, the whole gate built with `pin-default`.
+* `p22.txt` — the close-out check of the 264 retired perfect-gas keys: where a map term moves `η_LPT` off design the law
+  differs from the pin by 2–12 parts per million (real, not search rounding), the same on the pages' surge maps.
