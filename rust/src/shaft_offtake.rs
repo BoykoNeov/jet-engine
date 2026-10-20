@@ -264,13 +264,15 @@ fn try_cascade_loaded(
     let (e1, e2) = (cool.vane, cool.blade);
     let eps = e1 + e2;
     let burner = 1.0 - c - eps;
-    let mfp4 = try_choked_mfp(wgas, tt4, f)?;
+    let mfp4_pin = try_choked_mfp(wgas, tt4, f)?;
     let (mut eta_hpt, mut eta_lpt, mut tt3) = (base.eta_hpt, base.eta_lpt, tt3_seed);
     for _ in 0..TwoSpoolCore::MAX {
         let (hpt, (pi_lpt, tau_lpt, tt5)) = crate::turbine_cooling::try_cooled_pair(
             base, wgas, tt4, f, burner, e1, e2, tt3, eta_hpt,
             |tt45, f45, pi_hpt| Ok((crate::steady_unchoked::try_lp_steady(base, wgas, tt45, f45, eta_lpt, pi_hpt)?,
                                     eta_lpt)))?;
+        // RUNG 105: the vane's law reaches (†)/(‡) as the A4 flow per pinned area (`MFP*` itself on the pin).
+        let mfp4 = mfp4_pin * (hpt.a4 / base.a4);
 
         // The LP balance, per FACE air: the LPT passes (1-b)(G + eps) of gas; the LP load comes off.
         let g = burner * (1.0 + f);
@@ -299,7 +301,7 @@ fn try_cascade_loaded(
         let nu_lpt = nl * powp(core.tt45_d / hpt.tt45, 0.5);
         let map = CascadeMap {
             c: Cascade { pi_hpt: hpt.pi_hpt, tau_hpt: hpt.tau_rotor, tt45: hpt.tt45, pi_lpt,
-                         tau_lpt, tt5, pi_lpc: lp.pi, tt25, pi_hpc: hp.pi, tt3: tt3_new },
+                         tau_lpt, tt5, pi_lpc: lp.pi, tt25, pi_hpc: hp.pi, tt3: tt3_new, a4: hpt.a4 },
             eta_lpc: lp.eta, eta_hpc: hp.eta, eta_hpt, eta_lpt,
             m_l: lp.m, m_h: hp.m, n_l: lp.n, n_h: hp.n, nl, nh,
             phi_l: lp.m / lp.n, phi_h: hp.m / hp.n, nu_hpt, nu_lpt, slip: nl / nh,
@@ -439,7 +441,7 @@ fn loaded_body(
                                    PerAir::of(load.lp, p_ref, face))?;
         let pt4_new = base.pi_b * x.map.c.pi_hpc * x.map.c.pi_lpc * pt2;
         let f_new = base.try_solve_f(x.map.c.tt3, pt4_new, tt4)?;
-        let burner = base.a4 * pt4_new * try_choked_mfp(wgas, tt4, f_new)?
+        let burner = x.map.c.a4 * pt4_new * try_choked_mfp(wgas, tt4, f_new)?
             / powp(tt4, 0.5) / (1.0 + f_new);
         let c_new = match cb {
             Some(CustomerBleed::Amount(_)) => {
@@ -473,7 +475,7 @@ fn loaded_body(
 
     let owned = base.try_working_gas(f, tt4, pt4)?;
     let wgas = owned.as_ref().unwrap_or(base.gas());
-    let mdot_burner = base.a4 * pt4 * try_choked_mfp(wgas, tt4, f)? / powp(tt4, 0.5) / (1.0 + f);
+    let mdot_burner = m.c.a4 * pt4 * try_choked_mfp(wgas, tt4, f)? / powp(tt4, 0.5) / (1.0 + f);
     let mdot_hpc = hpc_from_burner(cb, eps, mdot_burner, mdot_d);
     check_root(c, eps, mdot_hpc)?;
     let mdot_air = mdot_hpc / (1.0 - b);           // what the INLET ingests

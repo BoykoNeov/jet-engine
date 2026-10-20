@@ -241,12 +241,14 @@ pub fn try_cascade_customer(
 ) -> Result<CascadeMap, Abort> {
     let b = core.bleed;
     let base = &core.base;
-    let mfp4 = try_choked_mfp(wgas, tt4, f)?;
+    let mfp4_pin = try_choked_mfp(wgas, tt4, f)?;
     let (mut eta_hpt, mut eta_lpt) = (base.eta_hpt, base.eta_lpt);
     for _ in 0..TwoSpoolMapCore::TURB_MAX {
-        let ((pi_hpt, tau_hpt, tt45), (pi_lpt, tau_lpt, tt5)) = base.try_turbine_pair(
+        let (((pi_hpt, tau_hpt, tt45), (pi_lpt, tau_lpt, tt5)), a4) = base.try_turbine_pair_hp(
             wgas, tt4, f, eta_hpt,
             |tt45, pi_hpt| Ok((crate::steady_unchoked::try_lp_steady(base, wgas, tt45, f, eta_lpt, pi_hpt)?, eta_lpt)))?;
+        // RUNG 105: the vane's law reaches (†)/(‡) as the A4 flow per pinned area (`MFP*` itself on the pin).
+        let mfp4 = mfp4_pin * (a4 / base.a4);
 
         // (3) the LP balance: the LPT drives the face air with (1-b)(1-c)(1+f) of gas.
         let dh_lpt = base.eta_m * (1.0 - b) * (1.0 - c) * (1.0 + f)
@@ -269,7 +271,7 @@ pub fn try_cascade_customer(
         let nu_lpt = nl * powp(core.tt45_d / tt45, 0.5);
         let out = CascadeMap {
             c: Cascade { pi_hpt, tau_hpt, tt45, pi_lpt, tau_lpt, tt5,
-                         pi_lpc: lp.pi, tt25, pi_hpc: hp.pi, tt3 },
+                         pi_lpc: lp.pi, tt25, pi_hpc: hp.pi, tt3, a4 },
             eta_lpc: lp.eta, eta_hpc: hp.eta, eta_hpt, eta_lpt,
             m_l: lp.m, m_h: hp.m, n_l: lp.n, n_h: hp.n, nl, nh,
             phi_l: lp.m / lp.n, phi_h: hp.m / hp.n, nu_hpt, nu_lpt, slip: nl / nh,
@@ -374,7 +376,7 @@ fn customer_body(
             CustomerBleed::Amount(_) => {
                 let owned_n = base.try_working_gas(f_new, tt4, pt4_new)?;
                 let wg = owned_n.as_ref().unwrap_or(base.gas());
-                let burner = base.a4 * pt4_new * try_choked_mfp(wg, tt4, f_new)?
+                let burner = x.c.a4 * pt4_new * try_choked_mfp(wg, tt4, f_new)?
                     / powp(tt4, 0.5) / (1.0 + f_new);
                 cb.share_at(cb.hpc_from_burner(burner, mdot_d), mdot_d)?
             }
@@ -398,7 +400,7 @@ fn customer_body(
 
     let owned = base.try_working_gas(f, tt4, pt4)?;
     let wgas = owned.as_ref().unwrap_or(base.gas());
-    let mdot_burner = base.a4 * pt4 * try_choked_mfp(wgas, tt4, f)? / powp(tt4, 0.5) / (1.0 + f);
+    let mdot_burner = x.c.a4 * pt4 * try_choked_mfp(wgas, tt4, f)? / powp(tt4, 0.5) / (1.0 + f);
     let mdot_hpc = mdot_burner / (1.0 - c);
     let mdot_air = mdot_hpc / (1.0 - b);           // what the INLET ingests
 
@@ -550,7 +552,11 @@ pub fn r90_try_close(
         let f = c.base.try_solve_f(tt3, pt4, tt4)?;
         let wgas = c.base.try_working_gas(f, tt4, pt4)?;
         let wg = wgas.as_ref().unwrap_or(gas);
-        let mdot4 = c.base.a4 * pt4 * try_choked_mfp(wg, tt4, f)? / powp(tt4, 0.5);
+        // RUNG 105: under the HP vane's law the turbines follow the gas this trial delivers — the HPC air less the
+        // customer's (read only under the law: the pin's path keeps its old refusals).
+        let m4 = if c.base.hp_vane() == crate::hp_vane::HpVane::Pin { f64::NAN }
+                 else { (1.0 - cb.share_at(mdot_hpc, mdot_d)?) * mdot_hpc * (1.0 + f) };
+        let mdot4 = c.try_a4_trial(wg, tt4, f, pt4, m4, nu_lp, nu_hp)? * pt4 * try_choked_mfp(wg, tt4, f)? / powp(tt4, 0.5);
         // The BURNER air the NGV choke imposes, the HPC air that implies, the face air that implies.
         let mdot_imp = mdot4 / (1.0 + f);
         let hpc_imp = cb.hpc_from_burner(mdot_imp, mdot_d);
@@ -657,7 +663,8 @@ pub fn r90_try_close_fuel(
         let tt4 = ft.try_tt4_from_f(tt3, f)?;
         let wgas = c.base.try_working_gas(f, tt4, pt4)?;
         let wg = wgas.as_ref().unwrap_or(gas);
-        let mdot4 = c.base.a4 * pt4 * try_choked_mfp(wg, tt4, f)? / powp(tt4, 0.5);
+        let mdot4 = c.try_a4_trial(wg, tt4, f, pt4, burner_trial * (1.0 + f), nu_lp, nu_hp)? * pt4
+            * try_choked_mfp(wg, tt4, f)? / powp(tt4, 0.5);
         let mdot_imp = mdot4 / (1.0 + f);
         let face_imp = cb.hpc_from_burner(mdot_imp, mdot_d) / (1.0 - b);
         let m_imp = (face_imp * powp(tt2, 0.5) / pt2) / c.mcorr_lp_d;
@@ -723,15 +730,15 @@ pub fn r90_try_close_fuel(
 /// turbine through rung 97, which needs `pt4` and the air the nozzle pushes against, `p0`.
 #[allow(clippy::too_many_arguments)]
 fn turbines(
-    t: &TwoSpoolTransientCore, wgas: &Gas, f: f64, nu_lp: f64, nu_hp: f64, tt4: f64, pt4: f64, p0: f64,
+    t: &TwoSpoolTransientCore, wgas: &Gas, f: f64, nu_lp: f64, nu_hp: f64, tt4: f64, pt4: f64, p0: f64, m4: f64,
 ) -> Result<[f64; 10], Abort> {
     let core = &t.inner;
     let nu_hpt = nu_hp * powp(core.tt4_d / tt4, 0.5);
     let eta_hpt = core.map_hp().eta_t_at(core.base.eta_hpt, nu_hpt);
     // RUNG 97: the pin while the nozzle stays choked, else the subsonic root. RUNG 104: one joint solve under a law.
     let lp_eta = |tt45: f64| core.map_lp().eta_t_at(core.base.eta_lpt, nu_lp * powp(core.tt45_d / tt45, 0.5));
-    let ((pi_hpt, tau_hpt, tt45), (pi_lpt, tau_lpt, tt5)) = core.base.try_turbine_pair(
-        wgas, tt4, f, eta_hpt,
+    let ((pi_hpt, tau_hpt, tt45), (pi_lpt, tau_lpt, tt5)) = core.base.try_turbine_pair_flow(
+        wgas, tt4, f, eta_hpt, pt4, m4,
         |tt45, pi_hpt| {
             let e = lp_eta(tt45);
             Ok((crate::unchoked_lp::try_lp_turbine(&core.base, wgas, tt45, f, e, pi_hpt * pt4, p0)?, e))
@@ -775,7 +782,7 @@ pub fn r90_powers(
     t.inner.base.refuse_cooling("rung 90's shaft powers");
 
     let wgas = c.gas(&t.inner);
-    let tb = turbines(t, wgas, c.f, nu_lp, nu_hp, tt4, c.pt4, flight.p0)?;
+    let tb = turbines(t, wgas, c.f, nu_lp, nu_hp, tt4, c.pt4, flight.p0, c.mdot4)?;
     let (_, _, _, _, pl, ph) = shaft_powers(t, c, wgas, tb[2], tb[5], nu_lp, nu_hp, tt4);
     Ok((pl, ph))
 }
@@ -791,7 +798,7 @@ pub fn r90_try_instant_tail(
     let core = &t.inner;
     let (wgas, f) = (c.gas(core), c.f);
     let [pi_hpt, tau_hpt, tt45, pi_lpt, tau_lpt, tt5, eta_hpt, eta_lpt, nu_hpt, nu_lpt] =
-        turbines(t, wgas, f, nu_lp, nu_hp, tt4, c.pt4, flight.p0)?;
+        turbines(t, wgas, f, nu_lp, nu_hp, tt4, c.pt4, flight.p0, c.mdot4)?;
     let (pt_lp, pt_hp, pc_lp, pc_hp, phi_lp_dot, phi_hp_dot) =
         shaft_powers(t, c, wgas, tt45, tt5, nu_lp, nu_hp, tt4);
 

@@ -312,6 +312,38 @@ pub struct CompState {
     pub wgas: Option<Gas>,
     pub mdot4: f64,
     pub mdot_air: f64,
+    /// RUNG 105: under the HP vane's law the closure solves the turbine with the nozzle (the vane's flow depends on the
+    /// turbine's expansion); the instant's tail then reads it here. `None` on the pin (and on the shortcut).
+    pub hp: Option<HpTurb>,
+}
+
+/// RUNG 105: the flight and shaft speed an instant closes its compressor at, set for the length of the closure and cleared
+/// on every exit, panics included — a closure reached any other way refuses the law in words.
+struct HpAt<'a>(&'a SpoolTransient);
+
+impl<'a> HpAt<'a> {
+    fn set(st: &'a SpoolTransient, p0: f64, nu: f64) -> Self {
+        st.hp_at.set((p0, nu));
+        st.hp_last.set(f64::NAN);
+        HpAt(st)
+    }
+}
+
+impl Drop for HpAt<'_> {
+    fn drop(&mut self) {
+        self.0.hp_at.set((f64::NAN, f64::NAN));
+        self.0.hp_last.set(f64::NAN);
+    }
+}
+
+/// RUNG 105: the turbine and nozzle the closure solved under the HP vane's law.
+#[derive(Clone, Copy, Debug)]
+pub struct HpTurb {
+    pub pi_t: f64,
+    pub tau_t: f64,
+    pub tt5: f64,
+    pub eta_t: f64,
+    pub exit: crate::components::NozzleExit,
 }
 
 impl CompState {
@@ -444,6 +476,13 @@ pub struct SpoolTransient {
     pub pc_spec_d: f64,
     /// Design shaft power, W — the nondimensionalisation's `P_ref`.
     pub p_ref: f64,
+    /// RUNG 105: the flight's `p0` and the shaft speed the current instant closes its compressor at (NaN outside an
+    /// instant: a closure reached under the law then refuses in words).
+    pub hp_at: std::cell::Cell<(f64, f64)>,
+    /// RUNG 105: where the last closure trial of this instant put the turbine's expansion — the next trial's search
+    /// starts there (anchor C2's count: ~13 residuals a search from the design expansion). Cleared with `hp_at`, so each
+    /// instant runs the same sequence whatever ran before it.
+    hp_last: std::cell::Cell<f64>,
 }
 
 impl SpoolTransient {
@@ -472,10 +511,78 @@ impl SpoolTransient {
         let gas = inner.inner.gas();
         let pc_spec_d = gas.h_c(s3.tt) - gas.h_c(s2.tt);
         let p_ref = inner.inner.mdot_air_design * pc_spec_d;
-        Self { inner, pc_spec_d, p_ref }
+        Self { inner, pc_spec_d, p_ref, hp_at: std::cell::Cell::new((f64::NAN, f64::NAN)),
+               hp_last: std::cell::Cell::new(f64::NAN) }
     }
 
     fn m(&self) -> &OffDesignMatcher { &self.inner.inner }
+
+    /// RUNG 105: the A4 flow at a closure trial — the pin's literal line, or under the HP vane's law the vane's flow at
+    /// the turbine expansion the NOZZLE needs to pass this trial's gas `mdot4_c` (one cheap root in `π_t`, the nozzle
+    /// choked or not; the vane's law then evaluated ONCE — anchor C2's count: a root on "vane = nozzle" cost ~10 vane
+    /// flows a trial). At the closure's root the compressor, the vane and the nozzle pass the same gas, so the two forms
+    /// have the same answer.
+    fn a4_flow(
+        &self, wg: &Gas, tt4: f64, f: f64, pt4: f64, mdot4_c: f64, cmap: &ComponentMap,
+    ) -> Result<(f64, Option<HpTurb>), Abort> {
+        let mm = self.m();
+        let pin = || -> Result<(f64, Option<HpTurb>), Abort> {
+            Ok((mm.a4 * pt4 * try_choked_mfp(wg, tt4, f)? / powp(tt4, 0.5), None))
+        };
+        if mm.hp_vane() == crate::hp_vane::HpVane::Pin {
+            return pin();
+        }
+        let (p0, nu) = self.hp_at.get();
+        if nu.is_nan() {
+            return Err(crate::hp_vane::no_flight("rung 34's compressor closure"));
+        }
+        let cap = mm.hp_cap.get();
+        let eta_t = cmap.eta_t_at(mm.eta_t, nu * powp(self.inner.tt4_d / tt4, 0.5));
+        let noz = |y: f64| -> Result<(f64, f64, crate::components::NozzleExit), Abort> {
+            let (tau, tt5) = mm.tau_t_of_pi_t(wg, tt4, f, y, Some(eta_t));
+            let s5 = FlowState { tt: tt5, pt: y * pt4, mdot: 1.0, far: f };
+            Ok((tau, tt5, Nozzle::convergent(p0, mm.pi_n).try_apply(&s5, wg)?))
+        };
+        // The shortcut, CHEAP: on the perfect gas at design efficiency the pin's (★) root is the design expansion, so
+        // the law IS the pin wherever the nozzle is choked there — read at the design expansion, never solved per trial.
+        if mm.hp_is_pin(wg, eta_t) && noz(cap.yd).is_ok_and(|(_, _, e)| e.p9 > p0 + 1e-6) {
+            return pin();
+        }
+        // The expansion at which the nozzle passes this trial's gas: positive while it passes less (and where it cannot
+        // pass at all), falling through the root.
+        let resid = |y: f64| -> Result<f64, Abort> {
+            crate::hp_vane::census::bump(3);
+            match noz(y) {
+                Ok((_, _, ex)) => Ok(mdot4_c - mm.a8 * ex.p9 / (wg.r_t_at(f) * ex.t9) * ex.v9),
+                Err(_) => Ok(mdot4_c),
+            }
+        };
+        const Y_LO: f64 = 0.05;
+        const Y_HI: f64 = 0.9995;
+        let (y0, step) = match self.hp_last.get() { y if y.is_nan() => (cap.yd, 0.02), y => (y, 0.002) };
+        let y = match crate::turbine_law::illinois_from(&resid, y0, step, Y_LO, Y_HI, 0.0) {
+            Ok(y) => {
+                self.hp_last.set(y);
+                y
+            }
+            // No root in the range: a trial far from the closure's root — more gas than the nozzle passes even with the
+            // turbine barely expanding, or less than it passes at the deepest expansion. The vane's flow at that end
+            // answers it with the right sign (the closure's residual is monotone through its root).
+            Err(e) => {
+                if resid(Y_HI)? > 0.0 {
+                    Y_HI
+                } else if resid(Y_LO)? < 0.0 {
+                    Y_LO
+                } else {
+                    return Err(e);
+                }
+            }
+        };
+        let (tau_t, tt5, exit) = noz(y)?;
+        let v = crate::hp_vane::Vane::at(wg, tt4, f)?;
+        let mdot4 = cap.w4_with(&v, wg, y, tt4, f, eta_t)?.0 * pt4 / powp(tt4, 0.5);
+        Ok((mdot4, Some(HpTurb { pi_t: y, tau_t, tt5, eta_t, exit })))
+    }
 
     /// The map this call runs on — Python's `cmap if cmap is not None else self.comp_map`.
     fn cmap(&self, cmap: Option<&ComponentMap>) -> ComponentMap {
@@ -519,11 +626,12 @@ impl SpoolTransient {
         let f = mm.try_solve_f(tt3, pt4, tt4)?;
         let wgas = mm.try_working_gas(f, tt4, pt4)?;
         let wg = wgas.as_ref().unwrap_or(gas);
-        let mdot4 = mm.a4 * pt4 * try_choked_mfp(wg, tt4, f)? / powp(tt4, 0.5);
+        let mdot_face = m * self.inner.mdot_corr_d * pt2 / powp(tt2, 0.5);
+        let (mdot4, hp) = self.a4_flow(wg, tt4, f, pt4, mdot_face * (1.0 + f), cmap)?;
         let mdot_air = mdot4 / (1.0 + f);
         let m_imp = (mdot_air * powp(tt2, 0.5) / pt2) / self.inner.mdot_corr_d;
         Ok(CompState {
-            m, m_imp, phi, tau_c, eta_c, tt3, tt4: f64::NAN, pi_c, pt4, f, wgas, mdot4, mdot_air,
+            m, m_imp, phi, tau_c, eta_c, tt3, tt4: f64::NAN, pi_c, pt4, f, wgas, mdot4, mdot_air, hp,
         })
     }
 
@@ -737,7 +845,10 @@ impl SpoolTransient {
         let (state0, v0) = mm.freestream_for(flight);
         let (tt2, pt2) = (state0.tt, pi_d * state0.pt);
         let n = nu * powp(self.inner.tt2_d / tt2, 0.5); // corrected speed at this nu
-        let comp = self.try_close_compressor_walled(tt4, tt2, pt2, &cmap, n, march_wall)?;
+        let comp = {
+            let _at = HpAt::set(self, flight.p0, nu);
+            self.try_close_compressor_walled(tt4, tt2, pt2, &cmap, n, march_wall)?
+        };
         self.try_instant_tail(flight, nu, tt4, &comp, n, tt2, pt2, v0, &cmap)
     }
 
@@ -771,11 +882,17 @@ impl SpoolTransient {
         let mm = self.m();
         let (f, pt4) = (comp.f, comp.pt4);
         let wgas = comp.gas(mm);
-        let (tt3, pi_c, tau_c) = (comp.tt3, comp.pi_c, comp.tau_c);
         let (mdot_air, mdot4) = (comp.mdot_air, comp.mdot4);
 
         let nu_t = nu * powp(self.inner.tt4_d / tt4, 0.5);
         let eta_t = cmap.eta_t_at(mm.eta_t, nu_t);
+
+        // RUNG 105: under the HP vane's law the closure already solved the turbine with the nozzle.
+        if let Some(h) = comp.hp {
+            let branch = if h.exit.p9 > flight.p0 + 1e-6 { Branch::Choked } else { Branch::Subsonic };
+            return Ok(self.instant_out(flight, nu, tt4, comp, n, tt2, pt2, v0, h.eta_t, nu_t, branch,
+                                       h.pi_t, h.tau_t, h.tt5, h.exit));
+        }
 
         // Assume choked; solve the rung-31 geometry (★), rebuild the nozzle, and DISPATCH exactly
         // as rung 33 does (the convergent Nozzle decides choked vs subsonic).
@@ -806,6 +923,20 @@ impl SpoolTransient {
             }
         }
 
+        Ok(self.instant_out(flight, nu, tt4, comp, n, tt2, pt2, v0, eta_t, nu_t, branch, pi_t, tau_t, tt5, exit))
+    }
+
+    /// The instant's power imbalance and thrust at a solved turbine — the tail's last lines.
+    #[allow(clippy::too_many_arguments)]
+    fn instant_out(
+        &self, flight: &FlightCondition, nu: f64, tt4: f64, comp: &CompState, n: f64, tt2: f64, pt2: f64, v0: f64,
+        eta_t: f64, nu_t: f64, branch: Branch, pi_t: f64, tau_t: f64, tt5: f64, exit: crate::components::NozzleExit,
+    ) -> Instant {
+        let mm = self.m();
+        let (f, pt4) = (comp.f, comp.pt4);
+        let wgas = comp.gas(mm);
+        let (tt3, pi_c, tau_c) = (comp.tt3, comp.pi_c, comp.tau_c);
+        let mdot_air = comp.mdot_air;
         // Power imbalance (per unit air mass). P_t already carries eta_m*(1+f).
         let pt_spec = mm.eta_m * (1.0 + f) * (wgas.h_t(tt4, f) - wgas.h_t(tt5, f));
         let pc_spec = wgas.h_c(tt3) - wgas.h_c(tt2);
@@ -817,12 +948,12 @@ impl SpoolTransient {
             (1.0 + f) * wgas.r_t_at(f) * exit.t9 * (1.0 - flight.p0 / exit.p9) / exit.v9;
         let sp_thrust = (1.0 + f) * exit.v9 - v0 + press_thrust;
 
-        Ok(Instant {
+        Instant {
             nu, tt4, branch, pi_c, tau_c, eta_c: comp.eta_c, eta_t, m: comp.m, n,
             flowcoef: comp.phi, mdot_air, f, pi_t, tau_t, tt3, tt5, nu_t, p_net_spec,
             phi: phi_dot, sp_thrust, thrust: mdot_air * sp_thrust, m9: exit.m9,
             pt9_over_p0: mm.pi_n * pi_t * pt4 / flight.p0, tt2, pt2, v0,
-        })
+        }
     }
 
     // --- the equilibrium: dnu/ds = 0 — reduces to the rung 31/32 running line ----------------
@@ -1133,11 +1264,11 @@ impl SpoolTransient {
         let tt4 = self.tt4_from_f(tt3, f);
         let wgas = mm.try_working_gas(f, tt4, pt4)?;
         let wg = wgas.as_ref().unwrap_or(gas);
-        let mdot4 = mm.a4 * pt4 * try_choked_mfp(wg, tt4, f)? / powp(tt4, 0.5);
+        let (mdot4, hp) = self.a4_flow(wg, tt4, f, pt4, mdot_air * (1.0 + f), cmap)?;
         let mdot_air_ngv = mdot4 / (1.0 + f);
         let m_imp = (mdot_air_ngv * powp(tt2, 0.5) / pt2) / self.inner.mdot_corr_d;
         Ok(CompState {
-            m, m_imp, phi, tau_c, eta_c, tt3, tt4, pi_c, pt4, f, wgas, mdot4, mdot_air,
+            m, m_imp, phi, tau_c, eta_c, tt3, tt4, pi_c, pt4, f, wgas, mdot4, mdot_air, hp,
         })
     }
 
@@ -1178,7 +1309,10 @@ impl SpoolTransient {
         let (state0, v0) = mm.freestream_for(flight);
         let (tt2, pt2) = (state0.tt, pi_d * state0.pt);
         let n = nu * powp(self.inner.tt2_d / tt2, 0.5);
-        let comp = self.try_close_compressor_fuel(tt2, pt2, &cmap, n, mdot_fuel)?;
+        let comp = {
+            let _at = HpAt::set(self, flight.p0, nu);
+            self.try_close_compressor_fuel(tt2, pt2, &cmap, n, mdot_fuel)?
+        };
         self.try_instant_tail(flight, nu, comp.tt4, &comp, n, tt2, pt2, v0, &cmap)
     }
 

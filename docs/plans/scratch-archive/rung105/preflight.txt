@@ -1,0 +1,122 @@
+=== S1 (Fly-it page, map flow): class per law [pin, 0.10, 0.3, 0.5]: C choked / U unchoked / R refused ===
+S1 TPG SL+20 M0.60 900: ["C", "C", "C", "C"]  (0.1 s)
+S1 TPG SL+20 M0.60 1000: ["C", "C", "C", "C"]  (0.1 s)
+S1 TPG SL+20 M0.60 1100: ["C", "C", "C", "C"]  (0.1 s)
+S1 TPG SL+20 M0.60 1200: ["C", "C", "C", "C"]  (0.1 s)
+S1 TPG SL+20 M0.60 1300: ["C", "C", "C", "C"]  (0.1 s)
+S1 TPG SL+20 M0.60 1400: ["C", "C", "C", "C"]  (0.1 s)
+S1 TPG 2km M0.50 900: ["C", "C", "C", "C"]  (0.1 s)
+S1 TPG 2km M0.50 1000: ["C", "C", "C", "C"]  (0.1 s)
+S1 TPG 2km M0.50 1100: ["C", "C", "C", "C"]  (0.1 s)
+S1 TPG 2km M0.50 1200: ["C", "C", "C", "C"]  (0.1 s)
+S1 TPG 2km M0.50 1300: ["C", "C", "C", "C"]  (0.1 s)
+S1 TPG 2km M0.50 1400: ["C", "C", "C", "C"]  (0.2 s)
+S1 TPG 5km M0.70 900: ["C", "C", "C", "C"]  (0.1 s)
+S1 TPG 5km M0.70 1000: ["C", "C", "C", "C"]  (0.1 s)
+S1 TPG 5km M0.70 1100: ["C", "C", "C", "C"]  (0.1 s)
+S1 TPG 5km M0.70 1200: ["C", "C", "C", "C"]  (0.1 s)
+S1 TPG 5km M0.70 1300: ["C", "C", "C", "C"]  (0.1 s)
+S1 TPG 5km M0.70 1400: ["C", "C", "C", "C"]  (0.1 s)
+S1 EQ SL+20 M0.60 900: ["C", "C", "C", "C"]  (2.8 s)
+S1 EQ SL+20 M0.60 1000: ["C", "C", "C", "C"]  (2.7 s)
+S1 EQ SL+20 M0.60 1100: ["C", "C", "C", "C"]  (2.6 s)
+S1 EQ SL+20 M0.60 1200: ["C", "C", "C", "C"]  (1.6 s)
+S1 EQ SL+20 M0.60 1300: ["C", "C", "C", "C"]  (1.4 s)
+S1 EQ SL+20 M0.60 1400: ["C", "C", "C", "C"]  (1.5 s)
+S1 EQ 2km M0.50 900: ["C", "C", "C", "C"]  (3.0 s)
+S1 EQ 2km M0.50 1000: ["C", "C", "C", "C"]  (2.6 s)
+S1 EQ 2km M0.50 1100: ["C", "C", "C", "C"]  (2.2 s)
+S1 EQ 2km M0.50 1200: ["C", "C", "C", "C"]  (1.8 s)
+S1 EQ 2km M0.50 1300: ["C", "C", "C", "C"]  (1.7 s)
+S1 EQ 2km M0.50 1400: ["C", "C", "C", "C"]  (1.6 s)
+S1 EQ 5km M0.70 900: ["C", "C", "C", "C"]  (2.7 s)
+S1 EQ 5km M0.70 1000: ["C", "C", "C", "C"]  (2.3 s)
+S1 EQ 5km M0.70 1100: ["C", "C", "C", "C"]  (1.8 s)
+S1 EQ 5km M0.70 1200: ["C", "C", "C", "C"]  (1.5 s)
+S1 EQ 5km M0.70 1300: ["C", "C", "C", "C"]  (1.6 s)
+S1 EQ 5km M0.70 1400: ["C", "C", "C", "C"]  (1.8 s)
+=== S2 (rung 39 rig, equilibrium gas): class per law ===
+S2 steep 2km M0.80 800: ["C", "C", "C", "C"]  (0.2 s)
+S2 steep 2km M0.80 900: ["C", "C", "C", "C"]  (0.2 s)
+S2 steep 2km M0.80 1000: ["C", "C", "C", "C"]  (0.2 s)
+S2 steep 2km M0.80 1100: ["C", "C", "C", "C"]  (0.1 s)
+S2 steep 2km M0.80 1200: ["C", "C", "C", "C"]  (2.3 s)
+S2 steep 2km M0.80 1300: ["C", "C", "C", "C"]  (1.1 s)
+S2 steep 2km M0.80 1400: ["C", "C", "C", "C"]  (2.1 s)
+S2 steep 5km M0.70 800: ["C", "C", "C", "C"]  (0.2 s)
+S2 steep 5km M0.70 900: ["C", "C", "C", "C"]  (0.2 s)
+S2 steep 5km M0.70 1000: ["C", "C", "C", "C"]  (0.1 s)
+S2 steep 5km M0.70 1100: ["C", "C", "C", "C"]  (1.5 s)
+S2 steep 5km M0.70 1200: ["C", "C", "C", "C"]  (1.0 s)
+S2 steep 5km M0.70 1300: ["C", "C", "C", "C"]  (1.1 s)
+S2 steep 5km M0.70 1400: ["C", "C", "C", "C"]  (1.2 s)
+S2 flow/press 2km M0.80 800: ["C", "C", "C", "C"]  (1.5 s)
+S2 flow/press 2km M0.80 900: ["C", "C", "C", "C"]  (1.2 s)
+S2 flow/press 2km M0.80 1000: ["C", "C", "C", "C"]  (0.2 s)
+S2 flow/press 2km M0.80 1100: ["C", "C", "C", "C"]  (2.7 s)
+S2 flow/press 2km M0.80 1200: ["C", "C", "C", "C"]  (0.9 s)
+S2 flow/press 2km M0.80 1300: ["C", "C", "C", "C"]  (0.1 s)
+S2 flow/press 2km M0.80 1400: ["C", "C", "C", "C"]  (1.1 s)
+S2 flow/press 5km M0.70 800: ["C", "C", "C", "C"]  (0.2 s)
+S2 flow/press 5km M0.70 900: ["C", "C", "C", "C"]  (0.2 s)
+S2 flow/press 5km M0.70 1000: ["C", "C", "C", "C"]  (0.2 s)
+S2 flow/press 5km M0.70 1100: ["C", "C", "C", "C"]  (0.1 s)
+S2 flow/press 5km M0.70 1200: ["C", "C", "C", "C"]  (0.1 s)
+S2 flow/press 5km M0.70 1300: ["C", "C", "C", "C"]  (2.4 s)
+S2 flow/press 5km M0.70 1400: ["C", "C", "C", "C"]  (0.1 s)
+=== S3 (Controls engine, perfect gas): old / r104 / law 0.3 solve? law unchoked (M9<=0.99)? near idle (<50 N per kg/s)? ===
+S3 steep SL+20 M0.60 575: old false r104 true law true unchoked true near-idle true => -
+S3 steep SL+20 M0.60 625: old true r104 true law true unchoked true near-idle true => -
+S3 steep SL+20 M0.60 675: old true r104 true law true unchoked true near-idle true => -
+S3 steep SL+20 M0.60 725: old true r104 true law true unchoked true near-idle false => SCORED
+S3 steep SL+20 M0.60 775: old true r104 true law true unchoked true near-idle false => SCORED
+S3 steep SL+20 M0.60 825: old true r104 true law true unchoked true near-idle false => SCORED
+S3 steep 2km M0.50 575: old true r104 true law true unchoked true near-idle true => -
+S3 steep 2km M0.50 625: old true r104 true law true unchoked true near-idle false => SCORED
+S3 steep 2km M0.50 675: old true r104 true law true unchoked true near-idle false => SCORED
+S3 steep 2km M0.50 725: old true r104 true law true unchoked true near-idle false => SCORED
+S3 steep 2km M0.50 775: old true r104 true law true unchoked true near-idle false => SCORED
+S3 steep 2km M0.50 825: old true r104 true law true unchoked false near-idle false => -
+S3 steep SL-10 M0.40 575: old true r104 true law true unchoked true near-idle true => -
+S3 steep SL-10 M0.40 625: old true r104 true law true unchoked true near-idle false => SCORED
+S3 steep SL-10 M0.40 675: old true r104 true law true unchoked true near-idle false => SCORED
+S3 steep SL-10 M0.40 725: old true r104 true law true unchoked true near-idle false => SCORED
+S3 steep SL-10 M0.40 775: old true r104 true law true unchoked true near-idle false => SCORED
+S3 steep SL-10 M0.40 825: old true r104 true law true unchoked false near-idle false => -
+S3 flat-eta SL+20 M0.60 575: old false r104 true law true unchoked true near-idle true => -
+S3 flat-eta SL+20 M0.60 625: old true r104 true law true unchoked true near-idle true => -
+S3 flat-eta SL+20 M0.60 675: old true r104 true law true unchoked true near-idle false => SCORED
+S3 flat-eta SL+20 M0.60 725: old true r104 true law true unchoked true near-idle false => SCORED
+S3 flat-eta SL+20 M0.60 775: old true r104 true law true unchoked true near-idle false => SCORED
+S3 flat-eta SL+20 M0.60 825: old true r104 true law true unchoked false near-idle false => -
+S3 flat-eta 2km M0.50 575: old true r104 true law true unchoked true near-idle true => -
+S3 flat-eta 2km M0.50 625: old true r104 true law true unchoked true near-idle false => SCORED
+S3 flat-eta 2km M0.50 675: old true r104 true law true unchoked true near-idle false => SCORED
+S3 flat-eta 2km M0.50 725: old true r104 true law true unchoked true near-idle false => SCORED
+S3 flat-eta 2km M0.50 775: old true r104 true law true unchoked false near-idle false => -
+S3 flat-eta 2km M0.50 825: old true r104 true law true unchoked false near-idle false => -
+S3 flat-eta SL-10 M0.40 575: old true r104 true law true unchoked true near-idle true => -
+S3 flat-eta SL-10 M0.40 625: old true r104 true law true unchoked true near-idle false => SCORED
+S3 flat-eta SL-10 M0.40 675: old true r104 true law true unchoked true near-idle false => SCORED
+S3 flat-eta SL-10 M0.40 725: old true r104 true law true unchoked true near-idle false => SCORED
+S3 flat-eta SL-10 M0.40 775: old true r104 true law true unchoked true near-idle false => SCORED
+S3 flat-eta SL-10 M0.40 825: old true r104 true law true unchoked false near-idle false => -
+S3 flow/press SL+20 M0.60 575: old false r104 true law true unchoked true near-idle true => -
+S3 flow/press SL+20 M0.60 625: old true r104 true law true unchoked true near-idle true => -
+S3 flow/press SL+20 M0.60 675: old true r104 true law true unchoked true near-idle false => SCORED
+S3 flow/press SL+20 M0.60 725: old true r104 true law true unchoked true near-idle false => SCORED
+S3 flow/press SL+20 M0.60 775: old true r104 true law true unchoked true near-idle false => SCORED
+S3 flow/press SL+20 M0.60 825: old true r104 true law true unchoked true near-idle false => SCORED
+S3 flow/press 2km M0.50 575: old true r104 true law true unchoked true near-idle true => -
+S3 flow/press 2km M0.50 625: old true r104 true law true unchoked true near-idle false => SCORED
+S3 flow/press 2km M0.50 675: old true r104 true law true unchoked true near-idle false => SCORED
+S3 flow/press 2km M0.50 725: old true r104 true law true unchoked true near-idle false => SCORED
+S3 flow/press 2km M0.50 775: old true r104 true law true unchoked true near-idle false => SCORED
+S3 flow/press 2km M0.50 825: old true r104 true law true unchoked false near-idle false => -
+S3 flow/press SL-10 M0.40 575: old true r104 true law true unchoked true near-idle true => -
+S3 flow/press SL-10 M0.40 625: old true r104 true law true unchoked true near-idle false => SCORED
+S3 flow/press SL-10 M0.40 675: old true r104 true law true unchoked true near-idle false => SCORED
+S3 flow/press SL-10 M0.40 725: old true r104 true law true unchoked true near-idle false => SCORED
+S3 flow/press SL-10 M0.40 775: old true r104 true law true unchoked true near-idle false => SCORED
+S3 flow/press SL-10 M0.40 825: old true r104 true law true unchoked false near-idle false => -
+S3: 33 scored of 54

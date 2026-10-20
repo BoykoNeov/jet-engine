@@ -235,12 +235,14 @@ pub fn try_cascade_bleed(
     counters::bump_cascade();
     let b = core.bleed;
     let base = &core.base;
-    let mfp4 = try_choked_mfp(wgas, tt4, f)?;
+    let mfp4_pin = try_choked_mfp(wgas, tt4, f)?;
     let (mut eta_hpt, mut eta_lpt) = (base.eta_hpt, base.eta_lpt);
     for turb_pass in 0..TwoSpoolMapCore::TURB_MAX {
-        let ((pi_hpt, tau_hpt, tt45), (pi_lpt, tau_lpt, tt5)) = base.try_turbine_pair(
+        let (((pi_hpt, tau_hpt, tt45), (pi_lpt, tau_lpt, tt5)), a4) = base.try_turbine_pair_hp(
             wgas, tt4, f, eta_hpt,
             |tt45, pi_hpt| Ok((crate::steady_unchoked::try_lp_steady(base, wgas, tt45, f, eta_lpt, pi_hpt)?, eta_lpt)))?;
+        // RUNG 105: the vane's law reaches (†)/(‡) as the A4 flow per pinned area (`MFP*` itself on the pin).
+        let mfp4 = mfp4_pin * (a4 / base.a4);
 
         // ENERGY. (1) the LP balance: the LPT drives mdot_2 with (1-b)*mdot_2*(1+f) of gas.
         // `(1-b)` sits BETWEEN eta_m and (1+f), which is not rung 39's product with a factor
@@ -268,7 +270,7 @@ pub fn try_cascade_bleed(
         let out = CascadeMap {
             c: Cascade {
                 pi_hpt, tau_hpt, tt45, pi_lpt, tau_lpt, tt5,
-                pi_lpc: lp.pi, tt25, pi_hpc: hp.pi, tt3,
+                pi_lpc: lp.pi, tt25, pi_hpc: hp.pi, tt3, a4,
             },
             eta_lpc: lp.eta, eta_hpc: hp.eta, eta_hpt, eta_lpt,
             m_l: lp.m, m_h: hp.m, n_l: lp.n, n_h: hp.n, nl, nh,
@@ -361,7 +363,7 @@ fn bleed_body(
 
     let owned = base.try_working_gas(f, tt4, pt4)?;
     let wgas = owned.as_ref().unwrap_or(base.gas());
-    let mdot_core = base.a4 * pt4 * try_choked_mfp(wgas, tt4, f)? / powp(tt4, 0.5) / (1.0 + f);
+    let mdot_core = c.c.a4 * pt4 * try_choked_mfp(wgas, tt4, f)? / powp(tt4, 0.5) / (1.0 + f);
     let mdot_air = mdot_core / (1.0 - b);          // what the INLET ingests
 
     // --- the SEPARATE rebuild body (module note § 1) --------------------------------------

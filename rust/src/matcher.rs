@@ -260,6 +260,11 @@ pub struct OffDesignMatcher {
     ///
     /// It is a `Cell<u64>` increment: no float arithmetic, so it cannot perturb a value.
     pub tau_calls: std::cell::Cell<u64>,
+    /// RUNG 105: the HP vane's flow law and its design capture (`crate::hp_vane`).
+    pub hp_cap: std::cell::Cell<crate::hp_vane::HpCapacity>,
+    /// RUNG 105: where the law provably IS the pin (perfect gas, nozzle choked, `η_t` at design), use the pin's own
+    /// solve. `true` by default; a gate turns it off to compare the law's own search with the pin.
+    pub hp_shortcut: std::cell::Cell<bool>,
 }
 
 impl OffDesignMatcher {
@@ -346,6 +351,8 @@ impl OffDesignMatcher {
         // precisely because getting it wrong here is a silent one-bit defect a tolerance hides.
         let a4 = mdot4_r * powp(tt4_r, 0.5) / (pt4_r * choked_mfp(&gas, tt4_r, f_design));
         let a8 = mdot4_r * powp(tt9_r, 0.5) / (pt9_r * choked_mfp(&gas, tt9_r, f_design));
+        let hp_cap = crate::hp_vane::HpCapacity::capture(&gas, f_design, tt4_r, s5.pt / pt4_r, eta_t, a4,
+                                                         crate::hp_vane::HpVane::default());
 
         OffDesignMatcher {
             eta_m, flight_design, mdot_air_design: mdot_design, hf_fuel_molar,
@@ -353,7 +360,55 @@ impl OffDesignMatcher {
             pi_n, pi_d_max, f_design, a4, a8, reference, hooks,
             fs_engine: Engine::new(gas, Vec::new(), eta_m),
             tau_calls: std::cell::Cell::new(0),
+            hp_cap: std::cell::Cell::new(hp_cap),
+            hp_shortcut: std::cell::Cell::new(true),
         }
+    }
+
+    /// RUNG 105: the HP vane's law now.
+    pub fn hp_vane(&self) -> crate::hp_vane::HpVane { self.hp_cap.get().law }
+
+    /// RUNG 105: switch the HP vane's law (recaptured on the same design).
+    pub fn set_hp_vane(&self, law: crate::hp_vane::HpVane) {
+        self.hp_cap.set(self.hp_cap.get().with_law(self.gas(), law));
+    }
+
+    /// RUNG 105: is the law the pin on the CHOKED branch here? The pin itself; or the perfect gas with the turbine
+    /// at its design efficiency, where (★)'s root is the design expansion whatever the vane does (so `W4 = W4_d`).
+    pub fn hp_is_pin(&self, gas: &Gas, eta_t: f64) -> bool {
+        self.hp_vane() == crate::hp_vane::HpVane::Pin
+            || (self.hp_shortcut.get() && gas.hot_is_cpg() && eta_t == self.hp_cap.get().eta)
+    }
+
+    /// RUNG 105: the effective `A4` on the CHOKED branch at the turbine's `pi_t` — `A4` itself where the law is the pin.
+    pub fn try_a4_choked(&self, gas: &Gas, tt4: f64, f: f64, pi_t: f64, eta_t: Option<f64>) -> Result<f64, Abort> {
+        let eta = eta_t.unwrap_or(self.eta_t);
+        if self.hp_is_pin(gas, eta) {
+            return Ok(self.a4);
+        }
+        self.hp_cap.get().a4_at(gas, pi_t, tt4, f, eta)
+    }
+
+    /// RUNG 105: the effective `A4` below choke (no shortcut: the turbine leaves its design expansion).
+    pub fn try_a4_free(&self, gas: &Gas, tt4: f64, f: f64, pi_t: f64, eta_t: Option<f64>) -> Result<f64, Abort> {
+        let eta = eta_t.unwrap_or(self.eta_t);
+        self.hp_cap.get().a4_at(gas, pi_t, tt4, f, eta)
+    }
+
+    /// RUNG 105: (★) under the law — `W4(π_t) = A8·π_n·MFP*(Tt5)·π_t/√τ_t`, searched from the design expansion.
+    pub fn try_law_solve_turbine(
+        &self, gas: &Gas, tt4: f64, f: f64, eta_t: Option<f64>,
+    ) -> Result<(f64, f64, f64), Abort> {
+        let eta = eta_t.unwrap_or(self.eta_t);
+        let cap = self.hp_cap.get();
+        let v = crate::hp_vane::Vane::at(gas, tt4, f)?;
+        let resid = |y: f64| -> Result<f64, Abort> {
+            let (tau, tt5) = self.tau_t_of_pi_t(gas, tt4, f, y, Some(eta));
+            Ok(cap.w4_with(&v, gas, y, tt4, f, eta)?.0 - self.a8 * self.pi_n * try_choked_mfp(gas, tt5, f)? * y / powp(tau, 0.5))
+        };
+        let y = crate::turbine_law::illinois_from(resid, cap.yd, 0.02, 0.05, 0.9995, 0.0)?;
+        let (tau, tt5) = self.tau_t_of_pi_t(gas, tt4, f, y, Some(eta));
+        Ok((y, tau, tt5))
     }
 
     // --- a gas whose station-4 mixture is frozen at THIS trial burn condition --------------
@@ -418,7 +473,11 @@ impl OffDesignMatcher {
     pub fn try_solve_turbine(
         &self, gas: &Gas, tt4: f64, f: f64, eta_t: Option<f64>,
     ) -> Result<(f64, f64, f64), Abort> {
-        (self.hooks.try_solve_turbine)(self, gas, tt4, f, eta_t)
+        // RUNG 105: the pin (or the shortcut) is the leaf's own hook, literally; otherwise the vane's law.
+        if self.hp_is_pin(gas, eta_t.unwrap_or(self.eta_t)) {
+            return (self.hooks.try_solve_turbine)(self, gas, tt4, f, eta_t);
+        }
+        self.try_law_solve_turbine(gas, tt4, f, eta_t)
     }
 
     // --- the burner f-solve (reuses the shipped burner formulas) ---------------------------
@@ -519,7 +578,8 @@ impl OffDesignMatcher {
         // Absolute mass flow from the turbine choke constant, then the flow lapse.
         let owned = self.working_gas(f, tt4, pt4);
         let wgas = owned.as_ref().unwrap_or(self.gas());
-        let mdot4 = self.a4 * pt4 * choked_mfp(wgas, tt4, f) / powp(tt4, 0.5);
+        let a4 = self.try_a4_choked(wgas, tt4, f, pi_t, None).unwrap_or_else(|e| panic!("{}", e.0));
+        let mdot4 = a4 * pt4 * choked_mfp(wgas, tt4, f) / powp(tt4, 0.5);
         let mdot_air = mdot4 / (1.0 + f);
 
         // Rebuild the cycle FORWARD with the real components at the derived pi_c and mdot_air.
@@ -649,7 +709,7 @@ impl OffDesignMatcher {
         let owned = self.try_working_gas(f, tt4, pt4)?;
         let wgas = owned.as_ref().unwrap_or(self.gas());
         // NGV choke supply.
-        let mdot4_ngv = self.a4 * pt4 * try_choked_mfp(wgas, tt4, f)? / powp(tt4, 0.5);
+        let mdot4_ngv = self.try_a4_free(wgas, tt4, f, pi_t, None)? * pt4 * try_choked_mfp(wgas, tt4, f)? / powp(tt4, 0.5);
         let pt5 = pi_t * pt4;
         let s5 = FlowState { tt: tt5, pt: pt5, mdot: 1.0, far: f };
         let exit = Nozzle::convergent(p0, self.pi_n).try_apply(&s5, wgas)?;
@@ -673,6 +733,16 @@ impl OffDesignMatcher {
             .unwrap_or_else(|e| panic!("{}", e.0))
     }
 
+    /// RUNG 105: (★★)'s root under the HP vane's law — from the design expansion, the first sign change outward (the
+    /// residual falls through the working root), driven to the last digit.
+    fn law_subsonic_root(&self, tt4: f64, tt2: f64, pt2: f64, flight: &FlightCondition) -> f64 {
+        let resid = |y: f64| -> Result<f64, Abort> { Ok(self.try_subsonic_operating(tt4, tt2, pt2, y, flight.p0)?.resid) };
+        crate::turbine_law::illinois_from(resid, self.hp_cap.get().yd, 0.02, 0.05, 0.9995, 0.0).unwrap_or_else(|e| {
+            panic!("rung-105 subsonic match does not bracket at Tt4={tt4:.0}, M0={:.2} ({}) — SUB-IDLE: the engine does \
+                    not self-sustain a subsonic-nozzle operating point here.", flight.m0, e.0)
+        })
+    }
+
     /// Match on the SUBSONIC-nozzle branch: root-find (★★) for `pi_t`, then rebuild forward.
     ///
     /// **Bracketing.** `resid(pi_t)` is monotone-decreasing (more turbine expansion -> more
@@ -690,6 +760,12 @@ impl OffDesignMatcher {
         let (state0, _v0) = self.fs_engine.freestream(flight, self.mdot_air_design);
         let (tt2, pt2) = (state0.tt, pi_d * state0.pt);
 
+        // RUNG 105: under the HP vane's law the root is searched from the design expansion outward — the first sign
+        // change — not marched in from both ends: (★★) can have a second, degenerate root where the turbine barely expands
+        // (anchor G4: the pin too), which defeats the march. The pin keeps the march below, literally.
+        let pi_t = if self.hp_vane() != crate::hp_vane::HpVane::Pin {
+            self.law_subsonic_root(tt4, tt2, pt2, flight)
+        } else {
         // The LOW march: in from 0.15, stepping +0.02, until resid is evaluable.
         let (mut lo, mut rlo) = (f64::NAN, f64::NAN);
         let mut pt = 0.15;
@@ -740,7 +816,8 @@ impl OffDesignMatcher {
                 break;
             }
         }
-        let pi_t = 0.5 * (lo + hi);
+        0.5 * (lo + hi)
+        };
         let op = self.subsonic_operating(tt4, tt2, pt2, pi_t, flight.p0);
         let (f, pt4, pi_c) = (op.f, op.pt4, op.pi_c);
 
@@ -750,7 +827,8 @@ impl OffDesignMatcher {
 
         let owned = self.working_gas(f, tt4, pt4);
         let wgas = owned.as_ref().unwrap_or(self.gas());
-        let mdot4 = self.a4 * pt4 * choked_mfp(wgas, tt4, f) / powp(tt4, 0.5);
+        let a4 = self.try_a4_free(wgas, tt4, f, pi_t, None).unwrap_or_else(|e| panic!("{}", e.0));
+        let mdot4 = a4 * pt4 * choked_mfp(wgas, tt4, f) / powp(tt4, 0.5);
         let mdot_air = mdot4 / (1.0 + f);
 
         // Rebuild FORWARD with the derived (pi_c, mdot_air). The convergent nozzle now takes

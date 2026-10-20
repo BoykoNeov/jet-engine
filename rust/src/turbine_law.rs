@@ -105,7 +105,7 @@ pub struct LpCapacity {
 /// 1e−11 of `T`, which leaves a jitter of that size — harmless in one number, but in a flow DIFFERENCE it reaches
 /// ~1e−10 and the outer loops cannot settle through it (anchor C3: the row laws were rough at 1e−10, the ellipse at
 /// 1e−16). Two more Newton steps on `ln pr` (`d ln pr/dT = cp/(R·T)`) take it to the last digits.
-fn t_from_pr_fine(gas: &Gas, pr: f64, f: f64) -> Result<f64, Abort> {
+pub(crate) fn t_from_pr_fine(gas: &Gas, pr: f64, f: f64) -> Result<f64, Abort> {
     let mut t = gas.try_t_from_pr_t(pr, f)?;
     for _ in 0..2 {
         t -= (gas.pr_t(t, f) / pr).ln() * gas.r_t_at(f) * t / gas.cp_t_at(t, f);
@@ -114,7 +114,7 @@ fn t_from_pr_fine(gas: &Gas, pr: f64, f: f64) -> Result<f64, Abort> {
 }
 
 /// The temperature at an enthalpy, polished the same way (`dh/dT = cp`).
-fn t_from_h_fine(gas: &Gas, h: f64, f: f64) -> f64 {
+pub(crate) fn t_from_h_fine(gas: &Gas, h: f64, f: f64) -> f64 {
     let mut t = gas.t_from_h_t(h, f);
     for _ in 0..2 {
         t -= (gas.h_t(t, f) - h) / gas.cp_t_at(t, f);
@@ -123,7 +123,7 @@ fn t_from_h_fine(gas: &Gas, h: f64, f: f64) -> f64 {
 }
 
 /// `Tt_out` at a trial ratio — [`TwoSpoolCore::try_tau_of`]'s body without its census counter, polished.
-fn tau_free(gas: &Gas, tt_in: f64, f: f64, pi_t: f64, eta: f64) -> Result<f64, Abort> {
+pub(crate) fn tau_free(gas: &Gas, tt_in: f64, f: f64, pi_t: f64, eta: f64) -> Result<f64, Abort> {
     let tt_outs = t_from_pr_fine(gas, gas.pr_t(tt_in, f) * pi_t, f)?;
     let dh_ideal = gas.h_t(tt_in, f) - gas.h_t(tt_outs, f);
     Ok(t_from_h_fine(gas, gas.h_t(tt_in, f) - eta * dh_ideal, f))
@@ -131,7 +131,7 @@ fn tau_free(gas: &Gas, tt_in: f64, f: f64, pi_t: f64, eta: f64) -> Result<f64, A
 
 /// The mass flux `ρV` through a convergent row from total `(p, t)` to back-pressure `pb`: isentropic, capped at the
 /// gas's own sonic point. Above `pb/p = 0.6` no gas with `γ ≥ 1.1` is sonic, so the sonic search is skipped there.
-fn flux(gas: &Gas, f: f64, p: f64, t: f64, pb: f64) -> Result<f64, Abort> {
+pub(crate) fn flux(gas: &Gas, f: f64, p: f64, t: f64, pb: f64) -> Result<f64, Abort> {
     let r = gas.r_t_at(f);
     if pb < 0.6 * p {
         let (ts_star, p_star, v_star) = try_sonic_throat(gas, t, p, f)?;
@@ -146,14 +146,14 @@ fn flux(gas: &Gas, f: f64, p: f64, t: f64, pb: f64) -> Result<f64, Abort> {
 
 /// The LP turbine's two refusals that mean "its inlet pressure is too low for the gas to leave": rung 97's unchoked
 /// nozzle and rung 102's lit afterburner (its lean wall). Every other failure is a real one and is passed on.
-fn passes_nothing(e: &Abort) -> bool {
+pub(crate) fn passes_nothing(e: &Abort) -> bool {
     e.0.starts_with("rung-97: the nozzle cannot pass") || e.0.contains("the hot gas cannot get out")
 }
 
 /// A bracketed Illinois search with no census counter (the crate's shared one is counted by older gates), started at `x0` (a design value, never a previous call's root, so a point does not depend on what
 /// ran before it). Every residual here is positive at its lower end and falls through its root, so `f(x0)`'s sign says
 /// which way to step; the step doubles until the sign changes or the end `[lo, hi]` is reached.
-fn illinois_from(f: impl Fn(f64) -> Result<f64, Abort>, x0: f64, step: f64, lo: f64, hi: f64, tol: f64) -> Result<f64, Abort> {
+pub(crate) fn illinois_from(f: impl Fn(f64) -> Result<f64, Abort>, x0: f64, step: f64, lo: f64, hi: f64, tol: f64) -> Result<f64, Abort> {
     let x0 = x0.clamp(lo, hi);
     let (mut a, mut fa) = (x0, f(x0)?);
     if fa == 0.0 {
@@ -289,31 +289,123 @@ impl TwoSpoolCore {
         &self, gas: &Gas, tt4: f64, f: f64, eta_hpt: f64,
         lp: impl Fn(f64, f64) -> Result<((f64, f64, f64), f64), Abort>,
     ) -> Result<((f64, f64, f64), (f64, f64, f64)), Abort> {
-        if self.turbine_law.get() == TurbineLaw::Pin {
+        Ok(self.try_turbine_pair_hp(gas, tt4, f, eta_hpt, lp)?.0)
+    }
+
+    /// RUNG 105: [`try_turbine_pair`](Self::try_turbine_pair) and the effective `A4` it used — `A4` itself, bit for bit,
+    /// on the pin and on the shortcut, so every airflow reader's old arithmetic runs unchanged there.
+    #[allow(clippy::type_complexity)]
+    pub fn try_turbine_pair_hp(
+        &self, gas: &Gas, tt4: f64, f: f64, eta_hpt: f64,
+        lp: impl Fn(f64, f64) -> Result<((f64, f64, f64), f64), Abort>,
+    ) -> Result<(((f64, f64, f64), (f64, f64, f64)), f64), Abort> {
+        let hp_cap = self.hp_cap.get();
+        let hp_pin = hp_cap.law == crate::hp_vane::HpVane::Pin;
+        if self.turbine_law.get() == TurbineLaw::Pin && hp_pin {
             let hp = self.try_solve_choked_turbine(gas, tt4, f, self.a4, self.a45_pin(), 1.0, eta_hpt)?;
             let (l, _) = lp(hp.2, hp.0)?;
-            return Ok((hp, l));
+            return Ok(((hp, l), self.a4));
         }
-        // The shortcut: the pin's pair, kept only if the LP step landed on the pin's own choked root.
-        if self.law_shortcut.get() && gas.hot_is_cpg() && !self.lit_held() {
+        if let Some(pair) = self.pair_shortcut(gas, tt4, f, eta_hpt, &lp)? {
+            return Ok((pair, self.a4));
+        }
+        let a4m = self.a4 * try_choked_mfp(gas, tt4, f)?;
+        let vane = if hp_pin { None } else { Some(crate::hp_vane::Vane::at(gas, tt4, f)?) };
+        let k = |ph: f64| -> Result<f64, Abort> {
+            match &vane { None => Ok(a4m), Some(v) => Ok(hp_cap.w4_with(v, gas, ph, tt4, f, eta_hpt)?.0) }
+        };
+        let ph = self.try_joint_hp(gas, k, tt4, |ph| {
+            let tt45 = tau_free(gas, tt4, f, ph, eta_hpt)?;
+            Ok((tt45, lp(tt45, ph).map(|((x, _, _), eta_l)| (x, eta_l)), f))
+        })?;
+        let (tau_h, tt45) = self.try_tau_of(gas, tt4, f, ph, eta_hpt)?;
+        let (l, _) = lp(tt45, ph)?;
+        let a4 = if hp_pin { self.a4 } else { hp_cap.a4_at(gas, ph, tt4, f, eta_hpt)? };
+        Ok((((ph, tau_h, tt45), l), a4))
+    }
+
+    /// The shortcut: the pin's pair, kept only if the LP step landed on the pin's own choked root (and, for the HP vane's
+    /// law, the HP turbine at its design efficiency: then its expansion is the design one too).
+    #[allow(clippy::type_complexity)]
+    fn pair_shortcut(
+        &self, gas: &Gas, tt4: f64, f: f64, eta_hpt: f64,
+        lp: &impl Fn(f64, f64) -> Result<((f64, f64, f64), f64), Abort>,
+    ) -> Result<Option<((f64, f64, f64), (f64, f64, f64))>, Abort> {
+        let hp_cap = self.hp_cap.get();
+        let hp_pin = hp_cap.law == crate::hp_vane::HpVane::Pin;
+        if self.law_shortcut.get() && gas.hot_is_cpg() && !self.lit_held() && (hp_pin || eta_hpt == hp_cap.eta) {
             let hp = self.try_solve_choked_turbine(gas, tt4, f, self.a4, self.a45_pin(), 1.0, eta_hpt)?;
             if let Ok((l, eta_l)) = lp(hp.2, hp.0) {
-                if self.law_is_pin(gas, eta_l) {
+                if self.turbine_law.get() == TurbineLaw::Pin || self.law_is_pin(gas, eta_l) {
                     let c = self.try_solve_choked_turbine(gas, hp.2, f, self.a45_pin(), self.a8, self.pi_n, eta_l)?;
                     if c.0.to_bits() == l.0.to_bits() {
-                        return Ok((hp, l));
+                        return Ok(Some((hp, l)));
                     }
                 }
             }
         }
-        let a4m = self.a4 * try_choked_mfp(gas, tt4, f)?;
-        let ph = self.try_joint_hp(gas, a4m, tt4, |ph| {
+        Ok(None)
+    }
+
+    /// RUNG 105: [`try_turbine_pair`](Self::try_turbine_pair) where the gas through the turbines is already known — a
+    /// transient's tail and shaft powers, after its closure: under the HP vane's law the HP ratio is the one at which the
+    /// LP side passes `m_lp` ([`try_hp_from_flow`](Self::try_hp_from_flow): no vane in the search); at the closure's root
+    /// that is the joint search's answer. The pin, and the shortcut, take the old pair literally.
+    #[allow(clippy::too_many_arguments, clippy::type_complexity)]
+    pub fn try_turbine_pair_flow(
+        &self, gas: &Gas, tt4: f64, f: f64, eta_hpt: f64, pt4: f64, m_lp: f64,
+        lp: impl Fn(f64, f64) -> Result<((f64, f64, f64), f64), Abort>,
+    ) -> Result<((f64, f64, f64), (f64, f64, f64)), Abort> {
+        if self.hp_cap.get().law == crate::hp_vane::HpVane::Pin {
+            return self.try_turbine_pair(gas, tt4, f, eta_hpt, lp);
+        }
+        if let Some(pair) = self.pair_shortcut(gas, tt4, f, eta_hpt, &lp)? {
+            return Ok(pair);
+        }
+        let ph = self.try_hp_from_flow(gas, pt4, m_lp, |ph| {
             let tt45 = tau_free(gas, tt4, f, ph, eta_hpt)?;
             Ok((tt45, lp(tt45, ph).map(|((x, _, _), eta_l)| (x, eta_l)), f))
         })?;
         let (tau_h, tt45) = self.try_tau_of(gas, tt4, f, ph, eta_hpt)?;
         let (l, _) = lp(tt45, ph)?;
         Ok(((ph, tau_h, tt45), l))
+    }
+
+    /// RUNG 105: the HP ratio at which the turbines downstream pass `m_lp` — the gas a transient closure's trial delivers
+    /// to the LP turbine's vane (kg/s, at the trial's `pt4`). The LP side's flow alone (`at(π)` as in
+    /// [`try_joint_hp`](Self::try_joint_hp)), so the HP vane's law is not in the search: the closure then reads the vane
+    /// ONCE at the root (anchor C1's count: a joint search on "vane = LP turbine" cost ~5 vane flows a trial). At the
+    /// closure's root the compressor, the vane and the LP turbine pass the same gas, so the answer is the joint search's.
+    /// Warm-started within an instant (`hp_warm`); a trial with no root in the range is answered at the end whose sign
+    /// is right (the closure's residual is monotone through its root).
+    pub fn try_hp_from_flow(
+        &self, gas: &Gas, pt4: f64, m_lp: f64, at: impl Fn(f64) -> Result<(f64, Result<(f64, f64), Abort>, f64), Abort>,
+    ) -> Result<f64, Abort> {
+        // Positive while the LP side passes less (or nothing — its vane cannot get the gas out), falling through the root.
+        let resid = |ph: f64| -> Result<f64, Abort> {
+            census::bump(1);
+            let (tt45, lp, f45) = at(ph)?;
+            match lp {
+                Ok((x, eta_l)) => Ok(m_lp - self.w45(gas, x, tt45, f45, eta_l)? * ph * pt4 / powp(tt45, 0.5)),
+                Err(e) if passes_nothing(&e) => Ok(m_lp),
+                Err(e) => Err(e),
+            }
+        };
+        const LO: f64 = 0.01;
+        const HI: f64 = 0.99;
+        let (x0, step) = match self.hp_warm.get() { w if w.is_nan() => (self.lp_capacity.phd, 0.02), w => (w, 0.002) };
+        match illinois_from(&resid, x0, step, LO, HI, 0.0) {
+            Ok(ph) => Ok(ph),
+            Err(e) => {
+                if resid(HI)? > 0.0 {
+                    Ok(HI)
+                } else if resid(LO)? < 0.0 {
+                    Ok(LO)
+                } else {
+                    Err(e)
+                }
+            }
+        }
     }
 
     /// The joint HP search under a law: the `π_HPT` at which the vane's `W45(x, Tt45)` passes what the HP nozzle
@@ -325,14 +417,15 @@ impl TwoSpoolCore {
     /// positive. The search can then stop on that region's EDGE rather than a root, so the root is checked at the end.
     #[allow(clippy::type_complexity)]
     pub fn try_joint_hp(
-        &self, gas: &Gas, k: f64, tt4: f64, at: impl Fn(f64) -> Result<(f64, Result<(f64, f64), Abort>, f64), Abort>,
+        &self, gas: &Gas, k: impl Fn(f64) -> Result<f64, Abort>, tt4: f64,
+        at: impl Fn(f64) -> Result<(f64, Result<(f64, f64), Abort>, f64), Abort>,
     ) -> Result<f64, Abort> {
         let refused: std::cell::RefCell<Option<Abort>> = std::cell::RefCell::new(None);
         census::bump(0);
         let resid = |ph: f64| -> Result<f64, Abort> {
             census::bump(1);
             let (tt45, lp, f45) = at(ph)?;
-            let hp = k * powp(tt45 / tt4, 0.5) / ph;
+            let hp = k(ph)? * powp(tt45 / tt4, 0.5) / ph;
             match lp {
                 Ok((x, eta_l)) => Ok(hp - self.w45(gas, x, tt45, f45, eta_l)?),
                 Err(e) if passes_nothing(&e) => {
@@ -343,14 +436,18 @@ impl TwoSpoolCore {
             }
         };
         // No sign change at all with the LP turbine refusing somewhere: that refusal is the reason, in its own words.
-        let ph = match illinois_from(&resid, self.lp_capacity.phd, 0.02, 0.01, 0.99, 0.0) {
+        // RUNG 105: from the design ratio (cold) — or, inside a transient closure's trial under the HP vane's law, from
+        // where the last trial of the same instant landed (`hp_warm`).
+        let (x0, step) = match self.hp_warm.get() { w if w.is_nan() => (self.lp_capacity.phd, 0.02), w => (w, 0.002) };
+        let ph = match illinois_from(&resid, x0, step, 0.01, 0.99, 0.0) {
             Ok(ph) => ph,
             Err(e) => return Err(refused.into_inner().unwrap_or(e)),
         };
         let (tt45, lp, f45) = at(ph)?;
         let (x, eta_l) = lp?;
-        let r = k * powp(tt45 / tt4, 0.5) / ph - self.w45(gas, x, tt45, f45, eta_l)?;
-        if r.abs() > 1e-8 * k {
+        let kk = k(ph)?;
+        let r = kk * powp(tt45 / tt4, 0.5) / ph - self.w45(gas, x, tt45, f45, eta_l)?;
+        if r.abs() > 1e-8 * kk {
             return Err(refused.into_inner().unwrap_or_else(|| {
                 Abort(format!("rung-104: the two turbines have no joint root at Tt4={tt4:.1} (residual {r:e})"))
             }));

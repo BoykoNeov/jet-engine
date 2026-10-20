@@ -2154,3 +2154,20 @@ wall (last mixture 0.061–0.065).
   the design flight's 480 K now meets the rich wall and the acceleration schedule takes it; the crawling-LP case is
   `low_speed`; the hidden setting round-trips). `sandbox_controls.rs`: `low_speed` driven by the crawling-LP case.
 - Probes archived: `docs/plans/scratch-archive/low-speed/`.
+
+## 41. The HP turbine's vanes on the pages — rung 105 (2026-10-20) — a setting, off by default
+
+Rung 105's law (`docs/rung105-spec.md`) is a setting on the four off-design views — **Fly it** (and its slam),
+**Controls**, **Size the blades** and **Cool the turbine** (the fixed engine only, beside rung 104's select): "HP turbine's
+inlet vanes: choked, as rungs 31–104 assumed (the default) / vane and rotor in series, split by the stage's reaction",
+and a reaction box (0.05–0.6, opening at 0.3) shown when the law is chosen. Request keys `hp_vane` (`pin` / `rows`) and
+`reaction`, written to a reply only off the default, so every default reply keeps its bytes.
+
+* **What moves.** On the pages' perfect-gas engines with the nozzle choked nothing (the law IS the pin there, bit for
+  bit); Fly it's thermally perfect default moves by about a tenth of a percent; below choke the HP turbine expands a
+  little further. A cooled engine (Controls with cooling, the Cooling view) moves a little even choked — the coolants'
+  share moves the HP turbine's expansion.
+* **Refused in words:** a reaction outside 0.05–0.6; Fly it's afterburner with the law (its lit turbine needs a solve not
+  built).
+* **Cost with the law on** (spec § COST): Fly it a point 5–15× the pin (≤ 60 ms), a slam 2–3 s; Controls 1.4× by default,
+  3.5× below choke, ~60× with turbine cooling (under a second).

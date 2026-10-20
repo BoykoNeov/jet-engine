@@ -962,7 +962,9 @@ impl MapMatcher {
         // Map coordinates at the converged operating point.
         let owned = m.working_gas(f, tt4, pt4);
         let wgas = owned.as_ref().unwrap_or(m.gas());
-        let mdot4 = m.a4 * pt4 * choked_mfp(wgas, tt4, f) / powp(tt4, 0.5);
+        // RUNG 105: the vane's law at the turbine's expansion (`A4` itself where the law is the pin).
+        let a4 = m.try_a4_choked(wgas, tt4, f, pi_t, Some(eta_t)).unwrap_or_else(|e| panic!("{}", e.0));
+        let mdot4 = a4 * pt4 * choked_mfp(wgas, tt4, f) / powp(tt4, 0.5);
         let mdot_air = mdot4 / (1.0 + f);
         let m_corr = (mdot_air * powp(tt2, 0.5) / pt2) / self.mdot_corr_d;
         let n = cmap.solve_n(m_corr, tau_c, self.tau_c_d);       // the speed-line inversion

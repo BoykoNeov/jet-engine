@@ -33,6 +33,7 @@ use crate::jobj;
 use crate::panels::flight;
 use crate::sandbox::{explain, DoesNotRun};
 use crate::two_spool::{build_two_spool_turbojet, Spool, TwoSpoolEngine, TwoSpoolLosses};
+use crate::hp_vane::HpVane;
 use crate::turbine_law::TurbineLaw;
 use crate::visuals::Json;
 
@@ -96,6 +97,9 @@ pub struct BladeSettings {
     pub spool: Spool,
     /// RUNG 104: what sets the LP turbine's flow (`turbine`: ellipse — the default — two rows, one row, or the old pin).
     pub turbine: TurbineLaw,
+    /// RUNG 105: what sets the HP turbine vane's flow (`hp_vane`: the old choked vane — the default — or `rows` with a
+    /// `reaction`).
+    pub hp_vane: HpVane,
 }
 
 impl BladeSettings {
@@ -103,7 +107,8 @@ impl BladeSettings {
     pub fn defaults() -> Self {
         BladeSettings { gas: BladeGas::Perfect, pi_lpc: 3.0, pi_hpc: 6.0, tt4: 1500.0, shape: 0,
                         lp: BladeKnobs::default(), hp: BladeKnobs::default(),
-                        lever: Lever::Lumped, spool: Spool::Lp, turbine: TurbineLaw::default() }
+                        lever: Lever::Lumped, spool: Spool::Lp, turbine: TurbineLaw::default(),
+                        hp_vane: HpVane::default() }
     }
 
     pub fn flight(&self) -> FlightCondition { flight() }
@@ -111,6 +116,7 @@ impl BladeSettings {
     pub fn design(&self) -> TwoSpoolEngine {
         build_two_spool_turbojet(self.gas.gas(), self.pi_lpc, self.pi_hpc, self.tt4, self.flight().p0, rig_losses())
             .with_turbine_law(self.turbine)
+            .with_hp_vane(self.hp_vane)
     }
 
     pub fn to_json(&self) -> Json {
@@ -120,6 +126,7 @@ impl BladeSettings {
             "lever" => lever_key(self.lever), "spool" => spool_key(self.spool),
         };
         self.turbine.push_json(&mut j);
+        self.hp_vane.push_json(&mut j);
         j
     }
 
@@ -142,6 +149,7 @@ impl BladeSettings {
                 .ok_or_else(|| format!("unknown spool {sp:?}"))?;
         }
         if let Some(t) = text(j, "turbine")? { s.turbine = TurbineLaw::from_key(&t)?; }
+        s.hp_vane = HpVane::from_json(j, s.hp_vane)?;
         if let Some(k) = j.get("lp") { s.lp = knobs_from_json(k, s.lp)?; }
         if let Some(k) = j.get("hp") { s.hp = knobs_from_json(k, s.hp)?; }
         Ok(s)
@@ -213,6 +221,7 @@ pub fn blade_precheck(s: &BladeSettings) -> Result<(), DoesNotRun> {
     if let Some((k, _)) = named.iter().find(|(_, v)| !v.is_finite()) {
         return no(format!("Setting {k} is not a number."));
     }
+    s.hp_vane.check().map_err(DoesNotRun)?;
     if s.pi_lpc <= 1.0 || s.pi_hpc <= 1.0 {
         return no("Both compressor pressure ratios must be above 1: at 1 a compressor does no work, \
                    so it has no blades to size.".into());

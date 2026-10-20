@@ -581,7 +581,8 @@ fn settings_round_trip_and_the_entry_point_answers() {
                                ab: Some(turbojet::afterburner::AbMode::Lit), tt7: 1875.0, light_at: 1.24,
                                a8_ratio: 1.35, a8_match: true,
                                // Rung 104's law, off its default likewise.
-                               turbine: turbojet::turbine_law::TurbineLaw::TwoRows };
+                               turbine: turbojet::turbine_law::TurbineLaw::TwoRows,
+                               hp_vane: turbojet::hp_vane::HpVane::Rows { reaction: 0.4 } };
     let back = ControlsSettings::from_json(&Json::parse(&s.to_json().dump_compact())).unwrap();
     assert_eq!(back, s);
     // At their defaults they are not written at all (every default reply keeps rung 99's shape), and read back.

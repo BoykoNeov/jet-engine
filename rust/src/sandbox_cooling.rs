@@ -22,6 +22,7 @@ use crate::sandbox::DoesNotRun;
 use crate::sandbox_blades::{rig_losses, BladeSettings};
 use crate::sandbox_controls::{control_maps, CONTROL_SHAPES};
 use crate::turbine_cooling::TurbineCooling;
+use crate::hp_vane::HpVane;
 use crate::turbine_law::TurbineLaw;
 use crate::visuals::Json;
 
@@ -82,13 +83,15 @@ pub struct CoolingSettings {
     pub blade: f64,
     /// RUNG 104: the fixed engine's LP-turbine law (ellipse by default). Written to a reply only off its default.
     pub turbine: TurbineLaw,
+    /// RUNG 105: the fixed engine's HP vane law (the old choked vane by default). Written to a reply only off its default.
+    pub hp_vane: HpVane,
 }
 
 impl CoolingSettings {
     /// Full-coverage film, Gauntner's 1985 materials at 10 000 hours, 5 % vane and 3 % blade air.
     pub fn defaults() -> Self {
         CoolingSettings { framing: Framing::Fixed, tech: 2, year: 1985.0, life: 1.0e4, shape: 0, vane: 0.05, blade: 0.03,
-                          turbine: TurbineLaw::default() }
+                          turbine: TurbineLaw::default(), hp_vane: HpVane::default() }
     }
 
     pub fn limit(&self) -> MetalLimit {
@@ -102,6 +105,7 @@ impl CoolingSettings {
             "shape" => CONTROL_SHAPES[self.shape], "vane" => self.vane, "blade" => self.blade,
         };
         self.turbine.push_json(&mut j);
+        self.hp_vane.push_json(&mut j);
         j
     }
 
@@ -132,6 +136,7 @@ impl CoolingSettings {
                 "unknown cooling technology {t:?} (\"convection\", \"coated\", \"film\" or \"transpiration\")"))?;
         }
         if let Some(t) = text("turbine")? { s.turbine = TurbineLaw::from_key(&t)?; }
+        s.hp_vane = HpVane::from_json(j, s.hp_vane)?;
         if let Some(t) = text("shape")? {
             s.shape = CONTROL_SHAPES.iter().position(|&k| k == t).ok_or_else(|| format!("unknown map shape {t:?}"))?;
         }
@@ -140,7 +145,7 @@ impl CoolingSettings {
 
     /// The fixed engine — the Controls engine's design, with this view's maps.
     pub fn fixed(&self) -> FixedEngine {
-        let b = BladeSettings { turbine: self.turbine, ..BladeSettings::defaults() };
+        let b = BladeSettings { turbine: self.turbine, hp_vane: self.hp_vane, ..BladeSettings::defaults() };
         let (ml, mh) = control_maps(CONTROL_SHAPES[self.shape]).expect("CONTROL_SHAPES lists only buildable shapes");
         // Rung 103: this view's engine re-solves an unchoked throttle instead of refusing it; plan § 38: and refuses
         // a point below idle whichever path solved it.
@@ -151,6 +156,7 @@ impl CoolingSettings {
 /// The checks made before the model runs, in plain words.
 pub fn cooling_precheck(s: &CoolingSettings) -> Result<(), DoesNotRun> {
     let no = |m: &str| Err(DoesNotRun(m.to_string()));
+    s.hp_vane.check().map_err(DoesNotRun)?;
     for (k, v) in [("year", s.year), ("life", s.life), ("vane", s.vane), ("blade", s.blade)] {
         if !v.is_finite() {
             return Err(DoesNotRun(format!("Setting {k} is not a number.")));

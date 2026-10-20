@@ -326,6 +326,8 @@ pub struct TwoSpoolEngine {
     pub afterburner: Option<crate::afterburner::TwoShaftFit>,
     /// RUNG 104: the LP turbine's flow law — copied into every core built from this engine (a sibling keeps it).
     pub turbine_law: crate::turbine_law::TurbineLaw,
+    /// RUNG 105: the HP turbine vane's flow law — copied into every core built from this engine.
+    pub hp_vane: crate::hp_vane::HpVane,
 }
 
 impl TwoSpoolEngine {
@@ -333,7 +335,14 @@ impl TwoSpoolEngine {
         let fs_engine = Engine::new(gas.clone(), Vec::new(), eta_m);
         TwoSpoolEngine { gas, components, eta_m, fs_engine, customer: None, cooling: None,
                          offtake: None, afterburner: None,
-                         turbine_law: crate::turbine_law::TurbineLaw::default() }
+                         turbine_law: crate::turbine_law::TurbineLaw::default(),
+                         hp_vane: crate::hp_vane::HpVane::default() }
+    }
+
+    /// RUNG 105: the same engine with its HP turbine vane on `law`.
+    pub fn with_hp_vane(mut self, law: crate::hp_vane::HpVane) -> Self {
+        self.hp_vane = law;
+        self
     }
 
     /// RUNG 104: the same engine with its LP turbine on `law`.
@@ -566,6 +575,8 @@ pub struct Cascade {
     pub tt25: f64,
     pub pi_hpc: f64,
     pub tt3: f64,
+    /// RUNG 105: the effective `A4` the turbine pair used — `A4` itself, bit for bit, where the vane's law is the pin.
+    pub a4: f64,
 }
 
 /// Rung 39's cascade: rung 38's plus the map read-offs.
@@ -748,6 +759,34 @@ pub struct TwoSpoolCore {
     /// RUNG 104: where a law provably IS the pin, use the pin's own solve ([`TwoSpoolCore::law_is_pin`]). `true` by
     /// default; gate R2 turns it off to compare the law's own search with the pin.
     pub law_shortcut: std::cell::Cell<bool>,
+    /// RUNG 105: the HP vane's flow law and its design capture (`crate::hp_vane`).
+    pub hp_cap: std::cell::Cell<crate::hp_vane::HpCapacity>,
+    /// RUNG 105: the flight's `p0` a transient closure solves its turbines against under the HP vane's law — set by the
+    /// transients' shared inlet step ([`crate::two_spool_transient::TwoSpoolTransientCore::inlet`]); NaN until then, and a
+    /// closure reached under the law without it refuses in words.
+    pub hp_p0: std::cell::Cell<f64>,
+    /// RUNG 105: where the joint HP search starts — NaN (the design ratio, from cold: every steady solve and every tail)
+    /// except for the length of one closure trial under the law, when it holds `hp_last`.
+    pub hp_warm: std::cell::Cell<f64>,
+    /// RUNG 105: the HP ratio the last closure trial of this instant landed on (anchor C1's count: ~13 joint residuals a
+    /// search from cold). Cleared by the inlet step, so each instant runs the same sequence whatever ran before it.
+    pub hp_last: std::cell::Cell<f64>,
+}
+
+/// RUNG 105: a closure trial's warm start, set for the length of the trial and cleared on every exit, panics included.
+pub(crate) struct HpWarm<'a>(&'a TwoSpoolCore);
+
+impl<'a> HpWarm<'a> {
+    pub(crate) fn on(core: &'a TwoSpoolCore) -> Self {
+        core.hp_warm.set(core.hp_last.get());
+        HpWarm(core)
+    }
+}
+
+impl Drop for HpWarm<'_> {
+    fn drop(&mut self) {
+        self.0.hp_warm.set(f64::NAN);
+    }
 }
 
 impl TwoSpoolCore {
@@ -840,6 +879,7 @@ impl TwoSpoolCore {
         let cooling = design_engine.cooling;
         let offtake = design_engine.offtake;
         let turbine_law = design_engine.turbine_law;
+        let hp_vane = design_engine.hp_vane;
 
         let by = |label: &str| -> Component {
             design_engine.components.iter().find(|(l, _)| *l == label)
@@ -889,6 +929,7 @@ impl TwoSpoolCore {
         let a45 = mdot4_r * powp(s45.tt, 0.5) / (s45.pt * choked_mfp(&gas, s45.tt, f_design));
         let lp_capacity =
             crate::turbine_law::LpCapacity::capture(&gas, f_design, s4.pt, s45.tt, s45.pt, s5.pt, eta_lpt, a45);
+        let hp_cap = crate::hp_vane::HpCapacity::capture(&gas, f_design, s4.tt, s45.pt / s4.pt, eta_hpt, a4, hp_vane);
         let (tt9_r, pt9_r) = (s5.tt, pi_n * s5.pt);     // Tt9 = Tt5; pt9 = pi_n * pt5
         let a8 = mdot4_r * powp(tt9_r, 0.5) / (pt9_r * choked_mfp(&gas, tt9_r, f_design));
         // RUNG 102: fitted, the unlit duct costs the flame holders' loss, so the dry throat opens by 1/π_fh — the same
@@ -923,7 +964,19 @@ impl TwoSpoolCore {
             turbine_law: std::cell::Cell::new(turbine_law),
             law_shortcut: std::cell::Cell::new(true),
             lp_capacity,
+            hp_cap: std::cell::Cell::new(hp_cap),
+            hp_p0: std::cell::Cell::new(f64::NAN),
+            hp_warm: std::cell::Cell::new(f64::NAN),
+            hp_last: std::cell::Cell::new(f64::NAN),
         }
+    }
+
+    /// RUNG 105: the HP vane's law now.
+    pub fn hp_vane(&self) -> crate::hp_vane::HpVane { self.hp_cap.get().law }
+
+    /// RUNG 105: switch the HP vane's law (recaptured on the same design).
+    pub fn set_hp_vane(&self, law: crate::hp_vane::HpVane) {
+        self.hp_cap.set(self.hp_cap.get().with_law(self.gas(), law));
     }
 
     /// RUNG 102: set the afterburner's light-off fraction for march time `s` (a no-op unfitted).
@@ -1120,7 +1173,7 @@ impl TwoSpoolCore {
         // Step 1 (★-HP): tau_HPT from (A4, A45) alone.
         // Step 2 (★-LP): tau_LPT from (A45, A8) alone — needs the nozzle choked (rung 103: or the re-solve's root).
         // RUNG 104: under a flow law the two are one joint solve (the pin: the old order, literally).
-        let ((pi_hpt, tau_hpt, tt45), (pi_lpt, tau_lpt, tt5)) = self.try_turbine_pair(
+        let (((pi_hpt, tau_hpt, tt45), (pi_lpt, tau_lpt, tt5)), a4) = self.try_turbine_pair_hp(
             wgas, tt4, f, self.eta_hpt,
             |tt45, pi_hpt| Ok((crate::steady_unchoked::try_lp_steady(self, wgas, tt45, f, self.eta_lpt, pi_hpt)?,
                                self.eta_lpt)))?;
@@ -1139,7 +1192,7 @@ impl TwoSpoolCore {
         let tt3s = wgas.t_from_h_c(h25b + self.eta_hpc * (h3 - h25b));
         let pi_hpc = wgas.pr_c(tt3s) / wgas.pr_c(tt25);
 
-        Ok(Cascade { pi_hpt, tau_hpt, tt45, pi_lpt, tau_lpt, tt5, pi_lpc, tt25, pi_hpc, tt3 })
+        Ok(Cascade { pi_hpt, tau_hpt, tt45, pi_lpt, tau_lpt, tt5, pi_lpc, tt25, pi_hpc, tt3, a4 })
     }
 
     // --- match one operating point ---------------------------------------------------------
@@ -1169,7 +1222,7 @@ impl TwoSpoolCore {
         let mut c = Cascade { pi_hpt: f64::NAN, tau_hpt: f64::NAN, tt45: f64::NAN,
                               pi_lpt: f64::NAN, tau_lpt: f64::NAN, tt5: f64::NAN,
                               pi_lpc: f64::NAN, tt25: f64::NAN, pi_hpc: f64::NAN,
-                              tt3: f64::NAN };
+                              tt3: f64::NAN, a4: f64::NAN };
         for _ in 0..Self::MAX {
             crate::steady_unchoked::track_pt4(self, pt4);
             let owned = self.working_gas(f, tt4, pt4);
@@ -1193,7 +1246,7 @@ impl TwoSpoolCore {
 
         let owned = self.working_gas(f, tt4, pt4);
         let wgas = owned.as_ref().unwrap_or(self.gas());
-        let mdot4 = self.a4 * pt4 * choked_mfp(wgas, tt4, f) / powp(tt4, 0.5);
+        let mdot4 = c.a4 * pt4 * choked_mfp(wgas, tt4, f) / powp(tt4, 0.5);
         let mdot_air = mdot4 / (1.0 + f);
 
         // Rung 38's `match` is DELIBERATELY the infallible one: Python's rung 38 has no caller
@@ -1518,6 +1571,54 @@ pub struct TwoSpoolMapCore {
 }
 
 impl TwoSpoolMapCore {
+    /// RUNG 105: the effective `A4` at a transient closure's trial — the turbine pair at the trial's `pt4` against the
+    /// flight's `p0` (the nozzle choked or not), at the speeds' turbine efficiencies. `A4` itself on the pin.
+    ///
+    /// The shortcut, CHEAP: on the perfect gas with both turbines at their design efficiencies and no afterburner lit
+    /// behind a held throat, the pins' pair is the design expansions, so the law IS the pin wherever the nozzle is choked
+    /// there — read at the design expansions, never solved per trial (the prototype's per-trial solves cost 25×: G5).
+    ///
+    /// `m4` is the gas the trial's compressor delivers through the burner (kg/s): the turbines' expansions follow from it
+    /// and the LP side alone ([`TwoSpoolCore::try_hp_from_flow`]); the vane's law is then read once.
+    #[allow(clippy::too_many_arguments)]
+    pub fn try_a4_trial(
+        &self, wg: &Gas, tt4: f64, f: f64, pt4: f64, m4: f64, nu_lp: f64, nu_hp: f64,
+    ) -> Result<f64, Abort> {
+        let b = &self.base;
+        if b.hp_vane() == crate::hp_vane::HpVane::Pin {
+            return Ok(b.a4);
+        }
+        let p0 = b.hp_p0.get();
+        if p0.is_nan() {
+            return Err(crate::hp_vane::no_flight("a two-shaft transient's compressor closure"));
+        }
+        let eta_hpt = self.map_hp().eta_t_at(b.eta_hpt, nu_hp * powp(self.tt4_d / tt4, 0.5));
+        let lp_eta = |tt45: f64| self.map_lp().eta_t_at(b.eta_lpt, nu_lp * powp(self.tt45_d / tt45, 0.5));
+        let cap = b.hp_cap.get();
+        if b.law_shortcut.get() && wg.hot_is_cpg() && !b.lit_held() && eta_hpt == cap.eta {
+            let tt45 = crate::turbine_law::tau_free(wg, tt4, f, cap.yd, eta_hpt)?;
+            let eta_l = lp_eta(tt45);
+            if b.turbine_law.get() == crate::turbine_law::TurbineLaw::Pin || b.law_is_pin(wg, eta_l) {
+                let xd = b.lp_capacity.xd;
+                let tt5 = crate::turbine_law::tau_free(wg, tt45, f, xd, eta_l)?;
+                let s5 = crate::gas::FlowState { tt: tt5, pt: xd * cap.yd * pt4, mdot: 1.0, far: f };
+                if Nozzle::convergent(p0, b.pi_n).try_apply(&s5, wg).is_ok_and(|e| e.p9 > p0 + 1e-6) {
+                    return Ok(b.a4);
+                }
+            }
+        }
+        let ph = {
+            let _warm = HpWarm::on(b);
+            b.try_hp_from_flow(wg, pt4, m4, |ph| {
+                let tt45 = crate::turbine_law::tau_free(wg, tt4, f, ph, eta_hpt)?;
+                let e = lp_eta(tt45);
+                Ok((tt45, crate::unchoked_lp::try_lp_turbine(b, wg, tt45, f, e, ph * pt4, p0).map(|(x, _, _)| (x, e)), f))
+            })?
+        };
+        b.hp_last.set(ph);
+        cap.a4_at(wg, ph, tt4, f, eta_hpt)
+    }
+
     /// Per-spool efficiency secant tolerance (rung 32's).
     pub const ETA_TOL: f64 = 1e-11;
     /// Secant step cap (positive-feedback edge guard, rung 32's).
@@ -1621,14 +1722,17 @@ impl TwoSpoolMapCore {
         &self, wgas: &Gas, tt2: f64, _pt2: f64, tt4: f64, f: f64,
     ) -> Result<CascadeMap, Abort> {
         counters::bump_cascade();
-        let mfp4 = try_choked_mfp(wgas, tt4, f)?;
+        let mfp4_pin = try_choked_mfp(wgas, tt4, f)?;
         let (mut eta_hpt, mut eta_lpt) = (self.base.eta_hpt, self.base.eta_lpt);
         for turb_pass in 0..Self::TURB_MAX {
             // Steps 1–2: both turbines pinned by geometry, at the current turbine efficiencies.
-            let ((pi_hpt, tau_hpt, tt45), (pi_lpt, tau_lpt, tt5)) = self.base.try_turbine_pair(
+            let (((pi_hpt, tau_hpt, tt45), (pi_lpt, tau_lpt, tt5)), a4) = self.base.try_turbine_pair_hp(
                 wgas, tt4, f, eta_hpt,
                 |tt45, pi_hpt| Ok((crate::steady_unchoked::try_lp_steady(&self.base, wgas, tt45, f, eta_lpt, pi_hpt)?,
                                    eta_lpt)))?;
+            // RUNG 105: the vane's law reaches the corrected-flow lines (†)/(‡) as the A4 flow per pinned area — `MFP*`
+            // itself, bit for bit, where the law is the pin (`a4 / A4` is then exactly 1).
+            let mfp4 = mfp4_pin * (a4 / self.base.a4);
 
             // ENERGY (map-free): the LP balance fixes Tt25, the HP balance fixes Tt3 onto it.
             let dh_lpt = self.base.eta_m * (1.0 + f) * (wgas.h_t(tt45, f) - wgas.h_t(tt5, f));
@@ -1650,7 +1754,7 @@ impl TwoSpoolMapCore {
 
             let out = CascadeMap {
                 c: Cascade { pi_hpt, tau_hpt, tt45, pi_lpt, tau_lpt, tt5,
-                             pi_lpc: lp.pi, tt25, pi_hpc: hp.pi, tt3 },
+                             pi_lpc: lp.pi, tt25, pi_hpc: hp.pi, tt3, a4 },
                 eta_lpc: lp.eta, eta_hpc: hp.eta, eta_hpt, eta_lpt,
                 m_l: lp.m, m_h: hp.m, n_l: lp.n, n_h: hp.n, nl, nh,
                 phi_l: lp.m / lp.n, phi_h: hp.m / hp.n, nu_hpt, nu_lpt, slip: nl / nh,
@@ -1839,7 +1943,7 @@ fn r39_body(
 
     let owned = b.try_working_gas(f, tt4, pt4)?;
     let wgas = owned.as_ref().unwrap_or(b.gas());
-    let mdot_air = b.a4 * pt4 * try_choked_mfp(wgas, tt4, f)? / powp(tt4, 0.5) / (1.0 + f);
+    let mdot_air = c.c.a4 * pt4 * try_choked_mfp(wgas, tt4, f)? / powp(tt4, 0.5) / (1.0 + f);
 
     // Rebuild FORWARD at the MAP-CONSISTENT efficiencies.
     let r = b.try_rebuild(flight, pi_d, c.c.pi_lpc, c.c.pi_hpc, tt4, mdot_air,

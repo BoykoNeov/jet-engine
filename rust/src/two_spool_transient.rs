@@ -1403,7 +1403,12 @@ impl TwoSpoolTransientCore {
     // --- the inlet state (shared by every entry point below) --------------------------------
 
     /// `(Tt2, pt2, V0)` — Python's `_inlet`.
+    ///
+    /// RUNG 105: every entry point reads the inlet before it closes a flow, so this is where the flight's `p0` is handed to
+    /// the core for the HP vane's law (its closure solves the turbines against it; the pin never reads it).
     pub fn inlet(&self, flight: &FlightCondition) -> (f64, f64, f64) {
+        self.inner.base.hp_p0.set(flight.p0);
+        self.inner.base.hp_last.set(f64::NAN);
         let pi_d = self.inner.base.pi_d_max * ram_recovery(flight.m0);
         let (state0, v0) = self.inner.base.freestream_for(flight);
         (state0.tt, pi_d * state0.pt, v0)
@@ -2137,7 +2142,7 @@ fn r40_try_close(
         let f = c.base.try_solve_f(tt3, pt4, tt4)?;
         let wgas = c.base.try_working_gas(f, tt4, pt4)?;
         let wg = wgas.as_ref().unwrap_or(gas);
-        let mdot4 = c.base.a4 * pt4 * try_choked_mfp(wg, tt4, f)? / powp(tt4, 0.5);
+        let mdot4 = c.try_a4_trial(wg, tt4, f, pt4, mdot_air_face * (1.0 + f), nu_lp, nu_hp)? * pt4 * try_choked_mfp(wg, tt4, f)? / powp(tt4, 0.5);
         let mdot_imp = mdot4 / (1.0 + f);
         let m_imp = (mdot_imp * powp(tt2, 0.5) / pt2) / c.mcorr_lp_d;
         Ok(CloseState {
@@ -2246,8 +2251,8 @@ fn r40_try_instant_tail(
     let eta_hpt = core.map_hp().eta_t_at(core.base.eta_hpt, nu_hpt);
     // RUNG 97: the pin while the nozzle stays choked, else the subsonic root. RUNG 104: one joint solve under a law.
     let lp_eta = |tt45: f64| core.map_lp().eta_t_at(core.base.eta_lpt, nu_lp * powp(core.tt45_d / tt45, 0.5));
-    let ((pi_hpt, tau_hpt, tt45), (pi_lpt, tau_lpt, tt5)) = core.base.try_turbine_pair(
-        wgas, tt4, f, eta_hpt,
+    let ((pi_hpt, tau_hpt, tt45), (pi_lpt, tau_lpt, tt5)) = core.base.try_turbine_pair_flow(
+        wgas, tt4, f, eta_hpt, c.pt4, c.mdot4,
         |tt45, pi_hpt| {
             let e = lp_eta(tt45);
             Ok((crate::unchoked_lp::try_lp_turbine(&core.base, wgas, tt45, f, e, pi_hpt * c.pt4, flight.p0)?, e))
@@ -2301,8 +2306,8 @@ fn r40_powers(
     let (wgas, f) = (c.gas(core), c.f);
     let nu_hpt = nu_hp * powp(core.tt4_d / tt4, 0.5);
     let lp_eta = |tt45: f64| core.map_lp().eta_t_at(core.base.eta_lpt, nu_lp * powp(core.tt45_d / tt45, 0.5));
-    let ((_, _, tt45), (_, _, tt5)) = core.base.try_turbine_pair(
-        wgas, tt4, f, core.map_hp().eta_t_at(core.base.eta_hpt, nu_hpt),
+    let ((_, _, tt45), (_, _, tt5)) = core.base.try_turbine_pair_flow(
+        wgas, tt4, f, core.map_hp().eta_t_at(core.base.eta_hpt, nu_hpt), c.pt4, c.mdot4,
         |tt45, pi_hpt| {
             let e = lp_eta(tt45);
             Ok((crate::unchoked_lp::try_lp_turbine(&core.base, wgas, tt45, f, e, pi_hpt * c.pt4, flight.p0)?, e))

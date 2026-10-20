@@ -244,6 +244,11 @@ matcher, the page's own solve, the slams); the two-shaft rig at the same two fli
 pair, three gases; the Controls engine on map `tilted` at sea level +40 K Mach 0.85, sea level Mach 0.30 and its design
 flight; P5's seven requests.
 
+**Recorded after the freeze (2026-10-20, before the pre-flight was read).** The hand "mixed" map pair of P1 (and of
+G1, and of rung 104's own G1) IS shape `flow/press` (`blade_speed::shape_maps`, less its stall line): the header's
+"never probed: … `flow/press`" is wrong — `flow/press` was probed, on the rig, at 250 K / 50 kPa / Mach 0.85 and 318 K /
+sea level / Mach 0.30. S2's and S3's `flow/press` cells are at other flights, so they are still cells never probed.
+
 ## 5. After scoring — reported, not scored
 
 * **The slams with the law on:** Fly it's default slam (both throttle modes) and the Controls view's default and

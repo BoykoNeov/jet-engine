@@ -12,6 +12,9 @@ edition = "2021"
 # ellipse) and changes nothing else -- the whole gate on the old model (`test-all.ps1 -Features pin-default`, gate R1a).
 [features]
 pin-default = []
+# RUNG 105: `hp-law-default` makes the HP vane's reaction law (0.3) the default (the shipped default is rung 31's choked
+# vane) and changes nothing else -- the whole gate under the law (`test-all.ps1 -Features hp-law-default`, gate R1b).
+hp-law-default = []
 
 [profile.release]
 opt-level = 3

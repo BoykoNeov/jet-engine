@@ -22,6 +22,7 @@ use crate::atmosphere::{self, Ambient};
 use crate::components::{choked_mfp, ram_recovery, Component, Nozzle};
 use crate::engine::{build_turbojet, score, EngineResult, FlightCondition, Losses};
 use crate::gas::{powp, Abort, FlowState, Gas};
+use crate::hp_vane::HpVane;
 use crate::jobj;
 use crate::map::ComponentMap;
 use crate::matcher::{Branch, Rebuilt};
@@ -873,6 +874,9 @@ pub struct FlySettings {
     /// The nozzle throat over the dry throat (1 = held), unless `a8_match` opens it by the rule.
     pub a8_ratio: f64,
     pub a8_match: bool,
+    /// RUNG 105: what sets the HP turbine vane's flow — the old choked vane (the default) or the reaction law. Written to
+    /// a reply only off its default.
+    pub hp_vane: HpVane,
 }
 
 /// Where the page's stall-line knob opens: rung 36's own panel value.
@@ -888,7 +892,7 @@ impl FlySettings {
     pub fn at_design(design: Settings) -> Self {
         FlySettings { design, gas: GasModel::ThermallyPerfect, tt4: design.tt4, t0: design.t0,
                       p0: design.p0, m0: design.m0, map: MapShape::Flow, phi_surge: PHI_SURGE_DEFAULT,
-                      ab: None, tt7: design.tt7, a8_ratio: 1.0, a8_match: false }
+                      ab: None, tt7: design.tt7, a8_ratio: 1.0, a8_match: false, hp_vane: HpVane::default() }
     }
 
     /// The afterburner flown: the design's hardware knobs, this flight's temperature.
@@ -928,6 +932,8 @@ impl FlySettings {
             if self.a8_ratio != 1.0 { kv.push(("a8_ratio".into(), Json::Float(self.a8_ratio))); }
             if self.a8_match { kv.push(("a8_match".into(), Json::Int(1))); }
         }
+        // Rung 105's, likewise.
+        self.hp_vane.push_json(&mut j);
         j
     }
 
@@ -973,6 +979,7 @@ impl FlySettings {
             Some(Json::Str(m)) => s.map = MapShape::from_key(m)?,
             Some(o) => return Err(format!("setting \"map\" must be text, got {o:?}")),
         }
+        s.hp_vane = HpVane::from_json(j, s.hp_vane)?;
         Ok(s)
     }
 }
@@ -989,6 +996,12 @@ pub fn fly_precheck(s: &FlySettings) -> Result<(), DoesNotRun> {
     let named = [("Tt4", s.tt4), ("T0", s.t0), ("p0", s.p0), ("M0", s.m0), ("phi_surge", s.phi_surge)];
     if let Some((k, _)) = named.iter().find(|(_, v)| !v.is_finite()) {
         return Err(DoesNotRun(format!("Setting {k} is not a number.")));
+    }
+    s.hp_vane.check().map_err(DoesNotRun)?;
+    if s.ab.is_some() && s.hp_vane != HpVane::Pin {
+        return no("The afterburner on Fly it runs with the HP turbine's vanes choked (the old model) only: under the \
+                   reaction law the vanes' flow depends on how far the turbine expands, and that depends on the lit \
+                   nozzle — a solve not built yet. Set the HP turbine vanes back to choked, or remove the afterburner.");
     }
     if s.t0 <= 0.0 || s.p0 <= 0.0 {
         return no("Ambient temperature and pressure must be above zero.");
@@ -1083,7 +1096,12 @@ pub struct SpoolPoint {
 pub fn fly_solver(s: &FlySettings) -> SpoolTransient {
     let d = s.capture();
     let engine = build_turbojet(d.gas.gas(), d.pi_c, d.tt4, d.p0, d.losses());
-    SpoolTransient::new(engine, d.flight(), d.mdot, s.map.map())
+    let st = SpoolTransient::new(engine, d.flight(), d.mdot, s.map.map());
+    // RUNG 105: the HP vane's law, recaptured on this design (the default — the old pin — captures nothing new).
+    if s.hp_vane != st.inner.inner.hp_vane() {
+        st.inner.inner.set_hp_vane(s.hp_vane);
+    }
+    st
 }
 
 /// The top of rung 34's shaft-speed search (`SpoolTransient::find_equilibrium_nu` marches 0.30–1.60

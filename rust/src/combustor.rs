@@ -522,10 +522,12 @@ impl CombustorTransient {
         let tt4 = self.inner.tt4_from_f(tt3, f);
         let wgas = mm.try_working_gas(f, tt4, pt4)?;
         let wg: &Gas = wgas.as_ref().unwrap_or_else(|| mm.gas());
-        let mdot_ngv = mm.a4 * pt4 * try_choked_mfp(wg, tt4, f)? / powp(tt4, 0.5); // NGV TOTAL drain
         let nu_t = nu * powp(self.inner.inner.tt4_d / tt4, 0.5);
         let eta_t = cmap.eta_t_at(mm.eta_t, nu_t);
-        let (_pi_t, tau_t, tt5) = mm.try_solve_turbine(wg, tt4, f, Some(eta_t))?;
+        let (pi_t, tau_t, tt5) = mm.try_solve_turbine(wg, tt4, f, Some(eta_t))?;
+        // RUNG 105: the NGV's drain at the turbine's expansion (`A4` itself on the pin; this plant is choked-only).
+        let a4 = mm.try_a4_choked(wg, tt4, f, pi_t, Some(eta_t))?;
+        let mdot_ngv = a4 * pt4 * try_choked_mfp(wg, tt4, f)? / powp(tt4, 0.5); // NGV TOTAL drain
         let p_t = mm.eta_m * mdot_ngv * (wg.h_t(tt4, f) - wg.h_t(tt5, f));
         let p_c = mdot_c * (wg.h_c(tt3) - wg.h_c(tt2));
         let phi = (p_t - p_c) / (self.inner.p_ref * nu);
@@ -729,13 +731,17 @@ impl CombustorTransient {
             let tt4_t = tt4_b - g_gain * (tt4_b - tm); // metal heat sink
             let wgas = mm.try_working_gas(f, tt4_t, pt4)?;
             let wg: &Gas = wgas.as_ref().unwrap_or(gas);
+            if mm.hp_vane() != crate::hp_vane::HpVane::Pin {
+                return Err(Abort("rung-105: rung 37's metal-soak closure cannot run the HP vane's reaction law yet (its \
+                                  vane flow needs the turbine, which this closure never solves)".into()));
+            }
             let mdot4 = mm.a4 * pt4 * try_choked_mfp(wg, tt4_t, f)? / powp(tt4_t, 0.5);
             let mdot_air_ngv = mdot4 / (1.0 + f);
             let m_imp = (mdot_air_ngv * powp(tt2, 0.5) / pt2) / self.inner.inner.mdot_corr_d;
             Ok(SoakClose {
                 comp: CompState {
                     m, m_imp, phi: flowcoef, tau_c, eta_c, tt3, tt4: tt4_t, pi_c, pt4, f, wgas,
-                    mdot4, mdot_air,
+                    mdot4, mdot_air, hp: None,
                 },
                 tt4_b,
                 tt4_t,

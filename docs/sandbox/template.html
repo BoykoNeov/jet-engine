@@ -214,6 +214,15 @@ footer p { max-width: 90ch; }
           <option value="tilted">Tilted efficiency island</option>
         </select>
         <div class="derived">Invented, representative maps: the model has no measured compressor map.</div></div>
+      <div class="knob" id="fly-hp-row"><label for="fly-hp_vane">HP turbine's inlet vanes <small>rung 105</small></label>
+        <select id="fly-hp_vane" style="grid-column: 1 / -1">
+          <option value="pin">Choked, as rungs 31-104 assumed (the default)</option>
+          <option value="rows">Vane and rotor in series, split by the stage's reaction</option>
+        </select>
+        <div class="derived">At a usual reaction (0.25-0.5) these vanes never choke: they would only below about
+          0.18-0.20. With the nozzle choked the old assumption is within about 0.2 %; below choke the turbine expands a little further.</div></div>
+      <div class="knob" id="fly-reaction-row" hidden><label for="fly-reaction">Stage reaction <small>the rotor's share of the drop</small></label>
+        <input type="number" id="fly-reaction" min="0.05" max="0.6" step="0.05"></div>
       <div class="knob"><label for="phi_surge">Stall line <small>flow coefficient</small></label><input type="number" id="phi_surge" step="0.01">
         <input type="range" id="phi_surge-r" min="0.3" max="0.95" step="0.01" aria-label="Stall line slider">
         <div class="derived">A number you choose, not data. The stall margin depends on it and on the map: read its trend, not its size.</div></div>
@@ -287,6 +296,15 @@ footer p { max-width: 90ch; }
         </select>
         <div class="derived">Their throat never actually chokes: the flow it passes follows the LP turbine's own expansion.
           "Choked" is the old assumption, kept to compare.</div></div>
+      <div class="knob" id="bl-hp-row"><label for="bl-hp_vane">HP turbine's inlet vanes <small>rung 105</small></label>
+        <select id="bl-hp_vane" style="grid-column: 1 / -1">
+          <option value="pin">Choked, as rungs 31-104 assumed (the default)</option>
+          <option value="rows">Vane and rotor in series, split by the stage's reaction</option>
+        </select>
+        <div class="derived">At a usual reaction (0.25-0.5) these vanes never choke: they would only below about
+          0.18-0.20. With the nozzle choked the old assumption is within about 0.2 %.</div></div>
+      <div class="knob" id="bl-reaction-row" hidden><label for="bl-reaction">Stage reaction <small>the rotor's share of the drop</small></label>
+        <input type="number" id="bl-reaction" min="0.05" max="0.6" step="0.05"></div>
     </fieldset>
     <fieldset id="bk-set" hidden>
       <legend>The blades</legend>
@@ -355,6 +373,15 @@ footer p { max-width: 90ch; }
         </select>
         <div class="derived">Their throat never actually chokes. With the nozzle choked on this engine's gas every choice
           gives the same run; below choke the LP turbine's back-pressure reaches the HP shaft too.</div></div>
+      <div class="knob" id="ctl-hp-row"><label for="ctl-hp_vane">HP turbine's inlet vanes <small>rung 105</small></label>
+        <select id="ctl-hp_vane" style="grid-column: 1 / -1">
+          <option value="pin">Choked, as rungs 31-104 assumed (the default)</option>
+          <option value="rows">Vane and rotor in series, split by the stage's reaction</option>
+        </select>
+        <div class="derived">At a usual reaction (0.25-0.5) these vanes never choke: they would only below about
+          0.18-0.20. With the nozzle choked the old assumption is within about 0.2 %; below choke the HP shaft keeps a little more of its speed.</div></div>
+      <div class="knob" id="ctl-reaction-row" hidden><label for="ctl-reaction">Stage reaction <small>the rotor's share of the drop</small></label>
+        <input type="number" id="ctl-reaction" min="0.05" max="0.6" step="0.05"></div>
       <div class="knob"><label for="ctl-from">Start from <small>K</small></label><input type="number" id="ctl-from" step="10">
         <input type="range" id="ctl-from-r" min="600" max="1700" step="10" aria-label="Starting throttle slider"></div>
       <div class="knob"><label for="ctl-to">Move to <small>K</small></label><input type="number" id="ctl-to" step="10">
@@ -683,6 +710,15 @@ footer p { max-width: 90ch; }
           <option value="pin">Choked, as rungs 38-103 assumed</option>
         </select>
         <div class="derived">Their throat never actually chokes; "choked" is the old assumption, kept to compare.</div></div>
+      <div class="knob" id="cl-hp-row"><label for="cl-hp_vane">HP turbine's inlet vanes <small>rung 105</small></label>
+        <select id="cl-hp_vane" style="grid-column: 1 / -1">
+          <option value="pin">Choked, as rungs 31-104 assumed (the default)</option>
+          <option value="rows">Vane and rotor in series, split by the stage's reaction</option>
+        </select>
+        <div class="derived">At a usual reaction (0.25-0.5) these vanes never choke: they would only below about
+          0.18-0.20. With the nozzle choked the old assumption is within about 0.2 %; the coolants move the HP turbine's expansion, so a cooled engine moves a little even choked.</div></div>
+      <div class="knob" id="cl-reaction-row" hidden><label for="cl-reaction">Stage reaction <small>the rotor's share of the drop</small></label>
+        <input type="number" id="cl-reaction" min="0.05" max="0.6" step="0.05"></div>
     </fieldset>
     <fieldset id="cool-knob-set" hidden>
       <legend>Your cooling, on this engine</legend>
@@ -1379,6 +1415,24 @@ const SLOW = ["equilibrium"];                 // ~1 s a point: run when a slider
 const GAS_WORDS = { perfect: "perfect gas", thermally_perfect: "thermally perfect gas", reacting: "reacting-products gas",
                     fork_b: "reacting gas with formation enthalpies", equilibrium: "equilibrium-chemistry gas" };
 const target = () => (mode === "fly" ? F : mode === "controls" ? C : S);
+// Rung 105: the HP turbine vane's law on a view's settings object — "pin" (the default, sent as no key) or "rows" with
+// a reaction.
+function hpSync(p, o, shown = true) {
+  const law = o.hp_vane || "pin";
+  $(p + "-hp_vane").value = law;
+  if (document.activeElement !== $(p + "-reaction")) $(p + "-reaction").value = o.reaction ?? 0.3;
+  $(p + "-hp-row").hidden = !shown;
+  $(p + "-reaction-row").hidden = !shown || law !== "rows";
+}
+function hpWire(p, obj, then) {
+  $(p + "-hp_vane").addEventListener("change", () => {
+    const o = obj();
+    if ($(p + "-hp_vane").value === "rows") { o.hp_vane = "rows"; if (o.reaction === undefined) o.reaction = 0.3; }
+    else { delete o.hp_vane; delete o.reaction; }
+    showSettings(); then();
+  });
+  $(p + "-reaction").addEventListener("change", () => { obj().reaction = +$(p + "-reaction").value; then(); });
+}
 const slow = () => mode === "fly" && SLOW.includes(F.gas);
 // Size the blades (slice 2): B is the blade settings (turbojet::sandbox_blades::BladeSettings) on its
 // own two-spool engine. BLADE_NUM maps an engine knob's id to its setting; BLADE_KNOB a blade knob's
@@ -1461,7 +1515,7 @@ function showSettings() {
       if (document.activeElement !== $(id)) $(id).value = +F[k].toPrecision(8);
       $(id + "-r").value = F[k];
     }
-    $("fly-gas").value = F.gas; $("fly-map").value = F.map;
+    $("fly-gas").value = F.gas; $("fly-map").value = F.map; hpSync("fly", F);
     // Rung 102: the afterburner fitted to the engine you fly.
     $("fly-ab").value = F.ab; $("fly-a8-match").checked = F.a8_match === 1;
     $("fly-ab-box").hidden = F.ab === "none"; $("fly-a8").disabled = $("fly-a8-r").disabled = F.a8_match === 1;
@@ -1514,7 +1568,7 @@ function showSettings() {
       $(id + "-r").value = C[k];
     }
     for (const k of CTL_SW) $("ctl-" + k).checked = C[k] === 1;
-    $("ctl-shape").value = C.shape; $("ctl-lever").value = C.lever; $("ctl-turbine").value = C.turbine || "ellipse";
+    $("ctl-shape").value = C.shape; $("ctl-lever").value = C.lever; $("ctl-turbine").value = C.turbine || "ellipse"; hpSync("ctl", C);
     const press = (id, on) => $(id).setAttribute("aria-pressed", String(on));
     press("ctl-floor-lp", C.floor_spool === "lp"); press("ctl-floor-hp", C.floor_spool === "hp");
     press("ctl-ref-phi", C.floor_ref === "phi"); press("ctl-ref-inc", C.floor_ref === "incidence");
@@ -1583,6 +1637,7 @@ function showSettings() {
     $("cl-life").value = String(CL.life); $("cl-shape").value = CL.shape;
     $("cl-shape-row").hidden = CL.framing !== "fixed";
     $("cl-turbine").value = CL.turbine || "ellipse"; $("cl-turbine-row").hidden = CL.framing !== "fixed";
+    hpSync("cl", CL, CL.framing === "fixed");
     for (const q of ["air", "st", "tsfc", "tt3", "speed"]) press("clq-" + q, clQ === q);
     $("clq-speed").hidden = CL.framing !== "fixed";
     $("cl-limits").textContent = clKnob
@@ -1603,7 +1658,7 @@ function showSettings() {
       $(id + "-r").value = kn[k];
     }
     $("bl-gas").value = B.gas; $("bl-shape").value = B.shape; $("bl-lever").value = B.lever;
-    $("bl-turbine").value = B.turbine || "ellipse";
+    $("bl-turbine").value = B.turbine || "ellipse"; hpSync("bl", B);
     const press = (id, on) => $(id).setAttribute("aria-pressed", String(on));
     press("bk-linked", linked); press("bk-split", !linked); $("bk-which").hidden = linked;
     press("bk-lp", editSpool === "lp"); press("bk-hp", editSpool === "hp");
@@ -3141,6 +3196,7 @@ function wire() {
   // The blade view: engine knobs write B; blade knobs write B.lp and/or B.hp (setKnob).
   for (const [id, k] of Object.entries(BLADE_NUM)) knob($(id), $(id + "-r"), v => { B[k] = v; });
   for (const [id, k] of Object.entries(BLADE_KNOB)) knob($(id), $(id + "-r"), v => setKnob(k, v));
+  hpWire("bl", () => B, () => change());
   for (const [id, k] of [["bl-gas", "gas"], ["bl-shape", "shape"], ["bl-lever", "lever"], ["bl-turbine", "turbine"]]) {
     $(id).addEventListener("change", () => { B[k] = $(id).value; change(); });
   }
@@ -3164,6 +3220,7 @@ function wire() {
   for (const q of Object.keys(SLAM_Q)) $("q-" + q).addEventListener("click", () => { slamQ = q; showSettings(); drawSlam(); });
   $("fly-gas").addEventListener("change", () => { F.gas = $("fly-gas").value; change(); });
   $("fly-map").addEventListener("change", () => { F.map = $("fly-map").value; change(); });
+  hpWire("fly", () => F, () => change());
   $("fly-ab").addEventListener("change", () => { F.ab = $("fly-ab").value; showSettings(); change(); });
   $("fly-a8-match").addEventListener("change", () => { F.a8_match = $("fly-a8-match").checked ? 1 : 0; showSettings(); change(); });
   $("nozzle").addEventListener("change", () => { S.nozzle = $("nozzle").value; showSettings(); change(); });
@@ -3183,6 +3240,7 @@ function wire() {
     if (k === "redline_on" && !C.redline_on) C.gov_lag_on = 0;   // the lag belongs to the limiter
     showSettings(); scheduleCtl();
   });
+  hpWire("ctl", () => C, () => scheduleCtl());
   for (const [id, k] of [["ctl-shape", "shape"], ["ctl-lever", "lever"], ["ctl-ab", "ab"], ["ctl-turbine", "turbine"]]) {
     $(id).addEventListener("change", () => { C[k] = $(id).value; showSettings(); scheduleCtl(); });
   }
@@ -3226,6 +3284,7 @@ function wire() {
   $("cl-life").addEventListener("change", () => { CL.life = +$("cl-life").value; scheduleCool(); });
   $("cl-shape").addEventListener("change", () => { CL.shape = $("cl-shape").value; scheduleCool(); });
   $("cl-turbine").addEventListener("change", () => { CL.turbine = $("cl-turbine").value; scheduleCool(); });
+  hpWire("cl", () => CL, () => scheduleCool());
   for (const q of Object.keys(CL_Q)) $("clq-" + q).addEventListener("click", () => { clQ = q; showSettings(); drawCool(); });
   // The burner: its own knobs write BK; slow mixing models compute when a slider is let go (bnChanged).
   $("mode-burner").addEventListener("click", enterBurner);
