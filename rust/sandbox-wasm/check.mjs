@@ -67,8 +67,13 @@ const ENTROPY = /\.s$|\.ts_(burner|reject|afterburner)\.\d+\.0$|\.settled_(lp|hp
 // The first part (`gap_ram`) is, under the formula, the airflow guess `V0·(ṁ̂ − ṁ_face)` -- a small difference of two
 // nearly equal flows (~0.1 N per kg/s); relative it read 8.0e-12 against the 1e-11 bar (#242), so it takes the same
 // absolute rule. Worst seen on both parts with both under it: 1.9e-12 (#232.gap_ram), rung 98's ram part included.
+// Sandbox plan § 39: the Controls view keeps a start below idle, so rung 98's Mach-3 sea-level cell (#237, refused
+// before) now runs — and there, its tables carried 3 Mach numbers from the design flight, the ram part is THOUSANDS of
+// N per kg/s (−4441 …), where the absolute bar sits below the arithmetic's own rounding (2.0e-9 = 4.5e-13 of the value).
+// So a gap part also passes within 1e-12 of its size (the march's other columns take 1e-10).
 const GAP = /\.gap_(ram|nozzle)\.\d+$/;
 const GAP_ABS = 1e-10;
+const GAP_REL = 1e-12;
 const BARS = {
   perfect: { rel: 1e-13, s_abs: 1e-10 },
   table: { rel: 1e-9, s_abs: 1e-6 },
@@ -103,7 +108,8 @@ function compare(a, b, path, fails, kind) {
     const bar = isGap ? GAP_ABS : isS ? BARS[kind].s_abs : BARS[kind].rel;
     const key = kind + (isGap ? ' thrust-gap parts (abs)' : isS ? (kind === 'march' ? ' settled gap (abs)' : ' entropy (abs)') : ' relative');
     if (!worst[key] || d > worst[key].d) worst[key] = { d, where: path };
-    if (!(d <= bar)) fails.push(`${path}: browser ${a} vs native ${b} (${isS ? 'abs' : 'rel'} ${d.toExponential(2)} > ${bar})`);
+    const gapRel = isGap && d <= GAP_REL * Math.max(Math.abs(a), Math.abs(b));
+    if (!(d <= bar) && !gapRel) fails.push(`${path}: browser ${a} vs native ${b} (${isS ? 'abs' : 'rel'} ${d.toExponential(2)} > ${bar})`);
     return;
   }
   if (Array.isArray(a) !== Array.isArray(b) || typeof a !== typeof b || (a === null) !== (b === null)) {

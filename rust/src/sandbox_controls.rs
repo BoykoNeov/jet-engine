@@ -57,7 +57,7 @@ use crate::afterburner::{AbMode, Afterburner, Throat, TwoShaftFit};
 use crate::sandbox_blades::BladeSettings;
 use crate::stator_transient::{IncidenceLimiter, ScheduledStatorCore, ScheduledStatorTransient, StatorArm,
                               StatorSchedule};
-use crate::two_spool::{Spool, TwoSpoolEngine};
+use crate::two_spool::{IdleRule, Spool, TwoSpoolEngine};
 use crate::bleed_transient::r62_try_close_fuel;
 use crate::two_spool_transient::{ForcedBleed, Instant2, MarchedBleed};
 use crate::visuals::Json;
@@ -278,10 +278,10 @@ pub struct ControlsSettings {
     /// Written to a reply only when not at their defaults, so every default reply is rung 99's in shape.
     pub low_grid: bool,
     pub formula_choked: bool,
-    /// The below-idle floor (sandbox plan § 38) — on by default; hidden, its reduce setting (off: every machine this
-    /// view builds answers as before the floor, so rungs 98–101's tests read their anchored cells). Written to a reply
-    /// only when off.
-    pub idle_floor: bool,
+    /// What a steady end below idle gets (sandbox plan §§ 38–39), hidden: `Accept` by default (the user's choice — the
+    /// run starts from it and the page warns, whichever start found it); `Refuse` (§ 38's floor); `Old` (§ 37's rule, the
+    /// reduce setting rungs 98/99's tests read their anchored cells with). Written to a reply only off the default.
+    pub idle: IdleRule,
     /// RUNG 101: where the formula (`speed_corr: formula`) gets the air swallowed — rung 100's table (the default),
     /// the speed grid's, or the exhaust-temperature sensor; and that sensor's lag (off by default; HP-shaft τ). Written to
     /// a reply only off their defaults, so every default reply is rung 100's in shape.
@@ -422,7 +422,7 @@ impl ControlsSettings {
             govern: false, speed_law: SpeedLaw::Rate, gov_tau: 0.1, gov_gain: 20.0,
             thrust_by: ThrustBy::True, table_clean: true,
             table_at: TableAt::Design, corr_p: true, corr_t: true, speed_corr: SpeedCorr::Grid,
-            low_grid: true, formula_choked: false, idle_floor: true,
+            low_grid: true, formula_choked: false, idle: IdleRule::Accept,
             airflow: AirflowFrom::Table, exhaust_lag: false, exhaust_tau: 1.0,
             t0: fd.t0, p0: fd.p0, m0: fd.m0,
             ab: None, tt7: AB_TT7, light_at: AB_LIGHT_AT, a8_ratio: 1.0, a8_match: false,
@@ -580,7 +580,7 @@ impl ControlsSettings {
             if !self.low_grid { kv.push(("low_grid".into(), b(false))); }
             if self.formula_choked { kv.push(("formula_choked".into(), b(true))); }
             // The below-idle floor's, likewise (plan § 38).
-            if !self.idle_floor { kv.push(("idle_floor".into(), b(false))); }
+            if self.idle != IdleRule::Accept { kv.push(("idle".into(), Json::from(idle_key(self.idle)))); }
             // Rung 101's three, likewise.
             if self.airflow != AirflowFrom::Table { kv.push(("airflow".into(), Json::from(self.airflow.key()))); }
             if self.exhaust_lag { kv.push(("exhaust_lag".into(), b(true))); }
@@ -666,6 +666,10 @@ impl ControlsSettings {
             s.generator = GeneratorMode::ALL.into_iter().find(|m| m.key() == t)
                 .ok_or_else(|| format!("unknown generator shaft {t:?} (\"off\", \"hp\" or \"lp\")"))?;
         }
+        if let Some(t) = text("idle")? {
+            s.idle = [IdleRule::Accept, IdleRule::Refuse, IdleRule::Old].into_iter().find(|r| idle_key(*r) == t)
+                .ok_or_else(|| format!("unknown below-idle rule {t:?} (\"warn\", \"refuse\" or \"old\")"))?;
+        }
         if let Some(t) = text("generator_by")? {
             s.generator_by = GeneratorBy::ALL.into_iter().find(|m| m.key() == t)
                 .ok_or_else(|| format!("unknown generator setting {t:?} (\"share\" or \"power\")"))?;
@@ -675,7 +679,7 @@ impl ControlsSettings {
                           ("release_on", &mut s.release_on), ("metal_on", &mut s.metal_on), ("hold_cap", &mut s.hold_cap),
                           ("govern", &mut s.govern), ("table_clean", &mut s.table_clean),
                           ("corr_p", &mut s.corr_p), ("corr_t", &mut s.corr_t), ("low_grid", &mut s.low_grid),
-                          ("formula_choked", &mut s.formula_choked), ("idle_floor", &mut s.idle_floor),
+                          ("formula_choked", &mut s.formula_choked),
                           ("exhaust_lag", &mut s.exhaust_lag),
                           ("a8_match", &mut s.a8_match)] {
             flag(k, into)?;
@@ -800,6 +804,15 @@ impl ControlsSettings {
 }
 
 /// A time-constant floor as the refusal states it: rounded UP to 0.001, so the value named is one the page accepts.
+/// The below-idle rule's request key (plan § 39): `warn` — the run starts from the point and the page says so.
+pub fn idle_key(r: IdleRule) -> &'static str {
+    match r {
+        IdleRule::Accept => "warn",
+        IdleRule::Refuse => "refuse",
+        IdleRule::Old => "old",
+    }
+}
+
 fn tau_text(t: f64) -> String { format!("{}", ((t * 1000.0) - 1e-6).ceil() / 1000.0) }
 
 /// A gain ceiling as the refusal states it: rounded DOWN to 0.1, for the same reason.
@@ -1180,14 +1193,14 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
         match s.shaft_offtake() { Some(so) => d.with_shaft_offtake(so), None => d }
     });
     let gen_check = (s.shaft_offtake().is_some() && s.lever == LeverChoice::None).then(|| design.clone());
-    // Every machine this view builds — the flown one and each sibling a refusal or a hold re-solves — refuses a
-    // steady point below idle, whichever start its equilibrium found it from (plan § 38).
+    // Every machine this view builds — the flown one and each sibling a refusal or a hold re-solves — holds the view's
+    // below-idle rule (plan §§ 38–39): by default it keeps a point below idle, whichever start found it, and warns.
     let make = |d: TwoSpoolEngine| -> ScheduledStatorCore {
         let c = match builder(d, fd, MDOT_DESIGN, Some(ml), Some(mh), s.rho, &s.lever_arm()) {
             ScheduledStatorTransient::Full(c) => c,
             ScheduledStatorTransient::Degenerate(_) => unreachable!("the Controls engine has both shafts"),
         };
-        c.fuel.inner.inner.base.idle_floor.set(s.idle_floor);
+        c.fuel.inner.inner.base.idle_rule.set(s.idle);
         c
     };
     let core = make(design);
@@ -1199,7 +1212,6 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
                 // Rung 103: the steady check re-solves an unchoked throttle, as the march's own equilibrium does
                 // (rung 97) — so its answer is no longer the pin's there.
                 st.core.base.below_choke.set(true);
-                st.core.base.idle_floor.set(s.idle_floor);
                 if let Err(e2) = st.try_match_point(&fl, tt4) {
                     if e2.0.contains("rung-92:") { m = e2.0; }
                 }
@@ -2047,6 +2059,9 @@ pub enum StopKind {
     RedlineFloor,
     /// Rung 102: the lit afterburner — its own refusal, the lean wall, or a step that runs with it put out.
     Afterburner,
+    /// Plan § 39: the march's fuel closure found no burner state at all at these shaft speeds — no trial mixture to
+    /// read, neither wall — met where a slam starts low (near or below idle), mostly at its first step.
+    LowSpeed,
     /// Anything else the model refused at this point of the run.
     Other,
 }
@@ -2063,6 +2078,7 @@ impl StopKind {
             StopKind::MetalCap => "metal_cap",
             StopKind::RedlineFloor => "redline_floor",
             StopKind::Afterburner => "afterburner",
+            StopKind::LowSpeed => "low_speed",
             StopKind::Other => "other",
         }
     }
@@ -2116,6 +2132,11 @@ impl StopKind {
                  throats choked, so there it has no running point (a real engine would stall). Or the afterburner \
                  cannot reach its temperature here (the model's words below say which). Open the nozzle, or let it \
                  open by the rule; light the afterburner later in the run; or lower its temperature.",
+            StopKind::LowSpeed =>
+                "The shafts are too slow here for the model's step-by-step fuel search: at these speeds it finds no \
+                 state of the burner to work from, so the run stops. This happens when a move starts at a low throttle \
+                 (near or below idle). The starting point itself is a steady one, so this is a limit of the model's \
+                 search, not proof the engine could not move from there. Start from a higher throttle.",
             StopKind::Other =>
                 "The model stopped on one of its internal checks at this point of the run.",
         }
@@ -2163,10 +2184,12 @@ pub fn classify(sv: &ControlsSolver, stop: &Stop, last: Option<&FuelPoint>) -> S
     if !m.contains("fuel closure does not bracket") {
         return StopKind::Other;
     }
+    // Plan § 39: a wall is named only near it (the crash map's lean and rich stops sit at 0.71–1.05 of their walls);
+    // a closure that failed between them, or before any point was recorded, found no burner state at all.
     match trial_mixture(f, last) {
-        Some(x) if x < lean_rich_split() => StopKind::Lean,
-        Some(_) => StopKind::Rich,
-        None => StopKind::Other,
+        Some(x) if x < lean_rich_split() && x < 2.0 * FuelTransientCore::F_FLOOR => StopKind::Lean,
+        Some(x) if x >= lean_rich_split() && x > 0.5 * FuelTransientCore::F_CAP => StopKind::Rich,
+        _ => StopKind::LowSpeed,
     }
 }
 
@@ -2392,7 +2415,7 @@ fn num_or_null(x: f64) -> Json { if x.is_finite() { Json::Float(x) } else { Json
 fn steady_json(sv: &ControlsSolver, i: &Instant2, hold: Option<HoldInfo>) -> Json {
     let (_, stall_lp) = sv.stall(Spool::Lp, i.nu_lp, i.nu_hp);
     let (_, stall_hp) = sv.stall(Spool::Hp, i.nu_lp, i.nu_hp);
-    jobj! {
+    let mut j = jobj! {
         "Tt4" => i.tt4, "nu_lp" => i.nu_lp, "nu_hp" => i.nu_hp, "fuel" => i.close.f * i.close.mdot_air,
         "far" => i.close.f, "thrust" => ControlsSolver::thrust(i), "phi_lp" => i.close.phi_lp, "phi_hp" => i.close.phi_hp,
         "pi_lpc" => i.close.pi_lpc, "pi_hpc" => i.close.pi_hpc, "stall_lp" => stall_lp, "stall_hp" => stall_hp,
@@ -2414,7 +2437,14 @@ fn steady_json(sv: &ControlsSolver, i: &Instant2, hold: Option<HoldInfo>) -> Jso
         "hold_target" => hold.map_or(Json::Null, |h| Json::Float(h.target)),
         "hold_achieved" => hold.map_or(Json::Null, |h| Json::Float(h.achieved)),
         "hold_capped" => hold.map_or(Json::Null, |h| Json::Int(h.capped as i64)),
+    };
+    // Plan § 39: an end below idle — no positive thrust per kg/s of INLET air, the quantity the rule judges — carries
+    // that number, and the page warns. Absent otherwise, so every other reply is unchanged.
+    let sp = i.sp_thrust_inlet.unwrap_or(i.sp_thrust);
+    if !(sp > 0.0) {
+        if let Json::Obj(kv) = &mut j { kv.push(("below_idle".into(), num_or_null(sp))); }
     }
+    j
 }
 
 /// The page's view of a Controls run, FULL precision; the trajectory leaves as COLUMNS.

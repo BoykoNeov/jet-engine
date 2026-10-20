@@ -48,7 +48,7 @@ use crate::engine::FlightCondition;
 use crate::map::{mfp_frac, ComponentMap};
 use crate::stage::{StageStackCore, StageStackCoreSpec};
 use crate::stator::VariableStatorCore;
-use crate::two_spool::{Spool, TwoSpoolEngine, TwoSpoolMapResult};
+use crate::two_spool::{IdleRule, Spool, TwoSpoolEngine, TwoSpoolMapResult};
 
 /// Ti-6Al-4V annealed, AMS 4911 plate > 0.1874 in: specified MINIMUM 0.2 % yield, Pa (Rolled
 /// Alloys bulletin 1052USe 09/16, 120 ksi). Plate stands in for the forging (§ 1, disclosed).
@@ -425,7 +425,7 @@ impl Machine {
             k_lp, k_hp, vsv_stages_lp: front(Spool::Lp), vsv_stages_hp: front(Spool::Hp), ..base
         });
         plant.core.core.base.below_choke.set(self.below_choke);
-        plant.core.core.base.idle_floor.set(self.idle_floor);
+        plant.core.core.base.idle_rule.set(if self.idle_floor { IdleRule::Refuse } else { IdleRule::Old });
         plant
     }
 

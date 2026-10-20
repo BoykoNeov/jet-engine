@@ -1,31 +1,32 @@
-//! **THE BELOW-IDLE FLOOR** (2026-10-19). Not a rung — a page rule (sandbox plan § 38), the open item the low-start
-//! repair left (§ 37): ONE below-idle rule wherever the pages solve a steady two-shaft point.
+//! **THE BELOW-IDLE RULE** (2026-10-19/20). Not a rung — a page rule (sandbox plan §§ 38–39), the open item the
+//! low-start repair left (§ 37): ONE answer for a steady two-shaft point with more drag than thrust, wherever a page
+//! solves one.
 //!
-//! Before it, a point with more drag than thrust was refused on some paths and accepted on others: rung 103's
-//! steady matchers refused it only with the nozzle unchoked, rung 40's equilibrium only when its low start found it,
-//! and the full-speed start returned it (choked, hot or fast flights; the Controls page started its slam at −64 to
-//! −80 N per kg/s at Mach 2.6). With `TwoSpoolCore::idle_floor` on, every one is refused in "below idle" words.
-//! **Off in the old code, on in the pages** (the user's decision, as rung 103's switch): every Python-held oracle
-//! reads the old answers, bit for bit. Rungs 98/99 are built ON the Controls page and anchored cells below idle (the
-//! Mach-3 slice from 1000 K); their tests turn the floor off through the page's hidden reduce setting `idle_floor`.
+//! Before it, such a point was refused on some paths and accepted on others: rung 103's steady matchers refused it
+//! only with the nozzle unchoked, rung 40's equilibrium only when its low start found it, and its full-speed start
+//! returned it (choked, hot or fast flights). `TwoSpoolCore::idle_rule` now says which: `Old` (the default — the old
+//! code, § 37's rule, every Python-held oracle bit for bit), `Refuse` (the Blades and Cooling views, whose shared
+//! scoring cannot take a negative thrust — § 38), `Accept` (the Controls view, § 39 — the user's choice: the run keeps
+//! the point from either start and the page warns, with the thrust per kg/s of inlet air). Rungs 98/99 are built ON
+//! the Controls page and anchored cells below idle; their tests read them at `Old` (the page's hidden `idle` setting).
 //!
-//! **Refusing is safe because the root is unique:** at each of 1 022 below-idle points the full-speed start
+//! **Either answer is safe because the root is unique:** at each of 1 022 below-idle points the full-speed start
 //! returned (bare, 5 % customer bleed and cooled engines, four maps, 34 flights), 48 starts over both shafts found no
-//! second root (probe archived, `docs/plans/scratch-archive/idle-floor/`). A sample is re-checked here.
-//!
-//! What the pages lost, measured against the code before: the HP-wall crash map (seed 36, 1 200 requests, Mach
-//! 0.2–1.6) 24 runs refused (−0.8 to −56 N per kg/s), 23 with the bleed lever — its dumped air pays full ram drag;
-//! rung 101's map (seed 99, 1 500 requests, every knob, Mach to 3.5) 178 runs refused (−2.9 to −346, median −74),
-//! 149 at Mach 2 or above. Nothing refused began to run, no panic.
+//! second root; § 37 measured the low start's (every start that solves lands on one root). Probes archived,
+//! `docs/plans/scratch-archive/idle-floor/`.
 
 use turbojet::atmosphere::standard;
 use turbojet::bleed_transient::{build_scheduled_bleed, LeverArm};
 use turbojet::customer_bleed::{CustomerBleed, CustomerBleedMatcher};
 use turbojet::engine::FlightCondition;
+use turbojet::sandbox::call;
 use turbojet::sandbox_blades::{lever_words, BladeSettings};
-use turbojet::sandbox_controls::{build, control_maps, ControlsSettings, LeverChoice, CONTROL_SHAPES};
+use turbojet::sandbox_controls::{build, control_maps, controls, controls_json, ControlsSettings, LeverChoice, CONTROL_SHAPES};
 use turbojet::stator_transient::{ScheduledStatorCore, ScheduledStatorTransient};
 use turbojet::steady_unchoked::below_idle_choked;
+use turbojet::two_spool::IdleRule;
+use turbojet::two_spool_transient::TwoSpoolTransientCore;
+use turbojet::visuals::Json;
 
 fn plain(shape: &str) -> ScheduledStatorCore {
     let bs = BladeSettings::defaults();
@@ -42,29 +43,55 @@ fn fast() -> FlightCondition {
     FlightCondition::new(t, p, 2.6)
 }
 
-/// Off (the default) the full-speed start's below-idle root is returned, as it was; on, it is refused in words —
-/// and above idle the floor changes nothing, bit for bit.
-#[test]
-fn the_equilibrium_refuses_a_full_speed_root_below_idle_only_with_the_floor_on() {
-    let c = plain("flat-lp");
-    let eq = &c.fuel.inner;
-    assert!(!eq.inner.base.idle_floor.get(), "the floor is off in the old code");
-    let (i, _, _) = eq.try_equilibrium(&fast(), 800.0, None).expect("off: the full-speed start returns the point");
-    assert!(i.sp_thrust < 0.0, "the case must be below idle, or this test is vacuous: {}", i.sp_thrust);
-    let above = eq.try_equilibrium(&fast(), 1000.0, None).unwrap().0;
-    assert!(above.sp_thrust > 0.0);
-    eq.inner.base.idle_floor.set(true);
-    let e = eq.try_equilibrium(&fast(), 800.0, None).expect_err("on: refused");
-    assert!(e.0.starts_with("rung-40 equilibrium below idle at Tt4=800: the one root"), "{}", e.0);
-    assert!(e.0.contains("more drag than thrust"), "{}", e.0);
-    let on = eq.try_equilibrium(&fast(), 1000.0, None).unwrap().0;
-    assert_eq!((on.nu_lp.to_bits(), on.nu_hp.to_bits(), on.sp_thrust.to_bits()),
-               (above.nu_lp.to_bits(), above.nu_hp.to_bits(), above.sp_thrust.to_bits()));
+fn bits(i: &turbojet::two_spool_transient::Instant2) -> [u64; 3] {
+    [i.nu_lp.to_bits(), i.nu_hp.to_bits(), i.sp_thrust.to_bits()]
 }
 
-/// The refused root is the only one: no start over both shafts finds a running root at the same throttle.
+/// A root the FULL-SPEED start finds below idle: returned at `Old` and `Accept` (the same bits), refused in words at
+/// `Refuse`; above idle every rule is the same bits.
 #[test]
-fn a_refused_root_is_the_only_root_at_its_throttle() {
+fn a_full_speed_root_below_idle_is_refused_only_under_refuse() {
+    let c = plain("flat-lp");
+    let eq = &c.fuel.inner;
+    assert_eq!(eq.inner.base.idle_rule.get(), IdleRule::Old, "the old code's rule is the default");
+    let (old, _, _) = eq.try_equilibrium(&fast(), 800.0, None).expect("Old: the full-speed start returns the point");
+    assert!(old.sp_thrust < 0.0, "the case must be below idle, or this test is vacuous: {}", old.sp_thrust);
+    let above = eq.try_equilibrium(&fast(), 1000.0, None).unwrap().0;
+    assert!(above.sp_thrust > 0.0);
+    eq.inner.base.idle_rule.set(IdleRule::Accept);
+    assert_eq!(bits(&eq.try_equilibrium(&fast(), 800.0, None).unwrap().0), bits(&old));
+    assert_eq!(bits(&eq.try_equilibrium(&fast(), 1000.0, None).unwrap().0), bits(&above));
+    eq.inner.base.idle_rule.set(IdleRule::Refuse);
+    let e = eq.try_equilibrium(&fast(), 800.0, None).expect_err("Refuse: refused");
+    assert!(e.0.starts_with("rung-40 equilibrium below idle at Tt4=800: the one root"), "{}", e.0);
+    assert!(e.0.contains("more drag than thrust"), "{}", e.0);
+    assert_eq!(bits(&eq.try_equilibrium(&fast(), 1000.0, None).unwrap().0), bits(&above));
+}
+
+/// A root only the LOW start finds, below idle (§ 37's cell: 470 K at the design flight on flat-LP): refused at
+/// `Old` and `Refuse`; kept at `Accept` — the root an explicit low start lands on, bit for bit.
+#[test]
+fn a_low_start_root_below_idle_is_kept_only_under_accept() {
+    let c = plain("flat-lp");
+    let eq = &c.fuel.inner;
+    let fl = BladeSettings::defaults().flight();
+    assert!(eq.try_equilibrium(&fl, 470.0, Some((1.0, 1.0))).is_err(), "the full-speed start must fail, or vacuous");
+    let low = TwoSpoolTransientCore::LOW_STARTS.iter().find_map(|&s| eq.try_equilibrium(&fl, 470.0, Some((s, s))).ok())
+        .expect("a low start finds the root").0;
+    assert!(low.sp_thrust < 0.0, "must be below idle, or vacuous: {}", low.sp_thrust);
+    for rule in [IdleRule::Old, IdleRule::Refuse] {
+        eq.inner.base.idle_rule.set(rule);
+        let e = eq.try_equilibrium(&fl, 470.0, None).expect_err("refused");
+        assert!(e.0.contains("; and below idle at Tt4=470"), "{rule:?}: {}", e.0);
+    }
+    eq.inner.base.idle_rule.set(IdleRule::Accept);
+    let i = eq.try_equilibrium(&fl, 470.0, None).expect("Accept keeps it").0;
+    assert_eq!(bits(&i), bits(&low), "the first low start that solves gives the root");
+}
+
+/// The refused (or kept) root is the only one: no start over both shafts finds a running root at the same throttle.
+#[test]
+fn a_below_idle_root_is_the_only_root_at_its_throttle() {
     let (t_sl, p_sl) = standard(0.0);
     let cases = [("flat-lp", fast(), 760.0), ("press/flow", FlightCondition::new(t_sl - 30.0, p_sl, 2.6), 900.0),
                  ("tilted", FlightCondition::new(t_sl + 40.0, p_sl, 2.0), 820.0)];
@@ -88,10 +115,10 @@ fn a_refused_root_is_the_only_root_at_its_throttle() {
     }
 }
 
-/// A steady matcher's CHOKED point below idle (the customer-bleed engine at 11 km, Mach 1.6, 510 K: −6.9 N) —
-/// rung 103's branch never judges it; the floor refuses it in the same lead words, without "unchoked".
+/// A steady matcher's CHOKED point below idle (the customer-bleed engine at 11 km, Mach 1.6, 510 K: −6.9 N) — rung
+/// 103's branch never judges it; `Refuse` refuses it in the same lead words, without "unchoked"; `Accept` is `Old`.
 #[test]
-fn a_steady_matcher_refuses_a_choked_point_below_idle_with_the_floor_on() {
+fn a_steady_matcher_refuses_a_choked_point_below_idle_only_under_refuse() {
     let bs = BladeSettings::defaults();
     let (ml, mh) = control_maps("flat-lp").unwrap();
     let (t, p) = standard(11_000.0);
@@ -102,30 +129,42 @@ fn a_steady_matcher_refuses_a_choked_point_below_idle_with_the_floor_on() {
     let r = m.try_match_point(&fl, 510.0).expect("rung 103's switch alone accepts the choked point");
     assert!(r.base.base.thrust < 0.0, "must be below idle, or vacuous: {}", r.base.base.thrust);
     let above = m.try_match_point(&fl, 700.0).unwrap();
-    m.core.base.idle_floor.set(true);
-    let e = m.try_match_point(&fl, 510.0).expect_err("the floor refuses it");
+    m.core.base.idle_rule.set(IdleRule::Accept);
+    assert_eq!(m.try_match_point(&fl, 510.0).unwrap().base.base.thrust.to_bits(), r.base.base.thrust.to_bits());
+    m.core.base.idle_rule.set(IdleRule::Refuse);
+    let e = m.try_match_point(&fl, 510.0).expect_err("Refuse refuses it");
     assert!(e.0.starts_with("rung-103: below idle at Tt4=510"), "{}", e.0);
     assert!(!e.0.contains("unchoked"), "{}", e.0);
     let on = m.try_match_point(&fl, 700.0).unwrap();
     assert_eq!(on.base.base.thrust.to_bits(), above.base.base.thrust.to_bits(), "above idle: bit for bit");
 }
 
-/// The pages hold the floor. Controls: Mach 2.6 at the design altitude starts at 960 K, not 800–820 K as before
-/// (those starts were below idle); the bleed lever on a standard sea-level day at 600 K, not 560 K. Blades words a
-/// choked refusal without claiming the nozzle unchoked.
+/// The Controls page keeps a below-idle end and warns (its reply carries the thrust per kg/s of inlet air, only then);
+/// its hidden `idle: "refuse"` refuses it. Blades words a choked refusal without claiming the nozzle unchoked.
 #[test]
-fn the_pages_hold_the_floor() {
+fn the_controls_page_warns_and_blades_refuses() {
     let d = ControlsSettings::defaults();
     let k = CONTROL_SHAPES.iter().position(|&s| s == "flat-lp").unwrap();
-    let m26 = ControlsSettings { shape: k, m0: 2.6, ..d };
-    let e = build(&ControlsSettings { from: 820.0, ..m26 }).err().expect("820 K at Mach 2.6 is below idle");
-    assert!(e.0.contains("the engine is below idle") && e.0.contains("rung-40 equilibrium below idle"), "{}", e.0);
-    assert!(build(&ControlsSettings { from: 960.0, ..m26 }).is_ok());
+    let m26 = ControlsSettings { shape: k, m0: 2.6, from: 820.0, ..d };
     let (t_sl, p_sl) = standard(0.0);
-    let sl = ControlsSettings { shape: k, lever: LeverChoice::Bleed, t0: t_sl, p0: p_sl, ..d };
-    let e = build(&ControlsSettings { from: 560.0, ..sl }).err().expect("560 K with the bleed lever is below idle");
-    assert!(e.0.contains("the engine is below idle"), "{}", e.0);
-    assert!(build(&ControlsSettings { from: 600.0, ..sl }).is_ok());
+    let sl = ControlsSettings { shape: k, lever: LeverChoice::Bleed, t0: t_sl, p0: p_sl, from: 560.0, ..d };
+    // 540 K on a standard sea-level day: a root only the LOW start finds (§ 37), below idle.
+    let low540 = ControlsSettings { shape: k, t0: t_sl, p0: p_sl, from: 540.0, ..d };
+    for s in [m26, sl, low540] {
+        let (sv, o) = controls(&s).unwrap_or_else(|e| panic!("{} K at Mach {}: {}", s.from, s.m0, e.0));
+        assert_eq!(o.points.len(), s.expected_points(), "{} K at Mach {}: the march stopped early", s.from, s.m0);
+        let j = Json::parse(&controls_json(&sv, &o).dump_compact());
+        let start = j.get("start").unwrap();
+        let w = match start.get("below_idle") { Some(Json::Float(x)) => *x, other => panic!("no warning: {other:?}") };
+        let sp = sv.start.sp_thrust_inlet.unwrap_or(sv.start.sp_thrust);
+        assert!(w < 0.0 && w.to_bits() == sp.to_bits(), "the warning carries the rule's own number: {w} vs {sp}");
+        assert!(j.get("end").unwrap().get("below_idle").is_none(), "an end above idle carries no warning");
+        let e = build(&ControlsSettings { idle: IdleRule::Refuse, ..s }).err().expect("refuse: refused");
+        assert!(e.0.contains("the engine is below idle"), "{}", e.0);
+    }
+    // Above idle the reply has no such key.
+    let j = Json::parse(&call(r#"{"op":"controls","controls":{"M0":2.6,"from":960}}"#));
+    assert!(j.get("start").unwrap().get("below_idle").is_none());
     let w = lever_words(&below_idle_choked(600.0, -3.0).0);
     assert!(w.contains("more drag than thrust") && !w.contains("no longer choked"), "{w}");
 }

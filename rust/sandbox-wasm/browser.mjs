@@ -738,7 +738,17 @@ try {
   check('an_unchoked_stretch_is_drawn_dashed_and_counted', uOn && !uc && ur[0] === 9 && ur[1] === 0 && ur[2] >= 1 && ur[3] && ur[4],
         (uc || '') + JSON.stringify(ur));
   if (process.env.SANDBOX_SHOTS) await shot('controls-unchoked');
-  await ev(`window.sandbox.controls({T0: 250, p0: 50000, M0: 0.85, from: 1000}).then(r => r.run)`);
+  // Plan § 39: a start below idle (Mach 2.6 at the design altitude, 820 K) runs, and the page says so, with the model's
+  // thrust per kg/s of inlet air; above idle (960 K) the note is gone.
+  const shape0 = await ev('window.sandbox.last.controls.shape');
+  const bi = await ev(`window.sandbox.controls({T0: 250, p0: 50000, M0: 2.6, from: 820, shape: 'flat-lp'}).then(r => r.run)`);
+  const biNote = await ev(`[...document.querySelectorAll('#ctl-stops .idle-note')].map(n => n.textContent)`);
+  const above = await ev(`window.sandbox.controls({from: 960}).then(r => [r.run.start.below_idle, document.querySelectorAll('#ctl-stops .idle-note').length])`);
+  check('a_start_below_idle_runs_and_the_page_warns', bi && !bi.stop && bi.s.length === bi.expected_points && bi.start.below_idle < 0
+        && biNote.length === 1 && /^The starting point gives more drag than thrust: [−-]?[0-9.,]+ N per kg\/s/.test(biNote[0])
+        && above[0] == null && above[1] === 0, JSON.stringify([bi && bi.stop, bi && bi.start.below_idle, biNote, above]));
+  if (process.env.SANDBOX_SHOTS) { await ev(`window.sandbox.controls({from: 820})`); await shot('controls-below-idle'); }
+  await ev(`window.sandbox.controls({T0: 250, p0: 50000, M0: 0.85, from: 1000, shape: ${JSON.stringify(shape0)}}).then(r => r.run)`);
   if (process.env.SANDBOX_SHOTS) {
     await ev(`window.sandbox.controls({settle: 2, ramp: 0.5, lever: 'bleed'})`);
     await shot('controls-light'); await shot('controls-dark', 1280, true); await shot('controls-phone', 390);

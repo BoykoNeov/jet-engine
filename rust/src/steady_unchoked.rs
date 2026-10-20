@@ -22,9 +22,9 @@
 //! # Below idle
 //!
 //! Inside the branch a point whose core specific thrust or net thrust is not positive is refused in words (rung 33's
-//! precedent) — before the shared scoring, which cannot take a negative thrust. With [`TwoSpoolCore::idle_floor`] on
-//! (sandbox plan § 38 — off in the old code, on in the pages) a CHOKED point with no positive net thrust is refused
-//! too, so the pages hold one below-idle rule.
+//! precedent) — before the shared scoring, which cannot take a negative thrust. With [`TwoSpoolCore::idle_rule`] at
+//! `Refuse` (sandbox plan § 38 — the Blades and Cooling views) a CHOKED point with no positive net thrust is refused
+//! too, so those views hold one below-idle rule.
 
 use crate::gas::{Abort, Gas};
 use crate::two_spool::TwoSpoolCore;
@@ -93,12 +93,12 @@ pub fn refuse_unchoked(core: &TwoSpoolCore, tt4: f64, sp_core: f64) -> Result<bo
 pub fn dispatch<T>(
     core: &TwoSpoolCore, p0: f64, tt4: f64, body: impl Fn() -> Result<T, Abort>, thrust: impl Fn(&T) -> f64,
 ) -> Result<T, Abort> {
-    // Plan § 38: with the below-idle floor on, the OUTER call refuses any point it returns with no positive net
+    // Plan § 38: with the below-idle rule at `Refuse`, the OUTER call refuses any point it returns with no positive net
     // thrust — the choked ones the branch below never judges. A nested call (inside a pinned body, or inside the
     // re-solve) is left to its caller, which judges the whole engine's thrust.
     let outer = !core.dispatching.get() && core.steady_lp.get() == SteadyLp::Pin;
     let x = dispatch_free(core, p0, tt4, body, &thrust)?;
-    if outer && core.idle_floor.get() {
+    if outer && core.idle_rule.get() == crate::two_spool::IdleRule::Refuse {
         let t = thrust(&x);
         if !(t > 0.0) {
             return Err(below_idle_choked(tt4, t));

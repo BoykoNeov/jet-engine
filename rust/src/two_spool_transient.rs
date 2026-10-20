@@ -79,7 +79,7 @@ use crate::gas::{powp, Abort, FlowState, Gas};
 use crate::map::ComponentMap;
 use crate::matcher::Branch;
 use crate::spool::{try_illinois, SpoolTransient, ILLINOIS_MAXIT};
-use crate::two_spool::{Spool, TwoSpoolEngine, TwoSpoolMapCore, TwoSpoolMapResult};
+use crate::two_spool::{IdleRule, Spool, TwoSpoolEngine, TwoSpoolMapCore, TwoSpoolMapResult};
 
 // ---------------------------------------------------------------------------------------------
 // Counters — every DEAD arm this slice ships is gated against ZERO rather than left absent
@@ -1508,7 +1508,9 @@ impl TwoSpoolTransientCore {
                 // a below-idle root here is the answer from all of them: stop. Judged on the thrust
                 // the steady matchers judge it on (rung 103): per INLET air where air is bled off.
                 let sp = r.0.sp_thrust_inlet.unwrap_or(r.0.sp_thrust);
-                if sp > 0.0 {
+                // Plan § 39: under `Accept` (the Controls view) the root is kept below idle too — whether a
+                // below-idle point runs must not depend on which start found it.
+                if sp > 0.0 || self.inner.base.idle_rule.get() == IdleRule::Accept {
                     LOW_START_RESCUES.with(|x| x.set(x.get() + 1));
                     return Ok(r);
                 }
@@ -1521,15 +1523,15 @@ impl TwoSpoolTransientCore {
         first
     }
 
-    /// THE BELOW-IDLE FLOOR (sandbox plan § 38): with `idle_floor` on, a root the first Newton found with no
+    /// THE BELOW-IDLE FLOOR (sandbox plan § 38): with `idle_rule` at `Refuse`, a root the first Newton found with no
     /// positive thrust per inlet air is refused, as the low start's are — the one root at its throttle (no second
     /// root from 48 starts at any of 1 022 such points — bare, bled and cooled engines, four maps, 34 flights,
-    /// measured). Off, the result as it was.
+    /// measured). Otherwise, the result as it was.
     fn idle_floored(
         &self, r: Result<(Instant2, EqExit, usize), Abort>, tt4: f64,
     ) -> Result<(Instant2, EqExit, usize), Abort> {
         match r {
-            Ok(x) if self.inner.base.idle_floor.get() => {
+            Ok(x) if self.inner.base.idle_rule.get() == IdleRule::Refuse => {
                 let sp = x.0.sp_thrust_inlet.unwrap_or(x.0.sp_thrust);
                 if sp > 0.0 {
                     Ok(x)

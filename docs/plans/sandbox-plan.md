@@ -2022,7 +2022,7 @@ with more drag than thrust, with a warning" (a bigger job: the shared scoring is
     (94 old below-idle ones in the new floors sentence; the rest now refused below idle, or at another end, first);
     nothing refused began to run; no panic. So **at high Mach the page refuses much more than
     before** — runs that started or ended far below idle.
-- **The page's lowest start, re-measured** (10 K steps): plain engine 480 K at the design flight, 580 K at Mach 1.6,
+- **The page's lowest start, re-measured** (10 K steps; the start BUILDS — the whole slam finishes higher, § 39): plain engine 480 K at the design flight, 580 K at Mach 1.6,
   690 K at Mach 2 (unchanged), **960 K at Mach 2.6** (was 800–820 K, below idle), 550–560 K on a standard sea-level
   day, 630 K at +40 K (was 610–620). The bleed lever adds 40–120 K, and at Mach 2.6 it is still below idle at
   1 100 K (−19.6 N per kg/s); a 5 % customer bleed adds 30–90 K; cooling 0–10 K. The stator lever is the plain
@@ -2046,3 +2046,48 @@ with more drag than thrust, with a warning" (a bigger job: the shared scoring is
 - **The census:** the whole gate — no Python-held key moved; after the hidden setting 2920 passed, 2 failed: the
   browser check's two "a knob move stops a running sweep" races (the sweep finished before the move), which passed
   in the first gate and in two solo re-runs of the browser check — load, not the floor.
+
+## 39. The Controls view warns below idle (2026-10-20) — a page rule, not a slice, not a rung
+
+A side agent's heads-up on § 38 (the Controls page refused much more at high speed — the bleed lever at Mach 2.6
+nothing up to 1 100 K); asked in plain terms, the user chose: **the Controls view keeps a point below idle and warns;
+Blades and Cooling keep refusing** (their shared scoring cannot take a negative thrust). A below-idle point is a real
+state (the shafts hold a steady speed; the drag of the air swallowed is larger than the jet's push).
+- **The rule, three-way:** `TwoSpoolCore::idle_rule: IdleRule` — `Old` (default: the old code, § 37), `Refuse` (§ 38,
+  Blades/Cooling via `for_pages`), `Accept` (Controls): rung 40's equilibrium keeps a below-idle root from EITHER start
+  (§ 37's low start kept it out — otherwise whether a point runs would depend on the start; both root sets are measured
+  unique). The steady matchers read `Accept` as `Old`; the Controls generator check is back to its pre-§ 38 setup. The
+  view's hidden setting `idle`: `warn` (default) / `refuse` / `old` (rungs 98/99's tests).
+- **The warning:** a steady end below idle carries `below_idle` (thrust per kg/s of INLET air — the rule's own number;
+  absent otherwise, so every other reply is unchanged) and the page writes a note above the table. Its displayed thrust
+  never shows the other sign: 1 210 below-idle starts over six variants (bleed lever, customer share and amount,
+  cooling, both), 0 disagree.
+- **The tables:** design-flight tables now hold rows below idle where § 37 had none — 642 tables a governed run reads
+  (Mach 1.6–3.3), 330 with such rows, every one still one-way (thrust, pressure ratio, fan speed all rising), so each
+  reading has one thrust. Rung 98's reach moves: Mach 3 at sea level now runs (from 120–168 N per kg/s below idle).
+  The browser-vs-native check's gap bar gains a relative arm (1e-12 of the value): that cell's ram part is −4 441 N per
+  kg/s, where 2.0e-9 is rounding.
+- **A stop the page could not name — FOUND (the side agent's second note):** the page's quoted "lowest start" floors
+  (§§ 37–38) were measured by BUILDING the run (its two steady ends), not by running it. The slam's own fuel closure
+  fails at low shaft speeds — 1 854 of the slams between the two floors stop, 1 691 at their first step — so the
+  lowest start whose WHOLE default slam finishes is: design flight 530–570 K (builds from 400 K, above idle from
+  480 K), Mach 1.6 570–590 K, Mach 2 640–670 K, Mach 2.6 780–800 K, standard sea level 510–520 K, +40 K 550–570 K
+  (every variant within these). Such a stop said only "an internal check"; it is now its own kind, `low_speed`, with
+  plain words — the closure found no burner state between the walls (lean and rich are named only within 2× of their
+  walls; the crash map's sit at 0.71–1.05). **The march's low-speed closure itself is OPEN** — the next repair offered.
+- **What moved** (both crash maps, against `6e49d33` — before § 38 — and `1f57583` — § 38):
+  - against `6e49d33`, rung 101's map (seed 99, 1 500): 118 requests, every one a refusal before — 27 now run to the
+    end with the warning, 63 run and stop early (23 at a fuel closure — now `low_speed` —, 5 cause-unknown on the
+    lag route, 3 at the acceleration schedule's set point — still "other" —, the rest lean cuts toward a
+    below-idle end and floor stops), the rest refused for another reason; no run moved; no panic. The HP-wall map
+    (seed 36, 1 200): 24 runs differ only by the new `below_idle` key (they started below idle already); 7 refusals
+    run, 6 run and stop, 1 reworded (the customer-bleed sentence, § 38).
+  - against `1f57583`: the floor's refusals run again — rung 101's map 172 to the end, 89 stopped early; seed 36's
+    24 to the end, 13 stopped.
+- **The gate:** `tests/idle_floor.rs` — a full-speed root below idle (kept at `Old`/`Accept`, bit for bit; refused at
+  `Refuse`); a low-start root below idle (§ 37's 470 K cell: refused at `Old`/`Refuse`, kept at `Accept` = the first
+  low start that solves, bit for bit); uniqueness; the steady matcher (`Accept` is `Old`); the Controls page warns
+  (Mach 2.6 820 K, the bleed lever at sea level 560 K, a low-start root at sea level 540 K — each marches to the end,
+  its warning the rule's number; `refuse` refuses each). `browser.mjs`: the note appears below idle and is gone at
+  960 K. `sandbox_controls.rs`: the `low_speed` stop driven (480 K at the design flight).
+- Probes archived: `docs/plans/scratch-archive/idle-warn/`.

@@ -10,6 +10,7 @@ use turbojet::burner_hold::Hold;
 use turbojet::corrected_tables::TableAt;
 use turbojet::fuel_transient::FuelPoint;
 use turbojet::mach_axis::SpeedCorr;
+use turbojet::two_spool::IdleRule;
 use turbojet::sandbox_controls::{build, controls, ControlsSettings, CustomerMode, GeneratorBy, GeneratorMode, Holder,
                                  LeverChoice, SpeedLaw, ThrustBy};
 
@@ -193,13 +194,14 @@ fn with_the_clean_table_and_a_generator_the_targets_are_rung96s_and_rung94s_root
 #[test]
 fn a_flight_beyond_the_design_tables_reach_is_refused_in_words() {
     // Anchor G4: at Mach 3 at sea level the default move translates to ~360–500 K at the design flight.
-    // With the below-idle floor off (sandbox plan § 38): this cell's 1000 K start is below idle at Mach 3.
-    let s = ControlsSettings { speed_corr: SpeedCorr::None, idle_floor: false, ..gov(ThrustBy::Epr) };
+    // Anchored with the below-idle rule at `Old` (sandbox plan §§ 38–39): this cell's 1000 K start is below idle.
+    let s = ControlsSettings { speed_corr: SpeedCorr::None, idle: IdleRule::Old, ..gov(ThrustBy::Epr) };
     let e = build(&at(s, 288.15, 101_325.0, 3.0)).err().expect("refused");
     assert!(e.0.contains("made at the design flight") && e.0.contains("Make the tables at this flight"), "{}", e.0);
-    // The live page (the floor on) refuses it first for that reason.
-    let e = build(&at(ControlsSettings { idle_floor: true, ..s }, 288.15, 101_325.0, 3.0)).err().expect("refused");
-    assert!(e.0.contains("At the starting throttle (1000 K)") && e.0.contains("the engine is below idle"), "{}", e.0);
+    // The live page (`Accept`, plan § 39) keeps that start below idle and runs the whole move: the tables reach it now.
+    let s = at(ControlsSettings { idle: IdleRule::Accept, ..s }, 288.15, 101_325.0, 3.0);
+    let (sv, o) = controls(&s).expect("the live page runs it");
+    assert!(sv.start.sp_thrust < 0.0 && o.points.len() == s.expected_points());
 }
 
 // =============================================================================================

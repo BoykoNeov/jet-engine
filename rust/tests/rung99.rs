@@ -13,15 +13,16 @@ use turbojet::inferred_thrust::Reading;
 use turbojet::mach_axis::{self as ma, SpeedCorr, Tables};
 use turbojet::matcher::Branch;
 use turbojet::sandbox_controls::{build, controls, ControlsSettings, CustomerMode, Holder, LeverChoice, SpeedLaw, ThrustBy};
+use turbojet::two_spool::IdleRule;
 
 const FLOW_PRESS: usize = 0;
 const FLAT_LP: usize = 3;
 
 /// Rung 99 as it shipped: rung 100's two reduce settings (its grid without the slow slices, its formula column), and
-/// the below-idle floor off (sandbox plan § 38: its anchored cells include engines below idle — the Mach-3 slice from
-/// 1000 K among them — which the page now refuses).
+/// the below-idle rule at `Old` (sandbox plan §§ 38–39: its anchored cells include engines below idle — the Mach-3 slice
+/// from 1000 K among them — read as they were before the page's rule).
 fn r99() -> ControlsSettings {
-    ControlsSettings { low_grid: false, formula_choked: true, idle_floor: false, ..ControlsSettings::defaults() }
+    ControlsSettings { low_grid: false, formula_choked: true, idle: IdleRule::Old, ..ControlsSettings::defaults() }
 }
 fn gov(by: ThrustBy) -> ControlsSettings {
     ControlsSettings { govern: true, hold: Hold::Thrust, thrust_by: by, ..r99() }
@@ -257,11 +258,11 @@ fn a_flight_beyond_the_grids_reach_is_refused_in_words() {
     let e = build(&at(gov(ThrustBy::Epr), 288.15, 101_325.0, 3.0)).err().expect("refused");
     assert!(e.0.contains("made at Mach 3 in the design altitude's air") && e.0.contains("Make the tables at this flight"),
             "{}", e.0);
-    // Sandbox plan § 38: the live page (the floor on) refuses that flight first for its own reason — the 1000 K start
-    // there is below idle.
-    let e = build(&at(ControlsSettings { idle_floor: true, ..gov(ThrustBy::Epr) }, 288.15, 101_325.0, 3.0))
-        .err().expect("refused");
-    assert!(e.0.contains("At the starting throttle (1000 K)") && e.0.contains("the engine is below idle"), "{}", e.0);
+    // Sandbox plan §§ 38–39: anchored with the below-idle rule at `Old` (§ 37's); the live page (`Accept`) keeps the
+    // below-idle 1000 K start there, and the tables reach it: the whole move runs.
+    let s = at(ControlsSettings { idle: IdleRule::Accept, ..gov(ThrustBy::Epr) }, 288.15, 101_325.0, 3.0);
+    let (sv, o) = controls(&s).expect("the live page runs it");
+    assert!(sv.start.sp_thrust < 0.0 && o.points.len() == s.expected_points());
 }
 
 // =============================================================================================

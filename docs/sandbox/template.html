@@ -2177,6 +2177,15 @@ function ctlTable() {
     if (r.stop.message) { const c = document.createElement("code"); c.textContent = "Model message: " + r.stop.message; d.appendChild(c); }
     notes.appendChild(d);
   }
+  // Plan § 39: an end below idle runs, and says so (the model's number is thrust per kg/s of the air taken in).
+  for (const [end, which] of [[r && r.start, "starting"], [r && r.end, "final"]]) {
+    if (!end || end.below_idle === undefined) continue;
+    const d = document.createElement("div"); d.className = "note idle-note";
+    d.textContent = `The ${which} point gives more drag than thrust: ${fmt(end.below_idle, 3)} N per kg/s of the air the engine takes in. ` +
+      `Its shafts hold a steady speed there, but the drag of the air it swallows is larger than its jet's push; the model keeps ` +
+      `the point as it is. Raise the throttle for a point that gives thrust.`;
+    notes.appendChild(d);
+  }
   if (r && r.s.length && Math.max(r.settled_lp, r.settled_hp) > 0.005 && !r.stop) {
     const d = document.createElement("div"); d.className = "note";
     // Plan § 27: in thin air the shafts are slow too, on the design flight's clock.

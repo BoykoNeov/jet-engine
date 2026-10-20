@@ -191,6 +191,7 @@ bracket failed, solves every such point at the steady matcher's speeds (≤ 6e-1
 day, M 0.85, barely above idle) whose full-speed START has no closure root — **REPAIRED 2026-10-19** too (sandbox plan
 § 37, `tests/low_start_repair.rs`): where full speed refuses, the Newton re-starts lower and keeps the root only if it
 runs. Rung 97 § 3's "no steady point" is corrected in place. **Not one rule yet** (the user's choice, § 37): the
-full-speed start still returns choked below-idle points, as this rung's matchers do. **One rule in the pages since
-§ 38** (2026-10-19): `TwoSpoolCore::idle_floor`, off in the old code, refuses those too — this rung's switch alone
-still accepts a choked point below idle.
+full-speed start still returns choked below-idle points, as this rung's matchers do. **A rule per page since
+§§ 38–39** (2026-10-19/20): `TwoSpoolCore::idle_rule`, `Old` in the old code — Blades and Cooling refuse those too,
+the Controls view keeps them from either start and warns; this rung's switch alone still accepts a choked point below
+idle.

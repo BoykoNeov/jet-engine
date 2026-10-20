@@ -43,7 +43,7 @@ use crate::gas::{Abort, FlowState, Gas};
 use crate::map::ComponentMap;
 use crate::turbine_cooling::{is_perfect_gas, mix, mixed_tt, try_score_nozzle, CooledResult, TurbineCooling,
                              TurbineCoolingMatcher};
-use crate::two_spool::{build_two_spool_turbojet, TwoSpoolEngine, TwoSpoolLosses};
+use crate::two_spool::{build_two_spool_turbojet, IdleRule, TwoSpoolEngine, TwoSpoolLosses};
 
 // =========================================================================================
 // GAUNTNER'S CONSTANTS
@@ -354,7 +354,7 @@ impl FixedEngine {
         let m = TurbineCoolingMatcher::new(self.design.clone().with_turbine_cooling(cool), self.flight_design,
                                            self.mdot_design, self.map_lp, self.map_hp, 0.0);
         m.core.base.below_choke.set(self.below_choke);
-        m.core.base.idle_floor.set(self.idle_floor);
+        m.core.base.idle_rule.set(if self.idle_floor { IdleRule::Refuse } else { IdleRule::Old });
         m
     }
 

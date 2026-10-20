@@ -24,7 +24,7 @@ use turbojet::shaft_offtake::{Demand, ShaftOfftake};
 use turbojet::sandbox_controls::*;
 use turbojet::stator_transient::{IncidenceLimiter, ScheduledStatorCore, ScheduledStatorTransient, StatorArm,
                                  StatorSchedule};
-use turbojet::two_spool::{build_two_spool_turbojet, Spool, TwoSpoolLosses};
+use turbojet::two_spool::{build_two_spool_turbojet, IdleRule, Spool, TwoSpoolLosses};
 use turbojet::visuals::Json;
 
 fn flight() -> FlightCondition { FlightCondition::new(250.0, 50_000.0, 0.85) }
@@ -427,7 +427,15 @@ fn every_kind_of_stop_the_crash_map_found_is_driven_and_worded() {
     assert_eq!(sv.route(), Route::GovLag);
     assert_eq!(stop_kind(&sv, &o), StopKind::Unknown);
     // Every kind has words, and a stop's words reach the page.
-    for k in [StopKind::FloorUnreachable, StopKind::Lean, StopKind::Rich, StopKind::Unknown,
+    // Plan § 39: a slam from a low throttle whose fuel closure finds no burner state at all — here at the design
+    // flight from 480 K (just above idle), at its first step — is named for that, not "an internal check".
+    let flat = CONTROL_SHAPES.iter().position(|&k| k == "flat-lp").unwrap();
+    let (sv, o) = controls(&ControlsSettings { shape: flat, from: 480.0, ..ControlsSettings::defaults() }).unwrap();
+    assert!(o.points.len() <= 1, "the slam stops at once ({} points)", o.points.len());
+    assert_eq!(stop_kind(&sv, &o), StopKind::LowSpeed, "{:?}", o.stop);
+    let st = controls_json(&sv, &o);
+    assert!(matches!(st.get("stop").unwrap().get("words"), Some(Json::Str(w)) if w == StopKind::LowSpeed.words()));
+    for k in [StopKind::FloorUnreachable, StopKind::Lean, StopKind::Rich, StopKind::Unknown, StopKind::LowSpeed,
               StopKind::Other] {
         assert!(k.words().len() > 40, "{k:?}");
     }
@@ -442,13 +450,18 @@ fn every_kind_of_stop_the_crash_map_found_is_driven_and_worded() {
 fn an_endpoint_without_a_steady_point_is_refused_in_words() {
     let d = ControlsSettings::defaults();
     let flat = CONTROL_SHAPES.iter().position(|&k| k == "flat-lp").unwrap();
-    // 470 K: below idle at the design flight (480 K is the first that runs, on every map, since the
+    // 470 K: below idle at the design flight (480 K is the first above it, on every map, since the
     // low-start repair, plan § 37 — 520 K after the HP-wall repair, 650 K before it, both wrongly).
-    let m = build(&ControlsSettings { shape: flat, from: 470.0, ..d }).err().expect("refused").0;
+    // The page's below-idle words, under its hidden `refuse` rule (plan § 38)…
+    let refuse = ControlsSettings { idle: IdleRule::Refuse, ..d };
+    let m = build(&ControlsSettings { shape: flat, from: 470.0, ..refuse }).err().expect("refused").0;
     assert!(m.starts_with("At the starting throttle (470 K)") && m.contains("more drag than thrust"), "{m}");
     assert!(!m.contains("off the part of their maps"), "{m}");
-    let m = build(&ControlsSettings { shape: flat, to: 470.0, ..d }).err().expect("refused").0;
+    let m = build(&ControlsSettings { shape: flat, to: 470.0, ..refuse }).err().expect("refused").0;
     assert!(m.starts_with("At the final throttle (470 K)") && m.contains("below idle"), "{m}");
+    // …while the live page (plan § 39) keeps that start and warns.
+    let sv = build(&ControlsSettings { shape: flat, from: 470.0, ..d }).expect("the live page keeps it");
+    assert!(sv.start.sp_thrust < 0.0);
     // The steady search does not settle: a lever and a generator load in other air (crash map seed 36,
     // request 7 — still refused after the low start, plan § 37). The two lever cases this test held
     // here before (a schedule doing all its travel just below design speed, and an acceleration
@@ -461,7 +474,7 @@ fn an_endpoint_without_a_steady_point_is_refused_in_words() {
     assert!(m.contains("does not settle"), "{m}");
     // ...and an acceleration schedule whose band has a throttle with no steady point is refused, not
     // crashed (plan § 12.10): its lowest row below idle.
-    let sv = build(&ControlsSettings { shape: flat, ..d }).expect("the defaults run");
+    let sv = build(&ControlsSettings { shape: flat, ..refuse }).expect("the defaults run");
     let m = accel_table(&sv.core, &sv.flight, 470.0, 1300.0, 0.11).err().expect("refused").0;
     assert!(m.contains("acceleration schedule") && m.contains("no steady point") && m.contains("below idle"), "{m}");
 }
@@ -548,8 +561,8 @@ fn settings_round_trip_and_the_entry_point_answers() {
                                speed_corr: turbojet::mach_axis::SpeedCorr::Formula,
                                // Rung 100's hidden reduce settings, off their defaults so the reply writes them.
                                low_grid: false, formula_choked: true,
-                               // The below-idle floor's (plan § 38), off likewise.
-                               idle_floor: false,
+                               // The below-idle rule (plans §§ 38–39), off its default likewise.
+                               idle: turbojet::two_spool::IdleRule::Refuse,
                                // Rung 101's three, off their defaults likewise.
                                airflow: turbojet::airflow_source::AirflowFrom::Exhaust, exhaust_lag: true,
                                exhaust_tau: 0.75,
@@ -561,7 +574,7 @@ fn settings_round_trip_and_the_entry_point_answers() {
     // At their defaults they are not written at all (every default reply keeps rung 99's shape), and read back.
     let d0 = ControlsSettings::defaults();
     let j0 = d0.to_json().dump_compact();
-    assert!(!j0.contains("low_grid") && !j0.contains("formula_choked") && !j0.contains("idle_floor"));
+    assert!(!j0.contains("low_grid") && !j0.contains("formula_choked") && !j0.contains("\"idle\""));
     assert!(!j0.contains("airflow") && !j0.contains("exhaust_lag") && !j0.contains("exhaust_tau"));
     assert!(!j0.contains("\"ab\"") && !j0.contains("Tt7") && !j0.contains("light_at") && !j0.contains("a8_"));
     assert_eq!(ControlsSettings::from_json(&Json::parse(&j0)).unwrap(), d0);
@@ -824,13 +837,15 @@ fn the_generator_load_reaches_the_model_and_its_refusals_are_words() {
     };
     assert!(e.0.contains("With the generator off this throttle does have a steady point"), "{}", e.0);
     // and a throttle with no steady point even unloaded is NOT blamed on the generator
-    // (500 K: 600 K was refused here before the HP-wall repair, 2026-10-19, and now runs)
+    // (500 K: 600 K was refused here before the HP-wall repair, 2026-10-19, and now runs; below idle there,
+    // so under the page's hidden `refuse` rule — the live page keeps it and warns, plan § 39)
+    let refuse = ControlsSettings { idle: IdleRule::Refuse, ..d };
     let e = match controls(&ControlsSettings { generator: GeneratorMode::Lp, generator_power: 0.005, from: 500.0,
-                                               shape: 3, lever: LeverChoice::Bleed, ..d }) {
+                                               shape: 3, lever: LeverChoice::Bleed, ..refuse }) {
         Err(e) => e,
         Ok(_) => panic!("500 K on the flat-LP map has no steady point even unloaded"),
     };
-    assert!(controls(&ControlsSettings { from: 500.0, shape: 3, lever: LeverChoice::Bleed, ..d }).is_err(),
+    assert!(controls(&ControlsSettings { from: 500.0, shape: 3, lever: LeverChoice::Bleed, ..refuse }).is_err(),
             "the unloaded engine must fail there too, or this check is vacuous");
     assert!(!e.0.contains("With the generator off"), "{}", e.0);
     let stop = Stop { s_last: 0.4, failure: Some(Failure {

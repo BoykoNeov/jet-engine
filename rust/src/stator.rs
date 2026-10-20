@@ -483,8 +483,8 @@ impl VariableStatorCore {
         let s = (self.hooks.at_setting)(self, vsv_lp, vsv_hp);
         // RUNG 103: a sibling is rebuilt from the design engine, so it carries the below-choke switch by hand.
         s.core.base.below_choke.set(self.core.base.below_choke.get());
-        // Plan § 38: and the below-idle floor.
-        s.core.base.idle_floor.set(self.core.base.idle_floor.get());
+        // Plan § 38: and the below-idle rule.
+        s.core.base.idle_rule.set(self.core.base.idle_rule.get());
         s
     }
 
