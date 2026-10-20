@@ -190,7 +190,7 @@ F size guard.
    rung102 :: tests\rung102.rs:508:81: called `Result::unwrap()` on an `Err` value: Abort("rung-34 equilibrium does not bracket (Phi[None]=None, Phi[None]=None)")
    slice_x_dispatch :: tests\slice_x_dispatch.rs:340:10: the closure converges at this state: Abort("rung-43 fuel closure does not bracket at nu=(0.8513,0.8756), mdot_fuel=0.01543 - off the modeled speed-line region.")
 
-== D crash: rung 78 reader, empty riding set (FIXED: now a worded stop): 7
+== D crash: rung 78 reader, empty riding set (6 in gauge_march, 1 in the test; both now stop with words - still a panic, no longer an index crash): 7
    slice_ah_dispatch :: tests\slice_ah_dispatch.rs:643:13: R77 baseline gauge_march: Broke("index out of bounds: the len is 0 but the index is 0")
    slice_ah_oracle :: src\residual_gauge.rs:1603:21: index out of bounds: the len is 0 but the index is 0
    slice_ah_oracle :: src\residual_gauge.rs:1603:21: index out of bounds: the len is 0 but the index is 0

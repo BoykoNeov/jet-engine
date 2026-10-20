@@ -525,7 +525,9 @@ fn the_anchored_root_refusal_fires_and_the_real_entry_swallows_it() {
                                         V_MAX, INC, "demand", "sched", "none", None, "solve", &acc,
                                         None);
     let b_max = m0.fuel.inner.lever.lim.expect("the rig arms the valve").b_max;
-    let c0 = c_on_frozen(&m0, &fl, &riding4(&traj0, b_max)[0], &acc).expect("rung 76's c");
+    let ride = riding4(&traj0, b_max);
+    let p0 = ride.first().expect("a point of the march rides the valve with the stator riding");
+    let c0 = c_on_frozen(&m0, &fl, p0, &acc).expect("rung 76's c");
     assert_eq!(traj0.len(), 341);
 
     let mut lens = Vec::new();
