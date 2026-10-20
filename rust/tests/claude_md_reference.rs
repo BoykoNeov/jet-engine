@@ -55,7 +55,9 @@
 /// * 2026-10-19, rung 103: 41 260 → 41 532. The rung row (334 B) plus its family label, the scope lines, the layout's
 ///   module range and the OPEN entry's rung range, less the OPEN entry it closes ("The unchoked LP branch in the
 ///   STEADY two-spool matchers") — real one-line-per-rung growth; the slack stays 20 B.
-const MAX_BYTES: usize = 41_532;
+/// * 2026-10-21, rung 105: 41 532 → 41 923. The rung row (334 B) plus its family label, the scope lines and the layout's
+///   module range (rung 104 had fitted in the old slack) — real one-line-per-rung growth; the slack stays 20 B.
+const MAX_BYTES: usize = 41_923;
 const MAX_LINES: usize = 300;
 
 /// The file, as bytes. `include_bytes!` makes cargo rebuild this test whenever `CLAUDE.md` changes.

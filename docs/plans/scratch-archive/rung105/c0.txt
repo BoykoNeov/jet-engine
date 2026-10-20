@@ -1,0 +1,56 @@
+old1 fly design                  3.66 ms
+old1 fly 1100                    3.20 ms
+old1 fly 800                     2.97 ms
+old1 fly hot M.3 1000            7.62 ms
+old1 slam default              127.23 ms
+old1 slam fuel                 137.64 ms
+old1 slam 700->1200            104.15 ms
+old1 controls default           11.39 ms
+old1 controls unchoked          15.57 ms
+old1 controls cooled            11.69 ms
+old1 blades point 700           11.56 ms
+old1 blades point 1100           8.19 ms
+old1 cooling point 700           0.25 ms
+old1 cooling point 1100          1.98 ms
+new1 fly design                  3.58 ms
+new1 fly 1100                    3.17 ms
+new1 fly 800                     2.97 ms
+new1 fly hot M.3 1000            7.66 ms
+new1 slam default              123.66 ms
+new1 slam fuel                 135.62 ms
+new1 slam 700->1200            105.39 ms
+new1 controls default           11.87 ms
+new1 controls unchoked          16.28 ms
+new1 controls cooled            12.04 ms
+new1 blades point 700           12.15 ms
+new1 blades point 1100           8.60 ms
+new1 cooling point 700           0.27 ms
+new1 cooling point 1100          2.08 ms
+old2 fly design                  3.62 ms
+old2 fly 1100                    3.16 ms
+old2 fly 800                     2.93 ms
+old2 fly hot M.3 1000            7.72 ms
+old2 slam default              127.14 ms
+old2 slam fuel                 135.21 ms
+old2 slam 700->1200            104.41 ms
+old2 controls default           11.32 ms
+old2 controls unchoked          15.58 ms
+old2 controls cooled            11.77 ms
+old2 blades point 700           11.70 ms
+old2 blades point 1100           8.20 ms
+old2 cooling point 700           0.26 ms
+old2 cooling point 1100          1.98 ms
+new2 fly design                  3.61 ms
+new2 fly 1100                    3.16 ms
+new2 fly 800                     2.95 ms
+new2 fly hot M.3 1000            7.63 ms
+new2 slam default              124.47 ms
+new2 slam fuel                 133.65 ms
+new2 slam 700->1200            103.59 ms
+new2 controls default           12.05 ms
+new2 controls unchoked          16.40 ms
+new2 controls cooled            12.19 ms
+new2 blades point 700           12.17 ms
+new2 blades point 1100           8.69 ms
+new2 cooling point 700           0.27 ms
+new2 cooling point 1100          2.04 ms

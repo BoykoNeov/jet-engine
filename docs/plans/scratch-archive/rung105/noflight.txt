@@ -1,0 +1,37 @@
+noflight - which law-on failures are the law refusing for want of its flight's ambient pressure (2026-10-21).
+A scratch worktree at 7f1936d with one line added to hp_vane::no_flight: eprintln!("NOFLIGHT {who}"); built with
+hp-law-default; 12 suspect test binaries run. Column 1: NOFLIGHT lines in the failing test's captured output.
+Totals: 13 158 'rung 34's compressor closure', 213 'a two-shaft transient's compressor closure'.
+
+     0  part_b_refusals_are_in_words  | assertion failed: why(r#""ab":"lit","Tt7":2600"#).contains("cannot reach 2600 K")
+    66  part_b_an_independent_instrument_agrees_on_the_held_lit_point  | called `Result::unwrap()` on an `Err` value: Abort("rung-34 equilibrium does not bracket (Phi[None]=None, Phi[None]=None)")
+    66  part_b_held_lit_gives_less_thrust_and_eats_the_stall_margin  | called `Result::unwrap()` on an `Err` value: Abort("rung-34 equilibrium does not bracket (Phi[None]=None, Phi[None]=None)")
+    66  part_b_match_leaves_the_core_where_the_dry_engine_sits  | called `Result::unwrap()` on an `Err` value: Abort("rung-34 equilibrium does not bracket (Phi[None]=None, Phi[None]=None)")
+    66  part_b_unlit_with_the_dry_throat_is_the_engine_without_an_afterburner_while_choked  | called `Result::unwrap()` on an `Err` value: Abort("rung-34 equilibrium does not bracket (Phi[None]=None, Phi[None]=None)")
+    66  part_b_on_the_equilibrium_gas  | called `Result::unwrap()` on an `Err` value: Abort("rung-34 equilibrium does not bracket (Phi[None]=None, Phi[None]=None)")
+     0  part_b_the_fly_reply  | the afterburner block
+     0  part_c_refusals_and_stops_are_in_words  | rung-43 fuel closure does not bracket at nu=(0.7806,0.8160), mdot_fuel=0.01869 - off the modeled speed-line region.
+     0  r4_a_hand_written_perfect_gas_solve_below_choke_under_the_ellipse  | nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=88142 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+     0  r1b_the_pin_reproduces_the_old_models_record_bit_for_bit  | R1b: 6932 keys, 5590 differ
+     0  gate4_the_soak_equilibrium_is_rung35  | rung-34 equilibrium does not bracket (Phi[None]=None, Phi[None]=None)
+     0  the_plenum_instant_reaches_the_hook_and_never_the_nozzle  | assertion `left == right` failed: the plenum instant must reach the rung-34 hook exactly ONCE per call
+     0  prediction4_a_failed_stage_aborts_the_soak_march  | rung-105: rung 37's metal-soak closure cannot run the HP vane's reaction law yet (its vane flow needs the turbine, which this closure never 
+     0  gate7_the_design_cycle_is_untouched  | rung-105: rung 37's metal-soak closure cannot run the HP vane's reaction law yet (its vane flow needs the turbine, which this closure never 
+     0  the_marches_run_to_length_with_no_bracket_failure  | rung-105: rung 37's metal-soak closure cannot run the HP vane's reaction law yet (its vane flow needs the turbine, which this closure never 
+     0  gate5_cold_below_hot_below_adiabatic  | rung-105: rung 37's metal-soak closure cannot run the HP vane's reaction law yet (its vane flow needs the turbine, which this closure never 
+     0  gate6_the_accel_time_lag  | rung-105: rung 37's metal-soak closure cannot run the HP vane's reaction law yet (its vane flow needs the turbine, which this closure never 
+    24  test_p5_rung53_exact_zeros_break_on_the_transient  | rung-43 fuel closure does not bracket at nu=(0.7760,0.8069), mdot_fuel=0.01592 - off the modeled speed-line region.
+    24  test_p5_the_arrow_is_not_eta_mediated  | rung-43 fuel closure does not bracket at nu=(0.7760,0.8069), mdot_fuel=0.01592 - off the modeled speed-line region.
+    39  plant_the_burner_sees_core_air_only  | rung-62 bled fuel closure does not bracket at nu=(0.8500,0.8800), mdot_fuel=0.01543, b=0.1000 — off the modeled speed-line region.
+    39  a_trial_position_never_leaks_out_of_the_outer_solve  | rung-43 fuel closure does not bracket at nu=(0.8513,0.8756), mdot_fuel=0.01543 - off the modeled speed-line region.
+     0  every_new_refusal_is_words  | {"ok":0,"reason":"At the starting throttle (600 K): the engine has no steady operating point: the compressors would have to run off the part
+     0  the_customer_bleed_reads_the_models_closure_and_its_refusals_are_words  | At the starting throttle (1000 K): the engine has no steady operating point: the compressors would have to run off the part of their maps th
+     0  an_off_map_endpoint_the_customer_bleed_removes_is_named  | At the final throttle (530 K): the engine has no steady operating point: the aircraft's customer bleed would take more than half of the HP c
+ 12784  the_marched_closure_is_the_literal_one_wherever_the_wall_runs  | both answers occur on the grid: 20 fail (0 rescued), 0 pass
+    44  past_the_failing_first_trial_the_marched_closure_lands_on_the_real_operating_point  | called `Result::unwrap()` on an `Err` value: Abort("rung-105: rung 34's compressor closure reached the HP vane's reaction law without its fl
+     0  every_kind_of_stop_the_crash_map_found_is_driven_and_worded  | SlamSettings { fly: FlySettings { design: Settings { t0: 256.53008876148436, p0: 6214.567360155657, m0: 0.9869783017310311, pi_c: 13.6907482
+     0  rust_equals_cpython_except_on_the_pre_registered_exemption  | rung-74: the joint initial condition did not converge (residual 2.898e-03 after 60 iterations) in order 'rqvf', at wf = 7.635049e-02, wr = 1
+     0  rust_equals_pypy_on_every_key  | rung-74: the joint initial condition did not converge (residual 2.898e-03 after 60 iterations) in order 'rqvf', at wf = 7.635049e-02, wr = 1
+    24  the_shipped_default_only_extends_runs  | rung-43 fuel closure does not bracket at nu=(0.7793,0.8098), mdot_fuel=0.01647 - off the modeled speed-line region.
+    24  slice_v_smoke_is_bit_exact_against_pypy  | rung-43 fuel closure does not bracket at nu=(0.7793,0.8098), mdot_fuel=0.01647 - off the modeled speed-line region.
+    39  the_rung62_pin_runs_the_parents_body_on_the_leafs_table  | the closure converges at this state: Abort("rung-43 fuel closure does not bracket at nu=(0.8513,0.8756), mdot_fuel=0.01543 - off the modeled

@@ -32,3 +32,11 @@ choked). Decisions: [[rung105-decisions]]. Follows [[rung104-turbine-law]].
    anchor's "never probed" list was wrong (disclosed in an addendum). Check probe inputs against the named shapes.
 6. **An old solver bug found by the new law's probe:** rung 33's subsonic residual has two roots at hot Mach 0.3 (the
    pin too) and its two-ended march refuses "SUB-IDLE" — recorded as the next seam, not fixed in this rung (user).
+7. **A search that skips failing trials re-words every refusal below it.** 15 law-on failures read "does not bracket";
+   printing at the refusal's own source (one `eprintln!` in a scratch worktree) showed all were the law missing its
+   flight pressure. Classify a refusal by where it was raised, not by the words that reach the test.
+8. **A reader that labels points at round-off breaks on a 1e-15 move.** Rung 78's "riding" label hung on `v_cmd`
+   -2e-15 vs 0; the law emptied the set and `riding[0]` crashed. A guess ("the march never ran", the advisor's) was
+   refuted by printing the march — it was identical.
+9. **Re-run the size guard after the LAST `CLAUDE.md` edit.** The rung row went in after the green gate and pushed
+   `main` red (41 903 > 41 532 B); only the law-on census showed it.

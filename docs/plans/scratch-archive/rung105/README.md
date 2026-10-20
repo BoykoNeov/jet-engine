@@ -24,3 +24,23 @@ Archived 2026-10-20 before any rung-105 code entered the repo (the anchor: `docs
   fourth digit).
 * `p1b.txt`, `p3b.txt`, `p7b.txt` — P1, P3, P7 re-run on the CORRECTED knob (the anchor's G3/G7 numbers); `p1b`'s first
   column is labelled `(REF)` — the first law that solved — and the "choked" demonstration setting is 0.10.
+
+**Added during the build, against the repo with rung 105's code (`probe3/Cargo.toml` points at it):**
+
+* `preflight.txt` — the scored cells' classes only (`probe3/src/pf.rs`).
+* `c1f.txt` — COST on the shipped code (`probe3/src/c1.rs`), after the three rounds of changes (spec § COST); `d1.rs` the
+  one crash it found mid-way (the equilibrium search losing its bracket before the closure's end clamps).
+* `r9.txt` — the red check's run (the effective A4 forced to A4 in a scratch worktree).
+* `rep.txt` — the reported-only numbers (`probe3/src/rep.rs`): H1's margin, S3's thrust, the one shaft below choke, G4's
+  extent per law, the slams, the pages' crash map.
+
+**Added after the build (the census, 2026-10-21):**
+
+* `r1b.txt` — R1b: every failure of the gate built with `hp-law-default`, classed by its panic message (rules in its
+  header).
+* `noflight.txt` — which of those failures are the law refusing for want of its flight's ambient pressure: a scratch
+  worktree at `7f1936d` with one `eprintln!` in `hp_vane::no_flight`, twelve suspect test binaries run.
+* `probe3/src/d2.rs` — rung 78's own rig, its first march, the law off and on: the march is identical to round-off, the
+  stator's "riding" label flips, the set its reader indexed goes empty.
+* `c0.txt` — C0 head to head (`probe3/src/c0.rs`, which names no rung-105 setting so it builds against `4ba69ee` too):
+  the same pin requests on the old and the new code, interleaved twice.

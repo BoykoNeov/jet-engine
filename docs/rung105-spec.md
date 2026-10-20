@@ -77,8 +77,8 @@ rung 104's `law_shortcut` (two shafts) — gates R2, R10.
 
 | gate | result |
 |---|---|
-| R1a the whole gate on the default | FILLED AFTER THE GATE |
-| R1b the gate built with `hp-law-default` (census) | FILLED AFTER THE CENSUS |
+| R1a the whole gate on the default | **GATE GREEN** — 235 programs, 2 956 tests (re-run 2026-10-21 on the tree with R1b's two fixes: the first green run predated the committed `CLAUDE.md` row, which then put the file over its size guard; the budget is raised by this rung's row), every Python-held oracle and golden unchanged (the browser check included); the page's own bytes changed (the new control, the rebuilt model), every default reply did not |
+| R1b the gate built with `hp-law-default` (census) | reported, not a bar: 235 programs, 2 757 passed, 199 failed, each classed (`r1b.txt`). **140** a number moved (Python oracles, goldens, hand values held on the pin); **10** a refusal moved (Controls' 1000 K start and 530 K end with customer bleed, Altitude's 600 K start, one slam no longer stopping where it did, rung 74's joint start, rung 104's nozzle back-pressure, rung 102's 2600 K and one fuel-closure stop); **27** the law refusing on a path not wired for it — 12 in its own words (direct inner calls, rung 37's soak), **15 swallowed by a trial-skipping search and re-worded "does not bracket"** (rungs 43–64's fuel rigs, rung 102's one-shaft afterburner match; measured, `noflight.txt`); **13** setup checks asserting the pin's path or hook; **1** the size guard (on the default too; fixed). **The no-panic bar MISSED, then fixed:** rung 78's reader took the first point of an empty set (7 failures, 4 programs) — its stator's "riding" label is decided at round-off there (`v_cmd` −2e−15 on the pin, 0 under the law's 1e−15 move); now a worded stop, the pin path unchanged |
 | R2 perfect gas, choked: the law's own search = the pin | **1.09e−14** at 138 cells × laws (bar 1e−12); shortcut on, bit for bit |
 | R3 the design point | every reaction within 3× the pin's own distance on both engines, three gases |
 | R4 a hand-written perfect-gas solve below choke | **1.38e−13** at 16 one-shaft and 12 two-shaft unchoked cells (bar 1e−10) |
@@ -86,7 +86,7 @@ rung 104's `law_shortcut` (two shafts) — gates R2, R10.
 | R6 mass, read independently | **4.8e−11** at 61 points (bar 1e−10; the equilibrium gas's own inversions) |
 | R7 the choke emerges | the capture flips at the closed form's `R*` (≤ 1e−9): one shaft 0.1854 / 0.1843, two shafts 0.1978 / 0.1926 (perfect / thermally perfect); below it, the pin's expression bit for bit |
 | R8 the pages | the setting reaches Fly it, Controls, Blades and Cooling; round-trips; absent from every default reply; refused in words out of range and with Fly it's afterburner |
-| R9 the red check | FILLED |
+| R9 the red check (the effective `A4` forced to `A4` under the law, scratch) | R2 still passes (a self-comparison, as predicted); **R4 fails at once** (one shaft 650 K: `π_t` 0.6217 shipped against the hand's 0.5719) and R6 fails |
 | R10 the shortcut's edge | 125 one-kelvin steps through the unchoke boundary (rungs 31/33, 34's instant and equilibrium, 39, 40's instant): shortcut on against off **8.3e−15**, every step classified alike |
 
 ## 3. Scored (anchor § 3) — every claim HIT
@@ -95,16 +95,34 @@ Pre-flight (class only, `preflight.txt`): S1 36 cells, S2 28, S3 33 of 54 — al
 
 | claim | cells | HIT | measured |
 |---|---|---|---|
-| H1 at 0.3 the vane is never choked; at 0.10 it is | 36 + 28 + 33 | all | FILL: closest margin |
+| H1 at 0.3 the vane is never choked; at 0.10 it is | 36 + 28 + 33 | all | closest: the vane's exit pressure 1.096× its sonic one (S1) |
 | H2 choked, the pin nearly right (0.3 %, 0.5 %) | 36 + 28 | all | largest change 0.150 % (one shaft), 0.198 % (two shafts); work moves LP → HP at all 28 |
 | H3 below choke, the HP vane hands back part of rung 104's HP slowdown | 33 | 33 | none at the boundary; rung 104's share against the old model 0.516–0.569 (bar 0.25) |
 | H4 ordered in reaction | 33 + 28 | all | 0.10 = the pin to ≤ 1e−12 where its vane is choked |
 
-**Reported, not scored:** FILLED AFTER THE REPORT PROBE.
+**Reported, not scored** (`rep.txt`):
+* **Thrust below choke (S3):** against the old model −5.3 … +1.6 %; against rung 104's model −0.29 … 0 % (the HP vane
+  takes a little thrust back from rung 104's picture).
+* **One shaft below choke (Fly it's own solve, thermally perfect, S1's flights, 600–850 K):** `π_c` +0.13 … +1.8 %,
+  shaft speed +0.05 … +1.0 %, thrust −3.0 … +0.07 % (largest at 600 K, sea level +20 K Mach 0.6) — larger than rung
+  31/33's matcher showed at the probe's cells (anchor G3: +0.17 % at 600 K), and fading to ~0.15 % by 800 K.
+* **G4's double root:** at 318 K / sea level / Mach 0.30 rung 31/33's matcher refuses every throttle 600–950 K on the pin
+  (the two-ended march); reaction 0.3 and 0.5 solve all of them, 0.10 from 650 K — the law's design-start search, not
+  physics: the pin has the same two roots (anchor G4).
+* **The slams (§ 5):** Fly it's default slam — peak `Tt4` unchanged (temperature control), 1756.40 → 1756.03 K (fuel),
+  end speed within 1e−5; Controls' default slam unchanged (the shortcut); its below-choke slam peak `Tt4` 1857.10 →
+  1856.92 K, speeds within 0.025 %.
+* **The pages' crash map** (seed 105, 320 requests across the four views, the law on at random reactions 0.05–0.6,
+  each against the same request on the pin): **no new panic**, none of the old model's own reached, 1 refused in words.
 
 ## 4. The pages
 
-FILL.
+An **HP turbine's inlet vanes** select on Fly it (and so its slam), Controls, Size the blades and Cool the turbine (the
+fixed engine only, beside rung 104's select): "choked, as rungs 31–104 assumed (the default)" or "vane and rotor in series,
+split by the stage's reaction", with a reaction box (0.05–0.6, opening at 0.3). Keys `hp_vane` / `reaction`, written only
+off the default (sandbox plan § 41). On the pages' perfect-gas engines with the nozzle choked the law gives the old run
+bit for bit; Fly it's thermally perfect default moves about a tenth of a percent; a cooled engine moves a little even
+choked.
 
 ## Concessions
 
@@ -114,13 +132,41 @@ FILL.
   whatever (anchor G1).
 * **Fly it's afterburner and rung 37's metal-soak closure refuse the law in words** — each needs the turbine solved with
   a nozzle it does not have in its closure.
+* **Paths the law is not wired on refuse it, sometimes in the wrong words** (R1b): rungs 43–64's two-shaft fuel rigs and
+  rung 102's one-shaft afterburner match never give the law its flight's ambient pressure, so every trial refuses; their
+  searches skip failing trials and report "does not bracket". No number is wrong (every trial refuses), and the pages
+  never take these paths.
 * **COST deviations** (§ COST below): with the law on, three two-shaft requests stay over their 3× trigger.
 
 ## COST (anchor § COST — triggers, counted before anything changed)
 
-FILL.
+Three rounds, each COUNTED first (`hp_vane::census`: vane sonic points, vane flows, interstage residuals, closure
+residuals): (1) the vane's sonic point found once per search, the cooled closure's fixed point stopped when it settles;
+(2) warm starts within an instant; (3) the closures and tails restructured to read the vane's law once (§ 1). Final, the
+pages' own entries, best of 5 (slams 3), the law at 0.3 against the same request on the pin:
+
+| request | pin | law | trigger | |
+|---|---|---|---|---|
+| Fly it, four points | 3.1–8.1 ms | 24.7–57.3 ms (4.8–15.3×) | C2 ≤ 20× | met |
+| Fly it's slam, three | 149–192 ms | 2.10–2.80 s | C2 ≤ 5 s | met |
+| Controls, default | 17.6 ms | 24.2 ms (1.4×) | C1 ≤ 3× | met |
+| Controls, below choke | 21.7 ms | 75.6 ms (3.5×) | C1 ≤ 3× | **DEVIATION** |
+| Controls, turbine cooling | 14.1 ms | 879 ms (62×) | C1 ≤ 3× | **DEVIATION** |
+| Blades, two points | 11.8–17.5 ms | 0.9–1.0× | C1 ≤ 3× | met |
+| Cooling, a cooled point | 2.3 ms | 12.4 ms (5.3×) | C1 ≤ 3× | **DEVIATION** |
+
+**Shipped above three triggers — a DEVIATION, disclosed (rung 102's precedent).** The floor is one vane flow per
+compressor trial wherever the law is not the pin; a cooled HP turbine has no shortcut at all (its coolants' share moves
+its expansion even on the perfect gas, choked). In absolute terms every request stays under a second, and only with the
+law switched on. **C0 (off costs nothing, bar ≤ 1.1×): met, but not nothing** — measured head to head (`c0.txt`: the
+same pin requests built against `4ba69ee` and today's code, interleaved twice, best of 7, slams 3): one shaft (Fly it and
+its slams) 0.97–1.01×; two shafts 1.03–1.05× (Controls, Blades, Cooling), 1.08× on Cooling's 0.25 ms point — the pin's
+dispatch through the law's plumbing, a few percent on the two-shaft solves.
 
 ## The next seam
+
+* **Wire the law's flight pressure through the paths R1b found unwired** (rungs 43–64's fuel rigs, rung 102's one-shaft
+  afterburner match, rung 37's soak), and let those searches pass the law's refusal through in its own words.
 
 * **Rung 33's double root** (anchor G4): the one-shaft subsonic residual has two roots at 318 K / sea level / Mach 0.30,
   650–900 K, the pin too; the two-ended march refuses "SUB-IDLE" there. Its own repair, after this rung (the user).

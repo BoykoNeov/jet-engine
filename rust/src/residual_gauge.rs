@@ -1600,7 +1600,11 @@ pub fn gauge_march(
     let accel = &accel0;
     let b_max = m0.fuel.inner.lever.lim.expect("`_shared_rig` arms the valve").b_max;
     let riding = riding4(&traj0, b_max);
-    let p0 = &riding[0];
+    // Python's `riding[0]` (an IndexError on an empty set). Rung 105: the stator's `Riding` label is decided at
+    // round-off here (`v_cmd` ~ -2e-15 on the pin), so the HP vane law's 1e-15 move can empty the set.
+    let p0 = riding.first().expect(
+        "rung-78: no point of the march rides the valve with the stator riding, so there is no first riding point \
+         to take c at");
     let c0 = {
         let (q0, v0) = crate::stiffness_ledger::bv_of(p0);
         let _sb = MarchedBleed::set(&m0.fuel.inner, q0);

@@ -158,3 +158,8 @@ escaped backslash swallowed the expansion, `start /b /wait` was handed `…relea
 that does not exist — it read as a slow run for 25 minutes (found by listing processes; stopped with TaskStop). Loop
 over executables in PowerShell (`Start-Process -FilePath "$d\$b.exe" -PassThru`, set `BelowNormal`, `WaitForExit`), or
 write the path out literally. The same session typed `python -` once more (hung, TaskStop) — the stub rule above.
+
+**PowerShell's `*>` redirect typed into the Bash tool is a glob, not a redirect** (rung 105, 2026-10-21): `powershell
+-File test-all.ps1 *> log` expanded `*` to the repo's file names, so the gate got `CLAUDE.md` as its `-Jobs` argument and
+exited at once — and the background task still reported success (the trailing `echo` exited 0). Launch the gate from
+the PowerShell tool, and read the log's first line before trusting a "completed".

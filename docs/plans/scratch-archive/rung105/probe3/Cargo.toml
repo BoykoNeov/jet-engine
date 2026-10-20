@@ -1,0 +1,37 @@
+[package]
+name = "rung105-probe3"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+turbojet = { path = "W:/Claude_projects/jet engine/rust" }
+
+[profile.release]
+opt-level = 3
+
+[[bin]]
+name = "c1"
+path = "src/c1.rs"
+
+[[bin]]
+name = "d1"
+path = "src/d1.rs"
+
+[[bin]]
+name = "pf"
+path = "src/pf.rs"
+
+[[bin]]
+name = "rep"
+path = "src/rep.rs"
+
+[[bin]]
+name = "d2"
+path = "src/d2.rs"
+
+[features]
+law = ["turbojet/hp-law-default"]
+
+[[bin]]
+name = "c0"
+path = "src/c0.rs"

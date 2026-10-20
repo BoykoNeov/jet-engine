@@ -1,0 +1,71 @@
+   Compiling turbojet v0.1.0 (W:\temp\claude\rung105-wt\rust)
+warning: unused import: `try_choked_mfp`
+  --> tests\rung105.rs:10:54
+   |
+10 | use turbojet::components::{choked_mfp, ram_recovery, try_choked_mfp, try_sonic_throat};
+   |                                                      ^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `turbojet::spool::SpoolTransient`
+  --> tests\rung105.rs:20:5
+   |
+20 | use turbojet::spool::SpoolTransient;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `turbojet::visuals::Json`
+  --> tests\rung105.rs:24:5
+   |
+24 | use turbojet::visuals::Json;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: value assigned to `pi_c` is never read
+   --> tests\rung105.rs:308:21
+    |
+308 |         let (mut f, mut pi_c) = (m.f_design, 0.0);
+    |                     ^^^^^^^^ this value is reassigned later and never used
+...
+311 |             pi_c = (1.0 + m.eta_c * (tt3 / tt2 - 1.0)).powf(1.0 / ec);
+    |             --------------------------------------------------------- `pi_c` is overwritten here before the previous value is read
+    |
+    = note: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+warning: value assigned to `pi_c` is never read
+   --> tests\rung105.rs:311:13
+    |
+311 |             pi_c = (1.0 + m.eta_c * (tt3 / tt2 - 1.0)).powf(1.0 / ec);
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this value is reassigned later and never used
+...
+317 |         pi_c = (1.0 + m.eta_c * (tt3 / tt2 - 1.0)).powf(1.0 / ec);
+    |         --------------------------------------------------------- `pi_c` is overwritten here before the previous value is read
+
+warning: `turbojet` (test "rung105") generated 5 warnings (run `cargo fix --test "rung105" -p turbojet` to apply 3 suggestions)
+    Finished `release` profile [optimized] target(s) in 1m 43s
+     Running tests\rung105.rs (W:\temp\claude\rung105-wt-target\release\deps\rung105-c948255c945a0965.exe)
+
+running 3 tests
+test r4_a_hand_written_perfect_gas_solve_below_choke ... FAILED
+test r2_perfect_gas_choked_every_law_is_the_pin ... ok
+test r6_mass_read_independently_of_the_search ... FAILED
+
+failures:
+
+---- r4_a_hand_written_perfect_gas_solve_below_choke stdout ----
+
+thread 'r4_a_hand_written_perfect_gas_solve_below_choke' (3132) panicked at tests\rung105.rs:407:17:
+one shaft 0.3 650: pi_t shipped 0.6216632217248264 hand 0.5718603836621157
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- r6_mass_read_independently_of_the_search stdout ----
+
+thread 'r6_mass_read_independently_of_the_search' (37544) panicked at tests\rung105.rs:580:9:
+steep SL+20 M0.60 725: the law gives W4 0.000029593012045611947, the result passes 0.000029629070726320427
+
+
+failures:
+    r4_a_hand_written_perfect_gas_solve_below_choke
+    r6_mass_read_independently_of_the_search
+
+test result: FAILED. 1 passed; 2 failed; 0 ignored; 0 measured; 8 filtered out; finished in 0.35s
+
+error: test failed, to rerun pass `--test rung105`
