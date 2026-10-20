@@ -21,10 +21,12 @@
   powershell -File rust\test-all.ps1               # the gate
   powershell -File rust\test-all.ps1 -Only rung8*  # programs whose name matches
   powershell -File rust\test-all.ps1 -Jobs 4       # fewer at once
+  powershell -File rust\test-all.ps1 -Features pin-default   # built with a cargo feature (rung 104: the old pin)
 #>
 param(
     [int]$Jobs = 8,          # 8 = the box's PHYSICAL cores; each program also threads internally
-    [string]$Only = '*'      # wildcard on the program name (e.g. rung8*, *oracle)
+    [string]$Only = '*',     # wildcard on the program name (e.g. rung8*, *oracle)
+    [string]$Features = ''   # cargo features to build the tests with (the browser check builds its own, without)
 )
 $ErrorActionPreference = 'Stop'
 $root = $PSScriptRoot
@@ -44,8 +46,10 @@ function Start-Low($exe, $argList, $out, $err) {
 
 # ---- 1. build every test program once, and read their paths off cargo's JSON messages
 Write-Host "building (below-normal)..."
-$b = Start-Low 'cargo' @('test', '--release', '--no-run', '--message-format=json-render-diagnostics',
-                         '--manifest-path', "`"$root\Cargo.toml`"") "$logs\build.json" "$logs\build.err"
+$feat = @()
+if ($Features) { $feat = @('--features', $Features) }
+$b = Start-Low 'cargo' (@('test', '--release', '--no-run', '--message-format=json-render-diagnostics',
+                          '--manifest-path', "`"$root\Cargo.toml`"") + $feat) "$logs\build.json" "$logs\build.err"
 $b.WaitForExit()
 if ($b.ExitCode -ne 0) {
     Get-Content "$logs\build.err" -Tail 30
@@ -64,7 +68,7 @@ $programs = @(Get-Content "$logs\build.json" |
     })
 # the doc tests are not a program of their own; cargo builds and runs them in one step
 $programs += [pscustomobject]@{ Name = 'doc-tests'; Exe = 'cargo';
-    Args = @('test', '--release', '--doc', '--manifest-path', "`"$root\Cargo.toml`"") }
+    Args = @(@('test', '--release', '--doc', '--manifest-path', "`"$root\Cargo.toml`"") + $feat) }
 # the web sandbox's browser checks: its own wasm build, Node and a headless Chrome, so not a cargo
 # test program -- rust\sandbox-wasm\check.ps1 (docs/plans/sandbox-plan.md section 6, user decision 9.5)
 $programs += [pscustomobject]@{ Name = 'sandbox-browser'; Exe = 'powershell';
@@ -115,8 +119,8 @@ while ($queue.Count -gt 0 -or $running.Count -gt 0) {
     Start-Sleep -Milliseconds 200
 }
 
-# ---- 4. summary; the times feed the next run's order (only on a whole run, so -Only cannot thin it)
-if ($Only -eq '*') {
+# ---- 4. summary; the times feed the next run's order (only on a whole default run, so -Only cannot thin it)
+if ($Only -eq '*' -and -not $Features) {
     $results | ForEach-Object { "{0}`t{1:F1}" -f $_.Name, $_.Secs } | Set-Content -Encoding ascii $timesFile
 }
 $bad = @($results | Where-Object { -not $_.Ok })

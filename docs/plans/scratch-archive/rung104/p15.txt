@@ -1,0 +1,88 @@
+CPG flat  250K      450 | pin refused | 1row refused | 2rows refused | ellipse refused
+CPG flat  250K      500 | pin M9 0.813 -8.11e-4 | 1row M9 0.813 +6.92e-4 | 2rows M9 0.813 +9.86e-4 | ellipse M9 0.813 +1.15e-3
+CPG flat  250K      550 | pin M9 0.908 -5.02e-4 | 1row M9 0.908 +3.07e-4 | 2rows M9 0.908 +4.96e-4 | ellipse M9 0.908 +5.96e-4
+CPG flat  250K      600 | pin M9 0.998 -2.38e-6 | 1row M9 0.998 +1.16e-6 | 2rows M9 0.998 +2.04e-6 | ellipse M9 0.998 +2.49e-6
+CPG flat  250K      650 | pin choked | 1row choked | 2rows choked | ellipse choked
+CPG flat  250K      700 | pin choked | 1row choked | 2rows choked | ellipse choked
+CPG flat  250K      750 | pin choked | 1row choked | 2rows choked | ellipse choked
+CPG flat  SL M0.50  450 | pin refused | 1row refused | 2rows refused | ellipse refused
+CPG flat  SL M0.50  500 | pin refused | 1row M9 0.455 +5.15e-3 | 2rows M9 0.455 +5.50e-3 | ellipse M9 0.455 +5.77e-3
+CPG flat  SL M0.50  550 | pin M9 0.551 -1.74e-3 | 1row M9 0.549 +4.39e-3 | 2rows M9 0.549 +4.83e-3 | ellipse M9 0.549 +5.15e-3
+CPG flat  SL M0.50  600 | pin M9 0.646 -2.54e-3 | 1row M9 0.645 +3.11e-3 | 2rows M9 0.645 +3.71e-3 | ellipse M9 0.645 +4.08e-3
+CPG flat  SL M0.50  650 | pin M9 0.740 -2.46e-3 | 1row M9 0.740 +1.88e-3 | 2rows M9 0.740 +2.54e-3 | ellipse M9 0.740 +2.93e-3
+CPG flat  SL M0.50  700 | pin M9 0.830 -1.88e-3 | 1row M9 0.830 +9.60e-4 | 2rows M9 0.830 +1.54e-3 | ellipse M9 0.830 +1.85e-3
+CPG flat  SL M0.50  750 | pin M9 0.915 -1.04e-3 | 1row M9 0.915 +3.79e-4 | 2rows M9 0.915 +7.13e-4 | ellipse M9 0.915 +8.90e-4
+CPG mixed 250K      450 | pin refused | 1row refused | 2rows refused | ellipse refused
+CPG mixed 250K      500 | pin M9 0.784 -9.63e-4 | 1row M9 0.782 +9.40e-4 | 2rows M9 0.781 +1.29e-3 | ellipse M9 0.781 +1.49e-3
+CPG mixed 250K      550 | pin M9 0.878 -7.10e-4 | 1row M9 0.877 +4.77e-4 | 2rows M9 0.877 +7.48e-4 | ellipse M9 0.877 +8.93e-4
+CPG mixed 250K      600 | pin M9 0.969 -2.06e-4 | 1row M9 0.969 +1.05e-4 | 2rows M9 0.969 +1.82e-4 | ellipse M9 0.969 +2.23e-4
+CPG mixed 250K      650 | pin choked | 1row choked | 2rows choked | ellipse choked
+CPG mixed 250K      700 | pin choked | 1row choked | 2rows choked | ellipse choked
+CPG mixed 250K      750 | pin choked | 1row choked | 2rows choked | ellipse choked
+CPG mixed SL M0.50  450 | pin refused | 1row refused | 2rows refused | ellipse refused
+CPG mixed SL M0.50  500 | pin refused | 1row refused | 2rows refused | ellipse refused
+CPG mixed SL M0.50  550 | pin M9 0.529 -1.42e-3 | 1row M9 0.510 +5.66e-3 | 2rows M9 0.508 +6.21e-3 | ellipse M9 0.507 +6.62e-3
+CPG mixed SL M0.50  600 | pin M9 0.620 -2.57e-3 | 1row M9 0.609 +4.19e-3 | 2rows M9 0.607 +4.89e-3 | ellipse M9 0.606 +5.36e-3
+CPG mixed SL M0.50  650 | pin M9 0.712 -2.78e-3 | 1row M9 0.706 +2.63e-3 | 2rows M9 0.705 +3.43e-3 | ellipse M9 0.704 +3.91e-3
+CPG mixed SL M0.50  700 | pin M9 0.802 -2.35e-3 | 1row M9 0.799 +1.41e-3 | 2rows M9 0.799 +2.14e-3 | ellipse M9 0.798 +2.56e-3
+CPG mixed SL M0.50  750 | pin M9 0.888 -1.51e-3 | 1row M9 0.887 +6.13e-4 | 2rows M9 0.887 +1.11e-3 | ellipse M9 0.887 +1.37e-3
+CPG steep 250K      450 | pin refused | 1row refused | 2rows refused | ellipse refused
+CPG steep 250K      500 | pin M9 0.779 -9.88e-4 | 1row M9 0.777 +9.87e-4 | 2rows M9 0.776 +1.35e-3 | ellipse M9 0.776 +1.56e-3
+CPG steep 250K      550 | pin M9 0.873 -7.50e-4 | 1row M9 0.872 +5.13e-4 | 2rows M9 0.872 +8.00e-4 | ellipse M9 0.871 +9.54e-4
+CPG steep 250K      600 | pin M9 0.964 -2.49e-4 | 1row M9 0.964 +1.29e-4 | 2rows M9 0.964 +2.22e-4 | ellipse M9 0.964 +2.72e-4
+CPG steep 250K      650 | pin choked | 1row choked | 2rows choked | ellipse choked
+CPG steep 250K      700 | pin choked | 1row choked | 2rows choked | ellipse choked
+CPG steep 250K      750 | pin choked | 1row choked | 2rows choked | ellipse choked
+CPG steep SL M0.50  450 | pin refused | 1row refused | 2rows refused | ellipse refused
+CPG steep SL M0.50  500 | pin refused | 1row refused | 2rows refused | ellipse refused
+CPG steep SL M0.50  550 | pin M9 0.527 -1.33e-3 | 1row M9 0.504 +5.85e-3 | 2rows M9 0.502 +6.43e-3 | ellipse M9 0.500 +6.87e-3
+CPG steep SL M0.50  600 | pin M9 0.615 -2.54e-3 | 1row M9 0.602 +4.43e-3 | 2rows M9 0.600 +5.15e-3 | ellipse M9 0.599 +5.64e-3
+CPG steep SL M0.50  650 | pin M9 0.705 -2.85e-3 | 1row M9 0.699 +2.82e-3 | 2rows M9 0.698 +3.65e-3 | ellipse M9 0.697 +4.16e-3
+CPG steep SL M0.50  700 | pin M9 0.795 -2.46e-3 | 1row M9 0.793 +1.53e-3 | 2rows M9 0.792 +2.30e-3 | ellipse M9 0.792 +2.74e-3
+CPG steep SL M0.50  750 | pin M9 0.882 -1.62e-3 | 1row M9 0.881 +6.78e-4 | 2rows M9 0.881 +1.21e-3 | ellipse M9 0.881 +1.49e-3
+eq  flat  250K      450 | pin refused | 1row refused | 2rows refused | ellipse refused
+eq  flat  250K      500 | pin refused | 1row M9 0.763 +9.48e-4 | 2rows M9 0.763 +1.24e-3 | ellipse M9 0.763 +1.40e-3
+eq  flat  250K      550 | pin refused | 1row M9 0.855 +5.39e-4 | 2rows M9 0.855 +7.90e-4 | ellipse M9 0.855 +9.15e-4
+eq  flat  250K      600 | pin M9 0.944 -3.33e-4 | 1row M9 0.944 +1.89e-4 | 2rows M9 0.944 +3.06e-4 | ellipse M9 0.944 +3.62e-4
+eq  flat  250K      650 | pin choked | 1row choked | 2rows choked | ellipse choked
+eq  flat  250K      700 | pin choked | 1row choked | 2rows choked | ellipse choked
+eq  flat  250K      750 | pin choked | 1row choked | 2rows choked | ellipse choked
+eq  flat  SL M0.50  450 | pin refused | 1row refused | 2rows refused | ellipse refused
+eq  flat  SL M0.50  500 | pin refused | 1row M9 0.429 +5.13e-3 | 2rows M9 0.429 +5.47e-3 | ellipse M9 0.429 +5.71e-3
+eq  flat  SL M0.50  550 | pin refused | 1row M9 0.515 +4.68e-3 | 2rows M9 0.514 +5.06e-3 | ellipse M9 0.514 +5.33e-3
+eq  flat  SL M0.50  600 | pin M9 0.605 -2.35e-3 | 1row M9 0.605 +3.64e-3 | 2rows M9 0.605 +4.15e-3 | ellipse M9 0.604 +4.46e-3
+eq  flat  SL M0.50  650 | pin M9 0.696 -2.58e-3 | 1row M9 0.695 +2.45e-3 | 2rows M9 0.695 +3.07e-3 | ellipse M9 0.695 +3.41e-3
+eq  flat  SL M0.50  700 | pin M9 0.784 -2.23e-3 | 1row M9 0.784 +1.43e-3 | 2rows M9 0.784 +2.04e-3 | ellipse M9 0.784 +2.36e-3
+eq  flat  SL M0.50  750 | pin M9 0.870 -1.53e-3 | 1row M9 0.870 +6.99e-4 | 2rows M9 0.870 +1.16e-3 | ellipse M9 0.870 +1.38e-3
+eq  mixed 250K      450 | pin refused | 1row refused | 2rows refused | ellipse refused
+eq  mixed 250K      500 | pin refused | 1row M9 0.735 +1.21e-3 | 2rows M9 0.734 +1.55e-3 | ellipse M9 0.734 +1.74e-3
+eq  mixed 250K      550 | pin refused | 1row M9 0.827 +7.42e-4 | 2rows M9 0.826 +1.06e-3 | ellipse M9 0.826 +1.23e-3
+eq  mixed 250K      600 | pin M9 0.918 -5.34e-4 | 1row M9 0.917 +3.24e-4 | 2rows M9 0.917 +5.15e-4 | ellipse M9 0.917 +6.11e-4
+eq  mixed 250K      650 | pin choked | 1row choked | 2rows choked | ellipse choked
+eq  mixed 250K      700 | pin choked | 1row choked | 2rows choked | ellipse choked
+eq  mixed 250K      750 | pin choked | 1row choked | 2rows choked | ellipse choked
+eq  mixed SL M0.50  450 | pin refused | 1row refused | 2rows refused | ellipse refused
+eq  mixed SL M0.50  500 | pin refused | 1row refused | 2rows refused | ellipse refused
+eq  mixed SL M0.50  550 | pin refused | 1row M9 0.479 +5.87e-3 | 2rows M9 0.477 +6.37e-3 | ellipse M9 0.475 +6.73e-3
+eq  mixed SL M0.50  600 | pin M9 0.584 -2.27e-3 | 1row M9 0.571 +4.73e-3 | 2rows M9 0.569 +5.34e-3 | ellipse M9 0.568 +5.74e-3
+eq  mixed SL M0.50  650 | pin M9 0.672 -2.79e-3 | 1row M9 0.664 +3.27e-3 | 2rows M9 0.663 +4.01e-3 | ellipse M9 0.662 +4.44e-3
+eq  mixed SL M0.50  700 | pin M9 0.759 -2.62e-3 | 1row M9 0.755 +1.97e-3 | 2rows M9 0.755 +2.72e-3 | ellipse M9 0.754 +3.13e-3
+eq  mixed SL M0.50  750 | pin M9 0.845 -1.97e-3 | 1row M9 0.844 +1.01e-3 | 2rows M9 0.843 +1.61e-3 | ellipse M9 0.843 +1.93e-3
+eq  steep 250K      450 | pin refused | 1row refused | 2rows refused | ellipse refused
+eq  steep 250K      500 | pin refused | 1row refused | 2rows refused | ellipse refused
+eq  steep 250K      550 | pin refused | 1row M9 0.821 +7.87e-4 | 2rows M9 0.821 +1.12e-3 | ellipse M9 0.820 +1.29e-3
+eq  steep 250K      600 | pin M9 0.913 -5.76e-4 | 1row M9 0.912 +3.56e-4 | 2rows M9 0.912 +5.63e-4 | ellipse M9 0.911 +6.68e-4
+eq  steep 250K      650 | pin M9 1.000 -2.74e-8 | 1row M9 1.000 +1.04e-7 | 2rows M9 0.999 +3.10e-7 | ellipse M9 0.999 +9.65e-7
+eq  steep 250K      700 | pin choked | 1row choked | 2rows choked | ellipse choked
+eq  steep 250K      750 | pin choked | 1row choked | 2rows choked | ellipse choked
+eq  steep SL M0.50  450 | pin refused | 1row refused | 2rows refused | ellipse refused
+eq  steep SL M0.50  500 | pin refused | 1row refused | 2rows refused | ellipse refused
+eq  steep SL M0.50  550 | pin refused | 1row M9 0.474 +6.04e-3 | 2rows M9 0.471 +6.58e-3 | ellipse M9 0.469 +6.97e-3
+eq  steep SL M0.50  600 | pin M9 0.580 -2.21e-3 | 1row M9 0.565 +4.96e-3 | 2rows M9 0.562 +5.60e-3 | ellipse M9 0.561 +6.03e-3
+eq  steep SL M0.50  650 | pin M9 0.666 -2.82e-3 | 1row M9 0.657 +3.49e-3 | 2rows M9 0.656 +4.25e-3 | ellipse M9 0.654 +4.71e-3
+eq  steep SL M0.50  700 | pin M9 0.753 -2.71e-3 | 1row M9 0.749 +2.12e-3 | 2rows M9 0.748 +2.90e-3 | ellipse M9 0.747 +3.33e-3
+eq  steep SL M0.50  750 | pin M9 0.839 -2.08e-3 | 1row M9 0.838 +1.10e-3 | 2rows M9 0.837 +1.74e-3 | ellipse M9 0.837 +2.07e-3
+pin     : below choke, d piHPC < 0 at 40 cells, > 0 at 0
+1row    : below choke, d piHPC < 0 at 0 cells, > 0 at 50
+2rows   : below choke, d piHPC < 0 at 0 cells, > 0 at 50
+ellipse : below choke, d piHPC < 0 at 0 cells, > 0 at 50

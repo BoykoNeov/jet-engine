@@ -49,6 +49,9 @@
 //!     .venv\Scripts\python.exe rust/oracle/dump_two_spool_transient.py equil   rust/oracle/two_spool_transient_eq_pypy.tsv
 //!     C:\Python314\python.exe  rust/oracle/dump_two_spool_transient.py cpython rust/oracle/two_spool_transient_cpython.tsv
 
+#[path = "common/rung104_retired.rs"]
+mod rung104_retired;
+
 use std::collections::{BTreeMap, BTreeSet};
 
 use turbojet::engine::{build_turbojet, Engine, FlightCondition, Losses};
@@ -56,6 +59,7 @@ use turbojet::gas::{Gas, GasSpec};
 use turbojet::map::ComponentMap;
 use turbojet::matcher::Branch;
 use turbojet::spool::{counters as scount, SpoolTransient};
+use turbojet::turbine_law::TurbineLaw;
 use turbojet::two_spool::{build_two_spool_turbojet, TwoSpoolEngine, TwoSpoolLosses};
 use turbojet::two_spool_transient::{
     counters as tcount, CloseState, EqExit, Instant2, PhiExcursion, TransientSurgeMargin,
@@ -172,12 +176,26 @@ struct Cmp {
     /// `(key, message)` — the KEY kept separately, never re-parsed out of the message.
     discrete_flips: Vec<(String, String)>,
     float_drifts: Vec<(String, f64)>,
+    /// RUNG 104: this arm's name, the keys it retires (the flow law moved them) and the keys that differed.
+    arm: &'static str,
+    retired: BTreeSet<String>,
+    moved: BTreeSet<String>,
 }
 
 impl Cmp {
-    fn new(py: BTreeMap<String, u64>) -> Self {
+    fn new(py: BTreeMap<String, u64>, arm: &'static str) -> Self {
         Cmp { py, seen: BTreeSet::new(), bad: Vec::new(), cpython: false,
-              discrete_flips: Vec::new(), float_drifts: Vec::new() }
+              discrete_flips: Vec::new(), float_drifts: Vec::new(),
+              arm, retired: rung104_retired::retired(arm), moved: BTreeSet::new() }
+    }
+
+    /// A value disagreement — unless rung 104 retired this key (`common/rung104_retired.rs`).
+    fn miss(&mut self, key: &str, msg: String) {
+        if self.retired.contains(key) {
+            return;
+        }
+        self.moved.insert(key.to_string());
+        self.bad.push(msg);
     }
 
     /// A float key. Bit-exact against PyPy; on the CPython arm, at the class bar [`tier`] gives it.
@@ -205,7 +223,7 @@ impl Cmp {
             self.float_drifts.push((key.to_string(), scale));
         }
         if over {
-            self.bad.push(format!("{key}: rust {got:e} vs cpython {exp:e} (dev {scale:e})"));
+            self.miss(key, format!("{key}: rust {got:e} vs cpython {exp:e} (dev {scale:e})"));
         }
     }
 
@@ -225,7 +243,7 @@ impl Cmp {
                     self.discrete_flips.push(
                         (key.to_string(), format!("{key}: rust {got} vs cpython {want}")));
                 } else {
-                    self.bad.push(format!(
+                    self.miss(key, format!(
                         "{key}: rust {} vs python {}",
                         if discrete { got as f64 } else { f64::from_bits(got) },
                         if discrete { want as f64 } else { f64::from_bits(want) }));
@@ -236,6 +254,10 @@ impl Cmp {
     }
 
     fn finish(&self) {
+        if rung104_retired::writing() {
+            return rung104_retired::write(self.arm, &self.moved);
+        }
+        rung104_retired::check_listed(self.arm, &self.retired, |k| self.py.contains_key(k));
         let missed: Vec<&String> = self.py.keys().filter(|k| !self.seen.contains(*k)).collect();
         if self.bad.is_empty() && missed.is_empty() {
             return;
@@ -281,8 +303,14 @@ fn cpg44() -> Gas {
     })
 }
 
+thread_local! {
+    /// RUNG 104: the LP turbine's law for this thread's engines — the default, or the pin for a census of the old
+    /// model's own solver ([`the_newtons_tie_break_is_reached_only_on_the_reacting_arm`]).
+    static LAW: std::cell::Cell<TurbineLaw> = std::cell::Cell::new(TurbineLaw::default());
+}
+
 fn design(gas: Gas) -> TwoSpoolEngine {
-    build_two_spool_turbojet(gas, PI_LPC, PI_HPC, TT4, 50_000.0, REAL)
+    build_two_spool_turbojet(gas, PI_LPC, PI_HPC, TT4, 50_000.0, REAL).with_turbine_law(LAW.with(|l| l.get()))
 }
 
 fn core(gas: Gas, ml: ComponentMap, mh: ComponentMap, rho: f64) -> TwoSpoolTransientCore {
@@ -914,7 +942,7 @@ fn single_design() -> Engine {
 /// arms stay at zero across the whole dump, and `illinois_exhausted` is 0 at rung 40's call site.
 #[test]
 fn oracle_main_is_bit_exact_against_pypy() {
-    let mut c = Cmp::new(load(ORACLE_MAIN));
+    let mut c = Cmp::new(load(ORACLE_MAIN), "two_spool_transient_main");
     let tot = sweep_main(&mut c);
     c.finish();
     // PREDICTION 9's grid-local twin. `rung40.rs` gates gate 5's OWN grid at 124 real / 2 complex
@@ -939,7 +967,7 @@ fn oracle_main_is_bit_exact_against_pypy() {
 /// what makes this a measurement rather than a lucky pass.
 #[test]
 fn oracle_equil_is_bit_exact_against_pypy() {
-    let mut c = Cmp::new(load(ORACLE_EQ));
+    let mut c = Cmp::new(load(ORACLE_EQ), "two_spool_transient_eq");
     let tot = sweep_equil(&mut c);
     c.finish();
     assert_eq!((tot.eig_real, tot.eig_complex), (121, 5),
@@ -974,9 +1002,12 @@ fn oracle_equil_is_bit_exact_against_pypy() {
 /// gated split costs.
 #[test]
 fn the_newtons_tie_break_is_reached_only_on_the_reacting_arm() {
-    let mut c = Cmp::new(load(ORACLE_MAIN));
+    // A census of the OLD model's solver (rung 38's choked vane): under rung 104's flow law the reacting arm's
+    // Newton never plateaus into a tie, so the injection this counts would go unseen — run it on the pin.
+    LAW.with(|l| l.set(TurbineLaw::Pin));
+    let mut c = Cmp::new(load(ORACLE_MAIN), "two_spool_transient_main");
     let a = sweep_main(&mut c);
-    let mut c2 = Cmp::new(load(ORACLE_EQ));
+    let mut c2 = Cmp::new(load(ORACLE_EQ), "two_spool_transient_eq");
     let b = sweep_equil(&mut c2);
     assert_eq!((a.eq_calls, a.eq_ties), (22, 0),
                "the CPG arm: 21 cells + the explicit start, and no residual ever repeats");
@@ -1010,7 +1041,7 @@ fn the_newtons_tie_break_is_reached_only_on_the_reacting_arm() {
 /// `Gas::reacting_equilibrium()`.
 #[test]
 fn oracle_matches_cpython() {
-    let mut c = Cmp::new(load(ORACLE_CPYTHON));
+    let mut c = Cmp::new(load(ORACLE_CPYTHON), "two_spool_transient_cpython");
     c.cpython = true;
     sweep_main(&mut c);
     sweep_equil(&mut c);

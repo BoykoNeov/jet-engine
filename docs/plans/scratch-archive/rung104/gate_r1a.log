@@ -1,0 +1,248 @@
+﻿building (below-normal)...
+built in 694 s; 234 programs to run, 8 at a time
+[  1/234] FAILED   113.7 s  rung104
+[  2/234] ok       217.4 s  slice_aj_oracle
+[  3/234] ok       152.2 s  rung77
+[  4/234] ok       333.4 s  rung86
+[  5/234] ok       347.8 s  slice_m_oracle
+[  6/234] ok       370.4 s  slice_o_oracle
+[  7/234] ok       198.6 s  slice_ah_oracle
+[  8/234] ok       227.7 s  slice_ae_oracle
+[  9/234] ok       506.2 s  slice_l_oracle
+[ 10/234] ok       516.2 s  slice_ah_dispatch
+[ 11/234] ok       169.4 s  slice_ag_dispatch
+[ 12/234] ok       165.2 s  offdesign_oracle
+[ 13/234] ok       614.6 s  cli_golden
+[ 14/234] ok       221.0 s  slice_ag_oracle
+[ 15/234] ok       160.9 s  slice_w_oracle
+[ 16/234] ok       157.7 s  fingerprint
+[ 17/234] ok       149.9 s  slice_ah_ledger
+[ 18/234] ok        74.4 s  rung82
+[ 19/234] ok       206.3 s  slice_ae_dispatch
+[ 20/234] ok       137.9 s  rung103
+[ 21/234] ok       105.1 s  two_spool_oracle
+[ 22/234] ok        69.9 s  topping_oracle
+[ 23/234] ok       146.3 s  slice_ai_oracle
+[ 24/234] ok       145.7 s  sandbox_burner
+[ 25/234] ok        53.1 s  rung46
+[ 26/234] ok       101.8 s  slice_aj_threshold
+[ 27/234] ok        71.7 s  slice_ad_dispatch
+[ 28/234] ok        53.6 s  slice_af_oracle
+[ 29/234] FAILED   557.8 s  sandbox-browser
+[ 30/234] ok        53.9 s  rung73
+[ 31/234] ok        59.8 s  slice_af_dispatch
+[ 32/234] ok        13.0 s  rung33
+[ 33/234] ok       173.5 s  slice_ai_dispatch
+[ 34/234] ok        53.5 s  slice_n_oracle
+[ 35/234] ok        32.5 s  rung89
+[ 36/234] ok        64.3 s  slice_ab_oracle
+[ 37/234] ok        63.9 s  slice_z_oracle
+[ 38/234] ok        24.1 s  rung23
+[ 39/234] ok        48.9 s  slice_aa_oracle
+[ 40/234] ok        15.6 s  rung76
+[ 41/234] ok        32.7 s  rung16
+[ 42/234] ok        33.5 s  slice_aj_clock
+[ 43/234] ok        53.1 s  rung72
+[ 44/234] ok        44.7 s  slice_ac_oracle
+[ 45/234] ok        32.5 s  rung81
+[ 46/234] ok       296.1 s  rung84
+[ 47/234] ok        20.1 s  rung87
+[ 48/234] ok        40.7 s  two_spool_transient_oracle
+[ 49/234] ok        23.5 s  rung78
+[ 50/234] ok        32.3 s  slice_ai_split
+[ 51/234] ok        21.6 s  release_oracle
+[ 52/234] ok       517.5 s  slice_ad_oracle
+[ 53/234] ok        18.4 s  slice_aj_staircase
+[ 54/234] ok        21.6 s  rung71
+[ 55/234] ok        31.2 s  map_oracle
+[ 56/234] ok        29.8 s  rung80
+[ 57/234] ok        40.3 s  slice_y_oracle
+[ 58/234] ok        24.8 s  rung83
+[ 59/234] ok        16.5 s  combustor_oracle
+[ 60/234] ok        24.2 s  slice_ab_dispatch
+[ 61/234] ok        23.4 s  spatial_oracle
+[ 62/234] ok        51.6 s  rung24
+[ 63/234] ok        30.3 s  slice_v_oracle
+[ 64/234] ok         9.3 s  nozzle_oracle
+[ 65/234] ok        25.4 s  slice_x_oracle
+[ 66/234] ok        12.9 s  rung96
+[ 67/234] ok        14.1 s  slice_ah_march
+[ 68/234] ok        11.4 s  fuel_transient_oracle
+[ 69/234] ok        27.7 s  rung39
+[ 70/234] ok        23.1 s  rung40
+[ 71/234] ok        36.6 s  rung70
+[ 72/234] ok         3.7 s  rung65
+[ 73/234] ok        26.1 s  sandbox_transient
+[ 74/234] ok         9.4 s  rung63
+[ 75/234] ok        20.3 s  slice_ag_laws
+[ 76/234] ok        19.7 s  reused_machine
+[ 77/234] ok        42.4 s  rung69
+[ 78/234] ok        22.5 s  rung68
+[ 79/234] ok         5.8 s  doc-tests
+[ 80/234] ok        11.7 s  slice_af_march
+[ 81/234] ok        14.6 s  pdf_oracle
+[ 82/234] ok         4.5 s  rung101
+[ 83/234] ok         8.5 s  rung88
+[ 84/234] ok        11.4 s  slice_ac_dispatch
+[ 85/234] ok        12.4 s  rung54
+[ 86/234] ok        25.6 s  rung74
+[ 87/234] ok         7.2 s  rung75
+[ 88/234] ok        13.0 s  rung60
+[ 89/234] ok        21.2 s  rung99
+[ 90/234] ok         6.4 s  rung67
+[ 91/234] ok         2.6 s  rung55
+[ 92/234] ok        13.7 s  slice_aj_dispatch
+[ 93/234] ok         8.2 s  slice_aj_corrector
+[ 94/234] ok         8.6 s  spool_oracle
+[ 95/234] ok        14.4 s  slice_aa_dispatch
+[ 96/234] ok         6.9 s  rung38
+[ 97/234] ok        38.2 s  rung20
+[ 98/234] ok         8.1 s  sandbox_mach
+[ 99/234] ok        30.1 s  rung22
+[100/234] ok         8.6 s  slice_r_smoke
+[101/234] ok         9.2 s  rung100
+[102/234] ok        40.0 s  rung37
+[103/234] ok        10.2 s  slice_ab_smoke
+[104/234] ok         5.8 s  slice_x_smoke
+[105/234] ok         7.6 s  slice_ai_march
+[106/234] ok         9.7 s  slice_ag_cells
+[107/234] ok        24.3 s  sandbox_controls
+[108/234] ok         2.7 s  slice_ah_laws
+[109/234] ok         4.5 s  rung25
+[110/234] ok         4.9 s  rung21
+[111/234] ok         5.3 s  rung95
+[112/234] ok         5.0 s  rung79
+[113/234] ok        12.3 s  rung31
+[114/234] ok         2.4 s  rung66
+[115/234] ok         2.6 s  sandbox_altitude
+[116/234] ok        18.0 s  slice_ah_gauge
+[117/234] ok         3.2 s  slice_v_smoke
+[118/234] ok         3.1 s  rung32
+[119/234] ok         2.8 s  slice_ad_march
+[120/234] ok         2.9 s  rung15
+[121/234] ok         3.7 s  rung64
+[122/234] ok         3.1 s  rung43
+[123/234] ok         2.0 s  rung53
+[124/234] ok         3.1 s  ceiling_branches
+[125/234] ok         1.7 s  slice_ai_scan
+[126/234] ok        19.6 s  rung17
+[127/234] ok         6.8 s  rung61
+[128/234] ok         2.6 s  slice_aj_plumbing
+[129/234] ok        32.1 s  rung98
+[130/234] ok         2.6 s  slice_z_smoke
+[131/234] ok         3.0 s  slice_ae_cells
+[132/234] ok         2.9 s  rung29
+[133/234] ok         1.8 s  rung52
+[134/234] ok         3.6 s  rung58
+[135/234] ok         5.5 s  no_march_oracle
+[136/234] ok         2.8 s  slice_q_smoke
+[137/234] ok         5.6 s  slice_s_smoke
+[138/234] ok         3.1 s  rung26
+[139/234] ok         1.4 s  slice_v_dispatch
+[140/234] ok         2.8 s  quench_oracle
+[141/234] ok         1.3 s  low_start_repair
+[142/234] ok         2.4 s  rung50
+[143/234] ok         1.6 s  rung27
+[144/234] ok         1.2 s  rung47
+[145/234] ok         3.6 s  slice_z_dispatch
+[146/234] ok         1.2 s  rung62
+[147/234] ok         5.6 s  rung59
+[148/234] ok         1.8 s  nox_oracle
+[149/234] ok         4.7 s  rung18
+[150/234] ok         2.0 s  rung85
+[151/234] ok         2.4 s  rung51
+[152/234] ok         6.3 s  slice_af_cells
+[153/234] ok         2.1 s  rung28
+[154/234] ok         2.9 s  slice_w_dispatch
+[155/234] ok         2.5 s  march_oracle
+[156/234] ok         2.3 s  slice_s_dispatch
+[157/234] ok         1.3 s  rung35
+[158/234] ok         1.9 s  rung42
+[159/234] ok         1.5 s  rung94
+[160/234] ok         1.6 s  sandbox_hold
+[161/234] ok         1.1 s  tt_oracle
+[162/234] ok         1.1 s  rung49
+[163/234] ok         1.5 s  lean_wall
+[164/234] ok         1.4 s  sandbox_governor
+[165/234] ok         3.8 s  rung13
+[166/234] ok         1.0 s  rung57
+[167/234] ok         1.6 s  rung48
+[168/234] ok         1.1 s  sandbox_blades
+[169/234] ok         2.6 s  rung56
+[170/234] ok         0.2 s  slice_ad_cells
+[171/234] ok         3.4 s  rung34
+[172/234] ok       213.2 s  visuals
+[173/234] ok         0.8 s  rung44
+[174/234] ok         0.9 s  rung90
+[175/234] ok         1.1 s  rung36
+[176/234] ok         1.7 s  rung91
+[177/234] ok         0.6 s  slice_y_dispatch
+[178/234] ok         0.7 s  hp_wall_repair
+[179/234] ok         0.1 s  sandbox
+[180/234] ok         1.0 s  sandbox_fly
+[181/234] ok         1.2 s  sandbox_page
+[182/234] ok         0.5 s  rung93
+[183/234] ok         0.6 s  rung45
+[184/234] ok         1.0 s  slice_x_dispatch
+[185/234] ok         1.5 s  sandbox_inferred
+[186/234] ok         0.2 s  rung8
+[187/234] ok         1.0 s  rung12
+[188/234] ok         0.9 s  phi_rate_limiter_negative
+[189/234] ok         0.3 s  rung9
+[190/234] ok         1.0 s  rung41
+[191/234] ok         0.3 s  slice_aa_cells
+[192/234] ok         0.7 s  slice_ai_cells
+[193/234] ok         0.8 s  slice_y_smoke
+[194/234] ok         0.4 s  slice_ac_cells
+[195/234] ok         0.1 s  rung3
+[196/234] ok         1.2 s  rung10
+[197/234] ok         0.4 s  cycle_oracle
+[198/234] ok         0.3 s  slice_ah_cells
+[199/234] ok         1.0 s  flight_back_pressure
+[200/234] ok         0.9 s  slice_n_smoke
+[201/234] ok         0.7 s  slice_p_smoke
+[202/234] ok         0.3 s  rung6
+[203/234] ok         0.8 s  slice_m_smoke
+[204/234] ok         0.6 s  rung97
+[205/234] ok         1.1 s  rung92
+[206/234] ok         0.8 s  idle_floor
+[207/234] ok         0.1 s  turbojet (unit tests, bin)
+[208/234] ok         0.2 s  atmosphere
+[209/234] ok         0.4 s  slice_af_laws
+[210/234] ok         0.9 s  rung11
+[211/234] ok         0.7 s  rung2b
+[212/234] ok         0.3 s  gas_spine
+[213/234] ok         0.2 s  rung7
+[214/234] ok         0.4 s  slice_w_smoke
+[215/234] ok         0.2 s  turbojet (unit tests, lib)
+[216/234] ok         0.6 s  rung19
+[217/234] ok         0.1 s  rung5
+[218/234] ok         1.6 s  coverage_ledger
+[219/234] ok         0.2 s  rung4
+[220/234] ok         0.7 s  gas_oracle
+[221/234] ok         1.0 s  rung102
+[222/234] ok         0.3 s  rung14
+[223/234] ok         0.4 s  slice_ab_cells
+[224/234] ok         0.3 s  slice_r_dispatch
+[225/234] ok         0.8 s  rung1
+[226/234] ok         0.1 s  porting_rules
+[227/234] ok         0.4 s  rung30
+[228/234] ok         0.8 s  slice_o_smoke
+[229/234] ok         0.4 s  rung2
+[230/234] ok         0.2 s  sandbox_cooling
+[231/234] ok         0.1 s  sonic_abort
+[232/234] ok         0.5 s  claude_md_reference
+[233/234] ok         0.2 s  pyfmt
+[234/234] ok         0.2 s  slice_v_carrier
+
+234 programs: 2902 passed, 39 failed, 0 ignored; run 1 214 s, total 1 908 s (build included)
+FAILED: rung104 (exit 101) - log W:\Claude_projects\jet engine\rust\target\test-all\rung104.out
+    test r10_the_setting_reaches_each_views_engine ... FAILED
+FAILED: sandbox-browser (exit 1) - log W:\Claude_projects\jet engine\rust\target\test-all\sandbox-browser.out
+    test the_committed_page_is_current ... FAILED
+    test below_choke_the_thrust_recomputed_reads_the_jets_push_exactly ... FAILED
+    test below_choke_the_fan_speed_formula_names_the_table_rows_it_settles_on ... FAILED
+    test the_exhaust_sensor_reads_the_air_swallowed_and_the_belief_is_the_true_thrust ... FAILED
+    test a_slow_exhaust_sensor_falls_behind_the_gas_and_the_run_matches_native ... FAILED
+    test an_unchoked_stretch_is_drawn_dashed_and_counted ... FAILED
+    test the_controls_afterburner_lit_matches_native ... FAILED

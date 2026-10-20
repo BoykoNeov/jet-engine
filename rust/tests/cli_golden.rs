@@ -25,7 +25,7 @@
 //! left to port), and [`RUST_OWNED_PANELS`] counts the ones held to a Rust capture. Which list a
 //! panel is on is DECLARED ([`RUST_OWNED`]), never inferred from a missing segment.
 
-use turbojet::panels::{Design, PANELS, RUST_OWNED};
+use turbojet::panels::{Design, LAW_RECAPTURED, PANELS, RUST_OWNED};
 use turbojet::pyfmt::Printer;
 
 const GOLDEN: &str = include_str!("../oracle/main_stdout.txt");
@@ -204,6 +204,15 @@ fn every_ported_panel_reproduces_its_segment_exactly() {
         assert_eq!(*name, seg.name, "step {i}: the port's order is not main()'s");
         let mut p = Printer::new();
         panel(&mut p, &design);
+        // Rung 104: a retired segment's panel is held to its own capture under the flow law — and still to its Python
+        // segment when every engine is on the old pin (the `pin-default` build, gate R1a).
+        if LAW_RECAPTURED.contains(name) && !cfg!(feature = "pin-default") {
+            let cap = std::fs::read_to_string(rust_owned_path(name)).unwrap_or_else(|e| panic!("{name}: no capture ({e})"));
+            if let Err(e) = compare(&format!("step {i} ({name}, rung 104's capture)"), &cap, p.as_str()) {
+                panic!("{e}");
+            }
+            continue;
+        }
         let mut want = GOLDEN[seg.start..seg.end].to_string();
         for (_, old, new) in RECUTS.iter().filter(|r| r.0 == *name) {
             assert_eq!(want.matches(old).count(), 1, "step {i} ({name}): the re-cut text is not in its segment exactly once");
@@ -231,6 +240,20 @@ fn the_rust_owned_panels_are_declared_and_placed() {
         let at = PANELS.iter().position(|(p, _)| p == name).unwrap();
         assert_eq!(at, n - 1 - RUST_OWNED.len() + j, "{name} is out of place: the Rust-owned block sits, in \
                    RUST_OWNED's order, between the last Python rung panel and the chart line");
+    }
+}
+
+/// Rung 104's retired segments: six named Python panels, each in [`PANELS`] once, none Rust-owned, each with a
+/// segment and a capture. The count is pinned, so a later retirement moves it on purpose.
+#[test]
+fn the_retired_segments_are_declared_and_captured() {
+    assert_eq!(LAW_RECAPTURED.len(), 6, "rung 104 retired six two-shaft segments");
+    let segs = segments();
+    for name in LAW_RECAPTURED {
+        assert_eq!(PANELS.iter().filter(|(p, _)| p == name).count(), 1, "{name} must be in PANELS exactly once");
+        assert!(!RUST_OWNED.contains(name), "{name} is a Python panel, not Rust-owned");
+        assert!(segs.iter().any(|s| s.name == *name), "{name} has no Python segment to retire");
+        assert!(rust_owned_path(name).exists(), "{name} has no capture");
     }
 }
 

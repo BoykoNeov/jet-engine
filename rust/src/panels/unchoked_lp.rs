@@ -46,7 +46,8 @@ pub fn unchoked_lp_table(p: &mut Printer, _d: &Design) {
 
 const NARRATIVE: &[&str] = &[
     "\n  (pi_LPT: the LP turbine's pressure ratio, exit over inlet; LP speed: fraction of design; thrust: N per kg/s of",
-    "  design airflow; unch.: how many of the 700 -> 1400 K move's 126 points have the nozzle unchoked.) The compressors,",
-    "  the HP nozzle guide vane and the HP turbine never read the LP turbine, so the change takes work off the LP shaft",
-    "  alone: it settles slower, and the LP turbine expands less.",
+    "  design airflow; unch.: how many of the 700 -> 1400 K move's 126 points have the nozzle unchoked.) The LP",
+    "  turbine expands less and its shaft settles slower. On rung 38's choked vane the HP turbine never read the LP",
+    "  turbine, so that was the whole change; with the vane's own flow law (rung 104, the default) the HP turbine's",
+    "  back-pressure follows the LP turbine, and the HP shaft slows too - about half as much as the LP shaft.",
 ];

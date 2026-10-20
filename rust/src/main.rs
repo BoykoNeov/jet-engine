@@ -16,7 +16,7 @@
 //!   committed `data.json` (a template-only edit needs no model run).
 //! * `ts-diagram` — write `ts_diagram.json` alone, without the ~10-minute panel run.
 //! * `panel NAME [--write]` — run the panel(s) named `NAME` alone and print them. With `--write`
-//!   the one panel must be [`RUST_OWNED`], and its text is written to
+//!   the one panel must be [`RUST_OWNED`] or rung 104's [`LAW_RECAPTURED`], and its text is written to
 //!   `rust/oracle/rust_owned/NAME.txt` — the ONLY way that capture is made (the file is written
 //!   here, byte for byte, so no shell redirect can re-encode it).
 //! * `sandbox WASM [OUT]` — splice the browser build `WASM` into `docs/sandbox/template.html`,
@@ -29,7 +29,7 @@
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
-use turbojet::panels::{Design, PANELS, RUST_OWNED, TS_DIAGRAM_JSON};
+use turbojet::panels::{Design, LAW_RECAPTURED, PANELS, RUST_OWNED, TS_DIAGRAM_JSON};
 use turbojet::pyfmt::Printer;
 use turbojet::sandbox;
 use turbojet::visuals;
@@ -118,8 +118,8 @@ fn main() {
                 eprintln!("no panel named {name:?}");
                 std::process::exit(2);
             }
-            if write_it && !RUST_OWNED.contains(&name) {
-                eprintln!("{name:?} is not a Rust-owned panel; only those have a capture to write");
+            if write_it && !RUST_OWNED.contains(&name) && !LAW_RECAPTURED.contains(&name) {
+                eprintln!("{name:?} is not a Rust-owned or rung-104-recaptured panel; only those have a capture to write");
                 std::process::exit(2);
             }
             let design = Design::new();

@@ -22,6 +22,7 @@ use crate::sandbox::DoesNotRun;
 use crate::sandbox_blades::{rig_losses, BladeSettings};
 use crate::sandbox_controls::{control_maps, CONTROL_SHAPES};
 use crate::turbine_cooling::TurbineCooling;
+use crate::turbine_law::TurbineLaw;
 use crate::visuals::Json;
 
 /// The sweep's burner temperatures, K: 1300 → 2200 by 50 (rung 93's scored band).
@@ -79,12 +80,15 @@ pub struct CoolingSettings {
     /// The knob form's cooling shares on the fixed engine (of the HP compressor's air).
     pub vane: f64,
     pub blade: f64,
+    /// RUNG 104: the fixed engine's LP-turbine law (ellipse by default). Written to a reply only off its default.
+    pub turbine: TurbineLaw,
 }
 
 impl CoolingSettings {
     /// Full-coverage film, Gauntner's 1985 materials at 10 000 hours, 5 % vane and 3 % blade air.
     pub fn defaults() -> Self {
-        CoolingSettings { framing: Framing::Fixed, tech: 2, year: 1985.0, life: 1.0e4, shape: 0, vane: 0.05, blade: 0.03 }
+        CoolingSettings { framing: Framing::Fixed, tech: 2, year: 1985.0, life: 1.0e4, shape: 0, vane: 0.05, blade: 0.03,
+                          turbine: TurbineLaw::default() }
     }
 
     pub fn limit(&self) -> MetalLimit {
@@ -93,10 +97,12 @@ impl CoolingSettings {
     }
 
     pub fn to_json(&self) -> Json {
-        jobj! {
+        let mut j = jobj! {
             "framing" => self.framing.key(), "tech" => TECH_KEYS[self.tech], "year" => self.year, "life" => self.life,
             "shape" => CONTROL_SHAPES[self.shape], "vane" => self.vane, "blade" => self.blade,
-        }
+        };
+        self.turbine.push_json(&mut j);
+        j
     }
 
     /// Read settings; a missing key keeps its default.
@@ -125,6 +131,7 @@ impl CoolingSettings {
             s.tech = TECH_KEYS.iter().position(|&k| k == t).ok_or_else(|| format!(
                 "unknown cooling technology {t:?} (\"convection\", \"coated\", \"film\" or \"transpiration\")"))?;
         }
+        if let Some(t) = text("turbine")? { s.turbine = TurbineLaw::from_key(&t)?; }
         if let Some(t) = text("shape")? {
             s.shape = CONTROL_SHAPES.iter().position(|&k| k == t).ok_or_else(|| format!("unknown map shape {t:?}"))?;
         }
@@ -133,7 +140,7 @@ impl CoolingSettings {
 
     /// The fixed engine — the Controls engine's design, with this view's maps.
     pub fn fixed(&self) -> FixedEngine {
-        let b = BladeSettings::defaults();
+        let b = BladeSettings { turbine: self.turbine, ..BladeSettings::defaults() };
         let (ml, mh) = control_maps(CONTROL_SHAPES[self.shape]).expect("CONTROL_SHAPES lists only buildable shapes");
         // Rung 103: this view's engine re-solves an unchoked throttle instead of refusing it; plan § 38: and refuses
         // a point below idle whichever path solved it.

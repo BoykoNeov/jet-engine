@@ -127,8 +127,8 @@ fn bare_cascade(m: &turbojet::two_spool::TwoSpoolCore, gas: &Gas, tt4: f64)
         (pi_t, tau_of(pi_t))
     };
 
-    let (_, tau_hpt) = bisect(m.a4 / m.a45, eta_hpt);
-    let (_, tau_lpt) = bisect(m.a45 / (m.a8 * pi_n), eta_lpt);
+    let (_, tau_hpt) = bisect(m.a4 / m.a45_pin(), eta_hpt);
+    let (_, tau_lpt) = bisect(m.a45_pin() / (m.a8 * pi_n), eta_lpt);
     let tt45 = tt4 * tau_hpt;
     let tt5 = tt45 * tau_lpt;
 
@@ -395,6 +395,9 @@ fn envelope_m0_zero_is_a_round_trip_not_a_physics_boundary() {
 fn the_star_bisection_costs_47_tau_of_calls_per_solve() {
     let m = matcher(cpg_gas());
     let c = m.core();
+    // Rung 104: the `(★)` solve is the PIN's; under a flow law the perfect gas adds one check solve per pair (the
+    // shortcut's — `docs/rung104-spec.md`), so the cost is measured on the pin setting.
+    c.turbine_law.set(turbojet::turbine_law::TurbineLaw::Pin);
     c.tau_calls.set(0);
     turbojet::two_spool::counters::reset();
     let _ = m.match_point(&flight(), 1200.0).two();

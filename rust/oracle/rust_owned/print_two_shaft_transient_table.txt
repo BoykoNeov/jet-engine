@@ -1,0 +1,55 @@
+
+Two-shaft transient (rung 40): both shaft speeds become STATES. Nondimensionalizing
+leaves ONE parameter -- the clock RATIO rho = tau_L/tau_H -- and its power SPLITS:
+it can never destabilize the pair, but it decides whether the mode is real or COMPLEX.
+
+  REDUCE — the 2-D equilibrium (Phi_L = Phi_H = 0) vs rung 39's matched point
+  (via the forward closure ONLY -- it never calls the matcher, so this is non-circular):
+     Tt4      d nu_L      d nu_H    d pi_LPC    d pi_HPC
+  --------------------------------------------------------
+    1500    4.44e-15   -7.33e-15    1.02e-14   -1.12e-14
+    1300   -1.74e-14   -1.11e-16   -6.86e-14    6.00e-15
+    1200   -2.31e-13    1.63e-13   -9.43e-13    3.51e-13
+
+  sigma_crit (the LEAD THRESHOLD: HP leads iff rho > sigma_crit), at Tt4=1100.
+  == 1 on flat+CPG is rung 39's B1 slip identity restated for the transient
+  (on the running line sigma_crit reduces to the steady slip) -- INHERITED, the
+  reduce spine, NOT this rung's finding:
+               configuration   sigma_crit - 1   channel
+  ------------------------------------------------------------------
+             CPG + flat maps      -4.2188e-15   the IDENTITY
+    thermally_perfect + flat       9.1824e-03   the cp(T) gas curve
+             reacting + flat       7.7152e-03   the cp(T) gas curve
+           CPG + shaped maps       2.4920e-01   the MAP
+  => the map channel is ~5.8x the gas channel: DOMINANT, not sole (rung 39 B2's shape).
+
+  A REFUTED hypothesis, kept visible: 'the map favours the LP spool' is FALSE --
+  shaping only the LP map gives sigma_crit = 0.8851 (< 1), only the HP map 1.2304 (> 1).
+  Both signs are reachable, so only the EXISTENCE of a material shift is claimed.
+
+  THE FINDING — J(rho) = [[a/rho, b/rho], [c, d]] on the running line, Tt4=1200:
+    tr = a/rho + d,  det = (ad-bc)/rho,  disc = (a/rho - d)^2 + 4bc/rho
+  STABILITY needs a<0, d<0, ad>bc -- three conditions with NO rho in them, so the
+  clock ratio can NEVER destabilize the pair. OSCILLATION is different: disc kills
+  its first term at rho = a/d, so bc<0 => a COMPLEX band exists.
+
+        shapes          b         b*c     ad-bc           band (rho)  |Im/Re|max
+  ------------------------------------------------------------------------------
+          flat    -0.0086  2.8471e-05    2.1892                 none       0.000
+       hp-only    -0.0058  2.6903e-04    1.4998                 none       0.000
+       lp-only     0.8427 -2.9141e-03    2.3899       [1.025, 1.178]       0.035
+    flow/press     0.5738 -2.7428e-02    1.6165       [1.233, 2.082]       0.131
+
+  hp-only is the DISCRIMINATOR: its HP map IS shaped, yet no band appears -- so the
+  mechanism is the LP map SPECIFICALLY, not shaping in general. A shaped LP map flips
+  b = dPhi_L/dnu_H from small-negative to large-positive; with c<0 always, that
+  antisymmetric cross-coupling is what makes the pair complex. The mode is MAP-CREATED
+  -- rung 39's slip pattern a third time.
+  |Im/Re| <= 0.25 here (no visible ringing) is a DISCLAIMED MAGNITUDE, not a verdict:
+  existence + sign + mechanism are gated, the number rides on the representative maps.
+
+  SCOPE (a negative, stated plainly): sigma_crit's authority is FIRST-INSTANT only.
+  The finite-ramp slip excursion is SCHEDULE-SLAVED -- dominated by slip_ss(Tt4) moving
+  while the speeds lag -- so the marched threshold is NOT sigma_crit (0.60x / 1.40x).
+  Oscillation claim scoped to INTER-SPOOL (rung 37's shaft+metal pair is not audited).
+  Reduce: lp_disabled => rung 34 SpoolTransient bit-for-bit. Cycle stays rung-6 exact.

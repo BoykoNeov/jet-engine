@@ -17,3 +17,18 @@ Archived 2026-10-20 before any rung-104 code entered the repo (the anchor: `docs
   (no rung-104 code in it); `preflight_h2.txt` — H2's cells, class only; `p11.txt` — the C3 call count.
 * NB `gate_pin.log` ran on an EARLIER state of the prototype than `worktree-probe.patch` (before G7's repair and the
   COST search changes); both changes touch only the laws' paths.
+
+**Added at the rung's close (2026-10-20), against the repo with rung 104's code (`probe2/Cargo.toml` points at it):**
+
+* `p11b.txt` / `p11c.txt` — the C3 call count again: after the start-from-design repair, then after the polished
+  temperature inversions (two rows 3–5.5x the ellipse, ≤ 0.21 s a point — spec § 1).
+* `p12` — H2's equilibrium-gas cells, class only (pre-flight); `p13` — the two-row flux's smoothness at 1e-12 steps
+  (what led to the polishing); `p18` — rung 103's R6 on the cooled variant at the unchoke boundary (the boundary fix).
+* `p14` — are the control rungs' failures dust? (per-step pin-vs-ellipse difference ≤ 5e-15, all choked — the case for
+  the shortcut; its output was read in session, not saved).
+* The sort: `p15.txt` rung 103's sign, `p16.txt` rung 102 Part C, `p17.txt` rung 102's two stops, `p19.txt` the moved
+  witnesses (low start, customer bleed, altitude, Blades, lean wall), `p20.txt` rung 97's numbers, `p21.txt` which CLI
+  panels differ from their Python segment.
+* `r9_r2_.txt` / `r9_r4_.txt` — R9, the red check (the joint search forced back to the pin's HP ratio): R2 passes, R4
+  fails.
+* `gate_r1a.log` — R1a, the whole gate built with `pin-default`.

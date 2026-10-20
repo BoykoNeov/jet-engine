@@ -82,6 +82,9 @@
 //!     .venv\Scripts\python.exe rust/oracle/dump_topping.py main    rust/oracle/topping_pypy.tsv
 //!     C:\Python314\python.exe  rust/oracle/dump_topping.py cpython rust/oracle/topping_cpython.tsv
 
+#[path = "common/rung104_retired.rs"]
+mod rung104_retired;
+
 use std::collections::{BTreeMap, BTreeSet};
 
 use turbojet::engine::FlightCondition;
@@ -148,12 +151,26 @@ struct Cmp {
     cpython: bool,
     float_drifts: Vec<(String, f64)>,
     discrete_flips: Vec<String>,
+    /// RUNG 104: this arm's name, the keys it retires (the flow law moved them) and the keys that differed.
+    arm: &'static str,
+    retired: BTreeSet<String>,
+    moved: BTreeSet<String>,
 }
 
 impl Cmp {
-    fn new(py: BTreeMap<String, u64>) -> Self {
+    fn new(py: BTreeMap<String, u64>, arm: &'static str) -> Self {
         Cmp { py, seen: BTreeSet::new(), bad: Vec::new(), cpython: false,
-              float_drifts: Vec::new(), discrete_flips: Vec::new() }
+              float_drifts: Vec::new(), discrete_flips: Vec::new(),
+              arm, retired: rung104_retired::retired(arm), moved: BTreeSet::new() }
+    }
+
+    /// A value disagreement — unless rung 104 retired this key (`common/rung104_retired.rs`).
+    fn miss(&mut self, key: &str, msg: String) {
+        if self.retired.contains(key) {
+            return;
+        }
+        self.moved.insert(key.to_string());
+        self.bad.push(msg);
     }
 
     /// A finite float key.
@@ -187,7 +204,7 @@ impl Cmp {
         // drift" through a `>` bar.
         if got.is_nan() || exp.is_nan() {
             if got.to_bits() != want {
-                self.bad.push(format!("{key}: rust {got} ({:016x}) vs cpython {exp} ({want:016x})",
+                self.miss(key, format!("{key}: rust {got} ({:016x}) vs cpython {exp} ({want:016x})",
                                       got.to_bits()));
             }
             return;
@@ -228,7 +245,7 @@ impl Cmp {
             self.float_drifts.push((key.to_string(), scale));
         }
         if over {
-            self.bad.push(format!("{key}: rust {got:e} vs cpython {exp:e} (dev {scale:e})"));
+            self.miss(key, format!("{key}: rust {got:e} vs cpython {exp:e} (dev {scale:e})"));
         }
     }
 
@@ -244,9 +261,9 @@ impl Cmp {
                 if discrete && self.cpython && is_tpg(key) {
                     self.discrete_flips.push(format!("{key}: rust {got} vs cpython {want}"));
                 } else if discrete {
-                    self.bad.push(format!("{key}: rust {got} vs python {want}"));
+                    self.miss(key, format!("{key}: rust {got} vs python {want}"));
                 } else {
-                    self.bad.push(format!(
+                    self.miss(key, format!(
                         "{key}: rust {:.17e} ({got:016x}) != py {:.17e} ({want:016x})",
                         f64::from_bits(got), f64::from_bits(want)));
                 }
@@ -256,6 +273,10 @@ impl Cmp {
     }
 
     fn finish(&self) {
+        if rung104_retired::writing() {
+            return rung104_retired::write(self.arm, &self.moved);
+        }
+        rung104_retired::check_listed(self.arm, &self.retired, |k| self.py.contains_key(k));
         let missed: Vec<&String> =
             self.py.keys().filter(|k| !self.seen.contains(*k)).collect();
         if self.bad.is_empty() && missed.is_empty() {
@@ -564,7 +585,7 @@ fn run_all(c: &mut Cmp) {
 /// the CPython arm.
 #[test]
 fn oracle_matches_pypy() {
-    let mut c = Cmp::new(load(ORACLE_MAIN));
+    let mut c = Cmp::new(load(ORACLE_MAIN), "topping_main");
     run_all(&mut c);
     c.finish();
 }
@@ -578,7 +599,7 @@ fn oracle_matches_pypy() {
 /// measured.
 #[test]
 fn oracle_matches_cpython() {
-    let mut c = Cmp::new(load(ORACLE_CPYTHON));
+    let mut c = Cmp::new(load(ORACLE_CPYTHON), "topping_cpython");
     c.cpython = true;
     run_all(&mut c);
     let tpg_moved = c.float_drifts.iter().filter(|(k, _)| is_tpg(k)).count();

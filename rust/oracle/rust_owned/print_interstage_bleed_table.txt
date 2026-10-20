@@ -1,0 +1,92 @@
+
+Interstage bleed (rung 42): the device rungs 36 and 41 both deferred, fitted to the
+spool rung 41 showed is exposed. A fraction b is extracted at station 25 and dumped --
+the project's FIRST steady mass EXTRACTION -- the first time mass LEAVES the flowpath,
+so the two COMPRESSORS pass different air. (NOT 'compressor and turbine differ': (1+f)
+has done that since rung 2. What is new is mass leaving, not mass changing.)
+Comparison held at FIXED Tt4: the valve sets b, not the throttle.
+
+  WHERE b ENTERS -- exactly three places:
+    (1) the LP shaft balance   h_c(Tt25)-h_c(Tt2) = eta_m(1-b)(1+f)dh_LPT   => Tt25 FALLS
+    (2) the LP face referral   (ddagger-b): mdot_corr,2 picks up an explicit 1/(1-b)
+    (3) the thrust books       the dumped air keeps full ram drag, returns no momentum
+  and NOT the HP face: rung 39's (dagger) mdot_corr,25 = A4 pi_b pi_HPC MFP* sqrt(Tt25/Tt4)/(1+f)
+  is core flow on BOTH sides, so it carries NO b -- which is why _hp_eta_loop is reused
+  VERBATIM. Its BODY is b-free; its ARGUMENTS are not (rung 39's leaf, one rung on).
+
+  THE ASYMMETRY -- open the valve at a FIXED Tt4 (shapes flow/press, b = 0.10):
+     Tt4      x_L    dphi_L      x_H    dphi_H    ratio       dF    dTSFC
+  ----------------------------------------------------------------------
+    1500   5.2379   +7.664%   3.7199   +0.696%     11.0  -10.10%   +6.44%
+    1300   4.5395   +8.613%   3.3566   +0.516%     16.7  -10.44%   +7.65%
+    1100   3.8411   +9.560%   2.9609   +0.315%     30.3  -11.43%   +9.72%
+     900   3.1427  +10.468%   2.5302   +0.106%     98.7  -14.06%  +14.05%
+  => x_L is EXACTLY bleed-invariant (both Tt4 and Tt2 are inputs), so the whole dphi_L
+     is displacement OFF the LP running line: the LP line becomes a FAMILY indexed by b.
+
+  ...and the HP stays on ONE curve. Take the bled point's x_H, find the b=0 THROTTLE
+  setting with the SAME x_H, compare phi_H (CPG, flat maps, b = 0.10):
+     Tt4  Tt4* (b=0)       x_H    HP dphi   LP dphi (same x_L)
+  --------------------------------------------------------------
+    1400     1456.16   3.64213   +0.0123%              +11.17%
+    1100     1133.96   3.03206   +0.0160%              +11.81%
+     900      922.44   2.58207   +0.0142%              +12.33%
+  => the HP leaves its running line by ~0.01% while the LP is displaced ~11% -- a
+     ~1000x contrast. Bleed gives the LP spool a new freedom; the HP it merely slides.
+
+  SO THE HP RESPONSE IS RUNG 41's (INHERITED, and the spec says so): s_H measured by
+  opening the VALVE vs rung 41's closed form measured on the THROTTLE --
+  perturbation-independence, which could have failed (the HP loop reads Tt4, Tt25 and f
+  SEPARATELY on the real gas; only CPG at frozen f makes it one-parameter in x_H):
+     Tt4   pi_HPC  s_H (valve)  s_H closed      diff  dln phi_L
+  --------------------------------------------------------------
+    1500  6.00000       0.4039      0.4023   +0.0016   +0.01961
+    1300  5.18840       0.3138      0.3134   +0.0005   +0.02027
+    1100  4.40598       0.2081      0.2088   -0.0007   +0.02106
+     900  3.66026       0.0821      0.0842   -0.0020   +0.02199
+     800  3.30376       0.0097      0.0124   -0.0027   +0.02253
+     790  3.26878       0.0020      0.0048   -0.0028   +0.02259  <- pi*
+     780  3.23391      -0.0057     -0.0028   -0.0029   +0.02264  <- pi*
+     750  3.13009      -0.0294     -0.0263   -0.0031   +0.02282
+     700  2.95966      -0.0705     -0.0670   -0.0035   +0.02313
+  => agreement to <=0.004 over a 2.4:1 throttle. And since s_H = 0 at
+     pi* = gamma_c^(gamma_c/(gamma_c-1)) = 3.24674, the bleed response passes
+     through ZERO there and REVERSES SIGN below it -- bracketed above between
+     Tt4 = 790 (pi_HPC = 3.2688, +) and 780 (3.2339, -). The crossing interpolates to
+     pi_HPC ~ 3.260, i.e. +0.40%: the SAME fuel-fraction residual rung 41's own kill
+     test isolated (+0.44%). pi* SURFACES A THIRD TIME -- its LOCATION is inherited,
+     that a second, independent perturbation sweeps through it is new.
+     The growing ratio is the HP denominator passing through zero (dln phi_L is nearly
+     constant ~0.022 throughout) -- NOT 'infinite selectivity'.
+
+  SELF-TARGETING -- stated in phi-SPACE (rung 41's surge-proximity currency), because
+  the relative-margin version is CONFOUNDED (absolute dSM_L SHRINKS 0.056 -> 0.018 pp;
+  only its collapsing base makes the relative gain 'grow' -- this project's own rung-41
+  lesson).  b = 0.10, matched imposed floor phi_surge = 0.55:
+     Tt4    phi_L   gap_L   dphi_L    frac |    phi_H   gap_H    dphi_H    frac
+  ----------------------------------------------------------------------------
+    1500   1.0000  0.4500  +0.0776   17.2% |   1.0000  0.4500  +0.00806   1.79%
+    1300   0.9059  0.3559  +0.0787   22.1% |   0.9755  0.4255  +0.00591   1.39%
+    1100   0.8153  0.2653  +0.0785   29.6% |   0.9528  0.4028  +0.00367   0.91%
+     950   0.7532  0.2032  +0.0776   38.2% |   0.9394  0.3894  +0.00202   0.52%
+     900   0.7342  0.1842  +0.0773   42.0% |   0.9360  0.3860  +0.00149   0.39%
+  => dphi_L is nearly CONSTANT (+-1%) while dphi_H collapses ~8x. A fixed absolute
+     increment into a SHRINKING LP gap => the fraction closed RISES on the LP spool
+     (17% -> 42%) and FALLS on the HP (1.8% -> 0.4%). That is the honest sense in
+     which the device is SELF-TARGETING.
+
+  THE TRADE. Thrust falls 10.0% -> 14.7% and TSFC rises 6.3% -> 14.6% (b = 0.10) as
+  the throttle comes back: the valve gets MORE SELECTIVE and MORE EXPENSIVE together --
+  which is why real bleed is SCHEDULED, not simply left open. And bleed lowers pi_LPC
+  hence pt4, so it SHRINKS the choked envelope (lowest runnable Tt4 605 -> 630 K over
+  b = 0 -> 0.15): the inherited nozzle-choke guard bites sooner. It flags, it never lies.
+
+  A HYPOTHESIS, REFUTED and kept visible (rung 40's convention): this rung was
+  proposed as 'bleed protects the LP AT THE HP SPOOL'S EXPENSE'. FALSE -- above pi* the
+  HP flow coefficient RISES too, just 10-100x less; below pi* it falls, by ~1e-4. The
+  textbook trade is not what the choked two-spool hardware does.
+
+  NOT claimed: any magnitude (all ride on b, the representative maps and the two
+  imposed floors); a surge-SURVIVAL claim (E0 vs SM_N needs the transient, deferred);
+  a bleed SCHEDULE b(n_L); variable stators (they move phi_surge -- still open).
+  Reduce: bleed=0 => rung 39 bit-for-bit by exact dispatch. Cycle stays rung-6 exact.

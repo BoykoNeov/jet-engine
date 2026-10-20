@@ -1,0 +1,32 @@
+warning: unreachable statement
+   --> src\turbine_law.rs:310:9
+    |
+309 | ...   { let hp = self.try_solve_choked_turbine(gas, tt4, f, self.a4, self.a45_pin(), 1.0, eta_hpt)?; let (l, _) = lp(hp.2, hp.0)?; return Ok((hp, l)); }
+    |                                                                                                                                    ------------------ any code following this expression is unreachable
+310 | ...   let a4m = self.a4 * try_choked_mfp(gas, tt4, f)?;
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unreachable statement
+    |
+    = note: `#[warn(unreachable_code)]` (part of `#[warn(unused)]`) on by default
+
+
+running 1 test
+
+thread 'r4_a_hand_written_perfect_gas_solve_below_choke_under_the_ellipse' (30916) panicked at src\two_spool.rs:1204:33:
+nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=88142 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+thread 'r4_a_hand_written_perfect_gas_solve_below_choke_under_the_ellipse' (30916) panicked at src\two_spool.rs:1204:33:
+nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=97822 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+
+thread 'r4_a_hand_written_perfect_gas_solve_below_choke_under_the_ellipse' (30916) panicked at tests\rung104.rs:392:17:
+550: 38 piHPT shipped 0.4305103338600718 hand 0.5574939227936893
+r4_a_hand_written_perfect_gas_solve_below_choke_under_the_ellipse --- FAILED
+
+failures:
+
+failures:
+    r4_a_hand_written_perfect_gas_solve_below_choke_under_the_ellipse
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 11 filtered out; finished in 0.01s
+
+error: test failed, to rerun pass `--test rung104`

@@ -2136,6 +2136,9 @@ wall (last mixture 0.061–0.065).
   to the end). Of the 1 691 first-step stops one is left: the customer bleed at sea level +40 K from 440 K, whose LP
   shaft starts at 15 % speed (5 K higher, 38 %) — its mixture is above the run's wall, so it keeps `low_speed`, the
   kind now driven by it. Where the first step now solves it lands on the start's own state (mixture to ≤ 2e-15).
+  **Rung 104 (2026-10-20):** that crawling start is rung 38's choked vane's; under the LP turbine's own flow law (the
+  default) it runs the LP shaft at 37 %, and a search (four maps, three flights, every customer mode, 400–490 K) found no
+  slam stopping at once for slow shafts — `low_speed` is now driven on the `pin` setting (`docs/rung104-spec.md` § 5).
 - **The crash maps** (against `e4d9756`): rung 101's (seed 99, 1 500) — 129 replies differ: 27 lean stops, 18
   low-speed, 4 cause-unknown and 3 "other" now run to the end; 5 low-speed now reach a later floor-unreachable stop; 9
   floor-unreachable or lean stops come at another step; 41 first-step stops (39 floor-unreachable, 2 redline-floor)

@@ -43,6 +43,9 @@
 //! Regenerate the goldens with:
 //!     .venv\Scripts\python.exe rust\oracle\dump_slice_s_smoke.py > rust\oracle\slice_s_smoke_pypy.tsv
 
+#[path = "common/rung104_retired.rs"]
+mod rung104_retired;
+
 use std::collections::{BTreeMap, BTreeSet};
 
 use turbojet::engine::{build_turbojet, Engine, FlightCondition, Losses};
@@ -104,7 +107,11 @@ impl Cmp {
     }
     /// ONE panic carrying BOTH halves — the never-compared half must stay reachable when values
     /// also move, which is exactly what a structurally wrong port does.
-    fn finish(self) {
+    fn finish(mut self) {
+        // RUNG 104: the values the LP turbine's flow law moved are retired by name (`common/rung104_retired.rs`).
+        let py = std::mem::take(&mut self.py);
+        self.bad = rung104_retired::filter("slice_s_smoke", std::mem::take(&mut self.bad), |k| py.contains_key(k));
+        self.py = py;
         let missed: Vec<&String> = self.py.keys().filter(|k| !self.seen.contains(*k)).collect();
         if self.bad.is_empty() && missed.is_empty() {
             println!("slice_s_smoke: {} values bit-exact against PyPy", self.seen.len());

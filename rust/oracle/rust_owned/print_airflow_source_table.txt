@@ -6,20 +6,20 @@ LP, along pressure at HP, flown in 250 K, 50 kPa air:
 
   Mach    read                    table speed tables       sensor
   0.1     pressure ratio          +0.11        +0.00        +0.00
-  0.1     fan speed               -2.30        -2.44        -2.30
-  0.5     pressure ratio          -0.00        -0.28        +0.00
-  0.5     fan speed               -0.17        +0.04        -0.14
-  1.4     pressure ratio          -1.67        -0.01        +0.00
-  1.4     fan speed               -4.66        -6.70        -2.48
+  0.1     fan speed               -1.34        -1.48        -1.40
+  0.5     pressure ratio          -0.00        -0.29        +0.00
+  0.5     fan speed               -0.09        -0.08        -0.08
+  1.4     pressure ratio          -1.75        -0.01        +0.00
+  1.4     fan speed               -3.46        -3.65        -1.41
 
   Along the move, the worst (true - believed)/true thrust, %, where the thrust is at least 20 N per kg/s, the
   sensor instant and with a lag of one HP-shaft time constant:
 
   Mach    read                    table speed tables       sensor  sensor, lag
-  0.1     pressure ratio          +2.66        +2.66        +0.00        +2.91
-  0.1     fan speed              +40.96       +40.98       +38.52       +40.55
-  1.4     pressure ratio         +39.41       +38.99        -0.00       +47.57
-  1.4     fan speed              +61.67       +61.90       +18.63       +61.61
+  0.1     pressure ratio          +2.67        +2.68        -0.00        +2.91
+  0.1     fan speed              +39.76       +39.72       +36.99       +39.48
+  1.4     pressure ratio         +39.42       +38.99        -0.00       +47.57
+  1.4     fan speed              +61.48       +61.43       +18.57       +61.47
 
   The speed tables take the pressure ratio's steady miss to almost nothing, but not the move's: an accelerating
   engine passes less air than any steady table says. The sensor reads the air itself, so on the pressure ratio the

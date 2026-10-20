@@ -972,14 +972,14 @@ pub fn r62_powers_body(
     let core = &t.inner;
     let (wgas, f) = (c.gas(core), c.f);
     let nu_hpt = nu_hp * powp(core.tt4_d / tt4, 0.5);
-    let (pi_hpt, _, tt45) = core.base.try_solve_choked_turbine(
-        wgas, tt4, f, core.base.a4, core.base.a45, 1.0,
-        core.map_hp().eta_t_at(core.base.eta_hpt, nu_hpt))?;
-    let nu_lpt = nu_lp * powp(core.tt45_d / tt45, 0.5);
-    // RUNG 97: the pin while the nozzle stays choked, else the subsonic root.
-    let (_, _, tt5) = crate::unchoked_lp::try_lp_turbine(
-        &core.base, wgas, tt45, f, core.map_lp().eta_t_at(core.base.eta_lpt, nu_lpt), pi_hpt * c.pt4,
-        flight.p0)?;
+    // RUNG 97: the pin while the nozzle stays choked, else the subsonic root. RUNG 104: one joint solve under a law.
+    let lp_eta = |tt45: f64| core.map_lp().eta_t_at(core.base.eta_lpt, nu_lp * powp(core.tt45_d / tt45, 0.5));
+    let ((_, _, tt45), (_, _, tt5)) = core.base.try_turbine_pair(
+        wgas, tt4, f, core.map_hp().eta_t_at(core.base.eta_hpt, nu_hpt),
+        |tt45, pi_hpt| {
+            let e = lp_eta(tt45);
+            Ok((crate::unchoked_lp::try_lp_turbine(&core.base, wgas, tt45, f, e, pi_hpt * c.pt4, flight.p0)?, e))
+        })?;
     // HP: both sides are CORE flow, so (1-b) cancels — rung 42's bleed-INVARIANT form.
     let pt_hp = core.base.eta_m * (1.0 + f) * (wgas.h_t(tt4, f) - wgas.h_t(tt45, f));
     let pc_hp = wgas.h_c(c.tt3) - wgas.h_c(c.tt25);
@@ -1032,13 +1032,16 @@ pub fn r62_tail_body(
 
     let nu_hpt = nu_hp * powp(core.tt4_d / tt4, 0.5);
     let eta_hpt = core.map_hp().eta_t_at(core.base.eta_hpt, nu_hpt);
-    let (pi_hpt, tau_hpt, tt45) = core.base.try_solve_choked_turbine(
-        wgas, tt4, f, core.base.a4, core.base.a45, 1.0, eta_hpt)?;
+    // RUNG 97: the pin while the nozzle stays choked, else the subsonic root. RUNG 104: one joint solve under a law.
+    let lp_eta = |tt45: f64| core.map_lp().eta_t_at(core.base.eta_lpt, nu_lp * powp(core.tt45_d / tt45, 0.5));
+    let ((pi_hpt, tau_hpt, tt45), (pi_lpt, tau_lpt, tt5)) = core.base.try_turbine_pair(
+        wgas, tt4, f, eta_hpt,
+        |tt45, pi_hpt| {
+            let e = lp_eta(tt45);
+            Ok((crate::unchoked_lp::try_lp_turbine(&core.base, wgas, tt45, f, e, pi_hpt * c.pt4, flight.p0)?, e))
+        })?;
     let nu_lpt = nu_lp * powp(core.tt45_d / tt45, 0.5);
-    let eta_lpt = core.map_lp().eta_t_at(core.base.eta_lpt, nu_lpt);
-    // RUNG 97: the pin while the nozzle stays choked, else the subsonic root.
-    let (pi_lpt, tau_lpt, tt5) = crate::unchoked_lp::try_lp_turbine(
-        &core.base, wgas, tt45, f, eta_lpt, pi_hpt * c.pt4, flight.p0)?;
+    let eta_lpt = lp_eta(tt45);
 
     let mdot_core = c.mdot_air;
     let mdot_face = c.mdot_face.expect("rung-62 _instant_tail indexes c['mdot_face']");

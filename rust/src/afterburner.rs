@@ -1263,19 +1263,24 @@ impl LitAb {
     ) -> Result<(f64, f64, f64), Abort> {
         C_LP.with(|c| c.set(c.get() + 1));
         let a8 = s_now * self.ab.a8_dry;
-        let mfp45 = try_choked_mfp(gas, tt45, f45)?;
-        let mdot5 = base.a45 * pt45 * mfp45 / powp(tt45, 0.5);
+        // RUNG 104: the LP turbine's `W45` — the choked vane's `A45·MFP*(Tt45)` under the pin, else the law's at `π`.
+        let law = base.turbine_law.get() != crate::turbine_law::TurbineLaw::Pin;
+        let mfp45 = if law { f64::NAN } else { try_choked_mfp(gas, tt45, f45)? };
+        let w_pin = base.a45_pin() * mfp45;
+        let w45 = |pi: f64| -> Result<f64, Abort> { if law { base.w45(gas, pi, tt45, f45, eta) } else { Ok(w_pin) } };
         let trial = |pi: f64, name: bool| -> Result<(f64, f64, FlowState, AbDetail), Abort> {
             let (tau, tt5) = base.try_tau_of(gas, tt45, f45, pi, eta)?;
+            // The pin's literal old order (bit for bit), else the law's flow at this `π`.
+            let mdot5 = if law { pt45 * w45(pi)? / powp(tt45, 0.5) } else { base.a45_pin() * pt45 * mfp45 / powp(tt45, 0.5) };
             let s5 = FlowState { tt: tt5, pt: pi * pt45, mdot: mdot5, far: f45 };
             let (s7, d) = self.burn(gas, &s5, name)?;
             Ok((tau, tt5, s7, d))
         };
         // A refusal inside the search, put into words at the trial that failed.
         let named = |pi: f64, e: Abort| -> Abort { if is_refusal(&e) { trial(pi, true).err().unwrap_or(e) } else { e } };
-        let rhs = base.a45 * mfp45 / ((1.0 + f45) * a8 * self.ab.pi_n);
         let resid = |pi: f64| -> Result<f64, Abort> {
             let (_, _, s7, d) = trial(pi, false)?;
+            let rhs = w45(pi)? / ((1.0 + f45) * a8 * self.ab.pi_n);
             Ok(pi * d.pi_ab * powp(tt45 / s7.tt, 0.5) - rhs * (1.0 + s7.far) / try_choked_mfp(gas, s7.tt, s7.far)?)
         };
         // The residual rises with π_LPT: below zero at the top (stepped down past refusals), the gas cannot leave the

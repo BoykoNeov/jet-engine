@@ -324,13 +324,22 @@ pub struct TwoSpoolEngine {
     /// designed dry); rung 38's core opens its nozzle throat by `1/π_fh` and puts the flame holders in the nozzle's
     /// loss when it is fitted, and lights it at the fit's moment of a march.
     pub afterburner: Option<crate::afterburner::TwoShaftFit>,
+    /// RUNG 104: the LP turbine's flow law — copied into every core built from this engine (a sibling keeps it).
+    pub turbine_law: crate::turbine_law::TurbineLaw,
 }
 
 impl TwoSpoolEngine {
     pub fn new(gas: Gas, components: Vec<(&'static str, Component)>, eta_m: f64) -> Self {
         let fs_engine = Engine::new(gas.clone(), Vec::new(), eta_m);
         TwoSpoolEngine { gas, components, eta_m, fs_engine, customer: None, cooling: None,
-                         offtake: None, afterburner: None }
+                         offtake: None, afterburner: None,
+                         turbine_law: crate::turbine_law::TurbineLaw::default() }
+    }
+
+    /// RUNG 104: the same engine with its LP turbine on `law`.
+    pub fn with_turbine_law(mut self, law: crate::turbine_law::TurbineLaw) -> Self {
+        self.turbine_law = law;
+        self
     }
 
     /// RUNG 102 (Part C): the same engine with an afterburner fitted behind its LP turbine. The design run is unchanged
@@ -674,7 +683,7 @@ pub struct TwoSpoolCore {
     /// HP turbine NGV throat area, m².
     pub a4: f64,
     /// LP turbine NGV throat area, m² — **the third throat, and rung 38's structural novelty.**
-    pub a45: f64,
+    a45: f64,
     /// Nozzle throat area, m².
     pub a8: f64,
     /// The design run, kept because rung 39 reads five further stations off it.
@@ -732,6 +741,13 @@ pub struct TwoSpoolCore {
     /// RUNG 103: `true` skips the unchoked refusal and keeps the pin — "the old model" with its numbers. For the rung's
     /// scoring only; nothing on the page or the CLI sets it.
     pub pin_past_choke: std::cell::Cell<bool>,
+    /// RUNG 104: the LP turbine's flow law (`crate::turbine_law`), from the design engine.
+    pub turbine_law: std::cell::Cell<crate::turbine_law::TurbineLaw>,
+    /// RUNG 104: the law's design capture.
+    pub lp_capacity: crate::turbine_law::LpCapacity,
+    /// RUNG 104: where a law provably IS the pin, use the pin's own solve ([`TwoSpoolCore::law_is_pin`]). `true` by
+    /// default; gate R2 turns it off to compare the law's own search with the pin.
+    pub law_shortcut: std::cell::Cell<bool>,
 }
 
 impl TwoSpoolCore {
@@ -784,6 +800,9 @@ impl TwoSpoolCore {
 
     pub fn gas(&self) -> &Gas { &self.fs_engine.gas }
 
+    /// RUNG 104: `A45` for the PIN law only (the old code). Every other reader goes through `crate::turbine_law`.
+    pub fn a45_pin(&self) -> f64 { self.a45 }
+
     pub fn freestream_for(&self, flight: &FlightCondition) -> (FlowState, f64) {
         self.fs_engine.freestream(flight, self.mdot_air_design)
     }
@@ -820,6 +839,7 @@ impl TwoSpoolCore {
         let customer = design_engine.customer;
         let cooling = design_engine.cooling;
         let offtake = design_engine.offtake;
+        let turbine_law = design_engine.turbine_law;
 
         let by = |label: &str| -> Component {
             design_engine.components.iter().find(|(l, _)| *l == label)
@@ -867,6 +887,8 @@ impl TwoSpoolCore {
         let mdot4_r = mdot_design * (1.0 + f_design);   // total mass through every throat
         let a4 = mdot4_r * powp(s4.tt, 0.5) / (s4.pt * choked_mfp(&gas, s4.tt, f_design));
         let a45 = mdot4_r * powp(s45.tt, 0.5) / (s45.pt * choked_mfp(&gas, s45.tt, f_design));
+        let lp_capacity =
+            crate::turbine_law::LpCapacity::capture(&gas, f_design, s4.pt, s45.tt, s45.pt, s5.pt, eta_lpt, a45);
         let (tt9_r, pt9_r) = (s5.tt, pi_n * s5.pt);     // Tt9 = Tt5; pt9 = pi_n * pt5
         let a8 = mdot4_r * powp(tt9_r, 0.5) / (pt9_r * choked_mfp(&gas, tt9_r, f_design));
         // RUNG 102: fitted, the unlit duct costs the flame holders' loss, so the dry throat opens by 1/π_fh — the same
@@ -898,6 +920,9 @@ impl TwoSpoolCore {
             steady_lp: std::cell::Cell::new(crate::steady_unchoked::SteadyLp::Pin),
             dispatching: std::cell::Cell::new(false),
             pin_past_choke: std::cell::Cell::new(false),
+            turbine_law: std::cell::Cell::new(turbine_law),
+            law_shortcut: std::cell::Cell::new(true),
+            lp_capacity,
         }
     }
 
@@ -1093,11 +1118,12 @@ impl TwoSpoolCore {
     ) -> Result<Cascade, Abort> {
         counters::bump_cascade();
         // Step 1 (★-HP): tau_HPT from (A4, A45) alone.
-        let (pi_hpt, tau_hpt, tt45) =
-            self.try_solve_choked_turbine(wgas, tt4, f, self.a4, self.a45, 1.0, self.eta_hpt)?;
         // Step 2 (★-LP): tau_LPT from (A45, A8) alone — needs the nozzle choked (rung 103: or the re-solve's root).
-        let (pi_lpt, tau_lpt, tt5) = crate::steady_unchoked::try_lp_steady(
-            self, wgas, tt45, f, self.eta_lpt, pi_hpt)?;
+        // RUNG 104: under a flow law the two are one joint solve (the pin: the old order, literally).
+        let ((pi_hpt, tau_hpt, tt45), (pi_lpt, tau_lpt, tt5)) = self.try_turbine_pair(
+            wgas, tt4, f, self.eta_hpt,
+            |tt45, pi_hpt| Ok((crate::steady_unchoked::try_lp_steady(self, wgas, tt45, f, self.eta_lpt, pi_hpt)?,
+                               self.eta_lpt)))?;
 
         // Step 3: LP shaft balance -> pi_LPC. NO reference to the HP spool.
         let dh_lpt = self.eta_m * (1.0 + f) * (wgas.h_t(tt45, f) - wgas.h_t(tt5, f));
@@ -1599,10 +1625,10 @@ impl TwoSpoolMapCore {
         let (mut eta_hpt, mut eta_lpt) = (self.base.eta_hpt, self.base.eta_lpt);
         for turb_pass in 0..Self::TURB_MAX {
             // Steps 1–2: both turbines pinned by geometry, at the current turbine efficiencies.
-            let (pi_hpt, tau_hpt, tt45) = self.base.try_solve_choked_turbine(
-                wgas, tt4, f, self.base.a4, self.base.a45, 1.0, eta_hpt)?;
-            let (pi_lpt, tau_lpt, tt5) = crate::steady_unchoked::try_lp_steady(
-                &self.base, wgas, tt45, f, eta_lpt, pi_hpt)?;
+            let ((pi_hpt, tau_hpt, tt45), (pi_lpt, tau_lpt, tt5)) = self.base.try_turbine_pair(
+                wgas, tt4, f, eta_hpt,
+                |tt45, pi_hpt| Ok((crate::steady_unchoked::try_lp_steady(&self.base, wgas, tt45, f, eta_lpt, pi_hpt)?,
+                                   eta_lpt)))?;
 
             // ENERGY (map-free): the LP balance fixes Tt25, the HP balance fixes Tt3 onto it.
             let dh_lpt = self.base.eta_m * (1.0 + f) * (wgas.h_t(tt45, f) - wgas.h_t(tt5, f));

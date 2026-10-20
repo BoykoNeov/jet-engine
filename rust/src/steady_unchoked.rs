@@ -60,7 +60,7 @@ pub fn try_lp_steady(
     core: &TwoSpoolCore, gas: &Gas, tt45: f64, f45: f64, eta_lpt: f64, pi_hpt: f64,
 ) -> Result<(f64, f64, f64), Abort> {
     match core.steady_lp.get() {
-        SteadyLp::Pin => core.try_solve_choked_turbine(gas, tt45, f45, core.a45, core.a8, core.pi_n, eta_lpt),
+        SteadyLp::Pin => core.try_lp_choked(gas, tt45, f45, eta_lpt),
         SteadyLp::Free { pt4, p0 } => crate::unchoked_lp::try_lp_turbine(core, gas, tt45, f45, eta_lpt, pi_hpt * pt4, p0),
         SteadyLp::Held(pi) => {
             let (tau, tt5) = core.try_tau_of(gas, tt45, f45, pi, eta_lpt)?;

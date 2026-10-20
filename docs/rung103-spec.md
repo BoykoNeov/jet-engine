@@ -25,6 +25,13 @@ shipped path, oracle, golden and older rung keeps rung 38's refusal); **all six*
 >
 > And on all six matchers the LP shaft runs slower than the pin said — **174 of 174** — by up to 69 % deep below choke.
 
+> **CORRECTED BY RUNG 104 (2026-10-20, `docs/rung104-spec.md` § 5).** The arrow's DIRECTION is rung 38's choked vane's
+> (rung 104's `pin` setting). Under the vane's own flow law (the default) the HP spool still hears the LP compressor below
+> choke, but the other way: a better LP compressor RAISES the HP pressure ratio — on this rung's own instrument and grid,
+> 50 of 50 cells under one row, two rows and the ellipse alike (the pin: 40 of 40 down). The LP turbine expands further,
+> its vane passes more, and the HP turbine expands further too. Gates R3, R5 and H1 here run on the pin (rung 103 as
+> built); rung 104's `s103_*` gate holds the correction.
+
 ## 1. What it adds
 
 **The equation** is rung 97's, on the steady matchers: below the nozzle's unchoke boundary only `A45` stays choked, so

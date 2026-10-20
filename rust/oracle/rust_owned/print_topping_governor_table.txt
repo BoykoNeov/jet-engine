@@ -1,0 +1,23 @@
+
+TIT topping governor (rung 46): clip fuel to hold Tt4 <= redline (the first fuel-side
+FEEDBACK). Enforcing the TIT limit SPLITS the surge relief -- it rebates the late HP spool
+but MISSES the early, binding LP one. Rung 35's coupled limits are SEQUENCED in time.
+
+  THE WINDOW (flow/press, accel Tt4 1000->1400, r=0.5). The limits are SEQUENCED:
+    LP surge min : s=0.24  Tt4=1374.2  (DURING the ramp, below any redline)
+    HP surge min : s=0.40  Tt4=1559.2  (LATE, inside the clip window)
+    Tt4 peak     : s=0.50  Tt4=1645.7
+
+  THE SPLIT (redline Tt4_max=1480, in the gap above the 1400 endpoint). relief>0 = safer:
+         shape   relief_lp   relief_hp    held
+    flow/press     0.00000     0.00268    True
+       hp-only     0.00000     0.00256    True
+  => LP relief MACHINE-ZERO (the clip never reaches its early minimum), HP relief >0.
+     Holds even on hp-only (LP flat, NO complex mode) -- the pure WINDOW mechanism.
+
+  THE LEVER (Tt4_max=1440): a FASTER ramp lifts the LP surge min above the redline ->
+  relief_lp switches ON (the governor becomes a modest LP-surge lever where it's needed):
+                   r=0.5     r=0.3    r=0.15
+    relief_lp:   0.00000   0.00250   0.01910
+  Tt4_max imposed -> no redline-level claim; the SPLIT sign is load-bearing. Reduce: dormant
+  (redline above the peak) -> rung 45/43 bit-for-bit; decel never fires; cycle rung-6 exact.

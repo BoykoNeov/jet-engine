@@ -29,6 +29,12 @@ their refusal: **transient BUILT, steady still OPEN** — the steady half BUILT 
 > its peak `Tt4` is about 10 K hotter, and its LP shaft stays behind the old model's through the whole ramp. On a standard day
 > the 700 K end is barely unchoked and every difference is about a hundred times smaller.
 
+> **CORRECTED BY RUNG 104 (2026-10-20, `docs/rung104-spec.md` § 5).** "The LP shaft ALONE" holds only on rung 38's
+> choked vane (rung 104's `pin` setting). That vane never chokes; under its own flow law (the default) the HP turbine's
+> back-pressure follows the LP turbine, so the back-pressure slows BOTH shafts. At this rung's 700 K start, against the
+> old model: the HP shaft slows 0.56–0.82 % (here 0.04 %), the LP shaft 1.5–1.9 % (here 2.8–3.0 %), thrust still more
+> (+3.3 … +4.0 %) — under one row, two rows and the ellipse alike, so not the extreme law's alone.
+
 ## 1. What it adds
 
 **The equation.** Below the unchoke boundary only `A45` (the LP turbine's nozzle guide vane) stays choked; the

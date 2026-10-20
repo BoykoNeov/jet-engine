@@ -1,11 +1,11 @@
 ---
 name: rung104-decisions
-description: "User scope decisions 2026-10-20 for rung 104 (A45, the LP turbine's NGV, never choked — replace rung 38's pin with a flow law): 3-setting knob (pin / ellipse default / two rows / one row), ON EVERYWHERE, all solvers in ONE rung, RETIRE the Python-held oracles, SORT every failing older test"
+description: "User scope decisions 2026-10-20 for rung 104 (A45, the LP turbine's NGV, never choked — replace rung 38's pin with a flow law): 3-setting knob (pin / ellipse default / two rows / one row), ON EVERYWHERE, all solvers in ONE rung, Python-held oracles keep their UNMOVED keys (moved ones retired by name), SORT every failing older test"
 metadata:
   node_type: memory
   type: project
   originSessionId: 608a4dc7-68b6-4be6-be9a-6ef698d34bc2
-  modified: 2026-10-20T07:57:05.308Z
+  modified: 2026-10-20T12:38:02.181Z
 ---
 
 Picked 2026-10-20 from my post-103 list ("the turbine-throat check"). NB I first mis-described it as the HP turbine's
@@ -38,3 +38,9 @@ solve; reach census = whole gate in a throwaway worktree with the law ON; check 
 claiming they are one family). MEASURED order (G3, P9): pin < one row < two rows < ellipse — the stiffest law moves
 most. Anchor: `docs/plans/rung104-anchor-turbine-law.md`. Related: [[rung103-decisions]],
 [[rung97-unchoked-lp]].
+- **Oracles, refined 2026-10-20 (AskUserQuestion, after learning the cost):** keep the UNMOVED parts. Only the values
+  the flow law changes (real-gas, equilibrium-gas, below-choke) are retired, by name per file; everything else stays
+  checked against Python (the rungs 46–48 oracle is the only guard on three bugs). Supersedes "retire whole".
+  DONE: 87 458 of 263 647 keys retired (lists in `rust/oracle/rung104_retired/`); besides the real/eq gases, 264 keys
+  at eight perfect-gas cells of rung 39's `turb` map (η_LPT off design ⇒ the law differs even choked). Counts the law
+  moves are held as Rust-owned numbers (Python's on `pin-default`) — spec § 5.

@@ -206,7 +206,7 @@ pub fn try_solve_cooled_hpt(
     let f45 = fuel / (burner + e1 + e2);
     let tt41 = mixed_tt(gas, g, tt4, f, e1, tt3, f41);
     let mfp4 = try_choked_mfp(gas, tt4, f)?;
-    let rhs0 = base.a4 * mfp4 * (g + e1 + e2) / (base.a45 * g);
+    let rhs0 = base.a4 * mfp4 * (g + e1 + e2) / (base.a45_pin() * g);
     let at = |pi: f64| -> Result<(f64, f64, f64, f64), Abort> {
         let (tau, tt44) = base.try_tau_of(gas, tt41, f41, pi, eta)?;
         let tt45 = mixed_tt(gas, g + e1, tt44, f41, e2, tt3, f45);
@@ -236,6 +236,53 @@ pub fn try_solve_cooled_hpt(
     let pi_hpt = 0.5 * (lo + hi);
     let (_, tau_rotor, tt44, tt45) = at(pi_hpt)?;
     Ok(CooledHpt { pi_hpt, tau_rotor, tt41, tt44, tt45, f41, f45 })
+}
+
+/// RUNG 104: the cooled HP turbine AND the LP turbine — `lp(Tt45, f45, π_HPT)` is the variant's LP step, returning its
+/// result and the LP efficiency it used. `Pin`: [`try_solve_cooled_hpt`] then `lp`, literally the old order. A law: the
+/// cooled residual with `A45·MFP(Tt45)` replaced by the law's `W45` at the LP turbine's own `x`.
+#[allow(clippy::too_many_arguments, clippy::type_complexity)]
+pub fn try_cooled_pair(
+    base: &TwoSpoolCore, gas: &Gas, tt4: f64, f: f64, burner: f64, e1: f64, e2: f64, tt3: f64, eta: f64,
+    lp: impl Fn(f64, f64, f64) -> Result<((f64, f64, f64), f64), Abort>,
+) -> Result<(CooledHpt, (f64, f64, f64)), Abort> {
+    if base.turbine_law.get() == crate::turbine_law::TurbineLaw::Pin {
+        let hpt = try_solve_cooled_hpt(base, gas, tt4, f, burner, e1, e2, tt3, eta)?;
+        let (l, _) = lp(hpt.tt45, hpt.f45, hpt.pi_hpt)?;
+        return Ok((hpt, l));
+    }
+    // Rung 104's shortcut ([`TwoSpoolCore::law_is_pin`]): the pin's pair, kept only if the LP step landed on the pin's own
+    // choked root.
+    if base.law_shortcut.get() && gas.hot_is_cpg() && !base.lit_held() {
+        let hpt = try_solve_cooled_hpt(base, gas, tt4, f, burner, e1, e2, tt3, eta)?;
+        if let Ok((l, eta_l)) = lp(hpt.tt45, hpt.f45, hpt.pi_hpt) {
+            if base.law_is_pin(gas, eta_l) {
+                let c = base.try_solve_choked_turbine(gas, hpt.tt45, hpt.f45, base.a45_pin(), base.a8, base.pi_n, eta_l)?;
+                if c.0.to_bits() == l.0.to_bits() {
+                    return Ok((hpt, l));
+                }
+            }
+        }
+    }
+    let g = burner * (1.0 + f);
+    let fuel = burner * f;
+    let f41 = fuel / (burner + e1);
+    let f45 = fuel / (burner + e1 + e2);
+    let tt41 = mixed_tt(gas, g, tt4, f, e1, tt3, f41);
+    let mfp4 = try_choked_mfp(gas, tt4, f)?;
+    // `W45 = k·√(Tt45/Tt4)/π` — the A4 flow plus both coolants through the law's vane; the uncooled pair's form.
+    let k = base.a4 * mfp4 * (g + e1 + e2) / g;
+    let tt45_at = |pi: f64| -> Result<(f64, f64, f64), Abort> {
+        let (tau, tt44) = base.try_tau_of(gas, tt41, f41, pi, eta)?;
+        Ok((tau, tt44, mixed_tt(gas, g + e1, tt44, f41, e2, tt3, f45)))
+    };
+    let pi_hpt = base.try_joint_hp(gas, k, tt4, |pi| {
+        let (_, _, tt45) = tt45_at(pi)?;
+        Ok((tt45, lp(tt45, f45, pi).map(|((x, _, _), eta_l)| (x, eta_l)), f45))
+    })?;
+    let (tau_rotor, tt44, tt45) = tt45_at(pi_hpt)?;
+    let (l, _) = lp(tt45, f45, pi_hpt)?;
+    Ok((CooledHpt { pi_hpt, tau_rotor, tt41, tt44, tt45, f41, f45 }, l))
 }
 
 // =========================================================================================
@@ -309,9 +356,10 @@ pub fn try_cascade_cooled(
     let mfp4 = try_choked_mfp(wgas, tt4, f)?;
     let (mut eta_hpt, mut eta_lpt, mut tt3) = (base.eta_hpt, base.eta_lpt, tt3_seed);
     for _ in 0..TwoSpoolCore::MAX {
-        let hpt = try_solve_cooled_hpt(base, wgas, tt4, f, burner, e1, e2, tt3, eta_hpt)?;
-        let (pi_lpt, tau_lpt, tt5) = crate::steady_unchoked::try_lp_steady(
-            base, wgas, hpt.tt45, hpt.f45, eta_lpt, hpt.pi_hpt)?;
+        let (hpt, (pi_lpt, tau_lpt, tt5)) = try_cooled_pair(
+            base, wgas, tt4, f, burner, e1, e2, tt3, eta_hpt,
+            |tt45, f45, pi_hpt| Ok((crate::steady_unchoked::try_lp_steady(base, wgas, tt45, f45, eta_lpt, pi_hpt)?,
+                                    eta_lpt)))?;
 
         // The LP balance, per FACE air: the LPT passes (1-b)(G + eps) of gas.
         let g = burner * (1.0 + f);
@@ -863,13 +911,17 @@ fn turbines(
                         fuel / (burner + cool.vane));
     let nu_hpt = nu_hp * powp(core.tt4_d / tt41, 0.5);
     let eta_hpt = core.map_hp().eta_t_at(core.base.eta_hpt, nu_hpt);
-    let hpt = try_solve_cooled_hpt(&core.base, wgas, tt4, f, burner, cool.vane, cool.blade, c.tt3,
-                                   eta_hpt)?;
-    let nu_lpt = nu_lp * powp(core.tt45_d / hpt.tt45, 0.5);
-    let eta_lpt = core.map_lp().eta_t_at(core.base.eta_lpt, nu_lpt);
     // RUNG 97: the pin while the nozzle stays choked, else the subsonic root — at the cooled `Tt45`/`f45`.
-    let (pi_lpt, tau_lpt, tt5) = crate::unchoked_lp::try_lp_turbine(
-        &core.base, wgas, hpt.tt45, hpt.f45, eta_lpt, hpt.pi_hpt * c.pt4, p0)?;
+    // RUNG 104: one joint solve under a law.
+    let lp_eta = |tt45: f64| core.map_lp().eta_t_at(core.base.eta_lpt, nu_lp * powp(core.tt45_d / tt45, 0.5));
+    let (hpt, (pi_lpt, tau_lpt, tt5)) = try_cooled_pair(
+        &core.base, wgas, tt4, f, burner, cool.vane, cool.blade, c.tt3, eta_hpt,
+        |tt45, f45, pi_hpt| {
+            let e = lp_eta(tt45);
+            Ok((crate::unchoked_lp::try_lp_turbine(&core.base, wgas, tt45, f45, e, pi_hpt * c.pt4, p0)?, e))
+        })?;
+    let nu_lpt = nu_lp * powp(core.tt45_d / hpt.tt45, 0.5);
+    let eta_lpt = lp_eta(hpt.tt45);
     Ok(Turbines { hpt, pi_lpt, tau_lpt, tt5, eta_hpt, eta_lpt, nu_hpt, nu_lpt })
 }
 

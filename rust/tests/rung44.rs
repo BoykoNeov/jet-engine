@@ -452,7 +452,7 @@ fn gate2_bare_math_accel_excursion_sign_ordering_and_slaving() {
     };
 
     let b = &t.inner.base;
-    let (area_hp, area_lp) = (b.a4 / b.a45, b.a45 / (b.a8 * PI_N));
+    let (area_hp, area_lp) = (b.a4 / b.a45_pin(), b.a45_pin() / (b.a8 * PI_N));
     let tau_hpt = turbine(area_hp, ETA_HPT);
     let tau_lpt = turbine(area_lp, ETA_LPT);
 

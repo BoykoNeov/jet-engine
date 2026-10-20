@@ -36,28 +36,42 @@ fn choked_instants_keep_the_pin_bit_for_bit_and_the_switch_restores_it_where_unc
     assert!(free.iter().all(|p| p.branch == Branch::Choked));
     assert!(free.iter().zip(&pin).all(|(a, b)| a.nu_lp.to_bits() == b.nu_lp.to_bits()
         && a.nu_hp.to_bits() == b.nu_hp.to_bits() && a.tt4.to_bits() == b.tt4.to_bits()));
-    // an unchoked end: the switch gives rung 38's pin exactly; the branch expands the LP turbine less
-    let sv = build(&warm(0, 700.0)).unwrap();
+    // an unchoked end: the switch gives rung 38's pin exactly; the branch expands the LP turbine less. Rung 97 as built —
+    // on the pin setting (rung 104: with the vane's own flow law the HP turbine is NOT untouched; see below).
+    let sv = build(&as_built(warm(0, 700.0))).unwrap();
     let i = &sv.start;
     assert_eq!(i.branch, Branch::Subsonic);
     let p = pinned(&sv, i);
     let base = &tr(&sv).inner.base;
     let g = i.close.gas(&tr(&sv).inner);
-    let pin = base.try_solve_choked_turbine(g, i.tt45, i.close.f, base.a45, base.a8, base.pi_n, i.eta_lpt).unwrap();
+    let pin = base.try_solve_choked_turbine(g, i.tt45, i.close.f, base.a45_pin(), base.a8, base.pi_n, i.eta_lpt).unwrap();
     assert_eq!(p.pi_lpt.to_bits(), pin.0.to_bits());
     assert_eq!((p.pi_hpt.to_bits(), p.tt45.to_bits()), (i.pi_hpt.to_bits(), i.tt45.to_bits()), "the HP turbine is untouched");
     assert!(i.pi_lpt / p.pi_lpt - 1.0 > 1e-3, "{} vs {}", i.pi_lpt, p.pi_lpt);
     assert!(i.phi_lp_dot < p.phi_lp_dot && i.phi_hp_dot.to_bits() == p.phi_hp_dot.to_bits(),
             "the change takes power off the LP shaft only");
+    // RUNG 104's CORRECTION: under the default law the LP turbine's vane is not choked, so the HP turbine's back-pressure
+    // follows the LP turbine — at the same instant the HP turbine expands LESS than the old model's and the HP shaft
+    // loses power too: the back-pressure is shared, not the LP shaft's alone.
+    let sv = build(&warm(0, 700.0)).unwrap();
+    let i = &sv.start;
+    let p = pinned(&sv, i);
+    assert_eq!(i.branch, Branch::Subsonic);
+    assert!(i.pi_hpt / p.pi_hpt - 1.0 > 1e-3, "the HP turbine expands less: {} vs {}", i.pi_hpt, p.pi_hpt);
+    assert!(i.phi_lp_dot < p.phi_lp_dot && i.phi_hp_dot < p.phi_hp_dot, "both shafts lose power");
 }
+
+/// Rung 97 as built — rung 38's choked vane (rung 104's `pin` setting).
+fn as_built(s: ControlsSettings) -> ControlsSettings { ControlsSettings { turbine: turbojet::turbine_law::TurbineLaw::Pin, ..s } }
 
 /// A hand-written perfect-gas solve of the subsonic root — closed-form turbine, sonic throat and subsonic nozzle, its
 /// own bisection; it calls neither the helper, `Nozzle`, nor `try_tau_of` (`try_choked_mfp` only for the gas's own
 /// constants' sonic flow, checked against the closed form first).
 #[test]
 fn the_root_matches_a_hand_written_perfect_gas_solve() {
+    // Rung 97's root as built (the choked vane — rung 104's `pin` setting; rung 104's R4 is the law's hand solve).
     for shape in [0usize, 1, 2] {
-        let sv = build(&warm(shape, 700.0)).unwrap();
+        let sv = build(&as_built(warm(shape, 700.0))).unwrap();
         let i = &sv.start;
         let base = &tr(&sv).inner.base;
         let g = i.close.gas(&tr(&sv).inner);
@@ -72,7 +86,7 @@ fn the_root_matches_a_hand_written_perfect_gas_solve() {
         };
         assert!((mfp_star(i.tt45) / try_choked_mfp(g, i.tt45, f).unwrap() - 1.0).abs() < 1e-12);
         let (pt45, p0) = (i.pi_hpt * i.close.pt4, sv.flight.p0);
-        let supply = base.a45 * pt45 * mfp_star(i.tt45) / i.tt45.sqrt();
+        let supply = base.a45_pin() * pt45 * mfp_star(i.tt45) / i.tt45.sqrt();
         let resid = |pi: f64| {
             let tt5 = i.tt45 - i.eta_lpt * (i.tt45 - i.tt45 * pi.powf(ge));
             let pt9 = base.pi_n * pi * pt45;

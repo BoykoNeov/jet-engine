@@ -153,5 +153,6 @@ schedule 0.061 → 0.065 s; the proportional law 0.041 → 0.045 s.
 
 **The formula with the unchoked nozzle**: recompute the jet's push with the subsonic exit when `pt9/p0` is below
 critical — on the pressure ratio a closed form (G6); on the fan speed it also needs the LP shaft's unchoked work split
-(rung 97), since that, not the airflow guess, makes the +5 %. Or the steady matchers'
+(rung 97), since that, not the airflow guess, makes the +5 % (about +2.7 % under rung 104's flow law, the default — the LP
+shaft slows less below choke; the bar on H5's fan-speed half moved 0.03 → 0.02, rung 104 § 5). Or the steady matchers'
 unchoked branch (rung 97's seam), or the governor on the lagged marchers (rung 95's).

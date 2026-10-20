@@ -1,0 +1,12 @@
+step 39 print_two_spool_matching_table: DIFFERS at line Some(9)
+step 40 print_two_spool_map_table: DIFFERS at line Some(12)
+step 41 print_two_shaft_transient_table: DIFFERS at line Some(20)
+step 42 print_two_spool_surge_table: DIFFERS at line Some(9)
+step 43 print_interstage_bleed_table: DIFFERS at line Some(20)
+step 47 print_topping_governor_table: DIFFERS at line Some(6)
+step 63 print_fuel_bleed_table: DIFFERS at line Some(27)
+step 65 print_lagged_valve_table: DIFFERS at line Some(35)
+step 85 plot_ts_diagram: DIFFERS at line Some(1)
+rust-owned print_unchoked_lp_table: DIFFERS
+rust-owned print_unchoked_formula_table: DIFFERS
+rust-owned print_airflow_source_table: DIFFERS

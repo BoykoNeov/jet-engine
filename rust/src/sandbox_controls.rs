@@ -60,6 +60,7 @@ use crate::stator_transient::{IncidenceLimiter, ScheduledStatorCore, ScheduledSt
 use crate::two_spool::{IdleRule, Spool, TwoSpoolEngine};
 use crate::bleed_transient::r62_try_close_fuel;
 use crate::two_spool_transient::{ForcedBleed, Instant2, MarchedBleed};
+use crate::turbine_law::TurbineLaw;
 use crate::visuals::Json;
 
 /// The march step, in HP spool time constants — rung 43's grid. (Rungs 57/62 ran at 0.01; the
@@ -309,6 +310,9 @@ pub struct ControlsSettings {
     pub light_at: f64,
     pub a8_ratio: f64,
     pub a8_match: bool,
+    /// RUNG 104: what sets the LP turbine's flow — ellipse (the default), two rows, one row, or the old pin. Written to a
+    /// reply only off its default.
+    pub turbine: TurbineLaw,
 }
 
 /// Rung 96's switch: where a governed thrust is read from.
@@ -430,6 +434,7 @@ impl ControlsSettings {
             airflow: AirflowFrom::Table, exhaust_lag: false, exhaust_tau: 1.0,
             t0: fd.t0, p0: fd.p0, m0: fd.m0,
             ab: None, tt7: AB_TT7, light_at: AB_LIGHT_AT, a8_ratio: 1.0, a8_match: false,
+            turbine: TurbineLaw::default(),
         }
     }
 
@@ -600,6 +605,8 @@ impl ControlsSettings {
             if self.a8_ratio != 1.0 { kv.push(("a8_ratio".into(), Json::Float(self.a8_ratio))); }
             if self.a8_match { kv.push(("a8_match".into(), b(true))); }
         }
+        // Rung 104's law, likewise.
+        self.turbine.push_json(&mut j);
         j
     }
 
@@ -612,6 +619,9 @@ impl ControlsSettings {
             light_at: (m == AbMode::Lit).then_some(self.light_at),
         })
     }
+
+    /// The Controls engine's design — rung 85's rig at its defaults, with this run's LP-turbine law (rung 104).
+    pub fn blades(&self) -> BladeSettings { BladeSettings { turbine: self.turbine, ..BladeSettings::defaults() } }
 
     /// Rung 102: does this run light the afterburner?
     pub fn lit(&self) -> bool { self.ab == Some(AbMode::Lit) }
@@ -753,6 +763,7 @@ impl ControlsSettings {
             s.airflow = AirflowFrom::ALL.into_iter().find(|a| a.key() == t)
                 .ok_or_else(|| format!("unknown airflow source {t:?} (\"table\", \"grid\" or \"exhaust\")"))?;
         }
+        if let Some(t) = text("turbine")? { s.turbine = TurbineLaw::from_key(&t)?; }
         if let Some(t) = text("hold")? {
             s.hold = Hold::ALL.into_iter().find(|h| h.key() == t)
                 .ok_or_else(|| format!("unknown hold {t:?} (\"tt4\", \"thrust\" or \"speed\")"))?;
@@ -1172,8 +1183,8 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
                   else { build_scheduled_bleed };
     // Rung 90: the aircraft's demand rides on the design engine, so every sibling the model builds keeps it.
     let design = match s.customer_bleed() {
-        Some(cb) => BladeSettings::defaults().design().with_customer_bleed(cb),
-        None => BladeSettings::defaults().design(),
+        Some(cb) => s.blades().design().with_customer_bleed(cb),
+        None => s.blades().design(),
     };
     // Rung 91: the turbine cooling rides there too, for the same reason.
     let design = match s.turbine_cooling() {
@@ -1200,7 +1211,7 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
     // The customer bleed's twin of question (ii): the same machine — cooling, afterburner and generator kept — with
     // only the aircraft's air left in the engine. Asked only if the generator's question did not name the load.
     let unbled = s.customer_bleed().is_some().then(|| {
-        let d = BladeSettings::defaults().design();
+        let d = s.blades().design();
         let d = match s.turbine_cooling() { Some(tc) => d.with_turbine_cooling(tc), None => d };
         let d = match s.afterburner_fit() { Some(fit) => d.with_afterburner(fit), None => d };
         match s.shaft_offtake() { Some(so) => d.with_shaft_offtake(so), None => d }

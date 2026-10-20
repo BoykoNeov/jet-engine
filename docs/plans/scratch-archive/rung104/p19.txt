@@ -1,0 +1,73 @@
+(a) flow/press 460i 470i 480i 490R 500R 510R 520R 530R 540R 550R 560R 570R 580R 590R
+(a) press/flow 460i 470i 480R 490R 500R 510R 520R 530R 540R 550R 560R 570R 580R 590R
+(a) tilted     460i 470i 480i 490R 500R 510R 520R 530R 540R 550R 560R 570R 580R 590R
+(a) flat-lp    460i 470i 480R 490R 500R 510R 520R 530R 540R 550R 560R 570R 580R 590R
+(c) press/flow alt share 0.10 to 530
+(c) press/flow SL M0.30 share 0.07 to 530
+(c) press/flow SL M0.30 share 0.10 to 545
+(c) tilted alt share 0.07 to 530
+(c) tilted alt share 0.08 to 530
+(c) tilted alt share 0.09 to 530
+(c) tilted alt share 0.09 to 545
+(c) tilted alt share 0.10 to 545
+(c) tilted SL M0.30 share 0.06 to 545
+(c) tilted SL M0.30 share 0.08 to 545
+(c) tilted SL M0.30 share 0.09 to 545
+(c) tilted SL M0.30 share 0.09 to 575
+(c) tilted SL M0.30 share 0.10 to 545
+(c) flat-lp alt share 0.04 to 530
+(c) flat-lp alt share 0.05 to 530
+(c) flat-lp alt share 0.06 to 530
+(c) flat-lp alt share 0.06 to 545
+(c) flat-lp alt share 0.07 to 530
+(c) flat-lp alt share 0.07 to 545
+(c) flat-lp alt share 0.08 to 545
+(c) flat-lp alt share 0.09 to 530
+(c) flat-lp alt share 0.09 to 545
+(c) flat-lp alt share 0.09 to 560
+(c) flat-lp alt share 0.10 to 530
+(c) flat-lp alt share 0.10 to 560
+(c) flat-lp SL M0.30 share 0.04 to 530
+(c) flat-lp SL M0.30 share 0.05 to 545
+(c) flat-lp SL M0.30 share 0.06 to 545
+(c) flat-lp SL M0.30 share 0.07 to 530
+(c) flat-lp SL M0.30 share 0.08 to 530
+(c) flat-lp SL M0.30 share 0.08 to 560
+(c) flat-lp SL M0.30 share 0.09 to 530
+(c) flat-lp SL M0.30 share 0.09 to 560
+(c) flat-lp SL M0.30 share 0.10 to 530
+(c) flat-lp SL M0.30 share 0.10 to 545
+(c) flat-lp SL M0.30 share 0.10 to 560
+(c) flat-lp SL M0.30 share 0.10 to 575
+(f) M0 from 450: other: The flight Mach number must be above zero.
+(f) M0 from 470: other: The flight Mach number must be above zero.
+(f) M0 from 490: other: The flight Mach number must be above zero.
+(f) M0 from 510: other: The flight Mach number must be above zero.
+(f) M0 from 530: other: The flight Mach number must be above zero.
+(f) M0 from 550: other: The flight Mach number must be above zero.
+(f) M0 from 570: other: The flight Mach number must be above zero.
+(f) M0 from 590: other: The flight Mach number must be above zero.
+(f) M0.05 from 450: other: At the starting throttle (450 K): the engine has no steady operating point: the compressors would ha
+(f) M0.05 from 470: other: At the starting throttle (470 K): the engine has no steady operating point: the compressors would ha
+(f) M0.05 from 490: other: At the starting throttle (490 K): the engine has no steady operating point: the compressors would ha
+(f) M0.05 from 510: other: At the starting throttle (510 K): the engine has no steady operating point: the compressors would ha
+(f) M0.05 from 530: other: At the starting throttle (530 K): the engine has no steady operating point: at this low a throttle t
+(f) M0.05 from 550: other: At the starting throttle (550 K): the engine has no steady operating point: at this low a throttle t
+(f) M0.05 from 570: other: At the starting throttle (570 K): the engine has no steady operating point: at this low a throttle t
+(f) M0.05 from 590: other: At the starting throttle (590 K), the control holding the fan (LP shaft) speed its design-flight tab
+(f) M0.1 from 450: other: At the starting throttle (450 K): the engine has no steady operating point: the compressors would ha
+(f) M0.1 from 470: other: At the starting throttle (470 K): the engine has no steady operating point: the compressors would ha
+(f) M0.1 from 490: other: At the starting throttle (490 K): the engine has no steady operating point: the compressors would ha
+(f) M0.1 from 510: other: At the starting throttle (510 K): the engine has no steady operating point: the compressors would ha
+(f) M0.1 from 530: other: At the starting throttle (530 K): the engine has no steady operating point: at this low a throttle t
+(f) M0.1 from 550: other: At the starting throttle (550 K): the engine has no steady operating point: at this low a throttle t
+(f) M0.1 from 570: other: At the starting throttle (570 K): the engine has no steady operating point: at this low a throttle t
+(f) M0.1 from 590: other: At the starting throttle (590 K), the control holding the fan (LP shaft) speed its design-flight tab
+(f) M0.2 from 450: other: At the starting throttle (450 K): the engine has no steady operating point: the compressors would ha
+(f) M0.2 from 470: other: At the starting throttle (470 K): the engine has no steady operating point: the compressors would ha
+(f) M0.2 from 490: other: At the starting throttle (490 K): the engine has no steady operating point: the compressors would ha
+(f) M0.2 from 510: other: At the starting throttle (510 K): the engine has no steady operating point: the compressors would ha
+(f) M0.2 from 530: other: At the starting throttle (530 K): the engine has no steady operating point: at this low a throttle t
+(f) M0.2 from 550: other: At the starting throttle (550 K): the engine has no steady operating point: at this low a throttle t
+(f) M0.2 from 570: other: At the starting throttle (570 K), the control holding the fan (LP shaft) speed its design-flight tab
+(f) M0.2 from 590: other: At the starting throttle (590 K), the control holding the fan (LP shaft) speed its design-flight tab

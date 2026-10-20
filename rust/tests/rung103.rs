@@ -29,6 +29,7 @@ use turbojet::steady_unchoked::SteadyLp;
 use turbojet::turbine_cooling::{TurbineCooling, TurbineCoolingMatcher};
 use turbojet::two_spool::{build_two_spool_turbojet, TwoSpoolCore, TwoSpoolLosses, TwoSpoolMapCore, TwoSpoolMapMatcher,
                           TwoSpoolMapResult, TwoSpoolMatcher};
+use turbojet::turbine_law::TurbineLaw;
 use turbojet::two_spool_transient::TwoSpoolTransientCore;
 use turbojet::unchoked_lp::PI_TOP;
 
@@ -46,8 +47,10 @@ fn h2_flights() -> [(&'static str, FlightCondition); 3] {
 fn h2_tt4() -> Vec<f64> { (0..6).map(|i| 575.0 + 50.0 * i as f64).collect() }
 
 /// The Controls engine's six steady variants at H2's settings, on one map shape.
-fn variants(shape: &str) -> Vec<(&'static str, TwoSpoolMapCore)> {
-    let bs = BladeSettings::defaults();
+fn variants(shape: &str) -> Vec<(&'static str, TwoSpoolMapCore)> { variants_on(shape, TurbineLaw::default()) }
+/// The same, every engine on rung 104's `law` (rung 103 as built: `Pin`).
+fn variants_on(shape: &str, law: TurbineLaw) -> Vec<(&'static str, TwoSpoolMapCore)> {
+    let bs = BladeSettings { turbine: law, ..BladeSettings::defaults() };
     let fd = bs.flight();
     let (ml, mh) = shape_maps(shape).unwrap();
     let d = || bs.design();
@@ -92,8 +95,9 @@ fn cpg() -> Gas {
 }
 fn fd39() -> FlightCondition { FlightCondition::new(250.0, 50_000.0, 0.85) }
 /// Rung 39's own engine (H1, R5).
-fn mm39(gas: Gas, ml: ComponentMap, mh: ComponentMap) -> TwoSpoolMapMatcher {
-    TwoSpoolMapMatcher::new(build_two_spool_turbojet(gas, 3.0, 6.0, 1500.0, 50_000.0, real()), fd39(), 1.0, ml, mh)
+fn mm39_on(gas: Gas, ml: ComponentMap, mh: ComponentMap, law: TurbineLaw) -> TwoSpoolMapMatcher {
+    TwoSpoolMapMatcher::new(build_two_spool_turbojet(gas, 3.0, 6.0, 1500.0, 50_000.0, real()).with_turbine_law(law), fd39(), 1.0,
+                            ml, mh)
 }
 
 // --------------------------------------------------------------------------------- R1, R2, R8
@@ -196,7 +200,8 @@ fn r3_an_independent_root_equals_the_shipped_one_on_every_variant() {
     let mut worst: f64 = 0.0;
     let mut per = std::collections::BTreeMap::new();
     for shape in ["steep", "flat-eta"] {
-        for (vn, c) in variants(shape) {
+        // Rung 103 as built (the `pin` setting): its held instrument holds the LP turbine with the vane choked.
+        for (vn, c) in variants_on(shape, TurbineLaw::Pin) {
             for (_, fl) in h2_flights() {
                 for tt4 in h2_tt4().into_iter().chain([1000.0]) {
                     let Ok(p) = pin(&c, &fl, tt4) else { continue };
@@ -258,7 +263,7 @@ fn hand_cpg(c: &TwoSpoolCore, fl: &FlightCondition, tt4: f64) -> (f64, f64, f64)
     let pt2 = c.pi_d_max * ram_recovery(fl.m0) * fl.p0 * (tt2 / fl.t0).powf(1.0 / ec);
     let tt_out = |tin: f64, pi: f64, eta: f64| tin * (1.0 - eta * (1.0 - pi.powf(et)));
     // HP pin: pi*sqrt(Tt4/Tt45) = A4/A45 (one gas, one MFP*).
-    let k = c.a4 / c.a45;
+    let k = c.a4 / c.a45_pin();
     let (mut lo, mut hi) = (0.05, 0.9999);
     for _ in 0..200 {
         let mid = 0.5 * (lo + hi);
@@ -284,7 +289,7 @@ fn hand_cpg(c: &TwoSpoolCore, fl: &FlightCondition, tt4: f64) -> (f64, f64, f64)
             if done { break }
         }
         let pt45 = pi_hpt * pt4;
-        let supply = c.a45 * pt45 * mfp / tt45.sqrt();
+        let supply = c.a45_pin() * pt45 * mfp / tt45.sqrt();
         let pt9 = c.pi_n * pi_lpt * pt45;
         let m9 = (((pt9 / fl.p0).powf(et) - 1.0) / (0.5 * (gt - 1.0))).max(0.0).sqrt();
         let t9 = tt5 / (1.0 + 0.5 * (gt - 1.0) * m9 * m9);
@@ -306,8 +311,10 @@ fn hand_cpg(c: &TwoSpoolCore, fl: &FlightCondition, tt4: f64) -> (f64, f64, f64)
 fn r5_a_hand_written_perfect_gas_solve_of_the_whole_point() {
     assert_eq!(cpg().h_c(1.0), 1004.0, "the hand solve assumes h = cp*T");
     let fl = fd39();
-    let m38 = TwoSpoolMatcher::new(build_two_spool_turbojet(cpg(), 3.0, 6.0, 1500.0, 50_000.0, real()), fl, 1.0);
-    let m39 = mm39(cpg(), ComponentMap::flat(), ComponentMap::flat());
+    // Rung 103 as built: the choked vane (rung 104's `pin` setting; rung 104's R4 is the law's hand solve).
+    let m38 = TwoSpoolMatcher::new(build_two_spool_turbojet(cpg(), 3.0, 6.0, 1500.0, 50_000.0, real())
+                                       .with_turbine_law(TurbineLaw::Pin), fl, 1.0);
+    let m39 = mm39_on(cpg(), ComponentMap::flat(), ComponentMap::flat(), TurbineLaw::Pin);
     m38.core().below_choke.set(true);
     let mut n = 0;
     let mut worst: f64 = 0.0;
@@ -386,7 +393,9 @@ fn h1_below_choke_a_better_lp_compressor_lowers_the_hp_pressure_ratio() {
     let (mut n, mut misses) = (0, Vec::new());
     for (gn, gas) in [("CPG", cpg()), ("eq", Gas::reacting_equilibrium())] {
         for (sn, ml, mh) in shapes.iter() {
-            let mut m = mm39(gas.clone(), *ml, *mh);
+            // Rung 103 as built (the `pin` setting): its frozen cells and outcome. Under rung 104's flow laws the arrow
+            // REVERSES at every below-choke cell — rung 104's `s103_*` test and spec.
+            let mut m = mm39_on(gas.clone(), *ml, *mh, TurbineLaw::Pin);
             for (fname, fl) in [("250K", fd39()), ("SL M0.50", flight(0.0, 0.0, 0.50))] {
                 for tt4 in [450.0, 500.0, 550.0, 600.0, 650.0, 700.0, 750.0] {
                     let Some((o, _)) = scored(m.core(), &fl, tt4) else { continue };

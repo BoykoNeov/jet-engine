@@ -1,0 +1,21 @@
+(1) flow/press rung 97  M9 0.848  LP -2.96%  HP -0.047%  thrust +4.81%  vs the old model
+(1) flow/press 1row     M9 0.847  LP -1.88%  HP -0.620%  thrust +3.99%  vs the old model
+(1) flow/press 2rows    M9 0.847  LP -1.64%  HP -0.752%  thrust +3.80%  vs the old model
+(1) flow/press ellipse  M9 0.847  LP -1.51%  HP -0.823%  thrust +3.70%  vs the old model
+(2) flow/press 1row     slam vs rung 97: peak Tt4 +2.2 K; at a third of the run LP +0.12% HP -0.11%; end LP +0.001% HP -0.003%
+(2) flow/press 2rows    slam vs rung 97: peak Tt4 +2.7 K; at a third of the run LP +0.15% HP -0.14%; end LP +0.001% HP -0.004%
+(2) flow/press ellipse  slam vs rung 97: peak Tt4 +2.9 K; at a third of the run LP +0.17% HP -0.15%; end LP +0.001% HP -0.005%
+(1) press/flow rung 97  M9 0.851  LP -2.78%  HP -0.036%  thrust +3.65%  vs the old model
+(1) press/flow 1row     M9 0.851  LP -1.80%  HP -0.560%  thrust +3.40%  vs the old model
+(1) press/flow 2rows    M9 0.851  LP -1.57%  HP -0.680%  thrust +3.34%  vs the old model
+(1) press/flow ellipse  M9 0.851  LP -1.45%  HP -0.744%  thrust +3.31%  vs the old model
+(2) press/flow 1row     slam vs rung 97: peak Tt4 +1.7 K; at a third of the run LP +0.09% HP -0.10%; end LP -0.000% HP -0.002%
+(2) press/flow 2rows    slam vs rung 97: peak Tt4 +2.1 K; at a third of the run LP +0.11% HP -0.12%; end LP -0.000% HP -0.003%
+(2) press/flow ellipse  slam vs rung 97: peak Tt4 +2.3 K; at a third of the run LP +0.12% HP -0.14%; end LP -0.000% HP -0.003%
+(1) tilted     rung 97  M9 0.847  LP -2.99%  HP -0.044%  thrust +4.72%  vs the old model
+(1) tilted     1row     M9 0.846  LP -1.91%  HP -0.615%  thrust +3.99%  vs the old model
+(1) tilted     2rows    M9 0.846  LP -1.67%  HP -0.746%  thrust +3.83%  vs the old model
+(1) tilted     ellipse  M9 0.846  LP -1.53%  HP -0.816%  thrust +3.74%  vs the old model
+(2) tilted     1row     slam vs rung 97: peak Tt4 +2.3 K; at a third of the run LP +0.12% HP -0.11%; end LP +0.000% HP -0.003%
+(2) tilted     2rows    slam vs rung 97: peak Tt4 +2.8 K; at a third of the run LP +0.15% HP -0.14%; end LP +0.000% HP -0.004%
+(2) tilted     ellipse  slam vs rung 97: peak Tt4 +3.1 K; at a third of the run LP +0.16% HP -0.15%; end LP +0.000% HP -0.004%

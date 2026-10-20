@@ -119,6 +119,15 @@ pub const RUST_OWNED: &[&str] = &["print_blade_speed_table", "print_three_levers
                                   "print_unchoked_formula_table", "print_airflow_source_table",
                                   "print_afterburner_table"];
 
+/// **RUNG 104 — Python panels whose segment was RETIRED.** Under the LP turbine's flow law (the default) these six
+/// two-shaft panels print different numbers (no sentence changes; `docs/rung104-spec.md` § 5): the user retired the
+/// Python-held two-shaft oracles, so each is held instead to its own capture beside the Rust-owned ones, written by the
+/// same `panel <name> --write`. They stay where `main()` called them; the capture is a change detector, like
+/// [`RUST_OWNED`]'s, and on the `pin` setting each still prints its Python segment (rung 104's R1a run).
+pub const LAW_RECAPTURED: &[&str] = &["print_two_spool_matching_table", "print_two_spool_map_table",
+                                      "print_two_shaft_transient_table", "print_two_spool_surge_table",
+                                      "print_interstage_bleed_table", "print_topping_governor_table"];
+
 /// `main()`'s calls, in order, each named as the golden's segment file names it (a `print_*`
 /// function's name, or `main:<what>` for text `main()` prints inline).
 pub const PANELS: &[(&str, Panel)] = &[

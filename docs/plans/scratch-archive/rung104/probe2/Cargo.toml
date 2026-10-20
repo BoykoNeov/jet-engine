@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-turbojet = { path = "W:/temp/claude/rung104/wt/rust" }
+turbojet = { path = "W:/Claude_projects/jet engine/rust" }
 
 [profile.release]
 opt-level = 3
@@ -36,3 +36,39 @@ path = "src/p11.rs"
 [[bin]]
 name = "p12"
 path = "src/p12.rs"
+
+[[bin]]
+name = "p13"
+path = "src/p13.rs"
+
+[[bin]]
+name = "p14"
+path = "src/p14.rs"
+
+[[bin]]
+name = "p15"
+path = "src/p15.rs"
+
+[[bin]]
+name = "p16"
+path = "src/p16.rs"
+
+[[bin]]
+name = "p17"
+path = "src/p17.rs"
+
+[[bin]]
+name = "p18"
+path = "src/p18.rs"
+
+[[bin]]
+name = "p19"
+path = "src/p19.rs"
+
+[[bin]]
+name = "p20"
+path = "src/p20.rs"
+
+[[bin]]
+name = "p21"
+path = "src/p21.rs"

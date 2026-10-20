@@ -306,12 +306,13 @@ fn h4_choked_the_formula_wins_where_the_bend_is_large_and_the_grid_where_it_canc
 #[test]
 fn h5_unchoked_the_formula_gives_too_little_thrust_on_the_pressure_ratio_and_too_much_on_the_fan_speed() {
     // The pressure ratio (scored): the choked nozzle's push over-states the unchoked one. The fan speed (reported, the
-    // finding): the unchoked engine's fan speed at a given thrust moves first order, the other way — about +5 %.
+    // finding): the unchoked engine's fan speed at a given thrust moves first order, the other way — about +5 % on rung
+    // 38's choked vane, about +2.7 % under rung 104's flow law (the LP shaft slows less below choke): the bar follows.
     let s = |by| formula(air(ControlsSettings { shape: FLOW_PRESS, from: 700.0, ..gov(by) }, 0.05));
     let sv = build(&s(ThrustBy::Epr)).unwrap();
     assert_ne!(sv.start.branch, Branch::Choked);
     let (a, b) = (miss(&s(ThrustBy::Epr))[0], miss(&s(ThrustBy::N1))[0]);
-    assert!(a < -0.005 && b > 0.03, "EPR {a}, fan {b}");
+    assert!(a < -0.005 && b > 0.02, "EPR {a}, fan {b}");
 }
 
 #[test]

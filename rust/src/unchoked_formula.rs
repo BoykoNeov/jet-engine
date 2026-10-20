@@ -234,7 +234,7 @@ impl Formula {
         let col = |y: fn(&GasGen) -> f64| lin_by(rows, |g| g.x, y, x);
         let (pt45, tt45, f45, eta, w) = (col(|g| g.pt45), col(|g| g.tt45), col(|g| g.f45), col(|g| g.eta), col(|g| g.w));
         let (base, gas) = (&ft.inner.inner.base, ft.inner.gas());
-        let pin = base.try_solve_choked_turbine(gas, tt45, f45, base.a45, base.a8, base.pi_n, eta)?;
+        let pin = base.try_lp_choked(gas, tt45, f45, eta)?;
         let (pi, _, tt5) = try_lp_turbine(base, gas, tt45, f45, eta, pt45, push.p0)?;
         // The row's LP power at the re-solved work: exactly the row's own where the re-solve IS the pin.
         let h45 = gas.h_t(tt45, f45);

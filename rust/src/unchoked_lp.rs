@@ -41,7 +41,8 @@ pub fn try_lp_turbine(
             return x.try_lp_turbine(base, gas, tt45, f45, eta_lpt, pt45, p0, s);
         }
     }
-    let pin = base.try_solve_choked_turbine(gas, tt45, f45, base.a45, base.a8, base.pi_n, eta_lpt)?;
+    // RUNG 104: the choked-nozzle root under the core's law (the pin: rung 38's (★-LP), literally).
+    let pin = base.try_lp_choked(gas, tt45, f45, eta_lpt)?;
     if base.lp_pinned.get() {
         return Ok(pin);
     }
@@ -50,8 +51,10 @@ pub fn try_lp_turbine(
     if matches!(at(pin.0, pin.2), Ok(e) if e.p9 > p0 + 1e-6) {
         return Ok(pin);
     }
-    let supply = base.a45 * pt45 * try_choked_mfp(gas, tt45, f45)? / powp(tt45, 0.5);
+    let law = base.turbine_law.get() != crate::turbine_law::TurbineLaw::Pin;
+    let supply0 = if law { f64::NAN } else { base.a45_pin() * pt45 * try_choked_mfp(gas, tt45, f45)? / powp(tt45, 0.5) };
     let resid = |pi: f64| -> Result<(f64, f64, f64), Abort> {
+        let supply = if law { base.w45(gas, pi, tt45, f45, eta_lpt)? * pt45 / powp(tt45, 0.5) } else { supply0 };
         let (tau, tt5) = base.try_tau_of(gas, tt45, f45, pi, eta_lpt)?;
         let demand = match at(pi, tt5) {
             Ok(e) => base.a8 * (e.p9 / (gas.r_t_at(f45) * e.t9)) * e.v9,
@@ -63,6 +66,20 @@ pub fn try_lp_turbine(
         return Err(Abort(format!(
             "rung-97: the nozzle cannot pass the LP turbine's flow against {p0:.0} Pa even with the turbine nearly \
              unexpanded (pi_LPT {PI_TOP}) — the engine has no operating point at this instant")));
+    }
+    if law {
+        // RUNG 104: the supply moves with `π` here, so each trial costs a law call — a false-position search, not
+        // rung 97's 45 halvings (the pin keeps those, literally).
+        let rlo = resid(pin.0)?.0;
+        // Just below the boundary the root sits ON the choked one (where rung 97's halvings converge too), and the
+        // residual there can read a hair under zero: that is the root.
+        if rlo <= 0.0 {
+            return Ok(pin);
+        }
+        let rhi = resid(PI_TOP)?.0;
+        let pi = crate::turbine_law::illinois_known(|p| resid(p).map(|r| r.0), pin.0, rlo, PI_TOP, rhi, 0.0)?;
+        let (_, tau, tt5) = resid(pi)?;
+        return Ok((pi, tau, tt5));
     }
     let (mut lo, mut hi) = (pin.0, PI_TOP);
     for _ in 0..TwoSpoolCore::MAX {

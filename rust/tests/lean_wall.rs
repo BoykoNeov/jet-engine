@@ -123,9 +123,12 @@ fn a_slam_from_a_crawling_lp_shaft_is_still_named_low_speed() {
     // The one first-step stop the run's wall leaves (probe 3, 1 of 1 691): the customer bleed at sea level +40 K from
     // 440 K starts with the LP shaft at 15 % speed (5 K higher, 38 %), and its closure fails with the start's mixture
     // ABOVE the run's wall — no wall bound it, so "the shafts are too slow" is the reason.
+    // Rung 104: this crawling start is rung 38's choked vane's (the `pin` setting). Under the LP turbine's flow law the
+    // same start runs its LP shaft at 37 %, and a search (four maps, three hot/warm flights, every customer mode, 400–490 K)
+    // found no slam stopping at once for slow shafts — the stop's words stay driven here, on the pin.
     let (t, p) = standard(0.0);
     let s = ControlsSettings { shape: shape("tilted"), t0: t + 40.0, p0: p, m0: 0.85, customer: CustomerMode::Share,
-                               from: 440.0, ..ControlsSettings::defaults() };
+                               from: 440.0, turbine: turbojet::turbine_law::TurbineLaw::Pin, ..ControlsSettings::defaults() };
     let (sv, o) = run(&s);
     assert!(sv.start.nu_lp < 0.2, "{}", sv.start.nu_lp);
     assert!(o.points.is_empty());

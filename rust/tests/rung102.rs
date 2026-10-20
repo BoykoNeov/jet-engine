@@ -516,6 +516,7 @@ fn part_b_on_the_equilibrium_gas() {
 
 use turbojet::afterburner::LitAb;
 use turbojet::sandbox_controls::{classify, controls, ControlsSettings, StopKind, DS};
+use turbojet::turbine_law::TurbineLaw;
 
 fn lit(extra: ControlsSettings) -> ControlsSettings { ControlsSettings { ab: Some(AbMode::Lit), ..extra } }
 
@@ -555,8 +556,9 @@ fn part_c_match_moves_no_shaft() {
 #[test]
 fn part_c_an_independent_instrument_agrees_on_the_held_lit_turbine() {
     // The device solves (★AB) one throat downstream of A45. The instrument: the SHIPPED LP solve (rung 38's pin) with
-    // the throat scaled by k = π_AB·√(Tt5/Tt7)·(MFP7/MFP5)·(1+f45)/(1+f7), iterated to its fixed point.
-    let s = lit(ControlsSettings::defaults());
+    // the throat scaled by k = π_AB·√(Tt5/Tt7)·(MFP7/MFP5)·(1+f45)/(1+f7), iterated to its fixed point. Rung 102 as
+    // built — on the pin setting (rung 104's flow law: the instrument below).
+    let s = lit(ControlsSettings { turbine: TurbineLaw::Pin, ..ControlsSettings::defaults() });
     let (sv, o) = controls(&s).unwrap();
     let base = &sv.core.fuel.inner.inner.base;
     let x = LitAb { ab: base.afterburner.unwrap(), w: 1.0 };
@@ -565,11 +567,11 @@ fn part_c_an_independent_instrument_agrees_on_the_held_lit_turbine() {
         assert_eq!(i.branch, turbojet::matcher::Branch::Choked, "a choked lit point");
         let (gas, f, tt45, eta) = (base.gas(), i.close.f, i.tt45, i.eta_lpt);
         let pt45 = i.pi_hpt * i.close.pt4;
-        let mdot5 = base.a45 * pt45 * choked_mfp(gas, tt45, f) / tt45.sqrt();
+        let mdot5 = base.a45_pin() * pt45 * choked_mfp(gas, tt45, f) / tt45.sqrt();
         let a8 = x.s_now().unwrap() * x.ab.a8_dry;
         let (mut k, mut pi) = (1.0, 0.0);
         for _ in 0..200 {
-            let (p_new, _, tt5) = base.try_solve_choked_turbine(gas, tt45, f, base.a45, a8 * k, x.ab.pi_n, eta).unwrap();
+            let (p_new, _, tt5) = base.try_solve_choked_turbine(gas, tt45, f, base.a45_pin(), a8 * k, x.ab.pi_n, eta).unwrap();
             let (s7, d) = x.burn(gas, &FlowState { tt: tt5, pt: p_new * pt45, mdot: mdot5, far: f }, true).unwrap();
             k = d.pi_ab * (tt5 / s7.tt).sqrt() * choked_mfp(gas, s7.tt, s7.far) / choked_mfp(gas, tt5, f) * (1.0 + f) / (1.0 + s7.far);
             if (p_new - pi).abs() < 1e-15 { break; }
@@ -580,12 +582,61 @@ fn part_c_an_independent_instrument_agrees_on_the_held_lit_turbine() {
 }
 
 #[test]
+fn part_c_an_independent_instrument_agrees_on_the_held_lit_turbine_under_the_flow_law() {
+    // RUNG 104: under the default law the vane passes `W45(x)` at the LP turbine's own ratio. The instrument: a bisection
+    // on `x` of the choked nozzle's balance — the gas the law passes at `x`, burnt to station 7, against what `A8` passes
+    // at station 7's own state — never calling the device's lit search.
+    let s = lit(ControlsSettings::defaults());
+    let (sv, o) = controls(&s).unwrap();
+    let base = &sv.core.fuel.inner.inner.base;
+    let x = LitAb { ab: base.afterburner.unwrap(), w: 1.0 };
+    let mut n = 0;
+    for p in o.points.iter().filter(|p| p.s > 0.7 && (p.s * 10.0).fract() < 1e-9) {
+        let i = sv.reread(p).unwrap().base;
+        assert_eq!(i.branch, turbojet::matcher::Branch::Choked, "a choked lit point");
+        let (gas, f, tt45, eta) = (base.gas(), i.close.f, i.tt45, i.eta_lpt);
+        let pt45 = i.pi_hpt * i.close.pt4;
+        let a8 = x.s_now().unwrap() * x.ab.a8_dry;
+        let resid = |pi: f64| -> f64 {
+            let (_, tt5) = base.try_tau_of(gas, tt45, f, pi, eta).unwrap();
+            let mdot5 = base.w45(gas, pi, tt45, f, eta).unwrap() * pt45 / tt45.sqrt();
+            let (s7, _) = x.burn(gas, &FlowState { tt: tt5, pt: pi * pt45, mdot: mdot5, far: f }, true).unwrap();
+            s7.mdot - a8 * x.ab.pi_n * s7.pt * choked_mfp(gas, s7.tt, s7.far) / s7.tt.sqrt()
+        };
+        // A bracket ±0.05 around the device's root (far below it the duct chokes before the residual can be read); it
+        // must hold a sign change, so the root below is the instrument's own.
+        let (mut lo, mut hi) = (i.pi_lpt - 0.05, (i.pi_lpt + 0.05).min(0.999));
+        let rlo = resid(lo);
+        assert!(rlo * resid(hi) < 0.0, "s {}: the bracket holds no root", p.s);
+        for _ in 0..200 {
+            let m = 0.5 * (lo + hi);
+            if resid(m) * rlo > 0.0 { lo = m } else { hi = m }
+        }
+        let pi = 0.5 * (lo + hi);
+        assert!(rel(pi, i.pi_lpt) < 1e-8, "s {}: instrument {pi} vs device {}", p.s, i.pi_lpt);
+        n += 1;
+    }
+    assert!(n >= 5, "{n} points");
+}
+
+#[test]
 fn part_c_held_light_off_slows_the_lp_overspeeds_the_hp_and_reread_is_the_march() {
+    // Rung 102 as built — the choked vane (rung 104's `pin` setting): the LP slows, the HP overspeeds, the burner runs hot.
+    let pinned = ControlsSettings { ab: Some(AbMode::Unlit), turbine: TurbineLaw::Pin, ..ControlsSettings::defaults() };
+    let (_, u) = controls(&pinned).unwrap();
+    let (_, h) = controls(&lit(pinned)).unwrap();
+    let (ue, he) = (u.points.last().unwrap(), h.points.last().unwrap());
+    assert!(h.stop.is_none() && he.nu_lp < 0.75 * ue.nu_lp && he.nu_hp > 1.05 * ue.nu_hp && he.tt4 > ue.tt4 + 100.0);
+    // RUNG 104's CORRECTION (spec § 5): with the vane's own flow law the held light-off's back-pressure reaches the HP
+    // turbine too — BOTH shafts slow (the HP by 3–6 % where the pin had it overspeed 9 %), the LP by about a third of the
+    // pin's; the burner still runs ~200 K hotter and the thrust still rises.
     let d = ControlsSettings { ab: Some(AbMode::Unlit), ..ControlsSettings::defaults() };
     let (_, u) = controls(&d).unwrap();
     let (sv, h) = controls(&lit(d)).unwrap();
     let (ue, he) = (u.points.last().unwrap(), h.points.last().unwrap());
-    assert!(h.stop.is_none() && he.nu_lp < 0.75 * ue.nu_lp && he.nu_hp > 1.05 * ue.nu_hp && he.tt4 > ue.tt4 + 100.0);
+    assert!(h.stop.is_none() && he.nu_lp < 0.95 * ue.nu_lp && he.nu_hp < ue.nu_hp && he.tt4 > ue.tt4 + 100.0
+            && he.sp_thrust * he.mdot_air > ue.sp_thrust * ue.mdot_air,
+            "LP {} vs {}, HP {} vs {}, Tt4 {} vs {}", he.nu_lp, ue.nu_lp, he.nu_hp, ue.nu_hp, he.tt4, ue.tt4);
     // A re-read sets the light-off from its own point's time: every recorded point, bit for bit.
     for p in &h.points {
         assert_eq!(sv.reread(p).unwrap().base.sp_thrust.to_bits(), p.sp_thrust.to_bits(), "s {}", p.s);
@@ -619,8 +670,13 @@ fn part_c_refusals_and_stops_are_in_words() {
     // A stop the afterburner causes says so: the redline cutting toward the held lean wall (its own message, named by
     // the cause test), and a Tt7 too hot for this slam (the afterburner's own words — which wall it meets first, the
     // oxygen or the duct's entry, is the search's; never the bare "afterburner refused:" marker).
+    // The redline's stop is rung 102 as built (the pin setting): under rung 104's flow law the same run holds the redline
+    // to the end — the HP shaft no longer overspeeds after the light-off (spec § 5) — so C12's three misses were the pin's.
     let d = ControlsSettings::defaults();
-    for (s, words) in [(lit(ControlsSettings { light_at: 0.24, redline_on: true, ..d }), "rung-46"),
+    let redline = lit(ControlsSettings { light_at: 0.24, redline_on: true, ..d });
+    let (_, o) = controls(&redline).unwrap();
+    assert!(o.stop.is_none() && (o.points.last().unwrap().tt4 - 1480.0).abs() < 1e-6, "under the flow law it holds");
+    for (s, words) in [(ControlsSettings { turbine: TurbineLaw::Pin, ..redline }, "rung-46"),
                        (lit(ControlsSettings { light_at: 0.24, tt7: 2400.0, ..d }), "afterburner")] {
         let (sv, o) = controls(&s).unwrap();
         let st = o.stop.as_ref().expect("stops");

@@ -757,6 +757,25 @@ try {
   }
   await ev(`document.getElementById('unpin').click()`);
 
+  // 16b-104. RUNG 104: the LP turbine's inlet-vane law, a select on each two-shaft view. On Controls, an unchoked slam
+  // (sea level +40 K, Mach 0.85, from 700 K) under the default differs in the HP shaft from the same slam with the
+  // select on "choked" (the old model) — the select reaches the engine, and the reply echoes the choice; then back.
+  const tsel = await ev(`['ctl-turbine', 'bl-turbine', 'cl-turbine'].map(id => { const s = document.getElementById(id);
+    return s ? [...s.options].map(o => o.value).join(',') : null; })`);
+  const tEll = await ev(`window.sandbox.controls({T0: 328.15, p0: 101325, M0: 0.85, from: 700, shape: 'flow/press'})
+    .then(r => r.run && r.run.nu_hp)`);
+  await ev(`(() => { const s = document.getElementById('ctl-turbine'); s.value = 'pin'; s.dispatchEvent(new Event('change')); })()`);
+  await waitFor(`window.sandbox.ctlState === 'done' && window.sandbox.last.controls.turbine === 'pin'`, 60000);
+  const tPin = await ev(`window.sandbox.last.nu_hp`);
+  await ev(`(() => { const s = document.getElementById('ctl-turbine'); s.value = 'ellipse'; s.dispatchEvent(new Event('change')); })()`);
+  await waitFor(`window.sandbox.ctlState === 'done' && window.sandbox.last.controls.turbine === undefined`, 60000);
+  const tBack = await ev(`window.sandbox.last.nu_hp`);
+  check('the_turbine_vane_law_select_reaches_the_engine',
+        tsel.every(x => x === 'ellipse,two,one,pin') && Array.isArray(tEll) && Array.isArray(tPin)
+        && tEll.length === tPin.length && tEll.some((v, i) => v !== tPin[i]) && JSON.stringify(tBack) === JSON.stringify(tEll),
+        JSON.stringify([tsel, tEll && tEll.slice(0, 3), tPin && tPin.slice(0, 3)]));
+  await ev(`window.sandbox.controls({T0: 250, p0: 50000, M0: 0.85, from: 1000, shape: ${JSON.stringify(shape0)}})`);
+
   // 16b-ab. RUNG 102 (Part C): the afterburner lit at the ramp's end of the opening slam, the nozzle held — the native
   // reply of `check_ab_requests`' second request; its knobs, chart and row; "holds thrust" refused lit in words; "not
   // fitted" back on the opening run.

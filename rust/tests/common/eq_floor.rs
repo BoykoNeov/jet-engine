@@ -53,6 +53,19 @@ pub fn reconcile<'a>(
 pub fn reconcile_with<'a>(
     ours: Vec<(String, f64)>, oracle: HashMap<&'a str, f64>, wall: &HashSet<String>,
 ) -> (Vec<(String, f64)>, HashMap<&'a str, f64>) {
+    reconcile_unconserved(ours, oracle, wall, &HashSet::new())
+}
+
+/// [`reconcile_with`], minus (3)'s conservation EQUATION for the census groups in `unconserved` (prefixes ending
+/// `abort_code/`) — RUNG 104: groups whose counts the LP turbine's flow law moves (their keys retired by name,
+/// `common/rung104_retired.rs`), so Python's counts there are the pin's. Everything else is unchanged: no Newton raise
+/// anywhere, each Python Newton cell re-classified to a licensed code, code 4 empty in every group, and the moved total
+/// still equal to the re-classified cells.
+#[allow(dead_code)]
+pub fn reconcile_unconserved<'a>(
+    ours: Vec<(String, f64)>, oracle: HashMap<&'a str, f64>, wall: &HashSet<String>,
+    unconserved: &HashSet<String>,
+) -> (Vec<(String, f64)>, HashMap<&'a str, f64>) {
     let mine: HashMap<&str, f64> = ours.iter().map(|(k, v)| (k.as_str(), *v)).collect();
     let mut exempt: HashSet<String> = HashSet::new();
 
@@ -111,18 +124,25 @@ pub fn reconcile_with<'a>(
         let (r3, r4, rb) = (r(INVERSE), r(NEWTON), r(BALANCE));
         let (o3, o4, ob) = (o(INVERSE), o(NEWTON), o(BALANCE));
         assert_eq!(r4, 0.0, "{g}: code {NEWTON} must be empty after the fix");
-        assert_eq!((r3 - o3) + (rb - ob), o4,
-                   "{g}: the {o4} Newton aborts must reappear as inverse/balance aborts, no more");
-        moved_total += o4;
+        if !unconserved.contains(g) {
+            assert_eq!((r3 - o3) + (rb - ob), o4,
+                       "{g}: the {o4} Newton aborts must reappear as inverse/balance aborts, no more");
+            moved_total += o4;
+        }
         for c in [INVERSE, NEWTON, BALANCE] {
             exempt.insert(format!("{g}{c:.0}"));
         }
     }
     if !groups.is_empty() {
         // Each group's census counts ITS cells, and every re-classified cell sits in exactly one.
-        assert_eq!(moved_total as usize, prefixes.len(),
-                   "the census moves ({moved_total}) do not account for the {} re-classified \
-                    cells", prefixes.len());
+        // A cell belongs to group `census/<scope>abort_code/` when its key starts with `<scope>`; the cells of an
+        // unconserved group are left out of the count as its census is.
+        let scope = |g: &String| g["census/".len()..g.len() - "abort_code/".len()].to_string();
+        let free: Vec<String> = unconserved.iter().map(scope).collect();
+        let counted = prefixes.iter().filter(|p| !free.iter().any(|s| p.starts_with(s.as_str()))).count();
+        assert_eq!(moved_total as usize, counted,
+                   "the census moves ({moved_total}) do not account for the {counted} re-classified \
+                    cells");
     }
     for (census, field) in [("census/march_reject_lo", "n_lo"), ("census/march_reject_hi", "n_hi")] {
         let (Some(&r), Some(&o)) = (mine.get(census), oracle.get(census)) else { continue };

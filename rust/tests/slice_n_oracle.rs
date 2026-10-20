@@ -39,6 +39,9 @@
 //!     .venv\Scripts\python.exe rust/oracle/dump_slice_n.py equil rust/oracle/slice_n_eq_pypy.tsv
 //!     py -3                    rust/oracle/dump_slice_n.py lean  rust/oracle/slice_n_cpython.tsv
 
+#[path = "common/rung104_retired.rs"]
+mod rung104_retired;
+
 use std::collections::HashMap;
 
 use turbojet::engine::FlightCondition;
@@ -256,6 +259,10 @@ struct Tally {
     sched_reached_frontrow: usize,
     sched_frontrow: usize,
     sched_missed_at_design: usize,
+    /// RUNG 104: non-reached rows whose scan walked to `v_hi` (its last good setting within one step
+    /// of the end) — the Rust-side reading of § 5.10's "every miss is a raise", which needs no
+    /// Python firing count and so holds under any turbine law.
+    sched_exhausted: usize,
 }
 
 fn place(i: usize, n: usize) -> usize {
@@ -463,6 +470,9 @@ fn sweep_schedule(
                         }
                         if row.reached { t.sched_reached += 1; }
                         else if row.tt4 == 1500.0 { t.sched_missed_at_design += 1; }
+                        if !row.reached && row.vsv_star > 4.0 - 0.5 * StageStackCore::V_SCAN {
+                            t.sched_exhausted += 1;
+                        }
                         let p = format!("sched/{tag}/{:.0}", row.tt4);
                         check(format!("{p}/reached"), b(row.reached));
                         check(format!("{p}/K"), row.k as f64);
@@ -528,8 +538,15 @@ fn check_census(c: &StackCensus, want: &HashMap<&str, f64>, tag: &str, bracket_a
         bad.push(format!("census/{tag}/eta_passes: {} != 48 x {} stacks",
                          c.eta_passes, c.stacks_built));
     }
-    let looped = c.solve_n_calls - k1 - bracket_aborts;
-    if c.solve_n_passes != 48 * looped {
+    // `bracket_aborts` is PYTHON's firing count, i.e. the pin's (rung 104): under a flow law the aborts are this run's
+    // own and Rust has no counter of them, so there the identity is read as what it implies on its own — every looped
+    // solve runs exactly 48 passes, so the total is a multiple of 48. The fast arm has no caught scope (no abort survives
+    // it), so its identity stays whole under any law.
+    if !cfg!(feature = "pin-default") && tag != "fast" {
+        if c.solve_n_passes % 48 != 0 {
+            bad.push(format!("census/{tag}/solve_n_passes: {} is not a multiple of 48", c.solve_n_passes));
+        }
+    } else if c.solve_n_passes != 48 * (c.solve_n_calls - k1 - bracket_aborts) {
         bad.push(format!("census/{tag}/solve_n_passes: {} != 48 x ({} calls - {} K=1 - {} \
                           bracket aborts)", c.solve_n_passes, c.solve_n_calls, k1,
                          bracket_aborts));
@@ -604,6 +621,7 @@ fn slice_n_matches_pypy_bit_for_bit() {
                  &mut bad);
     check_census(&sched_census, &want, "sched", want["fire/sched/bracket"] as u64, &mut read,
                  &mut bad);
+    let bad = rung104_retired::filter("slice_n_pypy", bad, |k| want.contains_key(k));
     assert!(bad.is_empty(), "{} of {} keys differ:\n{}", bad.len(), want.len(),
             bad.iter().take(12).cloned().collect::<Vec<_>>().join("\n"));
     // --- THE ACCOUNTING, AND IT IS NOT A PREFIX COUNT --------------------------------------
@@ -640,9 +658,13 @@ fn slice_n_matches_pypy_bit_for_bit() {
 
     // § 5.10 (ii)'s 40 AND § 5.10 (i)'s 40 ARE THE SAME 40, and that is not automatic: a row can
     // also fail to reach by walking the scan to `v_hi` without a sign change. The equality is
-    // what says EVERY non-reached row is a RAISE.
-    assert_eq!(f_br + f_cl, (t.sched_rows - t.sched_reached) as f64,
-               "every non-reached schedule row must be a raise, not an exhausted scan");
+    // what says EVERY non-reached row is a RAISE. Python's firings are the PIN's (rung 104): under a flow law they
+    // are not this run's, so there the claim is read off the rows themselves — a scan that stopped short of `v_hi`.
+    assert_eq!(t.sched_exhausted, 0, "every non-reached schedule row must be a raise, not an exhausted scan");
+    if cfg!(feature = "pin-default") {
+        assert_eq!(f_br + f_cl, (t.sched_rows - t.sched_reached) as f64,
+                   "every non-reached schedule row must be a raise, not an exhausted scan");
+    }
 
     let owed: Vec<&str> = want.keys()
         .filter(|k| (k.starts_with("census/") || k.starts_with("fire/")) && !read.contains(**k))
@@ -662,9 +684,14 @@ fn slice_n_matches_pypy_bit_for_bit() {
     // The bar is NOT "binds is front-or-rear": it is front-or-rear everywhere except a handful
     // of DEGENERATE-ARGMIN readings, which are a tie-break and not a third physical class. The
     // interior count is asserted with its spread beside it so it can never read as physics.
+    // Rung 104: the uniform profile's binds and `inc_worst`'s split are counts the law moves (40 TPG half-rows bind at the
+    // rear, not the front; 80 `inc_worst` readings move to the front) — held as the Rust-owned numbers they now are,
+    // Python's on the pin build. The interior population (13, all HP / CPG / design) is the same under either.
+    let (binds_uniform, inc) = if cfg!(feature = "pin-default") { ([50, 587, 3], [1182, 88, 10]) }
+                               else { ([10, 627, 3], [1262, 8, 10]) };
     assert_eq!(t.binds[0], [240, 400, 0], "binds on the DERIVED profile (front, rear, interior)");
-    assert_eq!(t.binds[1], [50, 587, 3], "binds on the UNIFORM profile");
-    assert_eq!(t.inc, [1182, 88, 10], "inc_worst, either profile — the profile cannot see it");
+    assert_eq!(t.binds[1], binds_uniform, "binds on the UNIFORM profile");
+    assert_eq!(t.inc, inc, "inc_worst, either profile — the profile cannot see it");
     assert_eq!(t.binds[0].iter().sum::<usize>(), 640, "derived-profile half-rows");
     assert_eq!(t.binds[1].iter().sum::<usize>(), 640, "uniform-profile half-rows");
     // THE 13 INTERIOR READINGS ARE ONE POPULATION, AND THAT IS THE BAR — not "binds is
@@ -687,7 +714,9 @@ fn slice_n_matches_pypy_bit_for_bit() {
     assert_eq!(t.sched_reached_frontrow, 80,
                "EVERY front-row-lever row reaches — rung 55's P3 showing up as map validity");
     assert_eq!(t.sched_missed_at_design, 0, "no miss is at the design throttle");
-    assert_eq!(t.sched_reached, 120, "§ 5.10 (ii): 120 of 160 reached, the 40 misses all lumped");
+    // Rung 104: 118 under the law — two more TPG rows miss, both raises (`sched_exhausted` = 0 above).
+    let reached = if cfg!(feature = "pin-default") { 120 } else { 118 };
+    assert_eq!(t.sched_reached, reached, "§ 5.10 (ii): 120 of 160 reached, the 40 misses all lumped");
 
 }
 
@@ -728,6 +757,7 @@ fn slice_n_equilibrium_matches_pypy_bit_for_bit() {
     // been counted — zero by the fact that the dump completed.
     let mut read: std::collections::HashSet<String> = std::collections::HashSet::new();
     check_census(&c, &want, "equil", 0, &mut read, &mut bad);
+    let bad = rung104_retired::filter("slice_n_eq", bad, |k| want.contains_key(k));
     assert!(bad.is_empty(), "{} of {} keys differ:\n{}", bad.len(), want.len(),
             bad.iter().take(12).cloned().collect::<Vec<_>>().join("\n"));
     let owed: Vec<&str> = want.keys()
@@ -866,6 +896,9 @@ fn the_capacity_profile_cannot_reach_any_rung_55_reading() {
 #[test]
 fn slice_n_matches_cpython() {
     let want = load(ORACLE_CPYTHON);
+    // Rung 104: a value the law moves (retired by name) is not a statement about this port's arithmetic, so it stays
+    // out of the pinned worst case below too.
+    let retired = rung104_retired::retired("slice_n_cpython");
     let mut seen = 0usize;
     let mut bad: Vec<String> = Vec::new();
     let mut worst = (0.0f64, String::new());
@@ -907,7 +940,7 @@ fn slice_n_matches_cpython() {
                 return;
             }
             let rel = d / exp.abs();
-            if rel > worst.0 {
+            if rel > worst.0 && !retired.contains(key.as_str()) {
                 worst = (rel, key.clone());
             }
             if rel > REL_BAR {
@@ -920,6 +953,7 @@ fn slice_n_matches_cpython() {
         sweep_schedule(&mut t, &["cpg", "tpg"], &THROTTLE_FAST, &mut check);
         let _ = take_census();
     }
+    let bad = rung104_retired::filter("slice_n_cpython", bad, |k| want.contains_key(k));
     assert!(bad.is_empty(), "{} of {} keys differ from CPython:\n{}", bad.len(), want.len(),
             bad.iter().take(12).cloned().collect::<Vec<_>>().join("\n"));
     let census_keys = want.keys().filter(|k| k.starts_with("census/") || k.starts_with("fire/"))
@@ -930,10 +964,12 @@ fn slice_n_matches_cpython() {
     // The census counts are NOT re-asserted here — slice K's P2 established that iteration
     // counts are not interpreter-invariant, and the schedule's scan LENGTH is data-dependent.
     // The branch verdicts are, because a verdict is a comparison and not an iteration.
+    // Rung 104: the law moves these counts (see the PyPy arm); Python's on the pin build.
+    let pin = cfg!(feature = "pin-default");
     assert_eq!(t.binds[0], [240, 400, 0], "the binds census is interpreter-invariant");
-    assert_eq!(t.binds[1], [50, 587, 3]);
-    assert_eq!(t.inc, [1182, 88, 10]);
-    assert_eq!((t.sched_reached, t.sched_rows), (120, 160));
+    assert_eq!(t.binds[1], if pin { [50, 587, 3] } else { [10, 627, 3] });
+    assert_eq!(t.inc, if pin { [1182, 88, 10] } else { [1262, 8, 10] });
+    assert_eq!((t.sched_reached, t.sched_rows), (if pin { 120 } else { 118 }, 160));
 
     // --- THE ARGMIN TIER, WITH BOTH HALVES COUNTED --------------------------------------
     // The off-design half is a real bit bar and it is not vacuous: 7 481 keys carry it. The
@@ -941,6 +977,8 @@ fn slice_n_matches_cpython() {
     // flipping OFF design could not hide inside it.
     assert_eq!(t_offdesign_argmin, 4680, "argmin keys held to BITS off design, ZERO differing");
     assert_eq!(t_design_argmin, 1560, "argmin keys at the design throttle");
-    assert_eq!(t_design_flips, 520,
+    // Rung 104: 260 under the law — the design point is reached by the law's own search, so the last bits that decide
+    // these ties are its own (Python's 520 on the pin build).
+    assert_eq!(t_design_flips, if pin { 520 } else { 260 },
                "the MEASURED interpreter flips — all of them at design, where the per-row                 margins are within 2 ULP. A change here is a change in how many rows tie,                 which is a statement about the arithmetic and not about the tie-break rule.");
 }

@@ -197,6 +197,7 @@ pub mod three_levers;
 pub mod threshold_law;
 pub mod turbine_cooling;
 pub mod two_lag;
+pub mod turbine_law;
 pub mod two_spool;
 pub mod two_spool_transient;
 pub mod valve_reference;

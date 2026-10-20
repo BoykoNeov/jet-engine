@@ -245,7 +245,7 @@ fn gate3_independent_cpg_map_cascade() {
     };
 
     let c = &m.core().base;
-    let (area_hp, area_lp) = (c.a4 / c.a45, c.a45 / (c.a8 * pi_n));
+    let (area_hp, area_lp) = (c.a4 / c.a45_pin(), c.a45_pin() / (c.a8 * pi_n));
 
     let bare = |tt4: f64| -> (f64, f64, f64, f64, f64, f64) {
         let tau_hpt = turbine(area_hp, eta_hpt);

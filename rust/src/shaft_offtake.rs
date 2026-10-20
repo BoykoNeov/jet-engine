@@ -47,7 +47,7 @@ use crate::customer_bleed::{hp_eta_loop_customer, lp_eta_loop_customer, Customer
 use crate::engine::{FlightCondition, Performance};
 use crate::fuel_transient::{FuelCloseState, FuelTransientCore};
 use crate::gas::{powp, Abort, FlowState, Gas};
-use crate::turbine_cooling::{check_root, customer_raw, hpc_from_burner, mix, try_solve_cooled_hpt,
+use crate::turbine_cooling::{check_root, customer_raw, hpc_from_burner, mix,
                              CooledHpt, TurbineCooling};
 use crate::two_spool::{
     Cascade, CascadeMap, TwoSpoolCore, TwoSpoolEngine, TwoSpoolHooks, TwoSpoolMapCore,
@@ -267,9 +267,10 @@ fn try_cascade_loaded(
     let mfp4 = try_choked_mfp(wgas, tt4, f)?;
     let (mut eta_hpt, mut eta_lpt, mut tt3) = (base.eta_hpt, base.eta_lpt, tt3_seed);
     for _ in 0..TwoSpoolCore::MAX {
-        let hpt = try_solve_cooled_hpt(base, wgas, tt4, f, burner, e1, e2, tt3, eta_hpt)?;
-        let (pi_lpt, tau_lpt, tt5) = crate::steady_unchoked::try_lp_steady(
-            base, wgas, hpt.tt45, hpt.f45, eta_lpt, hpt.pi_hpt)?;
+        let (hpt, (pi_lpt, tau_lpt, tt5)) = crate::turbine_cooling::try_cooled_pair(
+            base, wgas, tt4, f, burner, e1, e2, tt3, eta_hpt,
+            |tt45, f45, pi_hpt| Ok((crate::steady_unchoked::try_lp_steady(base, wgas, tt45, f45, eta_lpt, pi_hpt)?,
+                                    eta_lpt)))?;
 
         // The LP balance, per FACE air: the LPT passes (1-b)(G + eps) of gas; the LP load comes off.
         let g = burner * (1.0 + f);

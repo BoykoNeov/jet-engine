@@ -133,7 +133,9 @@ fn a_below_idle_root_is_refused_with_its_reason() {
         assert_eq!(take_low_start_rescues(), 0);
         let (head, tail) = e.split_once("; and below idle").unwrap_or_else(|| panic!("{shape}: {e}"));
         assert!(head.contains("does not bracket") && tail.contains("more drag than thrust (-"), "{shape}: {e}");
-        tr.try_equilibrium(&fl, 480.0, None).unwrap_or_else(|e| panic!("{shape} 480 K runs: {}", e.0));
+        // Rung 104: under the LP turbine's flow law the edge sits up to 10 K higher (480 K is below idle on two maps), so
+        // the throttle that runs on every map is 490 K (480 K on rung 38's choked vane).
+        tr.try_equilibrium(&fl, 490.0, None).unwrap_or_else(|e| panic!("{shape} 490 K runs: {}", e.0));
     }
 }
 

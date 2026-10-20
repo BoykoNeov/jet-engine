@@ -244,10 +244,9 @@ pub fn try_cascade_customer(
     let mfp4 = try_choked_mfp(wgas, tt4, f)?;
     let (mut eta_hpt, mut eta_lpt) = (base.eta_hpt, base.eta_lpt);
     for _ in 0..TwoSpoolMapCore::TURB_MAX {
-        let (pi_hpt, tau_hpt, tt45) = base.try_solve_choked_turbine(
-            wgas, tt4, f, base.a4, base.a45, 1.0, eta_hpt)?;
-        let (pi_lpt, tau_lpt, tt5) = crate::steady_unchoked::try_lp_steady(
-            base, wgas, tt45, f, eta_lpt, pi_hpt)?;
+        let ((pi_hpt, tau_hpt, tt45), (pi_lpt, tau_lpt, tt5)) = base.try_turbine_pair(
+            wgas, tt4, f, eta_hpt,
+            |tt45, pi_hpt| Ok((crate::steady_unchoked::try_lp_steady(base, wgas, tt45, f, eta_lpt, pi_hpt)?, eta_lpt)))?;
 
         // (3) the LP balance: the LPT drives the face air with (1-b)(1-c)(1+f) of gas.
         let dh_lpt = base.eta_m * (1.0 - b) * (1.0 - c) * (1.0 + f)
@@ -729,13 +728,16 @@ fn turbines(
     let core = &t.inner;
     let nu_hpt = nu_hp * powp(core.tt4_d / tt4, 0.5);
     let eta_hpt = core.map_hp().eta_t_at(core.base.eta_hpt, nu_hpt);
-    let (pi_hpt, tau_hpt, tt45) = core.base.try_solve_choked_turbine(
-        wgas, tt4, f, core.base.a4, core.base.a45, 1.0, eta_hpt)?;
+    // RUNG 97: the pin while the nozzle stays choked, else the subsonic root. RUNG 104: one joint solve under a law.
+    let lp_eta = |tt45: f64| core.map_lp().eta_t_at(core.base.eta_lpt, nu_lp * powp(core.tt45_d / tt45, 0.5));
+    let ((pi_hpt, tau_hpt, tt45), (pi_lpt, tau_lpt, tt5)) = core.base.try_turbine_pair(
+        wgas, tt4, f, eta_hpt,
+        |tt45, pi_hpt| {
+            let e = lp_eta(tt45);
+            Ok((crate::unchoked_lp::try_lp_turbine(&core.base, wgas, tt45, f, e, pi_hpt * pt4, p0)?, e))
+        })?;
     let nu_lpt = nu_lp * powp(core.tt45_d / tt45, 0.5);
-    let eta_lpt = core.map_lp().eta_t_at(core.base.eta_lpt, nu_lpt);
-    // RUNG 97: the pin while the nozzle stays choked, else the subsonic root.
-    let (pi_lpt, tau_lpt, tt5) = crate::unchoked_lp::try_lp_turbine(
-        &core.base, wgas, tt45, f, eta_lpt, pi_hpt * pt4, p0)?;
+    let eta_lpt = lp_eta(tt45);
     Ok([pi_hpt, tau_hpt, tt45, pi_lpt, tau_lpt, tt5, eta_hpt, eta_lpt, nu_hpt, nu_lpt])
 }
 

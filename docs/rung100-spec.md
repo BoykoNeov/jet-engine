@@ -53,7 +53,9 @@ slow slices at Mach **0.05 and 0.15**, and the fan-speed approximation **B**.
   on at each end, beside the engine's own burner temperature.
 * **Refusals**: a demand whose table row, against this flight's air, has no working state (rung 97's limit) — *"The
   control's fan-speed formula: a thrust of X lies beyond the table's rows, where the table's engine, with its exhaust
-  pushing against this flight's air, has no working state …; make the tables at this flight instead."*
+  pushing against this flight's air, has no working state …; make the tables at this flight instead."* (Rung 104: its
+  driven case — sea level, Mach 0.1, 600 K — is rung 38's choked vane's; under the vane's own flow law the table's
+  engine works there and the run starts, and lower down the engine or the speed table refuses first: kept on the pin.)
 
 ## Givens (anchor § 0) — the probes that moved the scope
 

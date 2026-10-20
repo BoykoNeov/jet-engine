@@ -27,6 +27,9 @@
 //!     .venv\Scripts\python.exe rust/oracle/dump_slice_o.py fast  rust/oracle/slice_o_pypy.tsv
 //!     .venv\Scripts\python.exe rust/oracle/dump_slice_o.py equil rust/oracle/slice_o_eq_pypy.tsv
 
+#[path = "common/rung104_retired.rs"]
+mod rung104_retired;
+
 use std::collections::{HashMap, HashSet};
 
 use turbojet::bleed::TwoSpoolBleedMatcher;
@@ -410,6 +413,7 @@ fn slice_o_matches_pypy_bit_for_bit() {
             bad.push(format!("{key}: rust {got:?} vs pypy {w:?}"));
         }
     });
+    let bad = rung104_retired::filter("slice_o_pypy", bad, |k| want.contains_key(k));
     assert!(bad.is_empty(), "{} of {reads} reads differ:\n  {}", bad.len(), bad.join("\n  "));
     assert_eq!(seen.len(), want.len(),
                "the dump has {} distinct keys and the sweep recomputed {} — a key the port \
@@ -504,6 +508,7 @@ fn slice_o_equilibrium_matches_pypy_bit_for_bit() {
                        "{corner} at Tt4={tt4}: rung 61 is not its parent bit-for-bit");
         }
     }
+    let bad = rung104_retired::filter("slice_o_eq", bad, |k| want.contains_key(k));
     assert!(bad.is_empty(), "{} of {seen} keys differ:\n  {}", bad.len(), bad.join("\n  "));
     assert_eq!(seen, want.len(), "every dumped equilibrium key is recomputed");
 }

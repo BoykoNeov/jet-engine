@@ -28,6 +28,9 @@
 //!     .venv\Scripts\python.exe rust/oracle/dump_slice_m.py equil rust/oracle/slice_m_eq_pypy.tsv
 //!     py -3                    rust/oracle/dump_slice_m.py fast  rust/oracle/slice_m_cpython.tsv
 
+#[path = "common/rung104_retired.rs"]
+mod rung104_retired;
+
 use std::collections::HashMap;
 use turbojet::engine::FlightCondition;
 use turbojet::gas::{Gas, GasSpec};
@@ -386,6 +389,7 @@ fn slice_m_matches_pypy_bit_for_bit() {
             }
         })
     };
+    let bad = rung104_retired::filter("slice_m_pypy", bad, |k| want.contains_key(k));
     assert!(bad.is_empty(), "{} of {} keys differ:\n{}", bad.len(), want.len(),
             bad.iter().take(12).cloned().collect::<Vec<_>>().join("\n"));
     assert_eq!(seen, want.len(), "read {seen} keys of the dump's {}", want.len());
@@ -428,9 +432,16 @@ fn slice_m_matches_pypy_bit_for_bit() {
         cs.ladder_passes.iter().copied().filter(|&p| p > 0).collect();
     let root: std::collections::BTreeSet<u64> =
         cs.root_passes.iter().copied().filter(|&p| p > 0).collect();
-    assert_eq!(ladder.iter().copied().collect::<Vec<_>>(), vec![30, 32, 33, 34, 35, 36],
+    // Rung 104: the pass counts are the PIN's in Python's measurement; under the flow law the TPG cells add 31 to the
+    // ladder's set and 25 and 27 to the root's (no CPG key moved) — counts the law moves, held here as the Rust-owned
+    // numbers they now are (the pin build still holds Python's).
+    let ladder_want = if cfg!(feature = "pin-default") { vec![30, 32, 33, 34, 35, 36] }
+                      else { vec![30, 31, 32, 33, 34, 35, 36] };
+    assert_eq!(ladder.iter().copied().collect::<Vec<_>>(), ladder_want,
                "rung 53's ladder bisection passes");
-    assert_eq!(root.iter().copied().collect::<Vec<_>>(), vec![26, 28, 29, 30, 31, 32, 33],
+    let root_want = if cfg!(feature = "pin-default") { vec![26, 28, 29, 30, 31, 32, 33] }
+                    else { vec![25, 26, 27, 28, 29, 30, 31, 32, 33] };
+    assert_eq!(root.iter().copied().collect::<Vec<_>>(), root_want,
                "rung 54's bracketed-root bisection passes");
     assert!(*ladder.iter().max().unwrap() < 80 && *root.iter().max().unwrap() < 80,
             "INC_MAX = 80 is DEAD on both root-finders");
@@ -468,6 +479,7 @@ fn slice_m_equilibrium_matches_pypy_bit_for_bit() {
             }
         })
     };
+    let bad = rung104_retired::filter("slice_m_eq", bad, |k| want.contains_key(k));
     assert!(bad.is_empty(), "{} of {} keys differ:\n{}", bad.len(), want.len(),
             bad.iter().take(12).cloned().collect::<Vec<_>>().join("\n"));
     assert_eq!(seen, want.len(), "read {seen} keys of the dump's {}", want.len());
@@ -537,6 +549,9 @@ fn slice_m_matches_cpython() {
     const REL_BAR: f64 = 1e-7;
     const ABS_BAR: f64 = 1e-10;
     let want = load(ORACLE_CPYTHON);
+    // Rung 104: a value the law moves (retired by name) is not a statement about this port's arithmetic, so it stays
+    // out of the pinned worst case below too.
+    let retired = rung104_retired::retired("slice_m_cpython");
     let mut seen = 0usize;
     let mut bad = Vec::new();
     let mut worst = (0.0f64, String::new());
@@ -568,7 +583,7 @@ fn slice_m_matches_cpython() {
                 return;
             }
             let rel = d / exp.abs();
-            if rel > worst.0 {
+            if rel > worst.0 && !retired.contains(key.as_str()) {
                 *worst = (rel, key.clone());
             }
             if rel > REL_BAR {
@@ -576,6 +591,7 @@ fn slice_m_matches_cpython() {
             }
         })
     };
+    let bad = rung104_retired::filter("slice_m_cpython", bad, |k| want.contains_key(k));
     assert!(bad.is_empty(), "{} of {} keys differ from CPython:\n{}", bad.len(), want.len(),
             bad.iter().take(12).cloned().collect::<Vec<_>>().join("\n"));
     assert_eq!(seen, want.len());

@@ -1,0 +1,36 @@
+flow/press design    pin      LP  -37.8%  HP  +9.63%  Tt4 +220.1 K  thrust  +23.1%
+flow/press design    1row     LP  -15.6%  HP  -3.72%  Tt4 +198.6 K  thrust  +26.5%
+flow/press design    2rows    LP  -13.7%  HP  -4.99%  Tt4 +198.5 K  thrust  +26.6%
+flow/press design    ellipse  LP  -12.6%  HP  -5.75%  Tt4 +198.6 K  thrust  +26.6%
+flow/press 5km M0.6  pin      LP  -36.5%  HP  +9.44%  Tt4 +228.9 K  thrust  +17.9%
+flow/press 5km M0.6  1row     LP  -15.5%  HP  -3.61%  Tt4 +200.9 K  thrust  +22.1%
+flow/press 5km M0.6  2rows    LP  -13.6%  HP  -4.88%  Tt4 +200.4 K  thrust  +22.3%
+flow/press 5km M0.6  ellipse  LP  -12.5%  HP  -5.65%  Tt4 +200.2 K  thrust  +22.3%
+press/flow design    pin      LP  -36.8%  HP  +9.42%  Tt4 +219.6 K  thrust  +23.3%
+press/flow design    1row     LP  -16.2%  HP  -3.14%  Tt4 +201.1 K  thrust  +26.3%
+press/flow design    2rows    LP  -14.5%  HP  -4.35%  Tt4 +200.6 K  thrust  +26.4%
+press/flow design    ellipse  LP  -13.4%  HP  -5.08%  Tt4 +200.3 K  thrust  +26.4%
+press/flow 5km M0.6  pin      LP  -35.7%  HP  +9.26%  Tt4 +227.5 K  thrust  +18.3%
+press/flow 5km M0.6  1row     LP  -16.1%  HP  -3.06%  Tt4 +203.2 K  thrust  +21.9%
+press/flow 5km M0.6  2rows    LP  -14.4%  HP  -4.27%  Tt4 +202.4 K  thrust  +22.0%
+press/flow 5km M0.6  ellipse  LP  -13.4%  HP  -5.01%  Tt4 +201.9 K  thrust  +22.1%
+tilted     design    pin      LP  -37.4%  HP  +9.51%  Tt4 +219.0 K  thrust  +23.3%
+tilted     design    1row     LP  -15.9%  HP  -3.42%  Tt4 +200.0 K  thrust  +26.4%
+tilted     design    2rows    LP  -14.0%  HP  -4.65%  Tt4 +199.9 K  thrust  +26.4%
+tilted     design    ellipse  LP  -12.9%  HP  -5.39%  Tt4 +200.0 K  thrust  +26.5%
+tilted     5km M0.6  pin      LP  -36.1%  HP  +9.34%  Tt4 +227.7 K  thrust  +18.1%
+tilted     5km M0.6  1row     LP  -15.8%  HP  -3.33%  Tt4 +202.1 K  thrust  +22.0%
+tilted     5km M0.6  2rows    LP  -13.9%  HP  -4.57%  Tt4 +201.6 K  thrust  +22.1%
+tilted     5km M0.6  ellipse  LP  -12.9%  HP  -5.31%  Tt4 +201.4 K  thrust  +22.2%
+flat-lp    design    pin      LP  -41.1%  HP  +9.31%  Tt4 +214.1 K  thrust  +24.0%
+flat-lp    design    1row     LP  -13.6%  HP  -3.85%  Tt4 +196.6 K  thrust  +26.8%
+flat-lp    design    2rows    LP  -11.3%  HP  -5.09%  Tt4 +196.4 K  thrust  +26.8%
+flat-lp    design    ellipse  LP   -9.9%  HP  -5.84%  Tt4 +196.3 K  thrust  +26.9%
+flat-lp    5km M0.6  pin      LP  -39.4%  HP  +9.14%  Tt4 +221.7 K  thrust  +18.9%
+flat-lp    5km M0.6  1row     LP  -13.4%  HP  -3.71%  Tt4 +199.3 K  thrust  +22.3%
+flat-lp    5km M0.6  2rows    LP  -11.1%  HP  -4.95%  Tt4 +198.7 K  thrust  +22.4%
+flat-lp    5km M0.6  ellipse  LP   -9.7%  HP  -5.70%  Tt4 +198.5 K  thrust  +22.5%
+TEST CASE pin      stop false LP -34.7%  HP +9.48%  Tt4 +216.1 K
+TEST CASE 1row     stop false LP -14.9%  HP -3.30%  Tt4 +194.4 K
+TEST CASE 2rows    stop false LP -13.1%  HP -4.56%  Tt4 +194.2 K
+TEST CASE ellipse  stop false LP -12.0%  HP -5.32%  Tt4 +194.1 K

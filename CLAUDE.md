@@ -24,12 +24,12 @@ the web page running the Rust model live is `docs/sandbox/` (slices 1–5 built;
 ## The rungs
 
 The model is built in cumulative **rungs** — each adds one physical effect and is anchored to a
-published case. All rungs are live; the current scope is **rung 103**.
+published case. All rungs are live; the current scope is **rung 104**.
 
 **Families** (contiguous): 1–6 cycle · 7–24 NOx & mixing · 25–30 nozzle/turbine marches ·
 31–33 off-design steady · 34–37 1-spool transient · 38–45 two-spool · 46–52 fuel limiters ·
 53–56 + 61 airflow levers (steady) · 57–60, 62–63 schedules · 64–68 valve/lag/cascades ·
-69–84 reference splits & rank · 85 blade-speed walls · 86–89 three levers, valve reference, slow & asymmetric valve · 90–94 customer bleed, turbine cooling, shaft offtake, metal limit, burner hold · 95–96 governor in the slam, inferred thrust (knobs) · 97 unchoked nozzle, two shafts · 98–101 corrected tables, speed axis, below choke, airflow off the line · 102 afterburner · 103 steady matchers below choke. **Read-only diagnostics: 7–30, 36, 41, 44, 45**; all else
+69–84 reference splits & rank · 85 blade-speed walls · 86–89 three levers, valve reference, slow & asymmetric valve · 90–94 customer bleed, turbine cooling, shaft offtake, metal limit, burner hold · 95–96 governor in the slam, inferred thrust (knobs) · 97 unchoked nozzle, two shafts · 98–101 corrected tables, speed axis, below choke, airflow off the line · 102 afterburner · 103 steady matchers below choke · 104 LP-turbine flow law. **Read-only diagnostics: 7–30, 36, 41, 44, 45**; all else
 STRUCTURAL / DYNAMIC — an operating point, via § Layout's ladders.
 
 | Rung | Adds (one-line hook) | Spec |
@@ -129,15 +129,16 @@ STRUCTURAL / DYNAMIC — an operating point, via § Layout's ladders.
 | 92 | **SHAFT-POWER OFFTAKE** — a generator load on the HP or LP shaft, as KNOBS. **HEADLINE: a bleed is a power offtake plus air thrown away** (exact): on the HP shaft both spools go toward surge at every power; the LP shaft is nearly free. **CORRECTS 90's HP mechanism; EXPLAINS 42.** | `docs/rung92-spec.md` |
 | 93 | **METAL TEMPERATURE** — Gauntner's NASA correlation on 91's vane and blade air, as KNOBS. **HEADLINE: cooling never stops the engine, and on fixed hardware it cools its own coolant** — so fixed and fresh engines trade places, at a crossing that rises as cooling worsens. **DISCHARGES 91's concession.** | `docs/rung93-spec.md` |
 | 94 | **A BURNER THAT CARRIES THE LOAD** — each throttle holds thrust or HP speed, the burner floating, as KNOBS. **HEADLINE: carrying the generator relieves the compressors** — an LP-shaft one becomes a stall-margin GAIN; holding HP speed is not holding thrust. **CORRECTS 92's concession.** | `docs/rung94-spec.md` |
-| 95 | **A GOVERNOR IN THE SLAM** — the throttle holds thrust, HP speed or `Tt4` all along the move, the limiters cutting, as KNOBS. **HEADLINE: holding thrust makes a fast slam HOTTER** — more fuel than the ramp at every point; a fixed speed gain is ~2× slower at idle. **CORRECTS 94's seam; 40 a special case.** | `docs/rung95-spec.md` |
+| 95 | **A GOVERNOR IN THE SLAM** — the throttle holds thrust, HP speed or `Tt4` all along the move, the limiters cutting, as KNOBS. **HEADLINE: holding thrust makes a fast slam HOTTER** — more fuel than the ramp at every point. **CORRECTS 94's seam; 40 a special case.** | `docs/rung95-spec.md` |
 | 96 | **A GOVERNOR THAT INFERS THRUST** — read from the pressure ratio or the fan speed via a steady table, as KNOBS. **HEADLINE: an accelerating engine is a loaded engine** — at a given pressure ratio both pass less air, so thrust beats the belief; fan speed misses far more. **DISCHARGES 95's concession.** | `docs/rung96-spec.md` |
-| 97 | **THE UNCHOKED NOZZLE ON TWO SHAFTS** — the LP turbine expands only as far as the nozzle can push the gas out. **HEADLINE: the back-pressure takes work off the LP shaft ALONE** — it settles slower, a loop that runs one way, and the jet gives more thrust. **DISCHARGES 38/40's concession** (transient). | `docs/rung97-spec.md` |
+| 97 | **THE UNCHOKED NOZZLE ON TWO SHAFTS** — the LP turbine expands only as far as the nozzle can push the gas out. **HEADLINE: the back-pressure slows the LP shaft** (alone only on the pin: 104), and the jet gives more thrust. **DISCHARGES 38/40's concession.** | `docs/rung97-spec.md` |
 | 98 | **THE CORRECTED TABLES** — three control tables made once at the design flight, read elsewhere via `δ`/`θ`, as KNOBS. **HEADLINE: a correction undoes only what changes the engine's inside** — pressure exact, temperature nearly; a Mach change moves only the thrust. **DISCHARGES 96's concession.** | `docs/rung98-spec.md` |
 | 99 | **THE SPEED AXIS** — the three tables at eight flight speeds, blended, or the thrust recomputed, as KNOBS. **HEADLINE: a grid leaves the BEND of thrust against speed** — short where it bends up, over where the nozzle bends it down; the formula, the airflow guess (choked). **DISCHARGES 98's concession.** | `docs/rung99-spec.md` |
 | 100 | **BELOW CHOKE** — the jet's push from the reading, the LP shaft rebalanced for the fan speed, two slow speed tables, as KNOBS. **HEADLINE: an unchoked engine leaves the table's one line** — the push is exact, the fan formula overshoots; a second number (flight speed) brings it back. **DISCHARGES 99's seam.** | `docs/rung100-spec.md` |
 | 101 | **THE AIRFLOW OFF THE LINE** — the formula's air from the speed tables or an exhaust sensor (lag knob), as KNOBS. **HEADLINE: a steady table cannot see an accelerating engine; a nozzle sensor can, until it is slow** — exact if instant, worse than the tables when slow. **DISCHARGES 100's seam.** | `docs/rung101-spec.md` |
-| 102 | **THE AFTERBURNER** — a second burner behind the turbine: design, Fly it, lit in the slam, as KNOBS. **HEADLINE: what the throttle holds decides the sign** — a held nozzle costs thrust holding `Tt4`, adds it on metered fuel (a hotter core); by the rule no shaft moves. Lit, main fuel cuts thrust. | `docs/rung102-spec.md` |
-| 103 | **THE STEADY MATCHERS BELOW CHOKE** — all six re-solve with the LP turbine free, a switch on in the pages. **HEADLINE: below choke the HP spool hears the LP compressor** — rung 39's one-way street opens through the nozzle, vanishing at choke. **DISCHARGES 97's steady seam; BOUNDS its thrust.** | `docs/rung103-spec.md` |
+| 102 | **THE AFTERBURNER** — a second burner behind the turbine: design, Fly it, lit in the slam, as KNOBS. **HEADLINE: what the throttle holds decides the sign** — a held nozzle costs thrust holding `Tt4`, adds it on metered fuel; by the rule no shaft moves. | `docs/rung102-spec.md` |
+| 103 | **THE STEADY MATCHERS BELOW CHOKE** — all six re-solve with the LP turbine free. **HEADLINE: below choke the HP spool hears the LP compressor** — rung 39's one-way street opens through the nozzle (its sign: 104). **DISCHARGES 97's steady seam.** | `docs/rung103-spec.md` |
+| 104 | **THE LP TURBINE'S THROAT WAS NEVER CHOKED** — a flow law (ellipse default; two rows, one row, the old pin) replaces A45's pin, as KNOBS. **HEADLINE: below choke the back-pressure slows BOTH shafts.** **CORRECTS 97, 102 (HP overspeed), 103 (a sign).** | `docs/rung104-spec.md` |
 
 ## Working contract (from SPEC.md — these override convenience)
 - **Derive before you code.** For each station, write the governing equation and
@@ -153,7 +154,7 @@ STRUCTURAL / DYNAMIC — an operating point, via § Layout's ladders.
 - **Every new rung reduces to its predecessor**, exactly and by test (`X=None` ⇒
   the prior code path). This is the project's spine — see any `docs/rungN-spec.md`.
 
-**Current scope (rung 103).** The **cycle solve** is a thermally-perfect, reacting,
+**Current scope (rung 104).** The **cycle solve** is a thermally-perfect, reacting,
 dissociation-equilibrium gas (`Gas.reacting_equilibrium()`) through ideal + real components
 (rungs 2/2b's knobs, mutually exclusive; specified exit pressure). The burner root-finds `f` over the scale-B
 absolute balance, then freezes the station-4 mixture through turbine + nozzle; Fork A/B and
@@ -182,7 +183,7 @@ Never re-open one, and never re-enumerate them here.
 - Rung 79 § 9's **gap** — `docs/rung79-gap-margin.md`. Its § 5 march **STANDS STILL**; residual = rung 77's `1/(1−c)`. **CORRECTS 79.**
 - "Earned at design" over `π_c` (`docs/rung29-pi-c-margin.md`, NOT protective) and `M0` (`docs/rung29-M0-margin.md`, monotone-protective).
 - `β<1` over `π_c` — `docs/rung28-beta-margin.md` (β pressure-invariant; higher `π_c` protective).
-- Solver repairs (sandbox plan §§ 14/26/36–40): rung 34's march wall + rung 31's turbine wall (oracle RULE), 10-10; rung 43's `below_ceiling` ON 10-14 (CORRECTS 65 § 3; oracles OFF); back-pressure follows the FLIGHT, 10-16; closure stops at the HP map wall (a RULE), rung 40 starts lower; a below-idle rule, Controls warns, 10-19; lean wall per run, 10-20.
+- Solver repairs (sandbox plan §§ 14/26/36–40): march + turbine walls (oracle RULE); `below_ceiling` ON (CORRECTS 65 § 3); back-pressure per FLIGHT; the HP map wall (a RULE); a below-idle rule; lean wall per run (10-10 … 10-20).
 
 **Still OPEN — the live to-build list:**
 - **The real spatial / transported-CFD PDF** — the standing mixing ceiling (22–24 are a Gaussian-plume cartoon; needs an anchored SCALE + spread law).
@@ -212,7 +213,7 @@ The code is the Rust crate `rust/`. The deleted Python lives at tag **`python-fi
   `two_spool_transient.rs` (40, 44) → `bleed.rs` (42) → `fuel_transient.rs` (43, 45, and the
   fuel-side limiters 46–52) → `stator.rs` (53–54) → `stage.rs` (55–56) → `stator_transient.rs`
   (57–60) → `stator_bleed.rs` (61) → `bleed_transient.rs` (62–63) → `limited_bleed.rs` (64) →
-  `lagged_bleed.rs` (65) → **exactly ONE module per rung, 66→103** (`two_lag.rs` … `steady_unchoked.rs`).
+  `lagged_bleed.rs` (65) → **exactly ONE module per rung, 66→104** (`two_lag.rs` … `turbine_law.rs`).
   A rung = a core + a `const` fn-pointer table, reducing to its predecessor; **each module's
   header names its rung, its spec what it adds**, so this entry never grows.
 - `rust/src/main.rs` + `panels/` + `pyfmt.rs` — the CLI: the design-point tables and **one panel per

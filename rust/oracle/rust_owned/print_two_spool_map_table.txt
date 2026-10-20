@@ -1,0 +1,44 @@
+
+Two-spool + component maps (rung 39): rung 38 predicted a map would force a joint 2x2
+solve. It does not. pi_LPC CANCELS out of the HP compressor's corrected flow, so the map
+opens EXACTLY ONE arrow (HP -> LP): the cascade acquires a DIRECTION instead of dissolving.
+
+  THE FINDING — perturb one efficiency by -0.01 at fixed (Tt2, pt2, Tt4=1200, f);
+  compressor maps only (a_t = 0), so the reading is the pure structural one:
+   parameter   d pi_LPC / pi   d pi_HPC / pi  channel
+  --------------------------------------------------------------------------
+     eta_LPC      -9.128e-03       EXACTLY 0  own ratio only -- CANNOT reach pi_HPC (pi_LPC cancels)
+     eta_HPC      -5.648e-04      -1.456e-02  own ratio AND pi_LPC -- THE ONE ARROW the map opens
+     eta_HPT      +1.261e-03      -1.634e-02  energy path: moves BOTH (shapes the shared Tt45)
+     eta_LPT      -9.265e-03      +3.357e-03  energy path: moves BOTH (shapes Tt25 via Tt5)
+  eta_LPC -> pi_HPC is EXACTLY zero (bit-for-bit), by the (dagger) cancellation -- while
+  eta_HPC -> pi_LPC is real and negative. ONE arrow, not two: still strictly triangular.
+
+  THE STRUCTURAL NOVELTY — two shaft speeds (rung 38 computes none) => the SLIP N_L/N_H:
+  Tt4 [K]   pi_LPC   pi_HPC  eta_LPC  eta_HPC  N_L/N_Ld  N_H/N_Hd      slip
+  ------------------------------------------------------------------------------
+     1500   3.0000   6.0000  0.90000  0.88000   1.00000   1.00000  1.000000
+     1300   2.6234   5.1833  0.89773  0.87935   0.89998   0.91761  0.980792
+     1100   2.2785   4.3892  0.89124  0.87722   0.80328   0.83302  0.964301
+      900   1.9697   3.6303  0.88162  0.87334   0.70839   0.74585  0.949783
+  The LP spool falls AWAY from the HP spool as the engine is throttled back -- the
+  textbook twin-spool behaviour (at idle a twin-spool runs high N_H, much lower N_L).
+
+  WHERE THE SLIP COMES FROM — slip == 1 is a STRUCTURAL identity, broken by two channels:
+                   gas / map   Tt4=1500       1300       1100        900
+  ----------------------------------------------------------------------
+              CPG, FLAT maps   1.000000  1.000000  1.000000  1.000000
+     thermally-perfect, FLAT   1.000000  0.997383  0.995077  0.992669
+              reacting, FLAT   1.000000  0.997495  0.995307  0.992983
+            CPG, SHAPED maps   1.000000  0.980792  0.964301  0.949783
+  Both shaft works are eta_m*(1+f)*cp_t*Tt4*[pure geometry], so (1+f) AND Tt4 cancel in
+  N_L/N_H: on CPG + flat maps the slip is EXACTLY 1 at every throttle. The cp(T) gas curve
+  breaks it ~1.5% (the rung-31-gate-5 mirror); the MAP breaks it ~5% -- the larger channel.
+  ON CPG that INVERTS rung 32 (where the map only re-labelled map-free work): the deviation is
+  identically zero without a map, so there the map is the SOLE channel and CREATES the object.
+  NOT unconditional -- on the reacting gas the same FLAT maps already give 0.9835 at Tt4=900,
+  so on the real gas the map is the DOMINANT channel (~3.4x), not the only one.
+  Reduce: FLAT maps => rung 38 bit-for-bit;
+  lp_disabled dispatches to rung 32 (shaped) / rung 31 (flat). Cycle stays rung-6 exact.
+  Disclaimed: representative maps -- every magnitude (arrow strength, slip depth) rides on
+  the shapes; only the asymmetry, the identity and the slip SIGN are load-bearing.

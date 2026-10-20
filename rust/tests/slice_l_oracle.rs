@@ -131,6 +131,7 @@
 
 use std::collections::HashMap;
 use turbojet::bleed::TwoSpoolBleedMatcher;
+use turbojet::turbine_law::TurbineLaw;
 use turbojet::engine::FlightCondition;
 use turbojet::gas::{Gas, GasSpec};
 use turbojet::map::ComponentMap;
@@ -140,6 +141,8 @@ use turbojet::two_spool::{build_two_spool_turbojet, counters, FlowTurn, Spool, T
 // The 2026-10-05 equilibrium-floor divergence — one rule, shared by the three oracle gates.
 #[path = "common/eq_floor.rs"]
 mod eq_floor;
+#[path = "common/rung104_retired.rs"]
+mod rung104_retired;
 
 const ORACLE_CPYTHON: &str = include_str!("../oracle/slice_l_cpython.tsv");
 const ORACLE_PYPY: &str = include_str!("../oracle/slice_l_pypy.tsv");
@@ -260,13 +263,20 @@ fn abort_code(msg: &str) -> f64 {
 const ALL_CODES: &[f64] = &[0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0,
                             12.0, 13.0, 14.0, eq_floor::BALANCE];
 
+thread_local! {
+    /// RUNG 104: the LP turbine's law for this thread's engines (the writer runs both the default and the pin).
+    static LAW: std::cell::Cell<TurbineLaw> = std::cell::Cell::new(TurbineLaw::default());
+}
+
 fn bleed_matcher(tag: &str, ml: ComponentMap, mh: ComponentMap, b: f64) -> TwoSpoolBleedMatcher {
-    let d = build_two_spool_turbojet(gas_for(tag), PI_LPC, PI_HPC, TT4, 50_000.0, losses());
+    let d = build_two_spool_turbojet(gas_for(tag), PI_LPC, PI_HPC, TT4, 50_000.0, losses())
+        .with_turbine_law(LAW.with(|l| l.get()));
     TwoSpoolBleedMatcher::new(d, flight_design(), 1.0, ml, mh, b)
 }
 
 fn map_matcher(tag: &str, ml: ComponentMap, mh: ComponentMap) -> TwoSpoolMapMatcher {
-    let d = build_two_spool_turbojet(gas_for(tag), PI_LPC, PI_HPC, TT4, 50_000.0, losses());
+    let d = build_two_spool_turbojet(gas_for(tag), PI_LPC, PI_HPC, TT4, 50_000.0, losses())
+        .with_turbine_law(LAW.with(|l| l.get()));
     TwoSpoolMapMatcher::new(d, flight_design(), 1.0, ml, mh)
 }
 
@@ -329,7 +339,8 @@ fn rust_values() -> Vec<(String, f64)> {
     }
     for (i, gc) in [1.30, 1.35, 1.40, 1.45].into_iter().enumerate() {
         let d = build_two_spool_turbojet(cpg_with(gc, 1004.0, 1.3, 1239.0, 42.8e6),
-                                         PI_LPC, PI_HPC, TT4, 50_000.0, losses());
+                                         PI_LPC, PI_HPC, TT4, 50_000.0, losses())
+            .with_turbine_law(LAW.with(|l| l.get()));
         let m = TwoSpoolMapMatcher::new(d, flight_design(), 1.0, flat, flat);
         v.push((format!("pistar/gamma_c/{i}"), m.core().critical_flow_turn_pi()));
     }
@@ -545,7 +556,8 @@ fn rust_values() -> Vec<(String, f64)> {
         for spool in [Spool::Hp, Spool::Lp] {
             // NOTE the matcher is built at the DESIGN flight and matched at `fl` — gate 5's own
             // construction, copied rather than tidied.
-            let d = build_two_spool_turbojet(gas.clone(), pl, ph, TT4, 50_000.0, lo);
+            let d = build_two_spool_turbojet(gas.clone(), pl, ph, TT4, 50_000.0, lo)
+                .with_turbine_law(LAW.with(|l| l.get()));
             let m = TwoSpoolMapMatcher::new(d, flight_design(), 1.0, flat, flat);
             let t = m.core().flow_coefficient_turn(&fl, spool);
             let sp = if spool == Spool::Hp { "hp" } else { "lp" };
@@ -655,7 +667,33 @@ fn bar_for(quant: &str, strict: bool) -> f64 {
 }
 
 fn compare_against(oracle_text: &str, label: &str, require_bit_exact: bool) {
-    let (ours, oracle) = eq_floor::reconcile(rust_values(), load_oracle(oracle_text));
+    // RUNG 104: the keys whose Rust value the LP turbine's flow law moves (the default against the pin) are retired by
+    // name (`common/rung104_retired.rs`); a retired cell ABORT takes its whole cell with it. Every other key is held
+    // exactly as before.
+    let arm = if require_bit_exact { "slice_l_pypy" } else { "slice_l_cpython" };
+    let mut oracle = load_oracle(oracle_text);
+    if rung104_retired::writing() {
+        let law = rust_values();
+        LAW.with(|l| l.set(TurbineLaw::Pin));
+        let pin: HashMap<String, f64> = rust_values().into_iter().collect();
+        LAW.with(|l| l.set(TurbineLaw::default()));
+        let law: HashMap<String, f64> = law.into_iter().collect();
+        let moved: std::collections::BTreeSet<String> = oracle.keys()
+            .filter(|k| law.get(**k).map(|v| v.to_bits()) != pin.get(**k).map(|v| v.to_bits()))
+            .map(|k| k.to_string()).collect();
+        return rung104_retired::write(arm, &moved);
+    }
+    let retired = rung104_retired::retired(arm);
+    rung104_retired::check_listed(arm, &retired, |k| oracle.contains_key(k));
+    let cells: Vec<String> = retired.iter().filter_map(|k| k.strip_suffix("abort").map(str::to_string)).collect();
+    let gone = |k: &str| retired.contains(k) || cells.iter().any(|c| k.starts_with(c.as_str()));
+    let mut ours = rust_values();
+    ours.retain(|(k, _)| !gone(k));
+    oracle.retain(|k, _| !gone(k));
+    // The census groups whose counts the law moves keep every rule but their conservation equation (`eq_floor`).
+    let unconserved: std::collections::HashSet<String> = retired.iter()
+        .filter_map(|k| k.find("abort_code/").map(|i| k[..i + "abort_code/".len()].to_string())).collect();
+    let (ours, oracle) = eq_floor::reconcile_unconserved(ours, oracle, &std::collections::HashSet::new(), &unconserved);
     println!("\n=== Rust vs {label} ===");
     assert_eq!(ours.len(), oracle.len(),
                "key COUNT differs: rust {} vs oracle {} — the dump and the gate have drifted \
@@ -772,7 +810,12 @@ fn compare_against(oracle_text: &str, label: &str, require_bit_exact: bool) {
     let (w_keep, k_keep) = worst_in(&unflipped_cells);
     println!("  worst value in a FLIPPED cell     {w_flip:.2e}  at {k_flip}");
     println!("  worst value in an UNFLIPPED cell  {w_keep:.2e}  at {k_keep}");
-    if !require_bit_exact {
+    // RUNG 104: every flipped cell is on a real gas, so under the flow law its moved value keys are retired and what is
+    // left of it can be bit-equal — then there is no flipped cost left to separate (the pin build always has one).
+    let flipped_values = ours.iter()
+        .filter(|(vk, _)| quant_of(vk) == "value" && flip_cells.iter().any(|c| vk.starts_with(c.as_str())))
+        .count();
+    if !require_bit_exact && ((flipped_values > 0 && w_flip > 0.0) || cfg!(feature = "pin-default")) {
         assert!(w_flip <= 1.0e-7,
                 "a pass-count flip moved a value by {w_flip:.2e} at {k_flip} — measured at 1.55e-8 \
                  when this bar was written, so a decade of headroom is already spent");
@@ -795,9 +838,12 @@ fn compare_against(oracle_text: &str, label: &str, require_bit_exact: bool) {
         let scale = got.abs().max(want.abs());
         if scale == 0.0 { (got - want).abs() } else { (got - want).abs() / scale }
     };
+    // RUNG 104: a turn whose `phi_star` the flow law moves is retired by name, so only turns with both halves still held
+    // are read (on the pin build, every turn).
     let turn_cells: Vec<String> = ours.iter()
         .filter(|(k, _)| k.ends_with("/Tt4_star"))
         .map(|(k, _)| k[..k.len() - "/Tt4_star".len()].to_string())
+        .filter(|c| ours.iter().any(|(kk, _)| *kk == format!("{c}/phi_star")))
         .collect();
     let mut moved = 0usize;
     let mut worst_ratio = 0.0f64;

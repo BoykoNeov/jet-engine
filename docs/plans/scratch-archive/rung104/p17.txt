@@ -1,0 +1,8 @@
+redline + late light-off   pin      STOPS after 15 points: rung-46 topping cannot reach Tt4_max=1480.0 at nu=(0.7756,0.8178) -- redline below the flow's floor Tt4.
+redline + late light-off   1row     runs to the end (126 points), end Tt4 1480.0 nuL 0.7329 nuH 0.8609
+redline + late light-off   2rows    runs to the end (126 points), end Tt4 1480.0 nuL 0.7515 nuH 0.8499
+redline + late light-off   ellipse  runs to the end (126 points), end Tt4 1480.0 nuL 0.7629 nuH 0.8432
+Tt7 2400                   pin      STOPS after 17 points: The gas leaves the turbine faster than the afterburner duct can pass it: it would choke at the duct's entry (t
+Tt7 2400                   1row     STOPS after 17 points: The afterburner cannot reach 2286 K: burning all the oxygen left in the gas gives at most 2286 K here.
+Tt7 2400                   2rows    STOPS after 17 points: The afterburner cannot reach 2286 K: burning all the oxygen left in the gas gives at most 2286 K here.
+Tt7 2400                   ellipse  STOPS after 17 points: The afterburner cannot reach 2286 K: burning all the oxygen left in the gas gives at most 2286 K here.

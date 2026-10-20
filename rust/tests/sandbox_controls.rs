@@ -435,8 +435,10 @@ fn every_kind_of_stop_the_crash_map_found_is_driven_and_worded() {
     // at 15 % speed.
     let (t_sl, p_sl) = turbojet::atmosphere::standard(0.0);
     let tilted = CONTROL_SHAPES.iter().position(|&k| k == "tilted").unwrap();
+    // (Rung 104: on rung 38's choked vane — the `pin` setting; under the flow law no such start was found, `lean_wall.rs`.)
     let (sv, o) = controls(&ControlsSettings { shape: tilted, t0: t_sl + 40.0, p0: p_sl, m0: 0.85,
                                                customer: CustomerMode::Share, from: 440.0,
+                                               turbine: turbojet::turbine_law::TurbineLaw::Pin,
                                                ..ControlsSettings::defaults() }).unwrap();
     assert!(o.points.is_empty(), "the slam stops at once ({} points)", o.points.len());
     assert_eq!(stop_kind(&sv, &o), StopKind::LowSpeed, "{:?}", o.stop);
@@ -577,7 +579,9 @@ fn settings_round_trip_and_the_entry_point_answers() {
                                exhaust_tau: 0.75,
                                // Rung 102's five, off their defaults likewise.
                                ab: Some(turbojet::afterburner::AbMode::Lit), tt7: 1875.0, light_at: 1.24,
-                               a8_ratio: 1.35, a8_match: true };
+                               a8_ratio: 1.35, a8_match: true,
+                               // Rung 104's law, off its default likewise.
+                               turbine: turbojet::turbine_law::TurbineLaw::TwoRows };
     let back = ControlsSettings::from_json(&Json::parse(&s.to_json().dump_compact())).unwrap();
     assert_eq!(back, s);
     // At their defaults they are not written at all (every default reply keeps rung 99's shape), and read back.
@@ -586,6 +590,7 @@ fn settings_round_trip_and_the_entry_point_answers() {
     assert!(!j0.contains("low_grid") && !j0.contains("formula_choked") && !j0.contains("\"idle\""));
     assert!(!j0.contains("airflow") && !j0.contains("exhaust_lag") && !j0.contains("exhaust_tau"));
     assert!(!j0.contains("\"ab\"") && !j0.contains("Tt7") && !j0.contains("light_at") && !j0.contains("a8_"));
+    assert!(!j0.contains("turbine"));
     assert_eq!(ControlsSettings::from_json(&Json::parse(&j0)).unwrap(), d0);
     let d = Json::parse(&call(r#"{"op":"controls_defaults"}"#));
     assert!(d.get("controls").is_some() && d.get("shapes").is_some());
@@ -763,11 +768,13 @@ fn the_customer_bleed_reads_the_models_closure_and_its_refusals_are_words() {
 #[test]
 fn an_off_map_endpoint_the_customer_bleed_removes_is_named() {
     let d = ControlsSettings::defaults();
-    let s = ControlsSettings { shape: 3, rho: 2.1287, from: 1008.0, to: 584.0, ramp: 0.48, customer: CustomerMode::Share,
-                               customer_share: 0.0576, t0: 282.44, p0: 53737.0, m0: 0.2925, ..d };
+    // Rung 104: the crash map's own case (a 0.0576 share to 584 K on `flat-lp`) runs under the LP turbine's flow law; a
+    // search of the same move found the bleed removing the endpoint lower down — `tilted`, a 0.08 share, to 530 K.
+    let s = ControlsSettings { shape: 2, rho: 2.1287, from: 1008.0, to: 530.0, ramp: 0.48, customer: CustomerMode::Share,
+                               customer_share: 0.08, t0: 282.44, p0: 53737.0, m0: 0.2925, ..d };
     let e = match controls(&s) {
         Err(e) => e,
-        Ok(_) => panic!("a 0.0576 share at 584 K slows the LP shaft off its map"),
+        Ok(_) => panic!("a 0.08 share at 530 K slows the LP shaft off its map"),
     };
     assert!(e.0.contains("does not bracket"), "{}", e.0);
     assert!(e.0.ends_with("With the customer bleed off this throttle does have a steady point, so the air the aircraft \

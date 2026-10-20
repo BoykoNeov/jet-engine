@@ -157,8 +157,13 @@ fn every_new_refusal_is_words() {
     // the closure's search running past the HP map's own wall. Since the HP-wall repair (2026-10-19, plan § 36) the
     // search stops at that wall, and what remains is the nozzle: it cannot push the gas out even with the LP turbine
     // taking almost no work.
-    let r = call(r#"{"op":"controls","controls":{"T0":281.025575242416,"p0":110666.3721625535,"shape":"flow/press","redline_on":1,"generator":"hp","generator_power":0.05,"customer":"amount","customer_amount":0.13,"cool_vane":0.04,"cool_blade":0.12,"from":600,"to":870,"ramp":0.02,"settle":3.3,"rho":2.3}}"#);
+    // Rung 104: that is rung 38's choked vane (the `pin` setting). Under the LP turbine's flow law the same request
+    // still has no starting point, now because the HP generator cannot be carried (the law moves work off the HP shaft
+    // at low power) — refused in that load's own words.
+    let r = call(r#"{"op":"controls","controls":{"T0":281.025575242416,"p0":110666.3721625535,"shape":"flow/press","redline_on":1,"generator":"hp","generator_power":0.05,"customer":"amount","customer_amount":0.13,"cool_vane":0.04,"cool_blade":0.12,"from":600,"to":870,"ramp":0.02,"settle":3.3,"rho":2.3,"turbine":"pin"}}"#);
     assert!(r.contains("At the starting throttle (600 K)") && r.contains("pushed out against the air"), "{r}");
+    let r = call(r#"{"op":"controls","controls":{"T0":281.025575242416,"p0":110666.3721625535,"shape":"flow/press","redline_on":1,"generator":"hp","generator_power":0.05,"customer":"amount","customer_amount":0.13,"cool_vane":0.04,"cool_blade":0.12,"from":600,"to":870,"ramp":0.02,"settle":3.3,"rho":2.3}}"#);
+    assert!(r.contains("At the starting throttle (600 K)") && r.contains("generator would take half or more"), "{r}");
     assert!(endpoint_words("nozzle back-pressure p9=1 Pa exceeds total pressure pt9=0.9 Pa").contains("cannot push it out"));
     assert!(endpoint_words("rung-97: the nozzle cannot pass the LP turbine's flow").contains("pushed out against the air"));
     // The TOP of the throttle range at 11 km (1700 K on the first map) was refused as off the maps (plan § 27): the

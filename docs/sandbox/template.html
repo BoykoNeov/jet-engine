@@ -278,6 +278,15 @@ footer p { max-width: 90ch; }
           <option value="flat-eta">Flat efficiency (no island), both spools</option>
         </select>
         <div class="derived">Invented, representative maps (rung 55's five), offered as equals.</div></div>
+      <div class="knob"><label for="bl-turbine">LP turbine's inlet vanes <small>rung 104</small></label>
+        <select id="bl-turbine" style="grid-column: 1 / -1">
+          <option value="ellipse">Many rows: Stodola's ellipse (the default)</option>
+          <option value="two">Vane and rotor, half the drop each</option>
+          <option value="one">The vane takes the whole drop</option>
+          <option value="pin">Choked, as rungs 38-103 assumed</option>
+        </select>
+        <div class="derived">Their throat never actually chokes: the flow it passes follows the LP turbine's own expansion.
+          "Choked" is the old assumption, kept to compare.</div></div>
     </fieldset>
     <fieldset id="bk-set" hidden>
       <legend>The blades</legend>
@@ -337,6 +346,15 @@ footer p { max-width: 90ch; }
           <option value="flat-lp">LP map flat, HP curved along pressure</option>
         </select>
         <div class="derived">Invented, representative maps (rungs 43 and 49), each with its stall line at flow coefficient 0.55.</div></div>
+      <div class="knob"><label for="ctl-turbine">LP turbine's inlet vanes <small>rung 104</small></label>
+        <select id="ctl-turbine" style="grid-column: 1 / -1">
+          <option value="ellipse">Many rows: Stodola's ellipse (the default)</option>
+          <option value="two">Vane and rotor, half the drop each</option>
+          <option value="one">The vane takes the whole drop</option>
+          <option value="pin">Choked, as rungs 38-103 assumed</option>
+        </select>
+        <div class="derived">Their throat never actually chokes. With the nozzle choked on this engine's gas every choice
+          gives the same run; below choke the LP turbine's back-pressure reaches the HP shaft too.</div></div>
       <div class="knob"><label for="ctl-from">Start from <small>K</small></label><input type="number" id="ctl-from" step="10">
         <input type="range" id="ctl-from-r" min="600" max="1700" step="10" aria-label="Starting throttle slider"></div>
       <div class="knob"><label for="ctl-to">Move to <small>K</small></label><input type="number" id="ctl-to" step="10">
@@ -657,6 +675,14 @@ footer p { max-width: 90ch; }
           <option value="flat-lp">LP map flat, HP curved along pressure</option></select>
         <div class="derived">The same invented maps as <b>Controls</b> (rungs 43 and 49); a redesigned engine runs at its
           own design point, where the map does not enter.</div></div>
+      <div class="knob" id="cl-turbine-row"><label for="cl-turbine">LP turbine's inlet vanes <small>rung 104</small></label>
+        <select id="cl-turbine" style="grid-column: 1 / -1">
+          <option value="ellipse">Many rows: Stodola's ellipse (the default)</option>
+          <option value="two">Vane and rotor, half the drop each</option>
+          <option value="one">The vane takes the whole drop</option>
+          <option value="pin">Choked, as rungs 38-103 assumed</option>
+        </select>
+        <div class="derived">Their throat never actually chokes; "choked" is the old assumption, kept to compare.</div></div>
     </fieldset>
     <fieldset id="cool-knob-set" hidden>
       <legend>Your cooling, on this engine</legend>
@@ -1488,7 +1514,7 @@ function showSettings() {
       $(id + "-r").value = C[k];
     }
     for (const k of CTL_SW) $("ctl-" + k).checked = C[k] === 1;
-    $("ctl-shape").value = C.shape; $("ctl-lever").value = C.lever;
+    $("ctl-shape").value = C.shape; $("ctl-lever").value = C.lever; $("ctl-turbine").value = C.turbine || "ellipse";
     const press = (id, on) => $(id).setAttribute("aria-pressed", String(on));
     press("ctl-floor-lp", C.floor_spool === "lp"); press("ctl-floor-hp", C.floor_spool === "hp");
     press("ctl-ref-phi", C.floor_ref === "phi"); press("ctl-ref-inc", C.floor_ref === "incidence");
@@ -1556,6 +1582,7 @@ function showSettings() {
     for (const t of TECH) press("cl-tech-" + t, CL.tech === t);
     $("cl-life").value = String(CL.life); $("cl-shape").value = CL.shape;
     $("cl-shape-row").hidden = CL.framing !== "fixed";
+    $("cl-turbine").value = CL.turbine || "ellipse"; $("cl-turbine-row").hidden = CL.framing !== "fixed";
     for (const q of ["air", "st", "tsfc", "tt3", "speed"]) press("clq-" + q, clQ === q);
     $("clq-speed").hidden = CL.framing !== "fixed";
     $("cl-limits").textContent = clKnob
@@ -1576,6 +1603,7 @@ function showSettings() {
       $(id + "-r").value = kn[k];
     }
     $("bl-gas").value = B.gas; $("bl-shape").value = B.shape; $("bl-lever").value = B.lever;
+    $("bl-turbine").value = B.turbine || "ellipse";
     const press = (id, on) => $(id).setAttribute("aria-pressed", String(on));
     press("bk-linked", linked); press("bk-split", !linked); $("bk-which").hidden = linked;
     press("bk-lp", editSpool === "lp"); press("bk-hp", editSpool === "hp");
@@ -3113,7 +3141,7 @@ function wire() {
   // The blade view: engine knobs write B; blade knobs write B.lp and/or B.hp (setKnob).
   for (const [id, k] of Object.entries(BLADE_NUM)) knob($(id), $(id + "-r"), v => { B[k] = v; });
   for (const [id, k] of Object.entries(BLADE_KNOB)) knob($(id), $(id + "-r"), v => setKnob(k, v));
-  for (const [id, k] of [["bl-gas", "gas"], ["bl-shape", "shape"], ["bl-lever", "lever"]]) {
+  for (const [id, k] of [["bl-gas", "gas"], ["bl-shape", "shape"], ["bl-lever", "lever"], ["bl-turbine", "turbine"]]) {
     $(id).addEventListener("change", () => { B[k] = $(id).value; change(); });
   }
   const click = (id, f) => $(id).addEventListener("click", () => { f(); showSettings(); change(); });
@@ -3155,7 +3183,7 @@ function wire() {
     if (k === "redline_on" && !C.redline_on) C.gov_lag_on = 0;   // the lag belongs to the limiter
     showSettings(); scheduleCtl();
   });
-  for (const [id, k] of [["ctl-shape", "shape"], ["ctl-lever", "lever"], ["ctl-ab", "ab"]]) {
+  for (const [id, k] of [["ctl-shape", "shape"], ["ctl-lever", "lever"], ["ctl-ab", "ab"], ["ctl-turbine", "turbine"]]) {
     $(id).addEventListener("change", () => { C[k] = $(id).value; showSettings(); scheduleCtl(); });
   }
   const cclick = (id, f) => $(id).addEventListener("click", () => { f(); showSettings(); scheduleCtl(); });
@@ -3197,6 +3225,7 @@ function wire() {
   for (const t of TECH) lclick("cl-tech-" + t, () => { CL.tech = t; });
   $("cl-life").addEventListener("change", () => { CL.life = +$("cl-life").value; scheduleCool(); });
   $("cl-shape").addEventListener("change", () => { CL.shape = $("cl-shape").value; scheduleCool(); });
+  $("cl-turbine").addEventListener("change", () => { CL.turbine = $("cl-turbine").value; scheduleCool(); });
   for (const q of Object.keys(CL_Q)) $("clq-" + q).addEventListener("click", () => { clQ = q; showSettings(); drawCool(); });
   // The burner: its own knobs write BK; slow mixing models compute when a slider is let go (bnChanged).
   $("mode-burner").addEventListener("click", enterBurner);

@@ -238,10 +238,9 @@ pub fn try_cascade_bleed(
     let mfp4 = try_choked_mfp(wgas, tt4, f)?;
     let (mut eta_hpt, mut eta_lpt) = (base.eta_hpt, base.eta_lpt);
     for turb_pass in 0..TwoSpoolMapCore::TURB_MAX {
-        let (pi_hpt, tau_hpt, tt45) = base.try_solve_choked_turbine(
-            wgas, tt4, f, base.a4, base.a45, 1.0, eta_hpt)?;
-        let (pi_lpt, tau_lpt, tt5) = crate::steady_unchoked::try_lp_steady(
-            base, wgas, tt45, f, eta_lpt, pi_hpt)?;
+        let ((pi_hpt, tau_hpt, tt45), (pi_lpt, tau_lpt, tt5)) = base.try_turbine_pair(
+            wgas, tt4, f, eta_hpt,
+            |tt45, pi_hpt| Ok((crate::steady_unchoked::try_lp_steady(base, wgas, tt45, f, eta_lpt, pi_hpt)?, eta_lpt)))?;
 
         // ENERGY. (1) the LP balance: the LPT drives mdot_2 with (1-b)*mdot_2*(1+f) of gas.
         // `(1-b)` sits BETWEEN eta_m and (1+f), which is not rung 39's product with a factor

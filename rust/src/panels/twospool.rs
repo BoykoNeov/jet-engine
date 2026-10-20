@@ -50,6 +50,10 @@ pub fn two_spool_matching_table(p: &mut Printer, d: &Design) {
     p.print("\nTwo-spool matching (rung 38): a THIRD choked throat (the LP-turbine NGV, A45) appears --");
     p.print("rung 31's (*) mass-flow trick chains TWICE: tau_HPT from (A4,A45), tau_LPT from (A45,A8),");
     p.print("both independent of either compressor. The two compressor RATIOS are not a 2x2 solve.");
+    if crate::turbine_law::TurbineLaw::default() != crate::turbine_law::TurbineLaw::Pin {
+        p.print("(Rung 104: A45 never actually chokes - the table below uses its own flow law, the default. With the");
+        p.print("nozzle choked on a perfect gas that is rung 38's pin exactly; on this real gas it moves the two ratios.)");
+    }
 
     let (pi_lpc, pi_hpc) = (3.0, 6.0);
     let mut m = TwoSpoolMatcher::new(ts_design(Gas::reacting_equilibrium(), pi_lpc, pi_hpc, d), *flight, 1.0);

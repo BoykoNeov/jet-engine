@@ -160,7 +160,7 @@ fn the_fan_formula_rebalances_the_lp_shaft_at_an_unchoked_end() {
         let (a, b) = seg(x, |r| r.x);
         y(a) + (y(b) - y(a)) * (x - a.x) / (b.x - a.x)
     };
-    let pin = base.try_solve_choked_turbine(gas, g(|r| r.tt45), g(|r| r.f45), base.a45, base.a8, base.pi_n, g(|r| r.eta)).unwrap();
+    let pin = base.try_solve_choked_turbine(gas, g(|r| r.tt45), g(|r| r.f45), base.a45_pin(), base.a8, base.pi_n, g(|r| r.eta)).unwrap();
     assert!(at.pi_lpt > pin.0 + 1e-3, "re-solved {} vs choked {}", at.pi_lpt, pin.0);
 }
 
@@ -169,7 +169,11 @@ fn a_formula_that_cannot_cover_the_throttle_is_refused_in_words() {
     // Anchor § 1 / G4: deep below choke at sea level the table's engine, pushing against the flight's air, has no
     // working state.
     // Sea level, Mach 0.1, from 600 K: the starting thrust lies below the table, where its engine has no working state.
-    let s = formula(ControlsSettings { shape: FLOW_PRESS, from: 600.0, t0: 288.15, p0: 101_325.0, m0: 0.1, ..gov(ThrustBy::N1) });
+    // Rung 104: on rung 38's choked vane (the `pin` setting). Under the LP turbine's flow law the table's engine works
+    // there and the run starts; lower down (Mach 0.05–0.2, 450–590 K) the engine itself or the speed table refuses first,
+    // so this refusal was not reached in that search.
+    let s = formula(ControlsSettings { shape: FLOW_PRESS, from: 600.0, t0: 288.15, p0: 101_325.0, m0: 0.1,
+                                       turbine: turbojet::turbine_law::TurbineLaw::Pin, ..gov(ThrustBy::N1) });
     match build(&s) {
         Err(e) => assert!(e.0.contains("fan-speed formula") && e.0.contains("no working state") && e.0.contains("make the tables at this flight"), "{}", e.0),
         Ok(sv) => panic!("ran, start miss {:?}", sv.hold_start),

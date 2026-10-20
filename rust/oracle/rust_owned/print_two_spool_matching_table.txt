@@ -1,0 +1,29 @@
+
+Two-spool matching (rung 38): a THIRD choked throat (the LP-turbine NGV, A45) appears --
+rung 31's (*) mass-flow trick chains TWICE: tau_HPT from (A4,A45), tau_LPT from (A45,A8),
+both independent of either compressor. The two compressor RATIOS are not a 2x2 solve.
+(Rung 104: A45 never actually chokes - the table below uses its own flow law, the default. With the
+nozzle choked on a perfect gas that is rung 38's pin exactly; on this real gas it moves the two ratios.)
+
+  Running line (M0=0.85), design pi_LPC=3.0, pi_HPC=6.0:
+  Tt4 [K]   pi_LPC   pi_HPC   tau_HPT   tau_LPT mdot/mdot_R   F/mdot
+  --------------------------------------------------------------------
+     1500   3.0000   6.0000  0.839235  0.924678      1.0000    729.5
+     1300   2.6284   5.1692  0.834231  0.921706      0.8176    615.3
+     1100   2.2952   4.3790  0.828346  0.917943      0.6632    488.9
+      900   1.9938   3.6302  0.820793  0.913463      0.5332    346.8
+      700   1.7232   2.9297  0.812555  0.909261      0.4260    185.8
+  600      nozzle UNCHOKES here -- OUT OF SCOPE (flagged, not solved; rung-33-shaped follow-on)
+
+  THE FINDING — perturb ONE component parameter at fixed (Tt2, Tt4, f); does pi_LPC / pi_HPC move?
+   parameter  moves pi_LPC?  moves pi_HPC?  role
+  --------------------------------------------------------------
+     eta_HPC          False           True  HP compressor's OWN pressure-inversion leaf
+     eta_LPC           True          False  LP compressor's OWN pressure-inversion leaf
+     eta_HPT           True           True  energy-path (shapes the shared Tt45)
+     eta_LPT           True           True  energy-path (shapes the shared Tt25 via Tt5)
+  Each compressor's OWN efficiency is a dead end for the OTHER spool -- so the two
+  compressor ratios are never a joint (2x2) solve. This is narrower than 'the spools
+  don't talk' (eta_HPT/eta_LPT legitimately move BOTH -- an initial over-claim, corrected).
+  Reduce: lp_disabled=True dispatches (not limits) to rung 31's OffDesignMatcher bit-for-bit.
+  Scope: isentropic knobs only, no compressor maps yet; cycle stays rung-6 exact.

@@ -300,10 +300,14 @@ fn the_low_throttle_refusals_are_named_for_the_throttle() {
     assert!(reason(&j).contains("more drag than thrust"), "{}", j.dump_compact());
     assert!(s(&j, "message").contains("rung-103: below idle"));
     assert!(lever_words("nozzle back-pressure p9=101325 Pa exceeds").contains("less pressure than the air outside"));
-    // Thermally perfect: a turbine past the bottom of the gas tables at 795 K.
-    let j = ask(r#"{"op":"blade_lever","Tt4":795.14,"blades":{"gas":"thermally_perfect","pi_lpc":4.3068,"pi_hpc":13.6148,"Tt4":1100.77,"shape":"steep"}}"#);
+    // Thermally perfect: a turbine past the bottom of the gas tables at 795 K — on rung 38's choked vane (rung 104's `pin`
+    // setting). Under the LP turbine's flow law the same point is reached and runs below idle (a search of five designs,
+    // 700–865 K, found none past the tables): refused in those words.
+    let j = ask(r#"{"op":"blade_lever","Tt4":795.14,"blades":{"gas":"thermally_perfect","pi_lpc":4.3068,"pi_hpc":13.6148,"Tt4":1100.77,"shape":"steep","turbine":"pin"}}"#);
     assert!(reason(&j).contains("colder than the gas tables reach"), "{}", j.dump_compact());
     assert_eq!(s(&j, "message"), "inverse: root not bracketed");
+    let j = ask(r#"{"op":"blade_lever","Tt4":795.14,"blades":{"gas":"thermally_perfect","pi_lpc":4.3068,"pi_hpc":13.6148,"Tt4":1100.77,"shape":"steep"}}"#);
+    assert!(reason(&j).contains("more drag than thrust"), "{}", j.dump_compact());
     // Both designs run at their own design throttle — the refusal is the throttle's, not the design's.
     for b in [r#"{"pi_lpc":5.18,"pi_hpc":14.76,"Tt4":1120,"shape":"steep"}"#,
               r#"{"gas":"thermally_perfect","pi_lpc":4.3068,"pi_hpc":13.6148,"Tt4":1100.77,"shape":"steep"}"#] {

@@ -235,6 +235,13 @@ step 11c flies it lit, matched, slammed and removed.
 > MAIN fuel at the same shaft speeds LOWERS thrust (less air through the turbine throats; the afterburner just burns
 > less), so a governor holding thrust with it pushes the wrong way: refused in words (the user's decision).
 
+> **CORRECTED BY RUNG 104 (2026-10-20, `docs/rung104-spec.md` § 5).** The held light-off's mechanism is rung 38's
+> choked vane's (rung 104's `pin` setting). Under the vane's own flow law (the default) the back-pressure reaches the HP
+> turbine too: the HP shaft SLOWS 3–6 % instead of overspeeding (C3 flips), the LP shaft slows 10–16 % (C2 still holds,
+> nearer its floor), the burner still runs ~200 K hotter and thrust still rises (+22 … +27 %) — the sign the throttle
+> decides survives. C12's three misses were the pin's: under every law the redline holds through a late held light-off.
+> One row, two rows and the ellipse alike.
+
 **Code** (Part C): `afterburner.rs` — `TwoShaftFit` (the page's settings), `TwoShaftAb` (captured on the core: `A6`, the
 dry throat, the nozzle's own `π_n`; `w_at`), `LitAb` (`burn`, station 5 → 7 at the light-off fraction; `try_lp_turbine`,
 the LP relation lit, its lean wall and refusals named; `s_now`), `lp_exit` (each thrust tail's exit), `AbAt` (the
