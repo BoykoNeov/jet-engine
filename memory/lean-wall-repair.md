@@ -26,5 +26,7 @@ had been resting AT the old wall. Run the crash map that draws the callers (gove
 now stop RICH after 11–21 steps (no acceleration schedule); the whole-slam floor did not move there. Measure the
 product's whole action after a fix, before writing the question to the user (see [[idle-floor]] lesson 1c).
 
+**Decided 2026-10-20:** the user KEPT the deeper power cuts (a cut to an end leaner than 0.008 moves, more than the option's words said) — answer (a), no restriction.
+
 Also: a `cmd start` on a not-yet-built exe hung the shell (Windows dialog) — chain the run on the build's success.
 Related: [[idle-floor]], [[low-start-repair]], [[hp-wall-repair]].
