@@ -2075,6 +2075,15 @@ state (the shafts hold a steady speed; the drag of the air swallowed is larger t
   (every variant within these). Such a stop said only "an internal check"; it is now its own kind, `low_speed`, with
   plain words — the closure found no burner state between the walls (lean and rich are named only within 2× of their
   walls; the crash map's sit at 0.71–1.05). **The march's low-speed closure itself is OPEN** — the next repair offered.
+- **Runs past the old reach — CHECKED, kept (a side agent's third note):** a governed run the old code refused with
+  "Make the tables at this flight" now runs, and the note read the −4 441 above as its belief's miss. It is not: it is
+  the RAM part alone, and the nozzle part (+4 724) nearly cancels it — at that cell the belief misses by +283 N per kg/s
+  at the below-idle start and −38 at the end. Over the governed runs at Mach 2–3.3 (three airs, four shapes, starts
+  850/1000/1150 K; `scratch-archive/idle-warn/gap.rs`), the worst miss along a run past the old reach is 120–535 N per
+  kg/s (median 160–255), against 100–215 (median 100–140) for runs that reached before at the same flights — larger, as
+  the reading goes further from where the table was made, not a different kind; every such run finishes. The reach
+  refusal guarded a table read OUTSIDE its rows (a clamp, rung 98's lesson); those reads are now inside rows below idle,
+  so no new refusal or note — the page already shows the belief, the gap and its two parts.
 - **What moved** (both crash maps, against `6e49d33` — before § 38 — and `1f57583` — § 38):
   - against `6e49d33`, rung 101's map (seed 99, 1 500): 118 requests, every one a refusal before — 27 now run to the
     end with the warning, 63 run and stop early (23 at a fuel closure — now `low_speed` —, 5 cause-unknown on the

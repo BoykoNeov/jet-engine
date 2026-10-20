@@ -69,7 +69,8 @@ const ENTROPY = /\.s$|\.ts_(burner|reject|afterburner)\.\d+\.0$|\.settled_(lp|hp
 // absolute rule. Worst seen on both parts with both under it: 1.9e-12 (#232.gap_ram), rung 98's ram part included.
 // Sandbox plan § 39: the Controls view keeps a start below idle, so rung 98's Mach-3 sea-level cell (#237, refused
 // before) now runs — and there, its tables carried 3 Mach numbers from the design flight, the ram part is THOUSANDS of
-// N per kg/s (−4441 …), where the absolute bar sits below the arithmetic's own rounding (2.0e-9 = 4.5e-13 of the value).
+// N per kg/s (−4441 …; the nozzle part, +4724, nearly cancels it — the gap itself is +283), where the absolute bar
+// sits below the arithmetic's own rounding (2.0e-9 = 4.5e-13 of the value).
 // So a gap part also passes within 1e-12 of its size (the march's other columns take 1e-10).
 const GAP = /\.gap_(ram|nozzle)\.\d+$/;
 const GAP_ABS = 1e-10;

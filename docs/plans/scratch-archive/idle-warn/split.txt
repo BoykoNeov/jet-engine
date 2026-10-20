@@ -1,0 +1,7 @@
+shape 0 from 1000 to 1400; points 126
+point 0: thrust -785.4 belief -1068.2 gap 282.8 = ram part Some(-4441.267215500238) + nozzle part Some(4724.02247096826)
+point 31: thrust 31.6 belief 69.0 gap -37.4 = ram part Some(-4288.250959071056) + nozzle part Some(4250.818173434648)
+point 63: thrust 31.1 belief 69.0 gap -37.9 = ram part Some(-4288.735085268676) + nozzle part Some(4250.818173434649)
+point 94: thrust 31.1 belief 69.0 gap -37.9 = ram part Some(-4288.73509003854) + nozzle part Some(4250.81817343465)
+point 125: thrust 31.1 belief 69.0 gap -37.9 = ram part Some(-4288.73509003865) + nozzle part Some(4250.818173434656)
+start target -1068.2 achieved -785.4; end target 69.0 achieved 31.1
