@@ -1,6 +1,6 @@
 # The web sandbox
 
-`turbojet-sandbox.html` — **open it with a double-click.** One self-contained, offline file: change
+`turbojet-sandbox.html` — **open it with a double-click** (or double-click `Start Jet Engine.cmd` at the repo root). One self-contained, offline file: change
 the engine's design and watch it respond. Every number is computed by this repository's Rust model,
 compiled for the browser and embedded in the page (no server, no network, no dependencies).
 

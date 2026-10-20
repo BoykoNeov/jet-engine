@@ -2,3 +2,5 @@
 * text=auto eol=lf
 *.py text eol=lf
 *.md text eol=lf
+# Windows launchers must keep CRLF, or cmd misreads them
+*.cmd text eol=crlf
