@@ -1,0 +1,3 @@
+(copied from the session's terminal output; p6.rs printed, not saved, 2026-10-20)
+fly 1100: 219.2 ms nu 0.820684; census [vane, w4, interstage, closure-y] = [151, 2628, 29271, 2477]
+slam: 19395.1 ms points 176; census = [8170, 139056, 1491196, 130886]

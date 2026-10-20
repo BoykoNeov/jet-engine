@@ -1,0 +1,14 @@
+[package]
+name = "rung105-probe"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+turbojet = { path = "W:/Claude_projects/jet engine/rust" }
+
+[profile.release]
+opt-level = 3
+
+[[bin]]
+name = "g1"
+path = "src/g1.rs"

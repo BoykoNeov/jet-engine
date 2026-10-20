@@ -1,0 +1,33 @@
+=== R3 one shaft (pi_c 10, Tt4 1500): |pi_t - design|, |pi_c - 10|, |mdot - 1| ===
+1sh CPG Pin: pi_t 5.33e-15  pi_c 1.02e-14  mdot 1.04e-14
+1sh CPG Rows { reaction: 0.15 }: pi_t 5.33e-15  pi_c 1.02e-14  mdot 1.04e-14
+1sh CPG Rows { reaction: 0.3 }: pi_t 5.33e-15  pi_c 1.02e-14  mdot 1.04e-14
+1sh CPG Rows { reaction: 0.5 }: pi_t 5.33e-15  pi_c 1.02e-14  mdot 1.04e-14
+1sh TPG Pin: pi_t 7.48e-13  pi_c 1.33e-12  mdot 1.34e-12
+1sh TPG Rows { reaction: 0.15 }: pi_t 0.00e0  pi_c 1.11e-15  mdot 1.33e-15
+1sh TPG Rows { reaction: 0.3 }: pi_t 8.55e-15  pi_c 2.24e-14  mdot 1.44e-14
+1sh TPG Rows { reaction: 0.5 }: pi_t 1.78e-15  pi_c 1.18e-14  mdot 1.18e-14
+1sh EQ  Pin: pi_t 1.36e-13  pi_c 2.62e-13  mdot 2.62e-13
+1sh EQ  Rows { reaction: 0.15 }: pi_t 7.77e-16  pi_c 6.00e-15  mdot 6.11e-15
+1sh EQ  Rows { reaction: 0.3 }: pi_t 5.22e-15  pi_c 8.22e-15  mdot 3.11e-15
+1sh EQ  Rows { reaction: 0.5 }: pi_t 3.33e-16  pi_c 6.00e-15  mdot 6.11e-15
+=== R3 two shafts (rig 3/6/1500, flat maps): |pi_hpt - design|, |pi_hpc - 6|, |pi_lpc - 3|, |mdot - 1| ===
+2sh CPG Pin: pi_hpt 3.44e-15  pi_hpc 1.13e-14  pi_lpc 1.01e-14  mdot 1.33e-15
+2sh CPG Rows { reaction: 0.15 }: pi_hpt 3.44e-15  pi_hpc 1.13e-14  pi_lpc 1.01e-14  mdot 1.33e-15
+2sh CPG Rows { reaction: 0.3 }: pi_hpt 3.44e-15  pi_hpc 1.13e-14  pi_lpc 1.01e-14  mdot 1.33e-15
+2sh CPG Rows { reaction: 0.5 }: pi_hpt 3.44e-15  pi_hpc 1.13e-14  pi_lpc 1.01e-14  mdot 1.33e-15
+2sh TPG Pin: pi_hpt 7.95e-14  pi_hpc 1.78e-11  pi_lpc 4.85e-11  mdot 6.68e-11
+2sh TPG Rows { reaction: 0.15 }: pi_hpt 7.95e-14  pi_hpc 1.78e-11  pi_lpc 4.85e-11  mdot 6.68e-11
+2sh TPG Rows { reaction: 0.3 }: pi_hpt 7.93e-14  pi_hpc 1.78e-11  pi_lpc 4.85e-11  mdot 6.68e-11
+2sh TPG Rows { reaction: 0.5 }: pi_hpt 6.95e-14  pi_hpc 3.69e-11  pi_lpc 5.53e-11  mdot 1.87e-11
+2sh EQ  Pin: pi_hpt 4.69e-12  pi_hpc 1.18e-10  pi_lpc 4.62e-11  mdot 7.25e-11
+2sh EQ  Rows { reaction: 0.15 }: pi_hpt 4.69e-12  pi_hpc 1.18e-10  pi_lpc 4.62e-11  mdot 7.25e-11
+2sh EQ  Rows { reaction: 0.3 }: pi_hpt 4.51e-12  pi_hpc 6.86e-11  pi_lpc 4.00e-11  mdot 2.91e-11
+2sh EQ  Rows { reaction: 0.5 }: pi_hpt 4.28e-12  pi_hpc 1.86e-10  pi_lpc 5.40e-11  mdot 1.33e-10
+=== R2 perfect gas, choked, shortcut OFF: worst |law - pin| over Tt4 700..1600, two flights ===
+1sh CPG Rows { reaction: 0.15 }: worst 1.02e-14
+1sh CPG Rows { reaction: 0.3 }: worst 1.18e-14
+1sh CPG Rows { reaction: 0.5 }: worst 1.02e-14
+2sh CPG Rows { reaction: 0.15 }: worst 1.23e-14
+2sh CPG Rows { reaction: 0.3 }: worst 1.23e-14
+2sh CPG Rows { reaction: 0.5 }: worst 1.23e-14

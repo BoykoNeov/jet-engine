@@ -1,0 +1,176 @@
+//! RUNG 105 — THE HP TURBINE'S THROAT IS NOT CHOKED AT A NORMAL REACTION: a flow law replaces rung 31's pin on `A4`.
+//!
+//! PROTOTYPE (throwaway worktree) — the anchor is written from what this measures.
+//!
+//! # The equation
+//!
+//! Rungs 31 and 38 pinned the HP turbine's flow parameter at its nozzle guide vane's CHOKED value, `W4 = ṁ√Tt4/pt4 =
+//! A4·MFP*(Tt4)`, so the compressors' airflow never heard the turbine. Probe G1: the vane chokes only if the stage's
+//! reaction is at most ~0.16–0.20 on these engines (single stages of total ratio ~2.3–2.4), and published single-stage
+//! reactions are 0.25–0.5. The law gives `W4` as a function of the HP turbine's own `y = pt_out/pt4`:
+//!
+//! * `Rows { reaction }` — vane and rotor as two convergent rows in series (rung 104's two-row model: the gas's own
+//!   isentropic flux, capped at its sonic point, velocity dumped between them), the design split set by the REACTION:
+//!   the vane takes `1 − R` of the stage's isentropic enthalpy drop. At a low enough reaction the vane is choked at
+//!   design and the old pin comes back wherever it stays choked — exactly (the pin's own expression is returned there).
+//! * `Pin` — the choked vane: the OLD CODE, called literally.
+
+use crate::components::{try_choked_mfp, try_sonic_throat};
+use crate::gas::{powp, Abort, Gas};
+use crate::turbine_law::{flux, illinois_from, t_from_h_fine, t_from_pr_fine, tau_free};
+
+/// The default reaction (the user's choice, 2026-10-20): the middle of the published range for one high-work stage.
+pub const REACTION_DEFAULT: f64 = 0.3;
+
+/// What sets the HP turbine's flow parameter `W4 = ṁ√Tt4/pt4`.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum HpVane {
+    /// The choked vane — the old code, literally.
+    Pin,
+    /// Vane and rotor in series, the vane taking `1 − reaction` of the design drop.
+    Rows { reaction: f64 },
+}
+
+/// The reaction law at 0.3 — or, built with `hp-pin-default`, the old pin (the whole gate on the old model).
+impl Default for HpVane {
+    fn default() -> Self {
+        if cfg!(feature = "hp-pin-default") { HpVane::Pin } else { HpVane::Rows { reaction: REACTION_DEFAULT } }
+    }
+}
+
+/// The law's design capture (zero new constants but the reaction).
+#[derive(Clone, Copy, Debug)]
+pub struct HpCapacity {
+    pub law: HpVane,
+    /// The design mixture, `Tt4`, HP-turbine expansion `pt_out/pt4` and efficiency.
+    pub fd: f64,
+    pub td: f64,
+    pub yd: f64,
+    pub eta: f64,
+    /// `A4` and `W4` at design, `A4·MFP*(Tt4_d)`.
+    pub a4: f64,
+    pub w4d: f64,
+    /// The interstage pressure at design (`pt4 = 1`) and the two rows' areas, normalised so the design flow is 1.
+    pub p1d: f64,
+    pub rows: [f64; 2],
+    /// The vane choked at design: then wherever it stays choked the law IS the pin, and returns the pin's expression.
+    pub choked_d: bool,
+}
+
+/// The vane's sonic pressure at total `(1, Tt4)`.
+fn p_star(gas: &Gas, tt4: f64, f: f64) -> Result<f64, Abort> {
+    Ok(try_sonic_throat(gas, tt4, 1.0, f)?.1)
+}
+
+/// The vane's sonic point at total `(1, Tt4)`, found ONCE for a search over the turbine's expansion (the gas's sonic
+/// search is the dearest call in the law; rung 104's `flux` repeats it at every call below `0.6` of the inlet pressure).
+#[derive(Clone, Copy, Debug)]
+pub struct Vane {
+    pub p_star: f64,
+    pub flux_star: f64,
+}
+
+impl Vane {
+    pub fn at(gas: &Gas, tt4: f64, f: f64) -> Result<Vane, Abort> {
+        census::bump(0);
+        let (ts, ps, vs) = try_sonic_throat(gas, tt4, 1.0, f)?;
+        Ok(Vane { p_star: ps, flux_star: ps / (gas.r_t_at(f) * ts) * vs })
+    }
+
+    /// The vane's isentropic flux from total `(1, Tt4)` to `p1`, capped at its sonic point.
+    pub fn flux(&self, gas: &Gas, f: f64, tt4: f64, p1: f64) -> Result<f64, Abort> {
+        if p1 <= self.p_star {
+            return Ok(self.flux_star);
+        }
+        let ts = t_from_pr_fine(gas, gas.pr_t(tt4, f) * p1, f)?;
+        let v = (2.0 * (gas.h_t(tt4, f) - gas.h_t(ts, f))).max(0.0).sqrt();
+        Ok(p1 / (gas.r_t_at(f) * ts) * v)
+    }
+}
+
+impl HpCapacity {
+    /// Capture at the design point.
+    #[allow(clippy::too_many_arguments)]
+    pub fn capture(gas: &Gas, f: f64, tt4: f64, yd: f64, eta: f64, a4: f64, law: HpVane) -> HpCapacity {
+        let w4d = a4 * try_choked_mfp(gas, tt4, f).expect("design MFP*");
+        let mut c = HpCapacity { law, fd: f, td: tt4, yd, eta, a4, w4d, p1d: f64::NAN, rows: [f64::NAN; 2],
+                                 choked_d: true };
+        if let HpVane::Rows { reaction } = law {
+            assert!((0.0..1.0).contains(&reaction), "rung-105: the reaction must lie in [0, 1), got {reaction}");
+            // THE TEXTBOOK REACTION: the vane's exit kinetic energy is (1 − R) of the stage's ACTUAL drop Δh0 (a
+            // repeating stage, the vane isentropic) — so the vane chokes exactly where G1's `R*` says.
+            let h4 = gas.h_t(tt4, f);
+            let tys = t_from_pr_fine(gas, gas.pr_t(tt4, f) * yd, f).expect("design expansion");
+            let hs1 = h4 - (1.0 - reaction) * eta * (h4 - gas.h_t(tys, f));
+            let t1s = t_from_h_fine(gas, hs1, f);
+            let p1 = gas.pr_t(t1s, f) / gas.pr_t(tt4, f);
+            let a1 = 1.0 / flux(gas, f, 1.0, tt4, p1).expect("design vane flux");
+            let t1 = tau_free(gas, tt4, f, p1, eta).expect("design vane expansion");
+            let a2 = 1.0 / flux(gas, f, p1, t1, yd).expect("design rotor flux");
+            c.p1d = p1;
+            c.rows = [a1, a2];
+            c.choked_d = p1 <= p_star(gas, tt4, f).expect("design sonic point");
+        }
+        c
+    }
+
+    /// The same design, another law.
+    pub fn with_law(&self, gas: &Gas, law: HpVane) -> HpCapacity {
+        HpCapacity::capture(gas, self.fd, self.td, self.yd, self.eta, self.a4, law)
+    }
+
+    /// `(W4, the vane choked here)` at the HP turbine's expansion `y = pt_out/pt4`.
+    pub fn w4(&self, gas: &Gas, y: f64, tt4: f64, f: f64, eta: f64) -> Result<(f64, bool), Abort> {
+        self.w4_with(&Vane::at(gas, tt4, f)?, gas, y, tt4, f, eta)
+    }
+
+    /// [`w4`](Self::w4) with the vane's sonic point found once (`Vane::at`) — for a search over `y` at one `(Tt4, f)`.
+    pub fn w4_with(&self, v: &Vane, gas: &Gas, y: f64, tt4: f64, f: f64, eta: f64) -> Result<(f64, bool), Abort> {
+        census::bump(1);
+        let [a1, a2] = self.rows;
+        let p1 = match self.law {
+            HpVane::Pin => return Ok((self.a4 * try_choked_mfp(gas, tt4, f)?, true)),
+            HpVane::Rows { .. } => {
+                // The interstage pressure where the two rows pass the same flow (pt4 = 1); residual positive at y, falling.
+                let resid = |p1: f64| -> Result<f64, Abort> {
+                    census::bump(2);
+                    let t1 = tau_free(gas, tt4, f, p1, eta)?;
+                    Ok(a1 * v.flux(gas, f, tt4, p1)? - a2 * flux(gas, f, p1, t1, y)?)
+                };
+                let sd = (1.0 - self.p1d) / (1.0 - self.yd);
+                let (lo, hi) = (y + 1e-9 * (1.0 - y), 1.0 - 1e-9 * (1.0 - y));
+                illinois_from(resid, 1.0 - sd * (1.0 - y), 0.02 * (1.0 - y), lo, hi, 0.0)?
+            }
+        };
+        let choked = self.choked_d && p1 <= v.p_star;
+        if choked {
+            return Ok((self.a4 * try_choked_mfp(gas, tt4, f)?, true));
+        }
+        Ok((self.w4d * a1 * v.flux(gas, f, tt4, p1)? * powp(tt4 / self.td, 0.5), false))
+    }
+
+    /// The EFFECTIVE `A4` at `y`: `W4/MFP*(Tt4)` — `A4` itself, bit for bit, on the pin and wherever a vane choked at
+    /// design is choked here, so every reader's old arithmetic runs unchanged there.
+    pub fn a4_at(&self, gas: &Gas, y: f64, tt4: f64, f: f64, eta: f64) -> Result<f64, Abort> {
+        if self.law == HpVane::Pin {
+            return Ok(self.a4);
+        }
+        match self.w4(gas, y, tt4, f, eta)? {
+            (_, true) => Ok(self.a4),
+            (w, false) => Ok(w / try_choked_mfp(gas, tt4, f)?),
+        }
+    }
+}
+
+thread_local! {
+    /// PROTOTYPE ONLY: the flight's `p0` for a transient closure whose core has none set (the timing probe sets it).
+    pub static PROTO_P0: std::cell::Cell<f64> = const { std::cell::Cell::new(f64::NAN) };
+}
+
+/// PROTOTYPE census: (Vane::at, w4_with, interstage residuals, closure y-residuals).
+pub mod census {
+    use std::cell::Cell;
+    thread_local! { pub static C: Cell<[u64; 4]> = const { Cell::new([0; 4]) }; }
+    pub fn bump(i: usize) { C.with(|c| { let mut v = c.get(); v[i] += 1; c.set(v) }) }
+    pub fn take() -> [u64; 4] { C.with(|c| c.replace([0; 4])) }
+}

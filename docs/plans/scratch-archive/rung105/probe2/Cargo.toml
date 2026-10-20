@@ -1,0 +1,45 @@
+[package]
+name = "rung105-probe2"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+turbojet = { path = "W:/temp/claude/rung105-wt/rust" }
+
+[profile.release]
+opt-level = 3
+
+[[bin]]
+name = "p1"
+path = "src/p1.rs"
+
+[[bin]]
+name = "p2"
+path = "src/p2.rs"
+
+[[bin]]
+name = "p3"
+path = "src/p3.rs"
+
+[[bin]]
+name = "p4"
+path = "src/p4.rs"
+
+[[bin]]
+name = "p5"
+path = "src/p5.rs"
+
+[features]
+pin = ["turbojet/hp-pin-default"]
+
+[[bin]]
+name = "p6"
+path = "src/p6.rs"
+
+[[bin]]
+name = "p7"
+path = "src/p7.rs"
+
+[[bin]]
+name = "p8"
+path = "src/p8.rs"

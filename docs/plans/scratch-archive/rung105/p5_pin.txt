@@ -1,0 +1,10 @@
+PIN fly design              5.0 ms  pi_c 10.000000 mdot 20.000000 nu 1.000000 choked true
+PIN fly 1100                3.7 ms  pi_c 6.046703 mdot 14.346039 nu 0.820610 choked true
+PIN fly 800                 3.1 ms  pi_c 3.955600 mdot 11.163134 nu 0.686169 choked true
+PIN fly hot M.3 700         2.5 ms  refused: PANIC
+PIN fly hot M.3 1000        8.8 ms  pi_c 4.491914 mdot 15.099444 nu 0.768729 choked false
+PIN slam default          188.4 ms  points 176 end nu 0.996290 stop false
+PIN slam fuel             178.6 ms  points 176 end nu 0.999893 stop false
+PIN slam low 700->1200    143.3 ms  points 176 end nu 0.857553 stop false
+PIN controls default       12.5 ms  points 126 end nuL 0.948214 nuH 0.958113 stop false
+PIN controls unchoked      17.7 ms  points 126 end nuL 0.904506 nuH 0.939201 stop false
