@@ -13,5 +13,5 @@ the probe only reads) built three bins; the crate itself was temporary and is de
   `score_c_pin.txt` and `tt4hold_pin.txt` against `../rung102/score_c.txt` / `tt4hold.txt`: 0 differing lines each.
   `ranges.py` — each claim's measured range per law (the spec's table).
 
-The paths inside `cmp.py`, `ranges.py` and `runall.sh` point at the scratch crate `W:	emp\claudeung102-rescore`, deleted
+The paths inside `cmp.py`, `ranges.py` and `runall.sh` point at the scratch crate `W:/temp/claude/rung102-rescore`, deleted
 after the run; point them at this folder to re-run the comparisons.
