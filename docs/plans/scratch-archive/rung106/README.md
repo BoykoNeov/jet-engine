@@ -16,3 +16,19 @@ only (anchor `docs/plans/rung106-anchor-governor-lag.md` § 0).
 - `open_lean.rs` → `open_lean.txt` — G4's sweep with the open ramp as the demand (the advisor's check of my first claim,
   which rested on six runs): 0 at the wall; the 679 early stops are the prototype's missing solvable-ceiling fallback,
   none among G4's 399 configurations.
+
+After the build (the SHIPPED device, `rust/src/governor_lag.rs`):
+- `score.rs` → `score.txt` — the spec's § 3 table (H1, H1b, H2, H3, H4, H5 — every cell), the reported reliefs, the
+  burner-temperature hold to 1600 K, H4 past the grid (where it flips), the thrust's first peak and sag on four maps
+  against the instant limiter, the unlimited governor and rung 47's open ramp, and the cost.
+- `crash.rs` → `crash_first.txt` — the crash map (1 000 requests through `sandbox::call`, seed 12, every one governed with
+  the redline and its lag): no panic; ONE minimum-fuel run with a start below the redline (#896, the metal cap holding
+  the start while the governor's request was above the redline) — the user then refused that start too. `crash.txt` is
+  its re-run after that refusal.
+- `slow.rs` → `slow.txt` — the crash map's five slowest requests timed with the lag on and off (the same: not the lag's).
+  The spec's 14.6–17.4 s are a first run on a quiet machine; `slow.txt` is a second one taken while the gate ran
+  (22–28 s, the same on/off pattern).
+- `one.rs` — prints one request's reply (used on #896).
+- `r95time.rs` (+ `r95time_reqs.txt`) → `r95_vs_today.txt` — the five slowest requests, stripped of keys rung 95 did not
+  know, timed on a worktree at rung 95's `096367d` and on today's code, back to back: 0.2–1.8 s then, 21–37 s now — a
+  regression of rung 95's route, not this rung's (spec § 4).

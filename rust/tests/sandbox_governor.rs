@@ -63,7 +63,9 @@ fn governed_the_page_draws_the_demand_the_clamp_and_the_cutting_leg() {
 #[test]
 fn every_refusal_is_words() {
     let d = ControlsSettings { govern: true, ..ControlsSettings::defaults() };
-    refused(&ControlsSettings { redline_on: true, gov_lag_on: true, ..d }, "temperature limiter's lag");
+    // Rung 106 lifted the temperature limiter's lag beside the governor; what it still refuses there:
+    refused(&ControlsSettings { redline_on: true, gov_lag_on: true, gov_lag: 0.05, ..d }, "at least 0.1 spool time constants");
+    refused(&ControlsSettings { redline_on: true, gov_lag_on: true, from: 1500.0, to: 1000.0, ..d }, "above the temperature limiter's");
     refused(&ControlsSettings { accel_on: true, release_on: true, ..d }, "realistic release");
     refused(&ControlsSettings { lever: LeverChoice::Bleed, bleed_mode: BleedMode::Valve, valve_lag_on: true, ..d },
             "instant valve");

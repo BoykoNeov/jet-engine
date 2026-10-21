@@ -35,3 +35,9 @@ cost ≈ rung 95's governed run (0.3–1.5×), so no cost re-ask.
 burner temperature above the redline is refused ("the limiter would not allow it; raise the limit or start lower"); the
 lean-limit hold stays only as a safety net. Applies to the NEW route only — rung 47's open lagged route keeps
 accepting such starts. Predictions are scored on starts below the redline.
+
+**Hot REQUEST (asked after the crash map, 2026-10-21): REFUSE IT TOO** — crash #896 (seed 12): the metal cap held the
+start at 978 K while the thrust governor's request at s = 0 was above the redline (Tt4 at the request > 1480), so the
+clip charged from 0 under the metal leg and the fast slowdown then held the burner at the lean edge ~0.6 τ. Refused in
+words when the governor's request at the start is above the limit (the clip's target there > 0) — same principle as
+the hot start; the minimum-fuel stop stays a safety net.

@@ -1,0 +1,141 @@
+flow/press tau 0.05: pts gov 126 open 126 | H1 overshoot gov   122.9 K open    55.6 K HIT | H3 stored cut gov 9.450e-4 open 3.012e-4 HIT | H4 95% gov 1.4047 inst 1.3226 HIT
+flow/press tau  0.1: pts gov 126 open 126 | H1 overshoot gov   194.1 K open    95.3 K HIT | H3 stored cut gov 1.304e-3 open 5.027e-4 HIT | H4 95% gov 1.4639 inst 1.3226 HIT
+flow/press tau  0.2: pts gov 126 open 126 | H1 overshoot gov   271.8 K open   137.5 K HIT | H3 stored cut gov 1.604e-3 open 7.593e-4 HIT | H4 95% gov 1.5346 inst 1.3226 HIT
+flow/press tau  0.4: pts gov 126 open 126 | H1 overshoot gov   340.2 K open   170.2 K HIT | H3 stored cut gov 1.789e-3 open 9.793e-4 HIT | H4 95% gov 1.5682 inst 1.3226 HIT
+flow/press tau  0.8: pts gov 126 open 126 | H1 overshoot gov   387.5 K open   190.9 K HIT | H3 stored cut gov 1.870e-3 open 8.556e-4 HIT | H4 95% gov 1.4667 inst 1.3226 HIT
+flow/press H2 overshoot by tau ["122.9", "194.1", "271.8", "340.2", "387.5"] HIT
+flow/press rung 95 instant-redline peak 1480.0 K, unlimited governed peak 1927.4 K, 95% at 1.3226
+press/flow tau 0.05: pts gov 126 open 126 | H1 overshoot gov   130.0 K open    56.6 K HIT | H3 stored cut gov 9.996e-4 open 3.024e-4 HIT | H4 95% gov 1.4124 inst 1.3305 HIT
+press/flow tau  0.1: pts gov 126 open 126 | H1 overshoot gov   203.2 K open    97.3 K HIT | H3 stored cut gov 1.358e-3 open 5.059e-4 HIT | H4 95% gov 1.4706 inst 1.3305 HIT
+press/flow tau  0.2: pts gov 126 open 126 | H1 overshoot gov   281.7 K open   141.1 K HIT | H3 stored cut gov 1.659e-3 open 7.667e-4 HIT | H4 95% gov 1.5389 inst 1.3305 HIT
+press/flow tau  0.4: pts gov 126 open 126 | H1 overshoot gov   350.3 K open   175.3 K HIT | H3 stored cut gov 1.847e-3 open 9.894e-4 HIT | H4 95% gov 1.5687 inst 1.3305 HIT
+press/flow tau  0.8: pts gov 126 open 126 | H1 overshoot gov   398.7 K open   197.1 K HIT | H3 stored cut gov 1.928e-3 open 8.711e-4 HIT | H4 95% gov 1.4655 inst 1.3305 HIT
+press/flow H2 overshoot by tau ["130.0", "203.2", "281.7", "350.3", "398.7"] HIT
+press/flow rung 95 instant-redline peak 1480.0 K, unlimited governed peak 1940.3 K, 95% at 1.3305
+tilted     tau 0.05: pts gov 126 open 126 | H1 overshoot gov   129.1 K open    56.4 K HIT | H3 stored cut gov 9.991e-4 open 3.045e-4 HIT | H4 95% gov 1.4100 inst 1.3275 HIT
+tilted     tau  0.1: pts gov 126 open 126 | H1 overshoot gov   201.2 K open    97.0 K HIT | H3 stored cut gov 1.349e-3 open 5.077e-4 HIT | H4 95% gov 1.4686 inst 1.3275 HIT
+tilted     tau  0.2: pts gov 126 open 126 | H1 overshoot gov   277.9 K open   140.6 K HIT | H3 stored cut gov 1.640e-3 open 7.666e-4 HIT | H4 95% gov 1.5376 inst 1.3275 HIT
+tilted     tau  0.4: pts gov 126 open 126 | H1 overshoot gov   344.7 K open   174.8 K HIT | H3 stored cut gov 1.819e-3 open 9.887e-4 HIT | H4 95% gov 1.5680 inst 1.3275 HIT
+tilted     tau  0.8: pts gov 126 open 126 | H1 overshoot gov   392.2 K open   196.6 K HIT | H3 stored cut gov 1.897e-3 open 8.743e-4 HIT | H4 95% gov 1.4632 inst 1.3275 HIT
+tilted     H2 overshoot by tau ["129.1", "201.2", "277.9", "344.7", "392.2"] HIT
+tilted     rung 95 instant-redline peak 1480.0 K, unlimited governed peak 1932.5 K, 95% at 1.3275
+flat-lp    tau 0.05: pts gov 126 open 126 | H1 overshoot gov   124.1 K open    54.7 K HIT | H3 stored cut gov 1.013e-3 open 3.185e-4 HIT | H4 95% gov 1.3152 inst 1.2257 HIT
+flat-lp    tau  0.1: pts gov 126 open 126 | H1 overshoot gov   193.0 K open    93.4 K HIT | H3 stored cut gov 1.367e-3 open 5.284e-4 HIT | H4 95% gov 1.3750 inst 1.2257 HIT
+flat-lp    tau  0.2: pts gov 126 open 126 | H1 overshoot gov   264.7 K open   134.6 K HIT | H3 stored cut gov 1.629e-3 open 7.879e-4 HIT | H4 95% gov 1.4369 inst 1.2257 HIT
+flat-lp    tau  0.4: pts gov 126 open 126 | H1 overshoot gov   324.4 K open   166.5 K HIT | H3 stored cut gov 1.757e-3 open 9.676e-4 HIT | H4 95% gov 1.4407 inst 1.2257 HIT
+flat-lp    tau  0.8: pts gov 126 open 126 | H1 overshoot gov   365.8 K open   186.7 K HIT | H3 stored cut gov 1.791e-3 open 7.964e-4 HIT | H4 95% gov 1.2641 inst 1.2257 HIT
+flat-lp    H2 overshoot by tau ["124.1", "193.0", "264.7", "324.4", "365.8"] HIT
+flat-lp    rung 95 instant-redline peak 1480.0 K, unlimited governed peak 1898.7 K, 95% at 1.2257
+== H1 governed overshoot > open (thrust): 20 HIT, 0 MISS, 0 VACUOUS
+== H2 overshoot rises with tau: 4 HIT, 0 MISS, 0 VACUOUS
+== H3 governed stored cut > open: 20 HIT, 0 MISS, 0 VACUOUS
+== H4 95% thrust later than instant: 20 HIT, 0 MISS, 0 VACUOUS
+H1b HP rate .1 flow/press: overshoot gov   368.4 K open   137.5 K HIT
+H1b HP rate .1 press/flow: overshoot gov   352.7 K open   141.1 K HIT
+H1b HP rate .1 tilted    : overshoot gov   361.6 K open   140.6 K HIT
+H1b HP rate .1 flat-lp   : overshoot gov   364.0 K open   134.6 K HIT
+H1b HP prop 20 flow/press: overshoot gov   477.2 K open   137.5 K HIT
+H1b HP prop 20 press/flow: overshoot gov   465.0 K open   141.1 K HIT
+H1b HP prop 20 tilted    : overshoot gov   472.4 K open   140.6 K HIT
+H1b HP prop 20 flat-lp   : overshoot gov   470.8 K open   134.6 K HIT
+H1b EPR        flow/press: overshoot gov   312.4 K open   137.5 K HIT
+H1b EPR        press/flow: overshoot gov   328.9 K open   141.1 K HIT
+H1b EPR        tilted    : overshoot gov   324.5 K open   140.6 K HIT
+H1b EPR        flat-lp   : overshoot gov   309.9 K open   134.6 K HIT
+H1b N1 rate .2 flow/press: overshoot gov   237.1 K open   137.5 K HIT
+H1b N1 rate .2 press/flow: overshoot gov   267.2 K open   141.1 K HIT
+H1b N1 rate .2 tilted    : overshoot gov   252.8 K open   140.6 K HIT
+H1b N1 rate .2 flat-lp   : overshoot gov   142.9 K open   134.6 K HIT
+H1b N1 prop 5  flow/press: overshoot gov   296.0 K open   137.5 K HIT
+H1b N1 prop 5  press/flow: overshoot gov   322.1 K open   141.1 K HIT
+H1b N1 prop 5  tilted    : overshoot gov   309.8 K open   140.6 K HIT
+H1b N1 prop 5  flat-lp   : overshoot gov   223.3 K open   134.6 K HIT
+== H1b other laws, tau 0.2: 20 HIT, 0 MISS, 0 VACUOUS
+H5 flow/press: engages at point 7 (s=0.14) governed, 15 (s=0.30) open HIT
+H5 press/flow: engages at point 7 (s=0.14) governed, 15 (s=0.30) open HIT
+H5 tilted    : engages at point 7 (s=0.14) governed, 15 (s=0.30) open HIT
+H5 flat-lp   : engages at point 7 (s=0.14) governed, 15 (s=0.30) open HIT
+== H5 engages earlier governed: 4 HIT, 0 MISS, 0 VACUOUS
+-- reported: reliefs (lowest phi, lagged governed minus unlimited governed; open lagged minus open unlimited)
+flow/press tau 0.05: relief_lp gov +0.002511 open +0.000000; relief_hp gov +0.014670 open +0.003560
+flow/press tau  0.1: relief_lp gov +0.001582 open +0.000000; relief_hp gov +0.010901 open +0.002873
+flow/press tau  0.2: relief_lp gov +0.001057 open +0.000000; relief_hp gov +0.007157 open +0.002135
+flow/press tau  0.4: relief_lp gov +0.000778 open +0.000000; relief_hp gov +0.004227 open +0.001409
+flow/press tau  0.8: relief_lp gov +0.000398 open +0.000000; relief_hp gov +0.002367 open +0.000860
+press/flow tau 0.05: relief_lp gov +0.003974 open +0.000000; relief_hp gov +0.019277 open +0.004932
+press/flow tau  0.1: relief_lp gov +0.002732 open +0.000000; relief_hp gov +0.014199 open +0.004001
+press/flow tau  0.2: relief_lp gov +0.001863 open +0.000000; relief_hp gov +0.009248 open +0.002985
+press/flow tau  0.4: relief_lp gov +0.001129 open +0.000000; relief_hp gov +0.005465 open +0.001976
+press/flow tau  0.8: relief_lp gov +0.000576 open +0.000000; relief_hp gov +0.002966 open +0.001196
+tilted     tau 0.05: relief_lp gov +0.003606 open +0.000000; relief_hp gov +0.017423 open +0.004307
+tilted     tau  0.1: relief_lp gov +0.002537 open +0.000000; relief_hp gov +0.012770 open +0.003499
+tilted     tau  0.2: relief_lp gov +0.001660 open +0.000000; relief_hp gov +0.008272 open +0.002601
+tilted     tau  0.4: relief_lp gov +0.001125 open +0.000000; relief_hp gov +0.004898 open +0.001717
+tilted     tau  0.8: relief_lp gov +0.000574 open +0.000000; relief_hp gov +0.002577 open +0.001054
+flat-lp    tau 0.05: relief_lp gov +0.002388 open +0.000000; relief_hp gov +0.014261 open +0.003339
+flat-lp    tau  0.1: relief_lp gov +0.001770 open +0.000000; relief_hp gov +0.010455 open +0.002691
+flat-lp    tau  0.2: relief_lp gov +0.001040 open +0.000000; relief_hp gov +0.006776 open +0.001992
+flat-lp    tau  0.4: relief_lp gov +0.000647 open +0.000000; relief_hp gov +0.004043 open +0.001314
+flat-lp    tau  0.8: relief_lp gov +0.000444 open +0.000000; relief_hp gov +0.002103 open +0.000813
+-- reported: burner-temperature hold 1000 -> 1600 K
+flow/press tau 0.1: overshoot gov 76.2 open 200.7; clip peak gov 3.014e-3 open 1.154e-2
+flow/press tau 0.4: overshoot gov 106.3 open 419.1; clip peak gov 2.968e-3 open 7.953e-3
+press/flow tau 0.1: overshoot gov 76.2 open 205.0; clip peak gov 2.990e-3 open 1.160e-2
+press/flow tau 0.4: overshoot gov 106.3 open 428.4; clip peak gov 2.944e-3 open 7.972e-3
+tilted     tau 0.1: overshoot gov 76.2 open 204.2; clip peak gov 3.001e-3 open 1.158e-2
+tilted     tau 0.4: overshoot gov 106.3 open 425.2; clip peak gov 2.954e-3 open 7.958e-3
+flat-lp    tau 0.1: overshoot gov 76.2 open 200.3; clip peak gov 2.924e-3 open 1.126e-2
+flat-lp    tau 0.4: overshoot gov 106.3 open 413.7; clip peak gov 2.886e-3 open 7.578e-3
+-- reported: H4 at long lags (95% crossing, governed lagged vs instant)
+flow/press instant 1.323, unlimited 0.475; lagged 0.4:1.568 0.6:1.534 0.8:1.467 1:0.498 1.2:0.494 1.6:0.489 2.4:0.484 3.2:0.482 6.4:0.479
+flat-lp    instant 1.226, unlimited 0.475; lagged 0.4:1.441 0.6:1.370 0.8:1.264 1:0.496 1.2:0.493 1.6:0.488 2.4:0.484 3.2:0.482 6.4:0.478
+-- reported: the thrust fraction's first peak and the sag after it
+flow/press
+instant (rung 95 + instant redline): first falls after s=1.48 at 1.0000, lowest after 1.0000
+unlimited governed: first falls after s=0.50 at 1.0000, lowest after 1.0000
+open lagged (rung 47) tau 0.2: thrust never falls (126 pts)
+open lagged (rung 47) tau 0.8: thrust never falls (126 pts)
+tau 0.2: first peak 0.8292 at s=0.50, then down to 0.7756 at s=0.66
+tau 0.4: first peak 0.8973 at s=0.50, then down to 0.8503 at s=0.72
+tau 0.8: first peak 0.9431 at s=0.50, then down to 0.9095 at s=0.78
+tau 0.9: first peak 0.9488 at s=0.50, then down to 0.9176 at s=0.78
+tau 1: first peak 0.9535 at s=0.50, then down to 0.9244 at s=0.78
+tau 1.6: first peak 0.9700 at s=0.50, then down to 0.9493 at s=0.82
+press/flow
+instant (rung 95 + instant redline): first falls after s=1.50 at 1.0000, lowest after 1.0000
+unlimited governed: first falls after s=0.50 at 1.0000, lowest after 1.0000
+open lagged (rung 47) tau 0.2: thrust never falls (126 pts)
+open lagged (rung 47) tau 0.8: thrust never falls (126 pts)
+tau 0.2: first peak 0.8283 at s=0.50, then down to 0.7734 at s=0.66
+tau 0.4: first peak 0.8967 at s=0.50, then down to 0.8488 at s=0.72
+tau 0.8: first peak 0.9427 at s=0.50, then down to 0.9087 at s=0.76
+tau 0.9: first peak 0.9484 at s=0.50, then down to 0.9168 at s=0.78
+tau 1: first peak 0.9531 at s=0.50, then down to 0.9236 at s=0.78
+tau 1.6: first peak 0.9697 at s=0.50, then down to 0.9488 at s=0.82
+tilted
+instant (rung 95 + instant redline): first falls after s=1.54 at 1.0000, lowest after 1.0000
+unlimited governed: first falls after s=0.50 at 1.0000, lowest after 1.0000
+open lagged (rung 47) tau 0.2: thrust never falls (126 pts)
+open lagged (rung 47) tau 0.8: thrust never falls (126 pts)
+tau 0.2: first peak 0.8291 at s=0.50, then down to 0.7749 at s=0.66
+tau 0.4: first peak 0.8972 at s=0.50, then down to 0.8499 at s=0.72
+tau 0.8: first peak 0.9430 at s=0.50, then down to 0.9093 at s=0.76
+tau 0.9: first peak 0.9487 at s=0.50, then down to 0.9174 at s=0.78
+tau 1: first peak 0.9534 at s=0.50, then down to 0.9242 at s=0.78
+tau 1.6: first peak 0.9699 at s=0.50, then down to 0.9492 at s=0.82
+flat-lp
+instant (rung 95 + instant redline): first falls after s=1.40 at 1.0000, lowest after 1.0000
+unlimited governed: first falls after s=0.52 at 1.0000, lowest after 1.0000
+open lagged (rung 47) tau 0.2: thrust never falls (126 pts)
+open lagged (rung 47) tau 0.8: thrust never falls (126 pts)
+tau 0.2: first peak 0.8401 at s=0.50, then down to 0.7970 at s=0.64
+tau 0.4: first peak 0.9044 at s=0.50, then down to 0.8682 at s=0.68
+tau 0.8: first peak 0.9472 at s=0.50, then down to 0.9223 at s=0.72
+tau 0.9: first peak 0.9525 at s=0.50, then down to 0.9295 at s=0.74
+tau 1: first peak 0.9569 at s=0.50, then down to 0.9354 at s=0.74
+tau 1.6: first peak 0.9722 at s=0.50, then down to 0.9572 at s=0.76
+flow/press Tt4 hold tau 0.1: peak 1556.245019 K at s=0.50
+press/flow Tt4 hold tau 0.1: peak 1556.181333 K at s=0.50
+tilted     Tt4 hold tau 0.1: peak 1556.197384 K at s=0.50
+flat-lp    Tt4 hold tau 0.1: peak 1556.186836 K at s=0.50
+-- cost: governed lagged 0.307 s, rung 95 instant redline 0.315 s; scoring took 46 s

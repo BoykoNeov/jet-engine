@@ -1,0 +1,17 @@
+
+THE GOVERNOR BESIDE THE SLOW TEMPERATURE LIMITER (rung 106): rung 95's governor holds thrust along the move and
+rung 47's limiter cuts its fuel with a lag - the cut a state, measured off the governor's demand. The Controls
+engine, 1000 -> 1400 K over 0.5 tau, the limiter at 1480 K, the perfect gas.
+
+  lag (tau)        peak gov  peak open  thrust@0.5  lowest after   95% thr
+  instant            1480.0     1480.0      0.5336        0.5336     1.323
+  0.1                1674.1     1575.3      0.7470        0.6987     1.464
+  0.2                1751.8     1617.5      0.8292        0.7756     1.535
+  0.4                1820.2     1650.2      0.8973        0.8503     1.568
+  0.8                1867.5     1670.9      0.9431        0.9095     1.467
+
+  (peak: highest turbine inlet temperature, K, governed and on rung 47's open ramp with the same lag; thrust@0.5: the
+  share of the thrust step at the end of the move; lowest after: its lowest share from then on; 95% thr: time to 95%
+  of the step, tau.) A slow limiter beside a governor overshoots its redline twice as far as on the open ramp - the
+  governor's demand rises faster - and stores a larger cut, which it pays back after the move: the thrust climbs, then
+  SAGS, and reaches its target later than with an instant limiter. On the open ramp the thrust never falls.

@@ -144,7 +144,12 @@ cap) cut what it asks for; where it asks for more than the engine can burn, or l
 that edge and marked. A governed thrust can be **read** the way a real control reads it (rung 96, plan § 25): from the
 pressure ratio across the engine or from the fan speed, turned into thrust by a table of steady points (made on the
 engine with the generator off, or on this one). The thrust chart then shows the thrust the control believes beside the
-thrust the engine gives.
+thrust the engine gives. Since rung 106 (plan § 43) the governor also runs beside the temperature limiter's **lag**
+(rung 47): the limiter's slow cut is measured off what the governor asks, so it overshoots the limit further than on the
+plain ramp and stores a cut that it pays back after the move — the governed thrust climbs, then sags. The lag starts at
+0.1 τ with the governor on, and a run that starts above the limiter's temperature is refused (a working limiter would
+not let the engine settle there), as is one whose governor already asks for more than the limiter allows at the start; where the leftover cut would take the fuel below what the engine burns, it is held
+at that edge and marked as the minimum-fuel stop.
 
 **Flight (plan § 27, 2026-10-16):** the *Flight* fieldset's altitude and "warmer than a standard day" (linked to the
 air temperature and pressure, as on *Fly it*) also fly this engine, and since plan § 29 (2026-10-18) so does the

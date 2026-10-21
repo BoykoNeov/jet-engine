@@ -315,7 +315,8 @@ fn the_stop_rerun_reproduces_the_marchs_own_steps() {
             Route::Plain => routes.0 += 1,
             Route::Release => routes.1 += 1,
             Route::ValveLag => routes.2 += 1,
-            Route::Governor => unreachable!("no Controls case here is governed (tests/rung95.rs re-runs those)"),
+            Route::Governor | Route::GovernorLag =>
+                unreachable!("no Controls case here is governed (tests/rung95.rs and tests/rung106.rs re-run those)"),
         }
         for w in o.points.windows(2) {
             let (a, b, g) = replay_step(&sv, &w[0]).unwrap().unwrap_or_else(|f| panic!("{name}: {f:?}"));

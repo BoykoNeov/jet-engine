@@ -94,6 +94,10 @@ pub enum Leg {
     Accel,
     Floor,
     Metal,
+    /// RUNG 106: the slow temperature limiter's lagged clip.
+    Lag,
+    /// RUNG 106: the minimum-fuel stop — the applied fuel held at the leanest the engine runs on.
+    MinFuel,
 }
 
 /// The governor of one run.
@@ -228,7 +232,7 @@ pub fn try_steady_table(
 }
 
 /// The largest (`up`) or smallest runnable fuel between `ok` (runs) and `bad` (does not), bisected.
-fn wall(ft: &FuelTransientCore, flight: &FlightCondition, a: f64, b: f64, mut ok: f64, mut bad: f64) -> f64 {
+pub fn wall(ft: &FuelTransientCore, flight: &FlightCondition, a: f64, b: f64, mut ok: f64, mut bad: f64) -> f64 {
     for _ in 0..200 {
         if (bad - ok).abs() <= WALL_TOL * ok.abs().max(bad.abs()) {
             break;

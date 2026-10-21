@@ -1,0 +1,187 @@
+  320  ran to the end
+   46  ran to the end (lean edge)
+    2  ran to the end (rich + lean edge)
+   57  ran to the end (rich edge)
+   49  ran, stopped early
+    7  ran, stopped early (lean edge)
+   13  ran, stopped early (rich edge)
+    2  refused: At the final throttle (1040 K), holding HP speed: The HP shaft speed a
+    1  refused: At the final throttle (1090 K), holding thrust: The thrust asked for (
+    1  refused: At the final throttle (1110 K): the engine has no steady operating poi
+    1  refused: At the final throttle (1160 K): the engine has no steady operating poi
+    1  refused: At the final throttle (1170 K), holding HP speed: The HP shaft speed a
+    1  refused: At the final throttle (1370 K), holding HP speed: The HP shaft speed a
+    1  refused: At the final throttle (610 K), the control holding the pressure ratio 
+    1  refused: At the final throttle (630 K): the engine has no steady operating poin
+    1  refused: At the final throttle (640 K), holding thrust: The thrust asked for (3
+    1  refused: At the final throttle (640 K), the control holding the fan (LP shaft) 
+    1  refused: At the final throttle (670 K): the engine has no steady operating poin
+    1  refused: At the final throttle (690 K), holding HP speed: The HP shaft speed as
+    1  refused: At the final throttle (760 K): the engine has no steady operating poin
+    1  refused: At the final throttle (790 K), holding thrust: The thrust asked for (1
+    1  refused: At the final throttle (800 K), holding HP speed: The HP shaft speed as
+    2  refused: At the final throttle (810 K): the engine has no steady operating poin
+    1  refused: At the final throttle (850 K), holding thrust: The thrust asked for (1
+    1  refused: At the final throttle (940 K), holding HP speed: The HP shaft speed as
+    1  refused: At the final throttle (980 K), holding HP speed: The HP shaft speed as
+    1  refused: At the final throttle (980 K), holding thrust: The thrust asked for (1
+    1  refused: At the final throttle (990 K), holding HP speed: The HP shaft speed as
+    1  refused: At the starting throttle (1000 K): the engine has no steady operating 
+    1  refused: At the starting throttle (1010 K), holding HP speed: The HP shaft spee
+    1  refused: At the starting throttle (1020 K), holding HP speed: The HP shaft spee
+    1  refused: At the starting throttle (1040 K): the engine has no steady operating 
+    1  refused: At the starting throttle (1050 K), holding HP speed: The HP shaft spee
+    1  refused: At the starting throttle (1050 K), holding thrust: The thrust asked fo
+    1  refused: At the starting throttle (1070 K), holding HP speed: The HP shaft spee
+    1  refused: At the starting throttle (1110 K): the engine has no steady operating 
+    1  refused: At the starting throttle (1120 K), holding HP speed: The HP shaft spee
+    1  refused: At the starting throttle (1140 K), holding thrust: The thrust asked fo
+    1  refused: At the starting throttle (1170 K), holding thrust: The thrust asked fo
+    1  refused: At the starting throttle (1230 K), holding HP speed: The HP shaft spee
+    1  refused: At the starting throttle (1260 K): the engine has no steady operating 
+    1  refused: At the starting throttle (1530 K): Even at 1379 K the turbine metal is
+    1  refused: At the starting throttle (1600 K), holding HP speed: The HP shaft spee
+    1  refused: At the starting throttle (1630 K), holding HP speed: The HP shaft spee
+    1  refused: At the starting throttle (600 K), holding thrust: The thrust asked for
+    1  refused: At the starting throttle (630 K), holding HP speed: The HP shaft speed
+    1  refused: At the starting throttle (640 K), holding HP speed: The HP shaft speed
+    1  refused: At the starting throttle (660 K), holding HP speed: The HP shaft speed
+    1  refused: At the starting throttle (660 K), the control holding the pressure rat
+    2  refused: At the starting throttle (670 K): the engine has no steady operating p
+    1  refused: At the starting throttle (690 K), holding HP speed: The HP shaft speed
+    1  refused: At the starting throttle (710 K), holding HP speed: The HP shaft speed
+    1  refused: At the starting throttle (720 K), holding HP speed: The HP shaft speed
+    1  refused: At the starting throttle (720 K): the engine has no steady operating p
+    2  refused: At the starting throttle (740 K), holding HP speed: The HP shaft speed
+    1  refused: At the starting throttle (750 K), holding HP speed: The HP shaft speed
+    1  refused: At the starting throttle (750 K): the engine has no steady operating p
+    1  refused: At the starting throttle (760 K), holding HP speed: The HP shaft speed
+    1  refused: At the starting throttle (760 K), holding thrust: The thrust asked for
+    1  refused: At the starting throttle (760 K), the control holding the pressure rat
+    2  refused: At the starting throttle (760 K): the engine has no steady operating p
+    1  refused: At the starting throttle (770 K), holding HP speed: The HP shaft speed
+    1  refused: At the starting throttle (780 K): the engine has no steady operating p
+    1  refused: At the starting throttle (790 K), holding HP speed: The HP shaft speed
+    1  refused: At the starting throttle (800 K), holding thrust: The thrust asked for
+    1  refused: At the starting throttle (810 K): the engine has no steady operating p
+    1  refused: At the starting throttle (820 K): the engine has no steady operating p
+    1  refused: At the starting throttle (830 K), holding HP speed: The HP shaft speed
+    1  refused: At the starting throttle (850 K), holding HP speed: The HP shaft speed
+    1  refused: At the starting throttle (870 K), holding HP speed: The HP shaft speed
+    1  refused: At the starting throttle (880 K), holding HP speed: The HP shaft speed
+    1  refused: At the starting throttle (890 K), holding HP speed: The HP shaft speed
+    1  refused: At the starting throttle (900 K), holding HP speed: The HP shaft speed
+    1  refused: At the starting throttle (900 K): the engine has no steady operating p
+    1  refused: At the starting throttle (940 K), holding HP speed: The HP shaft speed
+    1  refused: At the starting throttle (950 K), holding thrust: The thrust asked for
+    1  refused: At the starting throttle (980 K), holding HP speed: The HP shaft speed
+    1  refused: At the starting throttle (990 K), holding thrust: The thrust asked for
+   78  refused: Beside the governor the temperature limiter's lag must be at least 0.1
+    5  refused: From the first moment the governor asks for more fuel than the tempera
+   21  refused: The acceleration schedule is read off this engine's own steady running
+    1  refused: The control's table has a throttle with no steady point between the en
+   21  refused: The metal cap is not built beside a control that infers thrust: a capp
+   39  refused: The metal cap stops a burner that floats to hold thrust or speed. With
+    1  refused: The run starts at a burner temperature of 1240 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1251 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1260 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1270 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1290 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1297 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1300 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1310 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1329 K, above the temperatur
+    3  refused: The run starts at a burner temperature of 1340 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1350 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1359 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1360 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1380 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1390 K, above the temperatur
+    2  refused: The run starts at a burner temperature of 1400 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1404 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1410 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1430 K, above the temperatur
+    2  refused: The run starts at a burner temperature of 1435 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1439 K, above the temperatur
+    4  refused: The run starts at a burner temperature of 1440 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1444 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1457 K, above the temperatur
+    2  refused: The run starts at a burner temperature of 1460 K, above the temperatur
+    2  refused: The run starts at a burner temperature of 1480 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1490 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1496 K, above the temperatur
+    3  refused: The run starts at a burner temperature of 1500 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1503 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1507 K, above the temperatur
+    6  refused: The run starts at a burner temperature of 1530 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1533 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1537 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1550 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1552 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1558 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1559 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1561 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1562 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1568 K, above the temperatur
+    4  refused: The run starts at a burner temperature of 1570 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1573 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1577 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1580 K, above the temperatur
+    2  refused: The run starts at a burner temperature of 1586 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1594 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1598 K, above the temperatur
+    4  refused: The run starts at a burner temperature of 1600 K, above the temperatur
+    2  refused: The run starts at a burner temperature of 1606 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1609 K, above the temperatur
+    4  refused: The run starts at a burner temperature of 1610 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1611 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1613 K, above the temperatur
+    3  refused: The run starts at a burner temperature of 1620 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1621 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1623 K, above the temperatur
+    3  refused: The run starts at a burner temperature of 1630 K, above the temperatur
+    2  refused: The run starts at a burner temperature of 1631 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1639 K, above the temperatur
+    2  refused: The run starts at a burner temperature of 1640 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1642 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1643 K, above the temperatur
+    2  refused: The run starts at a burner temperature of 1650 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1653 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1657 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1658 K, above the temperatur
+    4  refused: The run starts at a burner temperature of 1660 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1663 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1666 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1669 K, above the temperatur
+    2  refused: The run starts at a burner temperature of 1670 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1673 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1675 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1679 K, above the temperatur
+    6  refused: The run starts at a burner temperature of 1680 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1688 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1689 K, above the temperatur
+    8  refused: The run starts at a burner temperature of 1690 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1696 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1699 K, above the temperatur
+    5  refused: The run starts at a burner temperature of 1700 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1713 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1714 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1722 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1753 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1758 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1769 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1770 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1775 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1788 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1791 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1808 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1822 K, above the temperatur
+    1  refused: The run starts at a burner temperature of 1823 K, above the temperatur
+  116  refused: With no turbine cooling the metal allows only about 990 K (1985 metals
+stop kinds: {"floor_unreachable": 67, "redline_floor": 2}
+0 panics; total 1929.7 s, median 0.273 s, slowest 49.25 / 40.26 / 37.88 s
+slow 49.25 s: {"op":"controls","controls":{"govern":1,"hold":"speed","speed_law":"prop","gov_tau":0.54,"gov_gain":27,"generator":"hp","generator_power":0.055,"hold_cap":0,"metal_on":0,"cool_vane":0.08,"cool_blade":0.02,"shape":"flow/press","lever":"bleed","bleed_mode":"schedule","redline_on":1,"redline":1590,"gov_lag_on":1,"gov_lag":0.47000000000000003,"thrust_by":"epr","accel_on":0,"floor_on":0,"from":920,"to":630,"ramp":0.06,"rho":0.7000000000000001}}
+slow 40.26 s: {"op":"controls","controls":{"govern":1,"hold":"speed","speed_law":"rate","gov_tau":0.04,"gov_gain":11,"generator":"hp","generator_power":0.05,"hold_cap":0,"metal_on":1,"cool_vane":0.01,"cool_blade":0.07,"shape":"flow/press","lever":"none","bleed_mode":"schedule","redline_on":1,"redline":1350,"gov_lag_on":1,"gov_lag":0.76,"thrust_by":"n1","accel_on":0,"floor_on":1,"from":1370,"to":1380,"ramp":1.68,"rho":1.2000000000000002}}
+slow 37.88 s: {"op":"controls","controls":{"govern":1,"hold":"thrust","speed_law":"prop","gov_tau":0.48,"gov_gain":15,"generator":"hp","generator_power":0.045,"hold_cap":1,"metal_on":1,"cool_vane":0.02,"cool_blade":0.03,"shape":"flat-lp","lever":"both","bleed_mode":"schedule","redline_on":1,"redline":1680,"gov_lag_on":1,"gov_lag":0.58,"thrust_by":"true","accel_on":1,"floor_on":0,"from":940,"to":1380,"ramp":1.2,"rho":1.7000000000000002}}
+slow 37.14 s: {"op":"controls","controls":{"govern":1,"hold":"thrust","speed_law":"rate","gov_tau":0.62,"gov_gain":12,"generator":"hp","generator_power":0.06,"hold_cap":0,"metal_on":1,"cool_vane":0,"cool_blade":0,"shape":"press/flow","lever":"bleed","bleed_mode":"schedule","redline_on":1,"redline":1400,"gov_lag_on":1,"gov_lag":0.63,"thrust_by":"epr","accel_on":0,"floor_on":0,"from":800,"to":970,"ramp":1.62,"rho":0.6000000000000001}}
+slow 30.11 s: {"op":"controls","controls":{"govern":1,"hold":"thrust","speed_law":"prop","gov_tau":0.04,"gov_gain":23,"generator":"hp","generator_power":0.065,"hold_cap":0,"metal_on":1,"cool_vane":0,"cool_blade":0,"shape":"flow/press","lever":"none","bleed_mode":"valve","redline_on":1,"redline":1660,"gov_lag_on":1,"gov_lag":0.7000000000000001,"thrust_by":"n1","accel_on":0,"floor_on":0,"from":840,"to":1600,"ramp":0.72,"rho":1.9000000000000001}}

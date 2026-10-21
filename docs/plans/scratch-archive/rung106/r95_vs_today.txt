@@ -1,0 +1,14 @@
+== rung 95 (096367d)
+0.23 s ({"ok":1,"controls":{"shape":"tilted","rho":1.6,"from":1290.0)
+0.42 s ({"ok":1,"controls":{"shape":"flow/press","rho":0.60000000000)
+0.08 s ({"ok":0,"reason":"The acceleration schedule is read off this)
+1.37 s ({"ok":1,"controls":{"shape":"tilted","rho":0.600000000000000)
+1.84 s ({"ok":1,"controls":{"shape":"flow/press","rho":1.20000000000)
+== today
+37.39 s ({"ok":1,"controls":{"shape":"tilted","rho":1.6,"from":1290.0)
+26.53 s ({"ok":1,"controls":{"shape":"flow/press","rho":0.60000000000)
+35.64 s ({"ok":1,"controls":{"shape":"flat-lp","rho":1.70000000000000)
+31.49 s ({"ok":1,"controls":{"shape":"tilted","rho":0.600000000000000)
+21.28 s ({"ok":1,"controls":{"shape":"flow/press","rho":1.20000000000)
+
+[exited with code 0]

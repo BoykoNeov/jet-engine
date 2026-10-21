@@ -2200,3 +2200,23 @@ the speed search skipped the speeds the running point sits among. Cause, repair 
 - **The gate:** `tests/rung34_low_speed_wall.rs`; `tests/rung33_double_root.rs` now compares all its cells with rung 34;
   `tests/sandbox_fly.rs`' below-idle case.
   Probes archived: `docs/plans/scratch-archive/rung34-low-speed-wall/`.
+
+## 43. The governor beside the slow temperature limiter — rung 106 (2026-10-21) — not a slice
+
+Rung 106 (`docs/rung106-spec.md`) lifts rung 95's refusal of *Govern during the move* beside the temperature limiter's
+*…that reacts with a lag* on the Controls view (`route: "governor_lag"`): the lag's cut becomes a state measured off the
+governor's fuel. The top strip marks it as *a lag's cut*, and the new `min_fuel` holder (the minimum-fuel stop) where its
+leftover would take the fuel below what the engine burns.
+* **The user's choices:** rung 47's lag only (the realistic release and the slow valve stay refused beside the
+  governor); every hold; refused beside rung 101's lagged exhaust sensor (another session); the lean edge HELD and
+  marked; a start above the redline REFUSED in words; and (asked after the crash map) a governor's request above the
+  redline at the start, where the metal cap holds the engine lower, refused too.
+* **The lag's floor with the governor on is 0.1 τ** (`GOV_LAG_MIN`, the step check — rung 47's open route keeps one
+  step). Refused in words below it.
+* **What moves:** nothing that ran before (the combination was refused); the request list's former "refused: a lag"
+  entry now runs, with two new refusals beside it.
+* **Cost:** a governed lagged run costs what rung 95's governed run with the instant limiter does (~0.3 s natively).
+* **OPEN — found here, not caused here: governed Controls runs with the HP-shaft generator are 20–150× slower than when
+  rung 95 shipped.** The crash map's five slowest requests take 21–37 s today and 0.2–1.8 s on rung 95's commit
+  `096367d` (timed back to back, the lag off; `docs/rung106-spec.md` § 4). Untraced; a bisect over the commits since is
+  the next step. On the page such a run reads as a hang.

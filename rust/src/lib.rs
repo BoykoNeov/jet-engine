@@ -159,6 +159,7 @@ pub mod fuel_transient;
 pub mod full_split;
 pub mod gas;
 pub mod governor;
+pub mod governor_lag;
 pub mod inferred_thrust;
 pub mod unchoked_lp;
 pub mod lagged_bleed;
