@@ -1,0 +1,129 @@
+   Compiling rung33-dr v0.1.0 (W:\temp\claude\rung33-dr)
+    Finished `release` profile [optimized] target(s) in 7.92s
+     Running `W:\temp\claude\rung33-dr\target\release\q6.exe`
+cpg 0.30 400: FAIL nozzle back-pressure p9=50000 Pa exceeds total pressure pt9=48185 Pa — the nozzle cannot expand to it (raise p
+cpg 0.30 500: FAIL rung-33 subsonic match does not bracket at Tt4=500, M0=0.30 (resid[0.20999999999999996]=0.5342702520417756, re
+cpg 0.30 600: FAIL rung-33 subsonic match does not bracket at Tt4=600, M0=0.30 (resid[0.15]=0.619467222566781, resid[0.9595]=0.07
+cpg 0.30 650: FAIL rung-33 subsonic match does not bracket at Tt4=650, M0=0.30 (resid[0.15]=0.6194726388341473, resid[0.9595]=0.0
+cpg 0.30 900: Choked pi_t 0.427878 pi_c 5.39727 F/mdot 478.15 M9 1.000
+cpg 0.30 1100: Choked pi_t 0.427878 pi_c 7.23452 F/mdot 630.94 M9 1.000
+cpg 0.30 1500: Choked pi_t 0.427878 pi_c 12.27483 F/mdot 888.16 M9 1.000
+cpg 0.50 400: FAIL rung-33 subsonic match at Tt4=400, M0=0.50 has net thrust <= 0 — SUB-IDLE: below thrust-neutral idle the engin
+cpg 0.50 500: Subsonic pi_t 0.516148 pi_c 2.26173 F/mdot 81.57 M9 0.608
+cpg 0.50 600: Subsonic pi_t 0.446758 pi_c 3.07611 F/mdot 176.66 M9 0.800
+cpg 0.50 650: Subsonic pi_t 0.433694 pi_c 3.44839 F/mdot 223.13 M9 0.885
+cpg 0.50 900: Choked pi_t 0.427878 pi_c 5.17909 F/mdot 435.14 M9 1.000
+cpg 0.50 1100: Choked pi_t 0.427878 pi_c 6.90475 F/mdot 583.07 M9 1.000
+cpg 0.50 1500: Choked pi_t 0.427878 pi_c 11.61414 F/mdot 833.98 M9 1.000
+cpg 0.85 400: FAIL rung-33 subsonic match at Tt4=400, M0=0.85 has net thrust <= 0 — SUB-IDLE: below thrust-neutral idle the engin
+cpg 0.85 500: Subsonic pi_t 0.436242 pi_c 2.47983 F/mdot 56.70 M9 0.864
+cpg 0.85 600: Choked pi_t 0.427878 pi_c 2.96314 F/mdot 141.42 M9 1.000
+cpg 0.85 650: Choked pi_t 0.427878 pi_c 3.20417 F/mdot 182.96 M9 1.000
+cpg 0.85 900: Choked pi_t 0.427878 pi_c 4.63606 F/mdot 375.15 M9 1.000
+cpg 0.85 1100: Choked pi_t 0.427878 pi_c 6.08980 F/mdot 511.43 M9 1.000
+cpg 0.85 1500: Choked pi_t 0.427878 pi_c 10.00000 F/mdot 746.83 M9 1.000
+cpg 1.20 400: FAIL efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE definition
+cpg 1.20 500: Choked pi_t 0.427878 pi_c 2.29933 F/mdot 32.93 M9 1.000
+cpg 1.20 600: Choked pi_t 0.427878 pi_c 2.66418 F/mdot 109.85 M9 1.000
+cpg 1.20 650: Choked pi_t 0.427878 pi_c 2.86205 F/mdot 147.00 M9 1.000
+cpg 1.20 900: Choked pi_t 0.427878 pi_c 4.02170 F/mdot 319.95 M9 1.000
+cpg 1.20 1100: Choked pi_t 0.427878 pi_c 5.17906 F/mdot 444.27 M9 1.000
+cpg 1.20 1500: Choked pi_t 0.427878 pi_c 8.23191 F/mdot 663.12 M9 1.000
+cpg 1.60 400: FAIL efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE definition
+cpg 1.60 500: FAIL efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE definition
+cpg 1.60 600: Choked pi_t 0.427878 pi_c 2.33946 F/mdot 58.09 M9 1.000
+cpg 1.60 650: Choked pi_t 0.427878 pi_c 2.49240 F/mdot 91.69 M9 1.000
+cpg 1.60 900: Choked pi_t 0.427878 pi_c 3.37345 F/mdot 248.24 M9 1.000
+cpg 1.60 1100: Choked pi_t 0.427878 pi_c 4.23348 F/mdot 361.75 M9 1.000
+cpg 1.60 1500: Choked pi_t 0.427878 pi_c 6.44466 F/mdot 564.82 M9 1.000
+cpg 2.00 400: FAIL off-design burner f did not converge
+cpg 2.00 500: FAIL efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE definition
+cpg 2.00 600: FAIL efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE definition
+cpg 2.00 650: Choked pi_t 0.427878 pi_c 2.18367 F/mdot 16.98 M9 1.000
+cpg 2.00 900: Choked pi_t 0.427878 pi_c 2.84636 F/mdot 163.38 M9 1.000
+cpg 2.00 1100: Choked pi_t 0.427878 pi_c 3.47885 F/mdot 269.67 M9 1.000
+cpg 2.00 1500: Choked pi_t 0.427878 pi_c 5.06255 F/mdot 461.40 M9 1.000
+tpg 0.30 400: FAIL nozzle back-pressure p9=50000 Pa exceeds total pressure pt9=47368 Pa — the nozzle cannot expand to it (raise p
+tpg 0.30 500: FAIL rung-33 subsonic match does not bracket at Tt4=500, M0=0.30 (resid[0.24999999999999994]=0.4038696737129691, re
+tpg 0.30 600: FAIL rung-33 subsonic match does not bracket at Tt4=600, M0=0.30 (resid[0.15]=0.6274323704964684, resid[0.9595]=0.0
+tpg 0.30 650: FAIL rung-33 subsonic match does not bracket at Tt4=650, M0=0.30 (resid[0.15]=0.6079780331949693, resid[0.9595]=0.0
+tpg 0.30 900: Choked pi_t 0.424332 pi_c 5.40232 F/mdot 467.56 M9 1.000
+tpg 0.30 1100: Choked pi_t 0.426152 pi_c 7.23663 F/mdot 623.17 M9 1.000
+tpg 0.30 1500: Choked pi_t 0.428839 pi_c 12.26238 F/mdot 887.26 M9 1.000
+tpg 0.50 400: FAIL rung-33 subsonic match at Tt4=400, M0=0.50 has net thrust <= 0 — SUB-IDLE: below thrust-neutral idle the engin
+tpg 0.50 500: Subsonic pi_t 0.525385 pi_c 2.20153 F/mdot 73.95 M9 0.581
+tpg 0.50 600: Subsonic pi_t 0.447781 pi_c 3.02819 F/mdot 165.61 M9 0.768
+tpg 0.50 650: Subsonic pi_t 0.431893 pi_c 3.41635 F/mdot 211.27 M9 0.854
+tpg 0.50 900: Choked pi_t 0.424332 pi_c 5.18376 F/mdot 424.21 M9 1.000
+tpg 0.50 1100: Choked pi_t 0.426152 pi_c 6.90703 F/mdot 575.12 M9 1.000
+tpg 0.50 1500: Choked pi_t 0.428839 pi_c 11.60470 F/mdot 833.03 M9 1.000
+tpg 0.85 400: FAIL rung-33 subsonic match at Tt4=400, M0=0.85 has net thrust <= 0 — SUB-IDLE: below thrust-neutral idle the engin
+tpg 0.85 500: Subsonic pi_t 0.434444 pi_c 2.45669 F/mdot 45.46 M9 0.830
+tpg 0.85 600: Subsonic pi_t 0.422201 pi_c 2.96088 F/mdot 128.20 M9 0.978
+tpg 0.85 650: Choked pi_t 0.422345 pi_c 3.20379 F/mdot 169.51 M9 1.000
+tpg 0.85 900: Choked pi_t 0.424332 pi_c 4.64074 F/mdot 363.44 M9 1.000
+tpg 0.85 1100: Choked pi_t 0.426152 pi_c 6.09379 F/mdot 503.08 M9 1.000
+tpg 0.85 1500: Choked pi_t 0.428839 pi_c 10.00000 F/mdot 745.81 M9 1.000
+tpg 1.20 400: FAIL rung-33 subsonic match at Tt4=400, M0=1.20 has net thrust <= 0 — SUB-IDLE: below thrust-neutral idle the engin
+tpg 1.20 500: Choked pi_t 0.421337 pi_c 2.29867 F/mdot 18.59 M9 1.000
+tpg 1.20 600: Choked pi_t 0.421997 pi_c 2.66417 F/mdot 94.92 M9 1.000
+tpg 1.20 650: Choked pi_t 0.422345 pi_c 2.86267 F/mdot 132.05 M9 1.000
+tpg 1.20 900: Choked pi_t 0.424332 pi_c 4.02812 F/mdot 307.41 M9 1.000
+tpg 1.20 1100: Choked pi_t 0.426152 pi_c 5.18724 F/mdot 435.50 M9 1.000
+tpg 1.20 1500: Choked pi_t 0.428839 pi_c 8.24565 F/mdot 662.05 M9 1.000
+tpg 1.60 400: FAIL off-design burner f did not converge
+tpg 1.60 500: FAIL efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE definition
+tpg 1.60 600: Choked pi_t 0.421997 pi_c 2.34163 F/mdot 41.55 M9 1.000
+tpg 1.60 650: Choked pi_t 0.422345 pi_c 2.49549 F/mdot 75.27 M9 1.000
+tpg 1.60 900: Choked pi_t 0.424332 pi_c 3.38385 F/mdot 234.86 M9 1.000
+tpg 1.60 1100: Choked pi_t 0.426152 pi_c 4.24876 F/mdot 352.54 M9 1.000
+tpg 1.60 1500: Choked pi_t 0.428839 pi_c 6.47593 F/mdot 563.69 M9 1.000
+tpg 2.00 400: FAIL off-design burner f did not converge
+tpg 2.00 500: FAIL off-design burner f did not converge
+tpg 2.00 600: FAIL efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE definition
+tpg 2.00 650: FAIL efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE definition
+tpg 2.00 900: Choked pi_t 0.424332 pi_c 2.86194 F/mdot 149.33 M9 1.000
+tpg 2.00 1100: Choked pi_t 0.426152 pi_c 3.50215 F/mdot 260.07 M9 1.000
+tpg 2.00 1500: Choked pi_t 0.428839 pi_c 5.11008 F/mdot 460.17 M9 1.000
+eq 0.30 400: FAIL nozzle back-pressure p9=50000 Pa exceeds total pressure pt9=47237 Pa — the nozzle cannot expand to it (raise p
+eq 0.30 500: FAIL rung-33 subsonic match does not bracket at Tt4=500, M0=0.30 (resid[0.24999999999999994]=0.4163890917693535, re
+eq 0.30 600: FAIL rung-33 subsonic match does not bracket at Tt4=600, M0=0.30 (resid[0.15]=0.6321635127672115, resid[0.9595]=0.0
+eq 0.30 650: FAIL rung-33 subsonic match does not bracket at Tt4=650, M0=0.30 (resid[0.15]=0.6071179485543009, resid[0.9595]=0.0
+eq 0.30 900: Choked pi_t 0.423542 pi_c 5.39836 F/mdot 464.54 M9 1.000
+eq 0.30 1100: Choked pi_t 0.425667 pi_c 7.23199 F/mdot 620.58 M9 1.000
+eq 0.30 1500: Choked pi_t 0.429105 pi_c 12.26363 F/mdot 887.50 M9 1.000
+eq 0.50 400: FAIL rung-33 subsonic match at Tt4=400, M0=0.50 has net thrust <= 0 — SUB-IDLE: below thrust-neutral idle the engin
+eq 0.50 500: Subsonic pi_t 0.527534 pi_c 2.18875 F/mdot 72.55 M9 0.576
+eq 0.50 600: Subsonic pi_t 0.448364 pi_c 3.01516 F/mdot 163.26 M9 0.761
+eq 0.50 650: Subsonic pi_t 0.431836 pi_c 3.40560 F/mdot 208.59 M9 0.847
+eq 0.50 900: Choked pi_t 0.423528 pi_c 5.17998 F/mdot 421.08 M9 1.000
+eq 0.50 1100: Choked pi_t 0.425653 pi_c 6.90258 F/mdot 572.43 M9 1.000
+eq 0.50 1500: Choked pi_t 0.429090 pi_c 11.60557 F/mdot 833.19 M9 1.000
+eq 0.85 400: FAIL rung-33 subsonic match at Tt4=400, M0=0.85 has net thrust <= 0 — SUB-IDLE: below thrust-neutral idle the engin
+eq 0.85 500: Subsonic pi_t 0.434483 pi_c 2.44998 F/mdot 43.33 M9 0.824
+eq 0.85 600: Subsonic pi_t 0.421338 pi_c 2.95708 F/mdot 125.32 M9 0.971
+eq 0.85 650: Choked pi_t 0.421329 pi_c 3.20084 F/mdot 166.42 M9 1.000
+eq 0.85 900: Choked pi_t 0.423487 pi_c 4.63740 F/mdot 360.03 M9 1.000
+eq 0.85 1100: Choked pi_t 0.425610 pi_c 6.08982 F/mdot 500.13 M9 1.000
+eq 0.85 1500: Choked pi_t 0.429047 pi_c 10.00000 F/mdot 745.71 M9 1.000
+eq 1.20 400: FAIL rung-6 equilibrium burner balance: h_air + n_f*hf != Σ n_i h_i + loss
+eq 1.20 500: Choked pi_t 0.420362 pi_c 2.29648 F/mdot 15.80 M9 1.000
+eq 1.20 600: Choked pi_t 0.420939 pi_c 2.66172 F/mdot 91.59 M9 1.000
+eq 1.20 650: Choked pi_t 0.421275 pi_c 2.86014 F/mdot 128.53 M9 1.000
+eq 1.20 900: Choked pi_t 0.423424 pi_c 4.02527 F/mdot 303.61 M9 1.000
+eq 1.20 1100: Choked pi_t 0.425545 pi_c 5.18380 F/mdot 432.19 M9 1.000
+eq 1.20 1500: Choked pi_t 0.428981 pi_c 8.24480 F/mdot 661.57 M9 1.000
+eq 1.60 400: FAIL rung-6 equilibrium burner balance: h_air + n_f*hf != Σ n_i h_i + loss
+eq 1.60 500: FAIL efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE definition
+eq 1.60 600: Choked pi_t 0.420859 pi_c 2.33961 F/mdot 37.70 M9 1.000
+eq 1.60 650: Choked pi_t 0.421190 pi_c 2.49340 F/mdot 71.22 M9 1.000
+eq 1.60 900: Choked pi_t 0.423325 pi_c 3.38150 F/mdot 230.53 M9 1.000
+eq 1.60 1100: Choked pi_t 0.425443 pi_c 4.24588 F/mdot 348.70 M9 1.000
+eq 1.60 1500: Choked pi_t 0.428876 pi_c 6.47437 F/mdot 562.62 M9 1.000
+eq 2.00 400: FAIL rung-6 equilibrium burner balance: h_air + n_f*hf != Σ n_i h_i + loss
+eq 2.00 500: FAIL rung-6 equilibrium burner balance: h_air + n_f*hf != Σ n_i h_i + loss
+eq 2.00 600: FAIL efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE definition
+eq 2.00 650: FAIL efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE definition
+eq 2.00 900: Choked pi_t 0.423198 pi_c 2.85999 F/mdot 144.38 M9 1.000
+eq 2.00 1100: Choked pi_t 0.425311 pi_c 3.49972 F/mdot 255.58 M9 1.000
+eq 2.00 1500: Choked pi_t 0.428741 pi_c 5.10809 F/mdot 458.33 M9 1.000

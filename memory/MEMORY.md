@@ -28,6 +28,7 @@ new slices and step links go THERE, not here.
 - [Low-start repair](low-start-repair.md) — 2026-10-19: a filter on a fallback only makes a rule depend on the solver's start; append a refusal's new reason after its old words
 - [Idle floor](idle-floor.md) — 2026-10-19/20: a floor measured by "it builds" is not "it runs" (the slam stopped); a crash map counts only the knobs it draws
 - [Lean-wall repair](lean-wall-repair.md) — 2026-10-20: a stop named from a missing reading is a guess; "only failing calls change" holds per call, not per caller (governor searches)
+- [Rung 33 double root](rung33-double-root-repair.md) — 2026-10-21: trace the PAGE's call path before calling a bug page-visible; a licence predicate must follow the code's dispatch; Fly-it's low-throttle wall is NEXT
 - [Back-pressure repair](back-pressure-repair.md) — 2026-10-16: a census logger in a threaded test process must write each record in ONE call; red-check by stashing src only
 - [Sandbox altitude](sandbox-altitude.md) — a step-checked limit holds only at its flight; a ×2 similarity cannot see a re-capture; empty-vs-empty cmp says IDENTICAL
 - [Sandbox Mach](sandbox-mach.md) — "refused at every throttle" written from ONE throttle tried there; an archived probe source was a copy of another (equal output sizes)

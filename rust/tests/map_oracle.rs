@@ -50,6 +50,11 @@ use turbojet::gas::{Abort, Gas, GasSpec};
 use turbojet::map::{psi_calls, ComponentMap, MapMatcher};
 use turbojet::matcher::{try_r31_solve_turbine, Branch, MatcherHooks, OffDesignMatcher};
 
+// The 2026-10-21 double-root divergence — rung 31's side of the reduce cross-check.
+#[path = "common/double_root.rs"]
+#[allow(dead_code)]
+mod double_root;
+
 const ORACLE_CPYTHON: &str = include_str!("../oracle/map_cpython.tsv");
 const ORACLE_PYPY: &str = include_str!("../oracle/map_pypy.tsv");
 
@@ -547,9 +552,32 @@ fn bar_for(quant: &str, strict: bool) -> f64 {
     }
 }
 
+/// The DOUBLE-ROOT cells of the reduce cross-check (`common/double_root.rs`), named PHYSICALLY on
+/// the plain rung-31 matcher — where the cross-check runs at all (rung 32 matched the flat cell).
+fn double_root_cells(oracle: &HashMap<&str, f64>) -> HashSet<String> {
+    let mut out = HashSet::new();
+    for &g in GASES {
+        let r31 = OffDesignMatcher::new(build_turbojet(gas_for(g), PI_C, TT4, 50_000.0, losses()), flight_design(), 1.0);
+        let (m0s, tt4s) = if g == "eq" { (EQ_M0S, EQ_TT4S) } else { (M0S, TT4S) };
+        for &m0 in m0s {
+            let flight = FlightCondition::new(250.0, 50_000.0, m0);
+            for &tt4 in tt4s {
+                let tag = format!("{g}/flat/{m0:.2}/{tt4:.0}");
+                if oracle.contains_key(format!("red/{tag}/r31_ok").as_str())
+                    && double_root::two_roots(&r31, &flight, tt4)
+                {
+                    out.insert(tag);
+                }
+            }
+        }
+    }
+    out
+}
+
 fn compare_against(oracle_text: &str, label: &str, require_bit_exact: bool) {
     let oracle = load_oracle(oracle_text);
-    let ours = rust_values();
+    let cells = double_root_cells(&oracle);
+    let (ours, oracle) = double_root::reconcile_map(rust_values(), oracle, &cells);
     println!("\n=== Rust vs {label} ===");
     assert_eq!(ours.len(), oracle.len(),
                "key COUNT differs: rust {} vs oracle {} — the dump and the gate have drifted \

@@ -1,0 +1,231 @@
+   Compiling rung33-dr v0.1.0 (W:\temp\claude\rung33-dr)
+    Finished `release` profile [optimized] target(s) in 0.43s
+     Running `W:\temp\claude\rung33-dr\target\release\q2.exe`
+ThermallyPerfect hot SL M.30 Tt4   550: R33 FAIL | march NO  | roots [] | R34flat FAIL rung-34 equilibrium does not bracket (Phi[Some(0.60000000000
+ThermallyPerfect hot SL M.30 Tt4   575: R33 FAIL | march NO  | roots [] | R34flat FAIL rung-34 equilibrium does not bracket (Phi[Some(0.60000000000
+ThermallyPerfect hot SL M.30 Tt4   600: R33 FAIL | march NO  | roots [] | R34flat FAIL rung-34 equilibrium does not bracket (Phi[Some(0.60000000000
+ThermallyPerfect hot SL M.30 Tt4   625: R33 FAIL | march NO  | roots [] | R34flat FAIL rung-34 equilibrium does not bracket (Phi[Some(0.60000000000
+ThermallyPerfect hot SL M.30 Tt4   650: R33 FAIL | march NO CAND pi_t 0.655978 pi_c 1.78877 m9 0.442 | roots ["0.656", "0.743"] | R34flat FAIL rung-34 equilibrium does not bracket (Phi[Some(0.60000000000
+ThermallyPerfect hot SL M.30 Tt4   675: R33 FAIL | march NO CAND pi_t 0.576533 pi_c 2.13095 m9 0.516 | roots ["0.576", "0.808"] | R34flat FAIL rung-34 equilibrium does not bracket (Phi[Some(0.60000000000
+ThermallyPerfect hot SL M.30 Tt4   700: R33 FAIL | march NO CAND pi_t 0.534782 pi_c 2.38523 m9 0.570 | roots ["0.535", "0.838"] | R34flat FAIL rung-34 equilibrium does not bracket (Phi[Some(0.60000000000
+ThermallyPerfect hot SL M.30 Tt4   725: R33 FAIL | march NO CAND pi_t 0.505833 pi_c 2.61484 m9 0.617 | roots ["0.506", "0.859"] | R34flat Subsonic pi_t 0.505833 pi_c 2.61484 nu 0.6229
+ThermallyPerfect hot SL M.30 Tt4   750: R33 FAIL | march NO CAND pi_t 0.484420 pi_c 2.83036 m9 0.662 | roots ["0.484", "0.874"] | R34flat Subsonic pi_t 0.484420 pi_c 2.83036 nu 0.6516
+ThermallyPerfect hot SL M.30 Tt4   775: R33 FAIL | march NO CAND pi_t 0.468171 pi_c 3.03555 m9 0.704 | roots ["0.468", "0.885"] | R34flat Subsonic pi_t 0.468171 pi_c 3.03555 nu 0.6764
+ThermallyPerfect hot SL M.30 Tt4   800: R33 FAIL | march NO CAND pi_t 0.455726 pi_c 3.23212 m9 0.744 | roots ["0.455", "0.895"] | R34flat Subsonic pi_t 0.455726 pi_c 3.23212 nu 0.6983
+ThermallyPerfect hot SL M.30 Tt4   825: R33 FAIL | march NO CAND pi_t 0.446206 pi_c 3.42093 m9 0.783 | roots ["0.446", "0.903"] | R34flat Subsonic pi_t 0.446206 pi_c 3.42093 nu 0.7178
+ThermallyPerfect hot SL M.30 Tt4   850: R33 FAIL | march NO CAND pi_t 0.438998 pi_c 3.60251 m9 0.819 | roots ["0.439", "0.910"] | R34flat Subsonic pi_t 0.438998 pi_c 3.60251 nu 0.7354
+ThermallyPerfect hot SL M.30 Tt4   875: R33 FAIL | march NO CAND pi_t 0.433655 pi_c 3.77717 m9 0.854 | roots ["0.434", "0.916"] | R34flat Subsonic pi_t 0.433655 pi_c 3.77717 nu 0.7513
+ThermallyPerfect hot SL M.30 Tt4   900: R33 FAIL | march NO CAND pi_t 0.429836 pi_c 3.94518 m9 0.888 | roots ["0.430", "0.921"] | R34flat Subsonic pi_t 0.429836 pi_c 3.94518 nu 0.7658
+ThermallyPerfect hot SL M.30 Tt4   925: R33 FAIL | march NO CAND pi_t 0.427278 pi_c 4.10673 m9 0.921 | roots ["0.428", "0.926"] | R34flat Subsonic pi_t 0.427278 pi_c 4.10673 nu 0.7791
+ThermallyPerfect hot SL M.30 Tt4   950: R33 FAIL | march NO CAND pi_t 0.425772 pi_c 4.26201 m9 0.952 | roots ["0.426", "0.930"] | R34flat Subsonic pi_t 0.425772 pi_c 4.26201 nu 0.7913
+ThermallyPerfect hot SL M.30 Tt4   975: R33 FAIL | march NO CAND pi_t 0.425150 pi_c 4.41120 m9 0.981 | roots ["0.426", "0.934"] | R34flat Subsonic pi_t 0.425150 pi_c 4.41120 nu 0.8026
+ThermallyPerfect hot SL M.30 Tt4  1000: R33 Choked pi_t 0.425232 pi_c 4.55503 | march NO CAND pi_t 0.425232 pi_c 4.55503 m9 1.000 | roots ["0.426", "0.937"] | R34flat Choked pi_t 0.425232 pi_c 4.55503 nu 0.8130
+ThermallyPerfect hot SL M.10 Tt4   550: R33 FAIL | march NO  | roots [] | R34flat FAIL rung-34 equilibrium does not bracket (Phi[Some(0.62000000000
+ThermallyPerfect hot SL M.10 Tt4   575: R33 FAIL | march NO  | roots [] | R34flat FAIL rung-34 equilibrium does not bracket (Phi[Some(0.62000000000
+ThermallyPerfect hot SL M.10 Tt4   600: R33 FAIL | march NO  | roots [] | R34flat FAIL rung-34 equilibrium does not bracket (Phi[Some(0.62000000000
+ThermallyPerfect hot SL M.10 Tt4   625: R33 FAIL | march NO  | roots [] | R34flat FAIL rung-34 equilibrium does not bracket (Phi[Some(0.62000000000
+ThermallyPerfect hot SL M.10 Tt4   650: R33 FAIL | march NO  | roots [] | R34flat FAIL rung-34 equilibrium does not bracket (Phi[Some(0.62000000000
+ThermallyPerfect hot SL M.10 Tt4   675: R33 FAIL | march NO  | roots [] | R34flat FAIL rung-34 equilibrium does not bracket (Phi[Some(0.62000000000
+ThermallyPerfect hot SL M.10 Tt4   700: R33 FAIL | march NO  | roots [] | R34flat FAIL rung-34 equilibrium does not bracket (Phi[Some(0.62000000000
+ThermallyPerfect hot SL M.10 Tt4   725: R33 FAIL | march NO CAND pi_t 0.558270 pi_c 2.36056 m9 0.538 | roots ["0.558", "0.740"] | R34flat FAIL rung-34 equilibrium does not bracket (Phi[Some(0.62000000000
+ThermallyPerfect hot SL M.10 Tt4   750: R33 FAIL | march NO CAND pi_t 0.517389 pi_c 2.65965 m9 0.598 | roots ["0.517", "0.778"] | R34flat Subsonic pi_t 0.517389 pi_c 2.65965 nu 0.6244
+ThermallyPerfect hot SL M.10 Tt4   775: R33 FAIL | march NO CAND pi_t 0.491023 pi_c 2.91584 m9 0.648 | roots ["0.491", "0.804"] | R34flat Subsonic pi_t 0.491023 pi_c 2.91584 nu 0.6573
+ThermallyPerfect hot SL M.10 Tt4   800: R33 FAIL | march NO CAND pi_t 0.472223 pi_c 3.15027 m9 0.694 | roots ["0.472", "0.823"] | R34flat Subsonic pi_t 0.472223 pi_c 3.15027 nu 0.6843
+ThermallyPerfect hot SL M.10 Tt4   825: R33 FAIL | march NO CAND pi_t 0.458329 pi_c 3.36986 m9 0.736 | roots ["0.458", "0.838"] | R34flat Subsonic pi_t 0.458329 pi_c 3.36986 nu 0.7074
+ThermallyPerfect hot SL M.10 Tt4   850: R33 FAIL | march NO CAND pi_t 0.447939 pi_c 3.57774 m9 0.776 | roots ["0.448", "0.850"] | R34flat Subsonic pi_t 0.447939 pi_c 3.57774 nu 0.7276
+ThermallyPerfect hot SL M.10 Tt4   875: R33 FAIL | march NO CAND pi_t 0.440188 pi_c 3.77562 m9 0.814 | roots ["0.440", "0.860"] | R34flat Subsonic pi_t 0.440188 pi_c 3.77562 nu 0.7456
+ThermallyPerfect hot SL M.10 Tt4   900: R33 FAIL | march NO CAND pi_t 0.434497 pi_c 3.96454 m9 0.850 | roots ["0.434", "0.869"] | R34flat Subsonic pi_t 0.434497 pi_c 3.96454 nu 0.7618
+ThermallyPerfect hot SL M.10 Tt4   925: R33 FAIL | march NO CAND pi_t 0.430450 pi_c 4.14519 m9 0.884 | roots ["0.431", "0.877"] | R34flat Subsonic pi_t 0.430450 pi_c 4.14519 nu 0.7764
+ThermallyPerfect hot SL M.10 Tt4   950: R33 FAIL | march NO CAND pi_t 0.427738 pi_c 4.31811 m9 0.917 | roots ["0.428", "0.884"] | R34flat Subsonic pi_t 0.427738 pi_c 4.31811 nu 0.7897
+ThermallyPerfect hot SL M.10 Tt4   975: R33 FAIL | march NO CAND pi_t 0.426124 pi_c 4.48370 m9 0.949 | roots ["0.427", "0.891"] | R34flat Subsonic pi_t 0.426124 pi_c 4.48370 nu 0.8019
+ThermallyPerfect hot SL M.10 Tt4  1000: R33 FAIL | march NO CAND pi_t 0.425423 pi_c 4.64231 m9 0.979 | roots ["0.426", "0.896"] | R34flat Subsonic pi_t 0.425423 pi_c 4.64231 nu 0.8131
+ThermallyPerfect ISA SL M.00 Tt4   550: R33 FAIL | march NO  | roots [] | R34flat FAIL rung-34 equilibrium does not bracket (Phi[Some(0.60000000000
+ThermallyPerfect ISA SL M.00 Tt4   575: R33 FAIL | march NO  | roots [] | R34flat FAIL rung-34 equilibrium does not bracket (Phi[Some(0.60000000000
+ThermallyPerfect ISA SL M.00 Tt4   600: R33 FAIL | march NO  | roots [] | R34flat FAIL rung-34 equilibrium does not bracket (Phi[Some(0.60000000000
+ThermallyPerfect ISA SL M.00 Tt4   625: R33 FAIL | march NO  | roots [] | R34flat FAIL rung-34 equilibrium does not bracket (Phi[Some(0.60000000000
+ThermallyPerfect ISA SL M.00 Tt4   650: R33 FAIL | march NO CAND pi_t 0.602342 pi_c 2.13304 m9 0.489 | roots ["0.602", "0.690"] | R34flat FAIL rung-34 equilibrium does not bracket (Phi[Some(0.60000000000
+ThermallyPerfect ISA SL M.00 Tt4   675: R33 FAIL | march NO CAND pi_t 0.533526 pi_c 2.54842 m9 0.571 | roots ["0.534", "0.756"] | R34flat FAIL rung-34 equilibrium does not bracket (Phi[Some(0.60000000000
+ThermallyPerfect ISA SL M.00 Tt4   700: R33 FAIL | march NO CAND pi_t 0.499048 pi_c 2.85036 m9 0.630 | roots ["0.499", "0.789"] | R34flat Subsonic pi_t 0.499048 pi_c 2.85036 nu 0.6188
+ThermallyPerfect ISA SL M.00 Tt4   725: R33 FAIL | march NO CAND pi_t 0.476113 pi_c 3.11780 m9 0.682 | roots ["0.477", "0.812"] | R34flat Subsonic pi_t 0.476113 pi_c 3.11780 nu 0.6489
+ThermallyPerfect ISA SL M.00 Tt4   750: R33 FAIL | march NO CAND pi_t 0.459825 pi_c 3.36489 m9 0.729 | roots ["0.460", "0.829"] | R34flat Subsonic pi_t 0.459825 pi_c 3.36489 nu 0.6739
+ThermallyPerfect ISA SL M.00 Tt4   775: R33 FAIL | march NO CAND pi_t 0.448005 pi_c 3.59701 m9 0.773 | roots ["0.448", "0.844"] | R34flat Subsonic pi_t 0.448005 pi_c 3.59701 nu 0.6955
+ThermallyPerfect ISA SL M.00 Tt4   800: R33 FAIL | march NO CAND pi_t 0.439425 pi_c 3.81678 m9 0.815 | roots ["0.439", "0.856"] | R34flat Subsonic pi_t 0.439425 pi_c 3.81678 nu 0.7144
+ThermallyPerfect ISA SL M.00 Tt4   825: R33 FAIL | march NO CAND pi_t 0.433302 pi_c 4.02572 m9 0.854 | roots ["0.433", "0.865"] | R34flat Subsonic pi_t 0.433302 pi_c 4.02572 nu 0.7312
+ThermallyPerfect ISA SL M.00 Tt4   850: R33 FAIL | march NO CAND pi_t 0.429098 pi_c 4.22481 m9 0.891 | roots ["0.429", "0.875"] | R34flat Subsonic pi_t 0.429098 pi_c 4.22481 nu 0.7464
+ThermallyPerfect ISA SL M.00 Tt4   875: R33 FAIL | march NO CAND pi_t 0.426426 pi_c 4.41475 m9 0.927 | roots ["0.427", "0.882"] | R34flat Subsonic pi_t 0.426426 pi_c 4.41475 nu 0.7600
+ThermallyPerfect ISA SL M.00 Tt4   900: R33 FAIL | march NO CAND pi_t 0.424993 pi_c 4.59609 m9 0.960 | roots ["0.424", "0.889"] | R34flat Subsonic pi_t 0.424993 pi_c 4.59609 nu 0.7725
+ThermallyPerfect ISA SL M.00 Tt4   925: R33 FAIL | march NO CAND pi_t 0.424576 pi_c 4.76927 m9 0.993 | roots ["0.424", "0.895"] | R34flat Subsonic pi_t 0.424553 pi_c 4.76961 nu 0.7839
+ThermallyPerfect ISA SL M.00 Tt4   950: R33 FAIL | march NO CAND pi_t 0.424777 pi_c 4.93813 m9 1.000 | roots ["0.424", "0.900"] | R34flat Choked pi_t 0.424777 pi_c 4.93813 nu 0.7945
+ThermallyPerfect ISA SL M.00 Tt4   975: R33 FAIL | march NO CAND pi_t 0.425004 pi_c 5.11094 m9 1.000 | roots ["0.424", "0.904"] | R34flat Choked pi_t 0.425004 pi_c 5.11094 nu 0.8050
+ThermallyPerfect ISA SL M.00 Tt4  1000: R33 FAIL | march NO CAND pi_t 0.425232 pi_c 5.28808 m9 1.000 | roots ["0.426", "0.909"] | R34flat Choked pi_t 0.425232 pi_c 5.28808 nu 0.8153
+ThermallyPerfect ISA SL M.30 Tt4   550: R33 FAIL | march NO  | roots [] | R34flat FAIL rung-34 equilibrium does not bracket (Phi[Some(0.58000000000
+ThermallyPerfect ISA SL M.30 Tt4   575: R33 FAIL | march NO  | roots [] | R34flat FAIL rung-34 equilibrium does not bracket (Phi[Some(0.58000000000
+ThermallyPerfect ISA SL M.30 Tt4   600: R33 FAIL | march NO CAND pi_t 0.611200 pi_c 1.96448 m9 0.480 | roots ["0.611", "0.781"] | R34flat FAIL rung-34 equilibrium does not bracket (Phi[Some(0.58000000000
+ThermallyPerfect ISA SL M.30 Tt4   625: R33 FAIL | march NO CAND pi_t 0.552013 pi_c 2.27165 m9 0.545 | roots ["0.552", "0.826"] | R34flat FAIL rung-34 equilibrium does not bracket (Phi[Some(0.58000000000
+ThermallyPerfect ISA SL M.30 Tt4   650: R33 FAIL | march NO CAND pi_t 0.515417 pi_c 2.53234 m9 0.599 | roots ["0.516", "0.851"] | R34flat Subsonic pi_t 0.515417 pi_c 2.53234 nu 0.5829
+ThermallyPerfect ISA SL M.30 Tt4   675: R33 FAIL | march NO CAND pi_t 0.489601 pi_c 2.77298 m9 0.649 | roots ["0.489", "0.870"] | R34flat Subsonic pi_t 0.489601 pi_c 2.77298 nu 0.6147
+ThermallyPerfect ISA SL M.30 Tt4   700: R33 FAIL | march NO CAND pi_t 0.470606 pi_c 3.00045 m9 0.696 | roots ["0.470", "0.884"] | R34flat Subsonic pi_t 0.470606 pi_c 3.00045 nu 0.6416
+ThermallyPerfect ISA SL M.30 Tt4   725: R33 FAIL | march NO CAND pi_t 0.456415 pi_c 3.21741 m9 0.740 | roots ["0.456", "0.895"] | R34flat Subsonic pi_t 0.456415 pi_c 3.21741 nu 0.6649
+ThermallyPerfect ISA SL M.30 Tt4   750: R33 FAIL | march NO CAND pi_t 0.445805 pi_c 3.42516 m9 0.781 | roots ["0.446", "0.903"] | R34flat Subsonic pi_t 0.445805 pi_c 3.42516 nu 0.6855
+ThermallyPerfect ISA SL M.30 Tt4   775: R33 FAIL | march NO CAND pi_t 0.437960 pi_c 3.62438 m9 0.821 | roots ["0.438", "0.911"] | R34flat Subsonic pi_t 0.437960 pi_c 3.62438 nu 0.7039
+ThermallyPerfect ISA SL M.30 Tt4   800: R33 FAIL | march NO CAND pi_t 0.432302 pi_c 3.81552 m9 0.860 | roots ["0.432", "0.917"] | R34flat Subsonic pi_t 0.432302 pi_c 3.81552 nu 0.7204
+ThermallyPerfect ISA SL M.30 Tt4   825: R33 FAIL | march NO CAND pi_t 0.428403 pi_c 3.99890 m9 0.896 | roots ["0.429", "0.923"] | R34flat Subsonic pi_t 0.428403 pi_c 3.99890 nu 0.7353
+ThermallyPerfect ISA SL M.30 Tt4   850: R33 FAIL | march NO CAND pi_t 0.425936 pi_c 4.17478 m9 0.931 | roots ["0.426", "0.928"] | R34flat Subsonic pi_t 0.425936 pi_c 4.17478 nu 0.7489
+ThermallyPerfect ISA SL M.30 Tt4   875: R33 FAIL | march NO CAND pi_t 0.424648 pi_c 4.34339 m9 0.964 | roots ["0.424", "0.932"] | R34flat Subsonic pi_t 0.424648 pi_c 4.34339 nu 0.7614
+ThermallyPerfect ISA SL M.30 Tt4   900: R33 FAIL | march NO CAND pi_t 0.424338 pi_c 4.50497 m9 0.996 | roots ["0.424", "0.935"] | R34flat Subsonic pi_t 0.424332 pi_c 4.50505 nu 0.7728
+ThermallyPerfect ISA SL M.30 Tt4   925: R33 Choked pi_t 0.424553 pi_c 4.66389 | march NO CAND pi_t 0.424553 pi_c 4.66389 m9 1.000 | roots ["0.424", "0.940"] | R34flat Choked pi_t 0.424553 pi_c 4.66389 nu 0.7836
+ThermallyPerfect ISA SL M.30 Tt4   950: R33 Choked pi_t 0.424777 pi_c 4.82678 | march NO CAND pi_t 0.424777 pi_c 4.82678 m9 1.000 | roots ["0.424", "0.943"] | R34flat Choked pi_t 0.424777 pi_c 4.82678 nu 0.7942
+ThermallyPerfect ISA SL M.30 Tt4   975: R33 Choked pi_t 0.425004 pi_c 4.99378 | march NO CAND pi_t 0.425004 pi_c 4.99378 m9 1.000 | roots ["0.424", "0.945"] | R34flat Choked pi_t 0.425004 pi_c 4.99378 nu 0.8046
+ThermallyPerfect ISA SL M.30 Tt4  1000: R33 Choked pi_t 0.425232 pi_c 5.16492 | march NO CAND pi_t 0.425232 pi_c 5.16492 m9 1.000 | roots ["0.426", "0.947"] | R34flat Choked pi_t 0.425232 pi_c 5.16492 nu 0.8150
+ThermallyPerfect cold SL M.3 Tt4   550: R33 FAIL | march NO CAND pi_t 0.540270 pi_c 2.34771 m9 0.560 | roots ["0.540", "0.834"] | R34flat FAIL rung-34 equilibrium does not bracket (Phi[Some(0.54000000000
+ThermallyPerfect cold SL M.3 Tt4   575: R33 FAIL | march NO CAND pi_t 0.503454 pi_c 2.63603 m9 0.619 | roots ["0.503", "0.861"] | R34flat Subsonic pi_t 0.503454 pi_c 2.63603 nu 0.5578
+ThermallyPerfect cold SL M.3 Tt4   600: R33 FAIL | march NO CAND pi_t 0.478087 pi_c 2.90310 m9 0.674 | roots ["0.478", "0.879"] | R34flat Subsonic pi_t 0.478087 pi_c 2.90310 nu 0.5889
+ThermallyPerfect cold SL M.3 Tt4   625: R33 FAIL | march NO CAND pi_t 0.459971 pi_c 3.15541 m9 0.725 | roots ["0.460", "0.892"] | R34flat Subsonic pi_t 0.459971 pi_c 3.15541 nu 0.6152
+ThermallyPerfect cold SL M.3 Tt4   650: R33 FAIL | march NO CAND pi_t 0.446927 pi_c 3.39547 m9 0.773 | roots ["0.447", "0.902"] | R34flat Subsonic pi_t 0.446927 pi_c 3.39547 nu 0.6379
+ThermallyPerfect cold SL M.3 Tt4   675: R33 FAIL | march NO CAND pi_t 0.437624 pi_c 3.62452 m9 0.819 | roots ["0.437", "0.911"] | R34flat Subsonic pi_t 0.437624 pi_c 3.62452 nu 0.6578
+ThermallyPerfect cold SL M.3 Tt4   700: R33 FAIL | march NO CAND pi_t 0.431174 pi_c 3.84326 m9 0.862 | roots ["0.431", "0.918"] | R34flat Subsonic pi_t 0.431174 pi_c 3.84326 nu 0.6755
+ThermallyPerfect cold SL M.3 Tt4   725: R33 FAIL | march NO CAND pi_t 0.426951 pi_c 4.05218 m9 0.903 | roots ["0.427", "0.925"] | R34flat Subsonic pi_t 0.426951 pi_c 4.05218 nu 0.6913
+ThermallyPerfect cold SL M.3 Tt4   750: R33 FAIL | march NO CAND pi_t 0.424495 pi_c 4.25166 m9 0.942 | roots ["0.424", "0.930"] | R34flat Subsonic pi_t 0.424495 pi_c 4.25166 nu 0.7055
+ThermallyPerfect cold SL M.3 Tt4   775: R33 FAIL | march NO CAND pi_t 0.423459 pi_c 4.44207 m9 0.979 | roots ["0.423", "0.934"] | R34flat Subsonic pi_t 0.423459 pi_c 4.44207 nu 0.7184
+ThermallyPerfect cold SL M.3 Tt4   800: R33 Choked pi_t 0.423485 pi_c 4.62500 | march NO CAND pi_t 0.423485 pi_c 4.62500 m9 1.000 | roots ["0.423", "0.938"] | R34flat Choked pi_t 0.423485 pi_c 4.62500 nu 0.7301
+ThermallyPerfect cold SL M.3 Tt4   825: R33 Choked pi_t 0.423691 pi_c 4.81101 | march NO CAND pi_t 0.423691 pi_c 4.81101 m9 1.000 | roots ["0.423", "0.942"] | R34flat Choked pi_t 0.423691 pi_c 4.81101 nu 0.7416
+ThermallyPerfect cold SL M.3 Tt4   850: R33 Choked pi_t 0.423900 pi_c 5.00252 | march NO CAND pi_t 0.423900 pi_c 5.00252 m9 1.000 | roots ["0.423", "0.945"] | R34flat Choked pi_t 0.423900 pi_c 5.00252 nu 0.7529
+ThermallyPerfect cold SL M.3 Tt4   875: R33 Choked pi_t 0.424114 pi_c 5.19959 | march NO CAND pi_t 0.424114 pi_c 5.19959 m9 1.000 | roots ["0.424", "0.948"] | R34flat Choked pi_t 0.424114 pi_c 5.19959 nu 0.7640
+ThermallyPerfect cold SL M.3 Tt4   900: R33 Choked pi_t 0.424332 pi_c 5.40232 | march NO CAND pi_t 0.424332 pi_c 5.40232 m9 1.000 | roots ["0.424", "0.950"] | R34flat Choked pi_t 0.424332 pi_c 5.40232 nu 0.7750
+ThermallyPerfect cold SL M.3 Tt4   925: R33 Choked pi_t 0.424553 pi_c 5.61077 | march NO CAND pi_t 0.424553 pi_c 5.61077 m9 1.000 | roots ["0.424", "0.952"] | R34flat Choked pi_t 0.424553 pi_c 5.61077 nu 0.7858
+ThermallyPerfect cold SL M.3 Tt4   950: R33 Choked pi_t 0.424777 pi_c 5.82503 | march NO CAND pi_t 0.424777 pi_c 5.82503 m9 1.000 | roots ["0.424", "0.954"] | R34flat Choked pi_t 0.424777 pi_c 5.82503 nu 0.7964
+ThermallyPerfect cold SL M.3 Tt4   975: R33 Choked pi_t 0.425004 pi_c 6.04517 | march NO CAND pi_t 0.425004 pi_c 6.04517 m9 1.000 | roots ["0.424", "0.956"] | R34flat Choked pi_t 0.425004 pi_c 6.04517 nu 0.8069
+ThermallyPerfect cold SL M.3 Tt4  1000: R33 Choked pi_t 0.425232 pi_c 6.27124 | march NO CAND pi_t 0.425232 pi_c 6.27124 m9 1.000 | roots ["0.426", "0.959"] | R34flat Choked pi_t 0.425232 pi_c 6.27124 nu 0.8173
+ThermallyPerfect design Tt4   550: R33 Subsonic pi_t 0.425516 pi_c 2.71244 | march ok  | roots ["0.426"] | R34flat Subsonic pi_t 0.425516 pi_c 2.71244 nu 0.6001
+ThermallyPerfect design Tt4   575: R33 Subsonic pi_t 0.423243 pi_c 2.83793 | march ok  | roots ["0.423"] | R34flat Subsonic pi_t 0.423243 pi_c 2.83793 nu 0.6155
+ThermallyPerfect design Tt4   600: R33 Subsonic pi_t 0.422201 pi_c 2.96088 | march ok  | roots ["0.422"] | R34flat Subsonic pi_t 0.422201 pi_c 2.96088 nu 0.6298
+ThermallyPerfect design Tt4   625: R33 Choked pi_t 0.422169 pi_c 3.08124 | march ok  | roots ["0.422"] | R34flat Choked pi_t 0.422169 pi_c 3.08124 nu 0.6431
+ThermallyPerfect design Tt4   650: R33 Choked pi_t 0.422345 pi_c 3.20379 | march ok  | roots ["0.422"] | R34flat Choked pi_t 0.422345 pi_c 3.20379 nu 0.6559
+ThermallyPerfect design Tt4   675: R33 Choked pi_t 0.422524 pi_c 3.33000 | march ok  | roots ["0.422"] | R34flat Choked pi_t 0.422524 pi_c 3.33000 nu 0.6686
+ThermallyPerfect design Tt4   700: R33 Choked pi_t 0.422707 pi_c 3.45991 | march ok  | roots ["0.422"] | R34flat Choked pi_t 0.422707 pi_c 3.45991 nu 0.6810
+ThermallyPerfect design Tt4   725: R33 Choked pi_t 0.422895 pi_c 3.59360 | march ok  | roots ["0.422"] | R34flat Choked pi_t 0.422895 pi_c 3.59360 nu 0.6931
+ThermallyPerfect design Tt4   750: R33 Choked pi_t 0.423087 pi_c 3.73115 | march ok  | roots ["0.423"] | R34flat Choked pi_t 0.423087 pi_c 3.73115 nu 0.7051
+ThermallyPerfect design Tt4   775: R33 Choked pi_t 0.423284 pi_c 3.87260 | march ok  | roots ["0.423"] | R34flat Choked pi_t 0.423284 pi_c 3.87260 nu 0.7169
+ThermallyPerfect design Tt4   800: R33 Choked pi_t 0.423485 pi_c 4.01804 | march ok  | roots ["0.423"] | R34flat Choked pi_t 0.423485 pi_c 4.01804 nu 0.7285
+ThermallyPerfect design Tt4   825: R33 Choked pi_t 0.423691 pi_c 4.16751 | march ok  | roots ["0.423"] | R34flat Choked pi_t 0.423691 pi_c 4.16751 nu 0.7399
+ThermallyPerfect design Tt4   850: R33 Choked pi_t 0.423900 pi_c 4.32108 | march ok  | roots ["0.423"] | R34flat Choked pi_t 0.423900 pi_c 4.32108 nu 0.7512
+ThermallyPerfect design Tt4   875: R33 Choked pi_t 0.424114 pi_c 4.47881 | march ok  | roots ["0.424"] | R34flat Choked pi_t 0.424114 pi_c 4.47881 nu 0.7623
+ThermallyPerfect design Tt4   900: R33 Choked pi_t 0.424332 pi_c 4.64074 | march ok  | roots ["0.424"] | R34flat Choked pi_t 0.424332 pi_c 4.64074 nu 0.7732
+ThermallyPerfect design Tt4   925: R33 Choked pi_t 0.424553 pi_c 4.80694 | march ok  | roots ["0.424"] | R34flat Choked pi_t 0.424553 pi_c 4.80694 nu 0.7840
+ThermallyPerfect design Tt4   950: R33 Choked pi_t 0.424777 pi_c 4.97745 | march ok  | roots ["0.424"] | R34flat Choked pi_t 0.424777 pi_c 4.97745 nu 0.7946
+ThermallyPerfect design Tt4   975: R33 Choked pi_t 0.425004 pi_c 5.15232 | march ok  | roots ["0.424"] | R34flat Choked pi_t 0.425004 pi_c 5.15232 nu 0.8051
+ThermallyPerfect design Tt4  1000: R33 Choked pi_t 0.425232 pi_c 5.33159 | march ok  | roots ["0.426"] | R34flat Choked pi_t 0.425232 pi_c 5.33159 nu 0.8154
+Perfect hot SL M.30 Tt4   550: R33 FAIL | march NO  | roots [] | R34flat FAIL rung-34 equilibrium does not bracket (Phi[Some(0.60000000000
+Perfect hot SL M.30 Tt4   575: R33 FAIL | march NO  | roots [] | R34flat FAIL rung-34 equilibrium does not bracket (Phi[Some(0.60000000000
+Perfect hot SL M.30 Tt4   600: R33 FAIL | march NO  | roots [] | R34flat FAIL rung-34 equilibrium does not bracket (Phi[Some(0.60000000000
+Perfect hot SL M.30 Tt4   625: R33 FAIL | march NO  | roots [] | R34flat FAIL rung-34 equilibrium does not bracket (Phi[Some(0.60000000000
+Perfect hot SL M.30 Tt4   650: R33 FAIL | march NO CAND pi_t 0.673728 pi_c 1.72711 m9 0.422 | roots ["0.674", "0.728"] | R34flat FAIL rung-34 equilibrium does not bracket (Phi[Some(0.60000000000
+Perfect hot SL M.30 Tt4   675: R33 FAIL | march NO CAND pi_t 0.582676 pi_c 2.09434 m9 0.499 | roots ["0.583", "0.804"] | R34flat FAIL rung-34 equilibrium does not bracket (Phi[Some(0.60000000000
+Perfect hot SL M.30 Tt4   700: R33 FAIL | march NO CAND pi_t 0.538942 pi_c 2.34791 m9 0.551 | roots ["0.539", "0.835"] | R34flat FAIL rung-34 equilibrium does not bracket (Phi[Some(0.60000000000
+Perfect hot SL M.30 Tt4   725: R33 FAIL | march NO CAND pi_t 0.508621 pi_c 2.57598 m9 0.597 | roots ["0.508", "0.857"] | R34flat Subsonic pi_t 0.508621 pi_c 2.57598 nu 0.6144
+Perfect hot SL M.30 Tt4   750: R33 FAIL | march NO CAND pi_t 0.486014 pi_c 2.79032 m9 0.640 | roots ["0.486", "0.872"] | R34flat Subsonic pi_t 0.486014 pi_c 2.79032 nu 0.6437
+Perfect hot SL M.30 Tt4   775: R33 FAIL | march NO CAND pi_t 0.468643 pi_c 2.99504 m9 0.680 | roots ["0.469", "0.884"] | R34flat Subsonic pi_t 0.468643 pi_c 2.99504 nu 0.6691
+Perfect hot SL M.30 Tt4   800: R33 FAIL | march NO CAND pi_t 0.455112 pi_c 3.19201 m9 0.719 | roots ["0.455", "0.894"] | R34flat Subsonic pi_t 0.455112 pi_c 3.19201 nu 0.6915
+Perfect hot SL M.30 Tt4   825: R33 FAIL | march NO CAND pi_t 0.444527 pi_c 3.38219 m9 0.756 | roots ["0.445", "0.901"] | R34flat Subsonic pi_t 0.444527 pi_c 3.38219 nu 0.7117
+Perfect hot SL M.30 Tt4   850: R33 FAIL | march NO CAND pi_t 0.436268 pi_c 3.56615 m9 0.791 | roots ["0.436", "0.909"] | R34flat Subsonic pi_t 0.436268 pi_c 3.56615 nu 0.7299
+Perfect hot SL M.30 Tt4   875: R33 FAIL | march NO CAND pi_t 0.429884 pi_c 3.74427 m9 0.825 | roots ["0.430", "0.915"] | R34flat Subsonic pi_t 0.429884 pi_c 3.74427 nu 0.7465
+Perfect hot SL M.30 Tt4   900: R33 FAIL | march NO CAND pi_t 0.425035 pi_c 3.91681 m9 0.858 | roots ["0.426", "0.920"] | R34flat Subsonic pi_t 0.425035 pi_c 3.91681 nu 0.7617
+Perfect hot SL M.30 Tt4   925: R33 FAIL | march NO CAND pi_t 0.421458 pi_c 4.08399 m9 0.889 | roots ["0.421", "0.925"] | R34flat Subsonic pi_t 0.421458 pi_c 4.08399 nu 0.7758
+Perfect hot SL M.30 Tt4   950: R33 FAIL | march NO CAND pi_t 0.418945 pi_c 4.24599 m9 0.920 | roots ["0.419", "0.929"] | R34flat Subsonic pi_t 0.418945 pi_c 4.24599 nu 0.7888
+Perfect hot SL M.30 Tt4   975: R33 FAIL | march NO CAND pi_t 0.417327 pi_c 4.40300 m9 0.949 | roots ["0.417", "0.932"] | R34flat Subsonic pi_t 0.417327 pi_c 4.40300 nu 0.8008
+Perfect hot SL M.30 Tt4  1000: R33 FAIL | march NO CAND pi_t 0.416470 pi_c 4.55518 m9 0.977 | roots ["0.416", "0.935"] | R34flat Subsonic pi_t 0.416470 pi_c 4.55518 nu 0.8121
+Perfect hot SL M.10 Tt4   550: R33 FAIL | march NO  | roots [] | R34flat FAIL rung-34 equilibrium does not bracket (Phi[Some(0.62000000000
+Perfect hot SL M.10 Tt4   575: R33 FAIL | march NO  | roots [] | R34flat FAIL rung-34 equilibrium does not bracket (Phi[Some(0.62000000000
+Perfect hot SL M.10 Tt4   600: R33 FAIL | march NO  | roots [] | R34flat FAIL rung-34 equilibrium does not bracket (Phi[Some(0.62000000000
+Perfect hot SL M.10 Tt4   625: R33 FAIL | march NO  | roots [] | R34flat FAIL rung-34 equilibrium does not bracket (Phi[Some(0.62000000000
+Perfect hot SL M.10 Tt4   650: R33 FAIL | march NO  | roots [] | R34flat FAIL rung-34 equilibrium does not bracket (Phi[Some(0.62000000000
+Perfect hot SL M.10 Tt4   675: R33 FAIL | march NO  | roots [] | R34flat FAIL rung-34 equilibrium does not bracket (Phi[Some(0.62000000000
+Perfect hot SL M.10 Tt4   700: R33 FAIL | march NO  | roots [] | R34flat FAIL rung-34 equilibrium does not bracket (Phi[Some(0.62000000000
+Perfect hot SL M.10 Tt4   725: R33 FAIL | march NO CAND pi_t 0.567323 pi_c 2.29953 m9 0.516 | roots ["0.568", "0.732"] | R34flat FAIL rung-34 equilibrium does not bracket (Phi[Some(0.62000000000
+Perfect hot SL M.10 Tt4   750: R33 FAIL | march NO CAND pi_t 0.522500 pi_c 2.60526 m9 0.575 | roots ["0.522", "0.774"] | R34flat FAIL rung-34 equilibrium does not bracket (Phi[Some(0.62000000000
+Perfect hot SL M.10 Tt4   775: R33 FAIL | march NO CAND pi_t 0.494056 pi_c 2.86292 m9 0.624 | roots ["0.495", "0.800"] | R34flat Subsonic pi_t 0.494056 pi_c 2.86292 nu 0.6478
+Perfect hot SL M.10 Tt4   800: R33 FAIL | march NO CAND pi_t 0.473662 pi_c 3.09841 m9 0.668 | roots ["0.473", "0.820"] | R34flat Subsonic pi_t 0.473662 pi_c 3.09841 nu 0.6757
+Perfect hot SL M.10 Tt4   825: R33 FAIL | march NO CAND pi_t 0.458380 pi_c 3.31956 m9 0.709 | roots ["0.458", "0.834"] | R34flat Subsonic pi_t 0.458380 pi_c 3.31956 nu 0.6996
+Perfect hot SL M.10 Tt4   850: R33 FAIL | march NO CAND pi_t 0.446713 pi_c 3.52985 m9 0.748 | roots ["0.447", "0.847"] | R34flat Subsonic pi_t 0.446713 pi_c 3.52985 nu 0.7207
+Perfect hot SL M.10 Tt4   875: R33 FAIL | march NO CAND pi_t 0.437754 pi_c 3.73115 m9 0.784 | roots ["0.437", "0.858"] | R34flat Subsonic pi_t 0.437754 pi_c 3.73115 nu 0.7394
+Perfect hot SL M.10 Tt4   900: R33 FAIL | march NO CAND pi_t 0.430902 pi_c 3.92456 m9 0.819 | roots ["0.431", "0.867"] | R34flat Subsonic pi_t 0.430902 pi_c 3.92456 nu 0.7564
+Perfect hot SL M.10 Tt4   925: R33 FAIL | march NO CAND pi_t 0.425731 pi_c 4.11085 m9 0.853 | roots ["0.426", "0.875"] | R34flat Subsonic pi_t 0.425731 pi_c 4.11085 nu 0.7718
+Perfect hot SL M.10 Tt4   950: R33 FAIL | march NO CAND pi_t 0.421925 pi_c 4.29054 m9 0.885 | roots ["0.422", "0.882"] | R34flat Subsonic pi_t 0.421925 pi_c 4.29054 nu 0.7860
+Perfect hot SL M.10 Tt4   975: R33 FAIL | march NO CAND pi_t 0.419244 pi_c 4.46406 m9 0.915 | roots ["0.419", "0.889"] | R34flat Subsonic pi_t 0.419244 pi_c 4.46406 nu 0.7990
+Perfect hot SL M.10 Tt4  1000: R33 FAIL | march NO CAND pi_t 0.417500 pi_c 4.63175 m9 0.945 | roots ["0.417", "0.894"] | R34flat Subsonic pi_t 0.417500 pi_c 4.63175 nu 0.8111
+Perfect ISA SL M.00 Tt4   550: R33 FAIL | march NO  | roots [] | R34flat FAIL rung-34 equilibrium does not bracket (Phi[Some(0.60000000000
+Perfect ISA SL M.00 Tt4   575: R33 FAIL | march NO  | roots [] | R34flat FAIL rung-34 equilibrium does not bracket (Phi[Some(0.60000000000
+Perfect ISA SL M.00 Tt4   600: R33 FAIL | march NO  | roots [] | R34flat FAIL rung-34 equilibrium does not bracket (Phi[Some(0.60000000000
+Perfect ISA SL M.00 Tt4   625: R33 FAIL | march NO  | roots [] | R34flat FAIL rung-34 equilibrium does not bracket (Phi[Some(0.60000000000
+Perfect ISA SL M.00 Tt4   650: R33 FAIL | march NO CAND pi_t 0.617446 pi_c 2.05905 m9 0.466 | roots ["0.618", "0.676"] | R34flat FAIL rung-34 equilibrium does not bracket (Phi[Some(0.60000000000
+Perfect ISA SL M.00 Tt4   675: R33 FAIL | march NO CAND pi_t 0.537746 pi_c 2.50772 m9 0.553 | roots ["0.538", "0.752"] | R34flat FAIL rung-34 equilibrium does not bracket (Phi[Some(0.60000000000
+Perfect ISA SL M.00 Tt4   700: R33 FAIL | march NO CAND pi_t 0.501134 pi_c 2.81203 m9 0.610 | roots ["0.501", "0.786"] | R34flat Subsonic pi_t 0.501134 pi_c 2.81203 nu 0.6098
+Perfect ISA SL M.00 Tt4   725: R33 FAIL | march NO CAND pi_t 0.476737 pi_c 3.08069 m9 0.661 | roots ["0.477", "0.809"] | R34flat Subsonic pi_t 0.476737 pi_c 3.08069 nu 0.6405
+Perfect ISA SL M.00 Tt4   750: R33 FAIL | march NO CAND pi_t 0.459211 pi_c 3.32940 m9 0.707 | roots ["0.460", "0.827"] | R34flat Subsonic pi_t 0.459211 pi_c 3.32940 nu 0.6661
+Perfect ISA SL M.00 Tt4   775: R33 FAIL | march NO CAND pi_t 0.446256 pi_c 3.56394 m9 0.749 | roots ["0.446", "0.842"] | R34flat Subsonic pi_t 0.446256 pi_c 3.56394 nu 0.6883
+Perfect ISA SL M.00 Tt4   800: R33 FAIL | march NO CAND pi_t 0.436601 pi_c 3.78713 m9 0.790 | roots ["0.436", "0.853"] | R34flat Subsonic pi_t 0.436601 pi_c 3.78713 nu 0.7078
+Perfect ISA SL M.00 Tt4   825: R33 FAIL | march NO CAND pi_t 0.429439 pi_c 4.00056 m9 0.828 | roots ["0.430", "0.864"] | R34flat Subsonic pi_t 0.429439 pi_c 4.00056 nu 0.7252
+Perfect ISA SL M.00 Tt4   850: R33 FAIL | march NO CAND pi_t 0.424225 pi_c 4.20525 m9 0.864 | roots ["0.424", "0.873"] | R34flat Subsonic pi_t 0.424225 pi_c 4.20525 nu 0.7410
+Perfect ISA SL M.00 Tt4   875: R33 FAIL | march NO CAND pi_t 0.420562 pi_c 4.40193 m9 0.899 | roots ["0.420", "0.880"] | R34flat Subsonic pi_t 0.420562 pi_c 4.40193 nu 0.7553
+Perfect ISA SL M.00 Tt4   900: R33 FAIL | march NO CAND pi_t 0.418157 pi_c 4.59115 m9 0.932 | roots ["0.418", "0.887"] | R34flat Subsonic pi_t 0.418157 pi_c 4.59115 nu 0.7684
+Perfect ISA SL M.00 Tt4   925: R33 FAIL | march NO CAND pi_t 0.416785 pi_c 4.77336 m9 0.964 | roots ["0.417", "0.893"] | R34flat Subsonic pi_t 0.416785 pi_c 4.77336 nu 0.7805
+Perfect ISA SL M.00 Tt4   950: R33 FAIL | march NO CAND pi_t 0.416267 pi_c 4.94894 m9 0.994 | roots ["0.416", "0.898"] | R34flat Subsonic pi_t 0.416372 pi_c 4.94735 nu 0.7916
+Perfect ISA SL M.00 Tt4   975: R33 FAIL | march NO CAND pi_t 0.416372 pi_c 5.11970 m9 1.000 | roots ["0.416", "0.903"] | R34flat Choked pi_t 0.416372 pi_c 5.11970 nu 0.8021
+Perfect ISA SL M.00 Tt4  1000: R33 FAIL | march NO CAND pi_t 0.416372 pi_c 5.29648 m9 1.000 | roots ["0.416", "0.908"] | R34flat Choked pi_t 0.416372 pi_c 5.29648 nu 0.8125
+Perfect ISA SL M.30 Tt4   550: R33 FAIL | march NO  | roots [] | R34flat FAIL rung-34 equilibrium does not bracket (Phi[Some(0.58000000000
+Perfect ISA SL M.30 Tt4   575: R33 FAIL | march NO  | roots [] | R34flat FAIL rung-34 equilibrium does not bracket (Phi[Some(0.58000000000
+Perfect ISA SL M.30 Tt4   600: R33 FAIL | march NO CAND pi_t 0.616274 pi_c 1.93935 m9 0.467 | roots ["0.617", "0.778"] | R34flat FAIL rung-34 equilibrium does not bracket (Phi[Some(0.58000000000
+Perfect ISA SL M.30 Tt4   625: R33 FAIL | march NO CAND pi_t 0.554848 pi_c 2.24732 m9 0.530 | roots ["0.555", "0.824"] | R34flat FAIL rung-34 equilibrium does not bracket (Phi[Some(0.58000000000
+Perfect ISA SL M.30 Tt4   650: R33 FAIL | march NO CAND pi_t 0.517069 pi_c 2.50673 m9 0.583 | roots ["0.517", "0.850"] | R34flat FAIL rung-34 equilibrium does not bracket (Phi[Some(0.58000000000
+Perfect ISA SL M.30 Tt4   675: R33 FAIL | march NO CAND pi_t 0.490246 pi_c 2.74640 m9 0.631 | roots ["0.490", "0.868"] | R34flat Subsonic pi_t 0.490246 pi_c 2.74640 nu 0.6071
+Perfect ISA SL M.30 Tt4   700: R33 FAIL | march NO CAND pi_t 0.470296 pi_c 2.97358 m9 0.676 | roots ["0.470", "0.882"] | R34flat Subsonic pi_t 0.470296 pi_c 2.97358 nu 0.6343
+Perfect ISA SL M.30 Tt4   725: R33 FAIL | march NO CAND pi_t 0.455169 pi_c 3.19110 m9 0.719 | roots ["0.455", "0.894"] | R34flat Subsonic pi_t 0.455169 pi_c 3.19110 nu 0.6580
+Perfect ISA SL M.30 Tt4   750: R33 FAIL | march NO CAND pi_t 0.443630 pi_c 3.40034 m9 0.759 | roots ["0.444", "0.902"] | R34flat Subsonic pi_t 0.443630 pi_c 3.40034 nu 0.6791
+Perfect ISA SL M.30 Tt4   775: R33 FAIL | march NO CAND pi_t 0.434860 pi_c 3.60205 m9 0.798 | roots ["0.435", "0.910"] | R34flat Subsonic pi_t 0.434860 pi_c 3.60205 nu 0.6979
+Perfect ISA SL M.30 Tt4   800: R33 FAIL | march NO CAND pi_t 0.428278 pi_c 3.79671 m9 0.835 | roots ["0.429", "0.916"] | R34flat Subsonic pi_t 0.428278 pi_c 3.79671 nu 0.7149
+Perfect ISA SL M.30 Tt4   825: R33 FAIL | march NO CAND pi_t 0.423457 pi_c 3.98466 m9 0.871 | roots ["0.423", "0.921"] | R34flat Subsonic pi_t 0.423457 pi_c 3.98466 nu 0.7304
+Perfect ISA SL M.30 Tt4   850: R33 FAIL | march NO CAND pi_t 0.420071 pi_c 4.16618 m9 0.905 | roots ["0.420", "0.927"] | R34flat Subsonic pi_t 0.420071 pi_c 4.16618 nu 0.7446
+Perfect ISA SL M.30 Tt4   875: R33 FAIL | march NO CAND pi_t 0.417869 pi_c 4.34152 m9 0.937 | roots ["0.418", "0.931"] | R34flat Subsonic pi_t 0.417869 pi_c 4.34152 nu 0.7577
+Perfect ISA SL M.30 Tt4   900: R33 FAIL | march NO CAND pi_t 0.416650 pi_c 4.51089 m9 0.969 | roots ["0.417", "0.934"] | R34flat Subsonic pi_t 0.416650 pi_c 4.51089 nu 0.7698
+Perfect ISA SL M.30 Tt4   925: R33 FAIL | march NO CAND pi_t 0.416254 pi_c 4.67451 m9 0.999 | roots ["0.416", "0.938"] | R34flat Subsonic pi_t 0.416372 pi_c 4.67286 nu 0.7808
+Perfect ISA SL M.30 Tt4   950: R33 Choked pi_t 0.416372 pi_c 4.83522 | march NO CAND pi_t 0.416372 pi_c 4.83522 m9 1.000 | roots ["0.416", "0.941"] | R34flat Choked pi_t 0.416372 pi_c 4.83522 nu 0.7915
+Perfect ISA SL M.30 Tt4   975: R33 Choked pi_t 0.416372 pi_c 5.00174 | march NO CAND pi_t 0.416372 pi_c 5.00174 m9 1.000 | roots ["0.416", "0.944"] | R34flat Choked pi_t 0.416372 pi_c 5.00174 nu 0.8020
+Perfect ISA SL M.30 Tt4  1000: R33 Choked pi_t 0.416372 pi_c 5.17248 | march NO CAND pi_t 0.416372 pi_c 5.17248 m9 1.000 | roots ["0.416", "0.946"] | R34flat Choked pi_t 0.416372 pi_c 5.17248 nu 0.8125
+Perfect cold SL M.3 Tt4   550: R33 FAIL | march NO CAND pi_t 0.540452 pi_c 2.33788 m9 0.549 | roots ["0.540", "0.834"] | R34flat FAIL rung-34 equilibrium does not bracket (Phi[Some(0.54000000000
+Perfect cold SL M.3 Tt4   575: R33 FAIL | march NO CAND pi_t 0.502945 pi_c 2.62547 m9 0.607 | roots ["0.503", "0.860"] | R34flat Subsonic pi_t 0.502945 pi_c 2.62547 nu 0.5509
+Perfect cold SL M.3 Tt4   600: R33 FAIL | march NO CAND pi_t 0.476879 pi_c 2.89254 m9 0.660 | roots ["0.477", "0.878"] | R34flat Subsonic pi_t 0.476879 pi_c 2.89254 nu 0.5821
+Perfect cold SL M.3 Tt4   625: R33 FAIL | march NO CAND pi_t 0.458044 pi_c 3.14568 m9 0.710 | roots ["0.458", "0.892"] | R34flat Subsonic pi_t 0.458044 pi_c 3.14568 nu 0.6085
+Perfect cold SL M.3 Tt4   650: R33 FAIL | march NO CAND pi_t 0.444262 pi_c 3.38750 m9 0.757 | roots ["0.445", "0.902"] | R34flat Subsonic pi_t 0.444262 pi_c 3.38750 nu 0.6314
+Perfect cold SL M.3 Tt4   675: R33 FAIL | march NO CAND pi_t 0.434207 pi_c 3.61927 m9 0.801 | roots ["0.434", "0.911"] | R34flat Subsonic pi_t 0.434207 pi_c 3.61927 nu 0.6515
+Perfect cold SL M.3 Tt4   700: R33 FAIL | march NO CAND pi_t 0.426993 pi_c 3.84173 m9 0.844 | roots ["0.427", "0.917"] | R34flat Subsonic pi_t 0.426993 pi_c 3.84173 nu 0.6695
+Perfect cold SL M.3 Tt4   725: R33 FAIL | march NO CAND pi_t 0.421997 pi_c 4.05537 m9 0.884 | roots ["0.422", "0.924"] | R34flat Subsonic pi_t 0.421997 pi_c 4.05537 nu 0.6856
+Perfect cold SL M.3 Tt4   750: R33 FAIL | march NO CAND pi_t 0.418761 pi_c 4.26061 m9 0.922 | roots ["0.419", "0.929"] | R34flat Subsonic pi_t 0.418761 pi_c 4.26061 nu 0.7002
+Perfect cold SL M.3 Tt4   775: R33 FAIL | march NO CAND pi_t 0.416941 pi_c 4.45780 m9 0.959 | roots ["0.417", "0.933"] | R34flat Subsonic pi_t 0.416941 pi_c 4.45780 nu 0.7135
+Perfect cold SL M.3 Tt4   800: R33 FAIL | march NO CAND pi_t 0.416269 pi_c 4.64729 m9 0.994 | roots ["0.416", "0.937"] | R34flat Subsonic pi_t 0.416372 pi_c 4.64667 nu 0.7257
+Perfect cold SL M.3 Tt4   825: R33 Choked pi_t 0.416372 pi_c 4.83185 | march NO CAND pi_t 0.416372 pi_c 4.83185 m9 1.000 | roots ["0.416", "0.941"] | R34flat Choked pi_t 0.416372 pi_c 4.83185 nu 0.7370
+Perfect cold SL M.3 Tt4   850: R33 Choked pi_t 0.416372 pi_c 5.02327 | march NO CAND pi_t 0.416372 pi_c 5.02327 m9 1.000 | roots ["0.416", "0.944"] | R34flat Choked pi_t 0.416372 pi_c 5.02327 nu 0.7483
+Perfect cold SL M.3 Tt4   875: R33 Choked pi_t 0.416372 pi_c 5.22025 | march NO CAND pi_t 0.416372 pi_c 5.22025 m9 1.000 | roots ["0.416", "0.947"] | R34flat Choked pi_t 0.416372 pi_c 5.22025 nu 0.7594
+Perfect cold SL M.3 Tt4   900: R33 Choked pi_t 0.416372 pi_c 5.42288 | march NO CAND pi_t 0.416372 pi_c 5.42288 m9 1.000 | roots ["0.416", "0.949"] | R34flat Choked pi_t 0.416372 pi_c 5.42288 nu 0.7704
+Perfect cold SL M.3 Tt4   925: R33 Choked pi_t 0.416372 pi_c 5.63127 | march NO CAND pi_t 0.416372 pi_c 5.63127 m9 1.000 | roots ["0.416", "0.952"] | R34flat Choked pi_t 0.416372 pi_c 5.63127 nu 0.7812
+Perfect cold SL M.3 Tt4   950: R33 Choked pi_t 0.416372 pi_c 5.84553 | march NO CAND pi_t 0.416372 pi_c 5.84553 m9 1.000 | roots ["0.416", "0.954"] | R34flat Choked pi_t 0.416372 pi_c 5.84553 nu 0.7919
+Perfect cold SL M.3 Tt4   975: R33 Choked pi_t 0.416372 pi_c 6.06577 | march NO CAND pi_t 0.416372 pi_c 6.06577 m9 1.000 | roots ["0.416", "0.955"] | R34flat Choked pi_t 0.416372 pi_c 6.06577 nu 0.8024
+Perfect cold SL M.3 Tt4  1000: R33 Choked pi_t 0.416372 pi_c 6.29209 | march NO CAND pi_t 0.416372 pi_c 6.29209 m9 1.000 | roots ["0.416", "0.958"] | R34flat Choked pi_t 0.416372 pi_c 6.29209 nu 0.8128
+Perfect design Tt4   550: R33 Subsonic pi_t 0.421155 pi_c 2.72166 | march ok  | roots ["0.421"] | R34flat Subsonic pi_t 0.421155 pi_c 2.72166 nu 0.5965
+Perfect design Tt4   575: R33 Subsonic pi_t 0.418377 pi_c 2.84933 | march ok  | roots ["0.418"] | R34flat Subsonic pi_t 0.418377 pi_c 2.84933 nu 0.6121
+Perfect design Tt4   600: R33 Subsonic pi_t 0.416796 pi_c 2.97493 | march ok  | roots ["0.417"] | R34flat Subsonic pi_t 0.416796 pi_c 2.97493 nu 0.6266
+Perfect design Tt4   625: R33 Subsonic pi_t 0.416256 pi_c 3.09799 | march ok  | roots ["0.416"] | R34flat Subsonic pi_t 0.416372 pi_c 3.09716 nu 0.6400
+Perfect design Tt4   650: R33 Choked pi_t 0.416372 pi_c 3.22004 | march ok  | roots ["0.416"] | R34flat Choked pi_t 0.416372 pi_c 3.22004 nu 0.6529
+Perfect design Tt4   675: R33 Choked pi_t 0.416372 pi_c 3.34650 | march ok  | roots ["0.416"] | R34flat Choked pi_t 0.416372 pi_c 3.34650 nu 0.6655
+Perfect design Tt4   700: R33 Choked pi_t 0.416372 pi_c 3.47658 | march ok  | roots ["0.416"] | R34flat Choked pi_t 0.416372 pi_c 3.47658 nu 0.6778
+Perfect design Tt4   725: R33 Choked pi_t 0.416372 pi_c 3.61037 | march ok  | roots ["0.416"] | R34flat Choked pi_t 0.416372 pi_c 3.61037 nu 0.6900
+Perfect design Tt4   750: R33 Choked pi_t 0.416372 pi_c 3.74794 | march ok  | roots ["0.416"] | R34flat Choked pi_t 0.416372 pi_c 3.74794 nu 0.7020
+Perfect design Tt4   775: R33 Choked pi_t 0.416372 pi_c 3.88934 | march ok  | roots ["0.416"] | R34flat Choked pi_t 0.416372 pi_c 3.88934 nu 0.7137
+Perfect design Tt4   800: R33 Choked pi_t 0.416372 pi_c 4.03466 | march ok  | roots ["0.416"] | R34flat Choked pi_t 0.416372 pi_c 4.03466 nu 0.7253
+Perfect design Tt4   825: R33 Choked pi_t 0.416372 pi_c 4.18396 | march ok  | roots ["0.416"] | R34flat Choked pi_t 0.416372 pi_c 4.18396 nu 0.7368
+Perfect design Tt4   850: R33 Choked pi_t 0.416372 pi_c 4.33731 | march ok  | roots ["0.416"] | R34flat Choked pi_t 0.416372 pi_c 4.33731 nu 0.7480
+Perfect design Tt4   875: R33 Choked pi_t 0.416372 pi_c 4.49479 | march ok  | roots ["0.416"] | R34flat Choked pi_t 0.416372 pi_c 4.49479 nu 0.7591
+Perfect design Tt4   900: R33 Choked pi_t 0.416372 pi_c 4.65648 | march ok  | roots ["0.416"] | R34flat Choked pi_t 0.416372 pi_c 4.65648 nu 0.7701
+Perfect design Tt4   925: R33 Choked pi_t 0.416372 pi_c 4.82244 | march ok  | roots ["0.416"] | R34flat Choked pi_t 0.416372 pi_c 4.82244 nu 0.7809
+Perfect design Tt4   950: R33 Choked pi_t 0.416372 pi_c 4.99274 | march ok  | roots ["0.416"] | R34flat Choked pi_t 0.416372 pi_c 4.99274 nu 0.7916
+Perfect design Tt4   975: R33 Choked pi_t 0.416372 pi_c 5.16747 | march ok  | roots ["0.416"] | R34flat Choked pi_t 0.416372 pi_c 5.16747 nu 0.8021
+Perfect design Tt4  1000: R33 Choked pi_t 0.416372 pi_c 5.34671 | march ok  | roots ["0.416"] | R34flat Choked pi_t 0.416372 pi_c 5.34671 nu 0.8125

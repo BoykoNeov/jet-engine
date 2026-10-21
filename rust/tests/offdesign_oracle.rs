@@ -46,6 +46,9 @@ use turbojet::matcher::{try_r31_solve_turbine, Branch, MatcherHooks, OffDesignMa
 mod eq_floor;
 #[path = "common/turbine_wall.rs"]
 mod turbine_wall;
+#[path = "common/double_root.rs"]
+#[allow(dead_code)]
+mod double_root;
 
 const ORACLE_CPYTHON: &str = include_str!("../oracle/offdesign_cpython.tsv");
 const ORACLE_PYPY: &str = include_str!("../oracle/offdesign_pypy.tsv");
@@ -488,9 +491,47 @@ fn wall_cells() -> HashSet<String> {
     out
 }
 
+/// The DOUBLE-ROOT cells (`common/double_root.rs`), named PHYSICALLY: the march's two ends share a
+/// sign (this gate's own replica, `brk/…/straddles`, `lo`, `hi`) and the residual has a root
+/// STRICTLY BETWEEN them — checked by evaluating it, once, at the subsonic `pi_t` the matcher
+/// returned (`cell/…/pi_t`). A root between same-sign ends is the second root. (The shared
+/// [`double_root::two_roots`] scans a 400-point grid instead; on the equilibrium gas's refused
+/// cells that cost 8 minutes, so here the grid is replaced by the one evaluation. Whether a refused
+/// cell hides a root the walk missed is `tests/rung33_double_root.rs`' question, not this gate's.)
+fn double_root_cells(ours: &[(String, f64)]) -> HashSet<String> {
+    let val: HashMap<&str, f64> = ours.iter().map(|(k, v)| (k.as_str(), *v)).collect();
+    let get = |tag: &str, q: &str| val.get(format!("{tag}/{q}").as_str()).copied();
+    let mut out = HashSet::new();
+    for &g in GASES {
+        let m = matcher_for(g);
+        for &m0 in M0S {
+            let flight = FlightCondition::new(250.0, 50_000.0, m0);
+            let (state0, _) = m.freestream_for(&flight);
+            let (tt2, pt2) = (state0.tt, m.pi_d_max * ram_recovery(m0) * state0.pt);
+            for &tt4 in TT4S {
+                let tag = format!("{g}/{m0:.2}/{tt4:.0}");
+                let (b, c) = (format!("brk/{tag}"), format!("cell/{tag}"));
+                if get(&b, "straddles") != Some(0.0) || get(&c, "branch") != Some(1.0) {
+                    continue;
+                }
+                let (lo, hi, y) = (get(&b, "lo").unwrap(), get(&b, "hi").unwrap(), get(&c, "pi_t").unwrap());
+                let op = m.try_subsonic_operating(tt4, tt2, pt2, y, flight.p0).expect("the returned point evaluates");
+                // The bisection stops at 1e-13 in pi_t; the residual's slope is O(10) kg/s per unit.
+                if lo < y && y < hi && op.resid.abs() < 1e-9 {
+                    out.insert(tag);
+                }
+            }
+        }
+    }
+    out
+}
+
 fn compare_against(oracle_text: &str, label: &str, require_bit_exact: bool) {
     let wall = wall_cells();
-    let (ours, oracle) = turbine_wall::reconcile(rust_values(), load_oracle(oracle_text), &wall);
+    let ours = rust_values();
+    let cells = double_root_cells(&ours);
+    let (ours, oracle) = double_root::reconcile_offdesign(ours, load_oracle(oracle_text), &cells, GASES);
+    let (ours, oracle) = turbine_wall::reconcile(ours, oracle, &wall);
     let (ours, oracle) = eq_floor::reconcile_with(ours, oracle, &wall);
     println!("\n=== Rust vs {label} ===");
     assert_eq!(ours.len(), oracle.len(),

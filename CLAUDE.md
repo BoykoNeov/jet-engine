@@ -184,7 +184,7 @@ Never re-open one, and never re-enumerate them here.
 - Rung 79 § 9's **gap** — `docs/rung79-gap-margin.md`. Its § 5 march **STANDS STILL**; residual = rung 77's `1/(1−c)`. **CORRECTS 79.**
 - "Earned at design" over `π_c` (`docs/rung29-pi-c-margin.md`, NOT protective) and `M0` (`docs/rung29-M0-margin.md`, monotone-protective).
 - `β<1` over `π_c` — `docs/rung28-beta-margin.md` (β pressure-invariant; higher `π_c` protective).
-- Solver repairs (sandbox plan §§ 14/26/36–40): march + turbine walls (oracle RULE); `below_ceiling` ON (CORRECTS 65 § 3); back-pressure per FLIGHT; the HP map wall (a RULE); a below-idle rule; lean wall per run (10-10 … 10-20).
+- Solver repairs (sandbox plan §§ 14/26/36–40): march + turbine walls (oracle RULE); `below_ceiling` ON (CORRECTS 65 § 3); back-pressure per FLIGHT; the HP map wall (a RULE); a below-idle rule; lean wall per run; 33's double root (10-10 … 10-21).
 
 **Still OPEN — the live to-build list:**
 - **The real spatial / transported-CFD PDF** — the standing mixing ceiling (22–24 are a Gaussian-plume cartoon; needs an anchored SCALE + spread law).

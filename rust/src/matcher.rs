@@ -745,13 +745,24 @@ impl OffDesignMatcher {
 
     /// Match on the SUBSONIC-nozzle branch: root-find (★★) for `pi_t`, then rebuild forward.
     ///
-    /// **Bracketing.** `resid(pi_t)` is monotone-decreasing (more turbine expansion -> more
-    /// compressor work -> higher `pt9` -> the nozzle passes more), so a low `pi_t` gives
-    /// `resid > 0` and a high one `resid < 0`. The self-sustaining window is bounded at BOTH
-    /// ends, because `pt9/p0` peaks mid-range: at low `Tt4` the nozzle-cannot-expand wall cuts
-    /// the range from above AND below. So each bracket is MARCHED in from its extreme until
-    /// `resid` is evaluable. If the two do not straddle zero inside the physical window the
-    /// point is SUB-IDLE — reported, not force-fit.
+    /// **Bracketing.** A low `pi_t` gives `resid > 0` (more turbine expansion -> more compressor
+    /// work -> higher `pt9` -> the nozzle passes more, so the residual falls through the working
+    /// root). The self-sustaining window is bounded at BOTH ends, because `pt9/p0` peaks
+    /// mid-range: at low `Tt4` the nozzle-cannot-expand wall cuts the range from above AND below.
+    /// So each bracket is MARCHED in from its extreme until `resid` is evaluable. If the two do
+    /// not straddle zero inside the physical window the point is SUB-IDLE — reported, not
+    /// force-fit.
+    ///
+    /// **The residual is NOT monotone (repair 2026-10-21, `docs/rung33-spec.md` § The double
+    /// root).** Near the top of the range the turbine barely expands, the compressor barely
+    /// compresses, and the nozzle's demand falls faster than the vane's supply — the residual
+    /// turns positive again. So off the design flight (sea level, Mach 0–0.3) it has TWO roots
+    /// from a lowest throttle (~646 K on the Fly-it engine, where they merge) up to near choke:
+    /// the working point and a weak one (`pi_c` 1.2–1.8, about half the air). Both ends then read
+    /// positive and the march refused SUB-IDLE on points that run. Where it does that, the bracket
+    /// is now walked UP from the low end in the march's own 0.02 steps to the first sign change —
+    /// the working root, which is rung 34's flat-map equilibrium (`tests/rung33_double_root.rs`).
+    /// Everywhere the march straddled before, nothing runs and the arithmetic is unchanged.
     ///
     /// **That march is why this module has a fallible path at all**, and the three families it
     /// walks past were measured rather than enumerated (§ 5.4 (i)).
@@ -795,10 +806,39 @@ impl OffDesignMatcher {
                 Err(_) => pt -= 0.02,
             }
         }
+        // THE DOUBLE ROOT (2026-10-21): both ends positive means the weak root above the working
+        // one turned the residual back up, not that there is no root — walk up from the low end.
+        // It runs only where the assert below used to fire, so a cell that straddled is untouched.
+        let (lo0, hi0) = (lo, hi);
+        let mut walked = false;
+        if !lo.is_nan() && !hi.is_nan() && rlo > 0.0 && rhi > 0.0 {
+            walked = true;
+            let (mut a, mut ra) = (lo, rlo);
+            let mut b = lo + 0.02;
+            while b < hi {
+                match self.try_subsonic_operating(tt4, tt2, pt2, b, flight.p0) {
+                    Ok(op) if op.resid < 0.0 => {
+                        (lo, rlo, hi, rhi) = (a, ra, b, op.resid);
+                        break;
+                    }
+                    Ok(op) => (a, ra) = (b, op.resid),
+                    // An interior wall: stop, and refuse as before.
+                    Err(_) => break,
+                }
+                b += 0.02;
+            }
+        }
         assert!(!lo.is_nan() && !hi.is_nan() && rlo * rhi < 0.0,
                 "rung-33 subsonic match does not bracket at Tt4={tt4:.0}, M0={:.2} \
                  (resid[{lo}]={rlo}, resid[{hi}]={rhi}) — SUB-IDLE: the engine does not \
-                 self-sustain a subsonic-nozzle operating point here.", flight.m0);
+                 self-sustain a subsonic-nozzle operating point here.{}", flight.m0,
+                if walked {
+                    format!(" Both ends were positive, and no sign change was found stepping up from {lo0} \
+                             to {hi0} by 0.02 (two roots closer than a step, just above the lowest \
+                             throttle, would be missed).")
+                } else {
+                    String::new()
+                });
 
         // Bisection on (★★). `rlo` is NOT refreshed when the root falls in the low half, so it
         // carries the INITIAL bracket residual through — faithful, and worth stating because a

@@ -55,9 +55,11 @@ resid(π_t) = ṁ_NGV(π_t) − ṁ_nozzle,subsonic(π_t) = 0
 For each trial `π_t`: the turbine map gives `τ_t, Tt5`; the shaft balance sets the compressor
 rise `Tt3`; inverting the compressor efficiency map gives `π_c` (hence `pt4`, `pt9`); `ṁ_NGV`
 comes from the NGV choke constant and `ṁ_noz = A8·ρ9·V9` from the fully-expanded nozzle exit.
-The `(f, pt4)` fixed point nests inside exactly as on the choked branch. `resid` is
-monotone-decreasing in `π_t` (more turbine expansion → more compressor work → higher `pt9` → the
-nozzle passes more), so it brackets cleanly and bisects.
+The `(f, pt4)` fixed point nests inside exactly as on the choked branch. `resid` falls through
+the working root (more turbine expansion → more compressor work → higher `pt9` → the nozzle passes
+more), so at the design flight it brackets cleanly and bisects. **It is NOT monotone everywhere**
+— off the design flight it turns back up near the top of the range and has a second root (§ The
+double root, 2026-10-21).
 
 ---
 
@@ -133,6 +135,54 @@ the tables moved — each to a later named guard — licensed as a rule in
 The window widens at low ram (near-static): lower `pt` unchokes the nozzle at a higher `Tt4`, so
 the whole idle-descent / ground-idle regime lives on this branch — which is exactly where a real
 engine spends its subsonic-nozzle time.
+
+### The double root — SUB-IDLE on points that run (repaired 2026-10-21)
+
+Found by rung 105's probe (its anchor's G4) and repaired after it. **Off the design flight the
+residual has TWO roots** over `π_t`: the working point and a weak one where the turbine barely
+expands. Measured on the Fly-it engine (`π_c` 10, `Tt4` 1500 K designed at 250 K / 50 kPa /
+Mach 0.85), 45 °C sea level, Mach 0.3, thermally perfect gas:
+
+| `Tt4` | working root: `π_t`, `π_c`, `M9`, N·s/kg | weak root: `π_t`, `π_c`, `M9`, N·s/kg |
+|---|---|---|
+| 675 K | 0.577, 2.13, 0.52, 137 | 0.808, 1.39, 0.35, 69 |
+| 800 K | 0.456, 3.23, 0.74, 259 | 0.895, 1.23, 0.32, 69 |
+| 900 K | 0.430, 3.95, 0.89, 346 | 0.921, 1.19, 0.31, 75 |
+
+**Why the second root.** As `π_t → 1` the turbine does almost no work, `π_c → 1`, and `pt9/p0`
+falls toward the nozzle's wall: the nozzle's demand collapses faster than the vane's choked supply
+(which only falls with `pt4`), so `resid` turns positive again. The weak root is a real solution of
+this model's equations — positive thrust, about half the air — but not the running line: it is the
+other branch of a fold. The two roots **merge at a lowest throttle** (bisected: 646 K on that day,
+648 K on the perfect gas, 646 K at ISA sea-level static) and below it there is no root at all —
+there SUB-IDLE is the truth. Rung 34 (a compressor speed line fixes the airflow before the nozzle
+is read) has only one root and lands on the working one.
+
+**The bug.** Above the working root the residual is negative; above the weak root positive again.
+So the march in from 0.15 and in from 0.9995 read the SAME sign and refused SUB-IDLE from the merge
+up to near choke — at 45 °C / Mach 0.3 every throttle from 646 K to 975–1000 K; at ISA sea level
+static from 650 K to past 1000 K (the probe's top); at the oracle's 250 K / 50 kPa / Mach 0.3, 600 and 650 K (Python too). It never returned
+the wrong root: over 69 subsonic points it did return on six flights, none had two roots on a
+1 600-interval grid (two roots always give two same-sign ends).
+
+**The repair** (`matcher.rs` `match_subsonic`, the pin path — rung 105's law path already searched
+from the design expansion). Where both ends read positive, the bracket is walked UP from the low
+end in the march's own 0.02 steps to the first sign change, then the same bisection. Where the march
+straddled, the walk never runs, so every point that solved before is the same arithmetic. Where the
+walk finds nothing (below the merge, or two roots closer than 0.02 within ~1 K above it) the refusal
+is the old words, with a sentence appended. Gates (`tests/rung33_double_root.rs`): the cells do have
+two roots and same-sign ends; the answer is the LOWER root to 1e-10, with thrust; it is rung 34's
+flat-map equilibrium (reached through the forward closure, never through this matcher) to 3.9e-11
+(bar 1e-9) wherever rung 34 runs; below the merge it still refuses. **The oracles:** six
+`offdesign_oracle` cells (all three gases, Mach 0.3, 600/650 K) and the matching four cells of
+`map_oracle`'s rung-31 cross-check moved from SUB-IDLE to a subsonic point (190–256 N·s/kg) —
+licensed as a rule in `tests/common/double_root.rs` (the user's choice, 2026-10-21): the cells are
+NAMED by the physical test (same-sign ends, a root between, not settled choked), and their censuses
+move by exactly them. Nothing else moved; every other test unchanged.
+
+**What it does NOT reach.** No page uses this matcher — Fly it solves through rung 34. On the same
+hot day Fly it refuses 650–725 K for its own reason (its speed search cannot evaluate below ~0.6 of
+design speed, and the running point sits just below that edge; the next repair).
 
 ---
 

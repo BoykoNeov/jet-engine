@@ -1,0 +1,91 @@
+   Compiling rung33-dr v0.1.0 (W:\temp\claude\rung33-dr)
+    Finished `release` profile [optimized] target(s) in 0.32s
+     Running `W:\temp\claude\rung33-dr\target\release\q5.exe`
+-- flat Tt4 700
+nu 0.30: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=53217 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.32: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=54984 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.34: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=56911 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.36: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=59009 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.38: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=61287 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.40: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=63757 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.42: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=66431 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.44: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=69323 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.46: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=72448 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.48: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=75819 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.50: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=79456 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.52: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=83375 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.54: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=87596 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.56: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=92140 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.58: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=97030 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.60: Phi -0.0034 Subsonic pi_c 2.459 pi_t 0.5247
+nu 0.62: Phi -0.0106 Subsonic pi_c 2.595 pi_t 0.5081
+nu 0.64: Phi -0.0195 Subsonic pi_c 2.741 pi_t 0.4927
+nu 0.66: Phi -0.0306 Subsonic pi_c 2.898 pi_t 0.4786
+nu 0.68: Phi -0.0441 Subsonic pi_c 3.067 pi_t 0.4659
+nu 0.70: Phi -0.0605 Subsonic pi_c 3.248 pi_t 0.4546
+-- flat Tt4 750
+nu 0.30: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=53265 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.32: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=55033 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.34: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=56962 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.36: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=59062 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.38: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=61342 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.40: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=63814 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.42: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=66491 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.44: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=69386 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.46: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=72513 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.48: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=75888 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.50: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=79527 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.52: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=83450 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.54: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=87674 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.56: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=92223 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.58: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=97117 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.60: Phi +0.0177 Subsonic pi_c 2.459 pi_t 0.5247
+nu 0.62: Phi +0.0122 Subsonic pi_c 2.595 pi_t 0.5081
+nu 0.64: Phi +0.0050 Subsonic pi_c 2.741 pi_t 0.4927
+nu 0.66: Phi -0.0041 Subsonic pi_c 2.898 pi_t 0.4787
+nu 0.68: Phi -0.0156 Subsonic pi_c 3.067 pi_t 0.4660
+nu 0.70: Phi -0.0298 Subsonic pi_c 3.248 pi_t 0.4547
+-- page default Tt4 700
+nu 0.30: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=54775 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.32: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=56953 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.34: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=59331 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.36: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=61919 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.38: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=64728 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.40: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=67768 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.42: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=71051 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.44: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=74587 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.46: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=78387 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.48: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=82459 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.50: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=86813 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.52: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=91455 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.54: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=96392 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.56: Phi -0.0118 Subsonic pi_c 2.443 pi_t 0.5269
+nu 0.58: Phi -0.0189 Subsonic pi_c 2.576 pi_t 0.5103
+nu 0.60: Phi -0.0276 Subsonic pi_c 2.716 pi_t 0.4952
+nu 0.62: Phi -0.0379 Subsonic pi_c 2.864 pi_t 0.4815
+nu 0.64: Phi -0.0500 Subsonic pi_c 3.018 pi_t 0.4693
+nu 0.66: Phi -0.0640 Subsonic pi_c 3.180 pi_t 0.4586
+nu 0.68: Phi -0.0801 Subsonic pi_c 3.349 pi_t 0.4493
+nu 0.70: Phi -0.0983 Subsonic pi_c 3.524 pi_t 0.4415
+-- page default Tt4 750
+nu 0.30: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=54983 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.32: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=57180 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.34: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=59579 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.36: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=62191 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.38: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=65027 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.40: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=68100 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.42: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=71421 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.44: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=75001 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.46: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=78851 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.48: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=82983 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.50: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=87404 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.52: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=92124 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.54: ERR nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=97149 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+nu 0.56: Phi +0.0091 Subsonic pi_c 2.461 pi_t 0.5245
+nu 0.58: Phi +0.0033 Subsonic pi_c 2.597 pi_t 0.5079
+nu 0.60: Phi -0.0039 Subsonic pi_c 2.740 pi_t 0.4928
+nu 0.62: Phi -0.0129 Subsonic pi_c 2.891 pi_t 0.4793
+nu 0.64: Phi -0.0237 Subsonic pi_c 3.049 pi_t 0.4672
+nu 0.66: Phi -0.0365 Subsonic pi_c 3.215 pi_t 0.4566
+nu 0.68: Phi -0.0515 Subsonic pi_c 3.388 pi_t 0.4475
+nu 0.70: Phi -0.0687 Subsonic pi_c 3.568 pi_t 0.4399

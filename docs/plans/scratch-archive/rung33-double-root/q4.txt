@@ -1,0 +1,4 @@
+   Compiling rung33-dr v0.1.0 (W:\temp\claude\rung33-dr)
+    Finished `release` profile [optimized] target(s) in 0.34s
+     Running `W:\temp\claude\rung33-dr\target\release\q4.exe`
+subsonic points the old code returned: 69; with 2+ roots on the grid: 0; returned a root other than the low one: 0
