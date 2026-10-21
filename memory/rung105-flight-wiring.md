@@ -1,6 +1,6 @@
 ---
 name: rung105-flight-wiring
-description: "2026-10-21 repair (not a rung), rung 105's first seam: the HP vane law's flight pressure wired through rung 37's soak and the two-shaft fuel rigs (43–91), checked at each closure's ENTRY for the same compressor face; rung 102's one-shaft afterburner refuses the law up front — lessons: a census's panic-message list misses tests whose message a sibling's quiet hook ate; check a refusal before the scan that would re-word it; cargo test with several --test stops at the first failing binary"
+description: "2026-10-21 repair (not a rung), rung 105's first seam: the HP vane law's flight pressure wired through rung 37's soak and the two-shaft fuel rigs (43–91), checked at each closure's ENTRY for the same compressor face; rung 102's one-shaft afterburner refuses the law up front — lessons: re-run on the base commit before saying where a failure came from (a cause from R1b's lost messages was refuted by R1b's own header); a panic-message list misses tests a sibling's quiet hook silenced; check a refusal before the scan that would re-word it; cargo test with several --test stops at the first failing binary"
 metadata:
   node_type: memory
   type: project
@@ -13,10 +13,13 @@ Repair (not a rung), 2026-10-21, after [[rung105-hp-vane]] and [[rung34-low-spee
 `docs/plans/scratch-archive/rung105-flight/census.txt` (law as default: 198 failed vs R1b's 199; the 15 swallowed
 refusals → 0; no new crash). The user asked only "What is next" → "1"; no scope decisions were needed.
 
-**Lesson 1 — a census built from panic messages undercounts.** Eight failures had no message in their logs: a sibling
-test's quiet panic hook (process-wide) ate them. R1b's list missed ~5 the same way, so they looked "new" until I re-ran
-the same tests on the old code (a worktree with `hp-law-default`): they failed identically. Compare censuses per
+**Lesson 1 — re-run on the base commit before saying where a failure came from.** Five failures were absent from R1b's
+list. I first blamed lost messages in R1b's run, but R1b's own header says only ONE of its failures had no message, so
+that could not explain five; the advisor caught it after the push. What was measured: on `fc69393` (this change's base,
+a worktree with `hp-law-default`) they fail identically, so they came in between R1b and `fc69393`. Separately, eight
+failures in THIS census had no message (a sibling test's process-wide quiet panic hook ate them): compare censuses per
 program by FAILED test names, and re-run any program whose failed count ≠ its panic count alone (`--test-threads=1`).
+Don't group a check you never ran on the base with ones you did (the page check was).
 
 **Lesson 2 — check a refusal at the closure's ENTRY, before any trial-skipping scan.** The old sticky value was read
 inside each trial, so the scan skipped the refusal and said "does not bracket". Reading it once at entry and returning

@@ -205,8 +205,11 @@ not bracket" (15 failures); rung 102's one-shaft afterburner ran its speed searc
   R1b's 199): the 15 swallowed refusals are gone — four now run and move numbers like every bit-for-bit gate under the
   law, three run and pass (rung 57, rung 37's equilibrium), eight refuse in the law's own words (direct calls on a
   machine that never read the flight, and the afterburner). No new crash. Every flight-check refusal is a MISSING
-  flight; none fired on a stale one. Five failures absent from R1b's list fail identically on the code before this
-  change (their messages were lost in R1b's parallel run).
-* **With the law off nothing moves**: the default gate is green (238 programs), oracles and goldens unchanged; the
-  sandbox page was rebuilt only because the model it carries gained the new refusal words.
+  flight; none fired on a stale one. Five failures absent from R1b's list (rung 38, rung 73, slice AG's cells, slice
+  W's oracle ×2) fail identically on `fc69393` (this change's base) with the law on: not this change — they came in
+  between R1b and `fc69393`, which commit is not measured. The page check fails under the law (a page built with the
+  law as default is not the committed one).
+* **With the law off nothing moves**: the default gate is green (238 programs), oracles and goldens unchanged. The
+  sandbox page was rebuilt: the model it carries changed, its stale check fired, and after the rebuild its 369 checks
+  and its native comparison pass (the page itself was not diffed).
 * `scratch-archive/rung105-flight/noflight-paths.txt` — the probe's list of the unwired call paths this repair closed.

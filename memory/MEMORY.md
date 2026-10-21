@@ -30,7 +30,7 @@ new slices and step links go THERE, not here.
 - [Lean-wall repair](lean-wall-repair.md) — 2026-10-20: a stop named from a missing reading is a guess; "only failing calls change" holds per call, not per caller (governor searches)
 - [Rung 33 double root](rung33-double-root-repair.md) — 2026-10-21: trace the PAGE's call path before calling a bug page-visible; a licence predicate must follow the code's dispatch
 - [Rung 34 low-speed wall](rung34-low-speed-wall-repair.md) — 2026-10-21: read the last same-shaped repair before offering scope; a probe's PANIC is not the page's crash; a copied search keeps the copied wall
-- [Rung 105 flight wiring](rung105-flight-wiring.md) — 2026-10-21: a panic-message census misses tests a sibling's quiet hook silenced; check a refusal at the entry, before a scan re-words it
+- [Rung 105 flight wiring](rung105-flight-wiring.md) — 2026-10-21: re-run on the base commit before saying where a failure came from; check a refusal at the entry, before a scan re-words it
 - [Back-pressure repair](back-pressure-repair.md) — 2026-10-16: a census logger in a threaded test process must write each record in ONE call; red-check by stashing src only
 - [Sandbox altitude](sandbox-altitude.md) — a step-checked limit holds only at its flight; a ×2 similarity cannot see a re-capture; empty-vs-empty cmp says IDENTICAL
 - [Sandbox Mach](sandbox-mach.md) — "refused at every throttle" written from ONE throttle tried there; an archived probe source was a copy of another (equal output sizes)

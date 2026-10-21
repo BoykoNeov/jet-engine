@@ -1,0 +1,28 @@
+diff --git a/rust/src/hp_vane.rs b/rust/src/hp_vane.rs
+index b2c97c9..e2f267d 100644
+--- a/rust/src/hp_vane.rs
++++ b/rust/src/hp_vane.rs
+@@ -254,6 +254,23 @@ impl HpCapacity {
+ /// A transient closure reached under the law without the flight it runs at (the turbine below choke needs the flight's
+ /// ambient pressure) — refused in words rather than silently run on the pin.
+ pub fn no_flight(who: &str) -> Abort {
++    {
++        use std::sync::Mutex;
++        static SEEN: Mutex<Vec<String>> = Mutex::new(Vec::new());
++        let bt = std::backtrace::Backtrace::force_capture().to_string();
++        let frames: Vec<String> = bt.lines().map(|l| l.trim().to_string())
++            .filter(|l| !l.starts_with("at ") && !l.contains("hp_vane::no_flight") && !l.contains(" std::")
++                    && !l.contains(" core::") && !l.contains(" alloc::") && !l.contains(" test::")
++                    && !l.contains("backtrace"))
++            .map(|l| l.splitn(2, ": ").nth(1).unwrap_or(l.as_str()).split("::h").next().unwrap_or("").to_string())
++            .filter(|l| !l.is_empty()).take(30).collect();
++        let key = frames.join(" <- ");
++        let mut s = SEEN.lock().unwrap();
++        if !s.contains(&key) {
++            eprintln!("NOFLIGHT-PATH [{who}] {key}");
++            s.push(key);
++        }
++    }
+     Abort(format!("rung-105: {who} reached the HP vane's reaction law without its flight's ambient pressure — this path \
+                    cannot run the law yet"))
+ }

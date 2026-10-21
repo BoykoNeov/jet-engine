@@ -2,6 +2,8 @@ Census after the flight wiring - the whole gate built with `hp-law-default` (the
 2026-10-21, on fc69393 + this change. 238 programs: 2 776 tests passed, 198 failed (202 panic lines: two tests in rung104
 and slice_af_oracle each print a caught refusal first, as in R1b). Classes as R1b's (../rung105/r1b.txt). Eight messages
 were lost in the parallel run (a quiet panic hook in a sibling test); they were re-read by running each program alone.
+Run BEFORE the one-shaft vane-flow refusal was given its caller's name: the combustor_oracle and slice_q_smoke lines
+quote "rung 34's compressor closure"; the committed code says "rung 37's metal-soak closure" there.
 
 Against R1b (199 failed):
   C2 (a refusal swallowed and re-worded "does not bracket"): 15 -> 0.
@@ -15,10 +17,12 @@ Against R1b (199 failed):
   No new crash: D is R1b's rung 78 reader (now worded by b166ba9, still a panic). The flight check's refusals are all
      MISSING flights, none stale: two_spool_transient_oracle (section B), rung62, rung64 and slice_x_dispatch read the inlet on one machine and close on a
      sibling that never read it (each machine carries its own flight); the one-shaft ones call a closure with no instant.
-  New since R1b, NOT this change (all fail identically on fc69393 under the feature, re-run in a worktree):
-     rung38, rung73, slice_ag_cells, slice_w_oracle 2 (bit-equality on the pin, ~1e-14..1e-16), sandbox-browser
-     (the page built with the law as default is not the committed page). rung33_double_root and the other three
-     rung34_low_speed_wall tests are cells chosen on the pin (E, written after R1b).
+  New since R1b, NOT this change (all fail identically on fc69393 under the feature, re-run in a worktree; they came
+     in between R1b and fc69393 - which commit is not measured; R1b's header rules out lost messages for more than one):
+     rung38, rung73, slice_ag_cells, slice_w_oracle 2 (bit-equality on the pin, ~1e-14..1e-16).
+  sandbox-browser (E; NOT run on fc69393): the page built with the law as default is not the committed page. On the
+     default gate it also failed (the model it carries changed) until the page was rebuilt and committed.
+  rung33_double_root and the other three rung34_low_speed_wall tests are cells chosen on the pin (E, written after R1b).
   rung102:685 (Part C, two shafts, "rung-43 fuel closure does not bracket") stays B: the closure's flight check
      passed at entry, so this is the scan's own physics, not a swallowed refusal.
 
