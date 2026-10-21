@@ -523,6 +523,8 @@ pub fn r90_try_close(
     t.arm(nu_lp, nu_hp, tt2);
     let cb = customer_of(t);
     let c = &t.inner;
+    // RUNG 105: the flight's p0 at the ENTRY, before the scan below can skip a refusing trial and re-word it.
+    let p0 = c.base.try_hp_p0(tt2, pt2, "rung 90's customer-bleed closure")?;
     let mdot_d = c.base.mdot_air_design;
     let gas = c.gas();
     let n_lp = nu_lp * powp(c.tt2_d / tt2, 0.5);
@@ -556,7 +558,7 @@ pub fn r90_try_close(
         // customer's (read only under the law: the pin's path keeps its old refusals).
         let m4 = if c.base.hp_vane() == crate::hp_vane::HpVane::Pin { f64::NAN }
                  else { (1.0 - cb.share_at(mdot_hpc, mdot_d)?) * mdot_hpc * (1.0 + f) };
-        let mdot4 = c.try_a4_trial(wg, tt4, f, pt4, m4, nu_lp, nu_hp)? * pt4 * try_choked_mfp(wg, tt4, f)? / powp(tt4, 0.5);
+        let mdot4 = c.try_a4_trial(wg, tt4, f, pt4, m4, nu_lp, nu_hp, p0)? * pt4 * try_choked_mfp(wg, tt4, f)? / powp(tt4, 0.5);
         // The BURNER air the NGV choke imposes, the HPC air that implies, the face air that implies.
         let mdot_imp = mdot4 / (1.0 + f);
         let hpc_imp = cb.hpc_from_burner(mdot_imp, mdot_d);
@@ -630,6 +632,8 @@ pub fn r90_try_close_fuel(
     ft.inner.arm(nu_lp, nu_hp, tt2);
     let cb = customer_of(&ft.inner);
     let c = &ft.inner.inner;
+    // RUNG 105: the flight's p0 at the ENTRY, before the scan below can skip a refusing trial and re-word it.
+    let p0 = c.base.try_hp_p0(tt2, pt2, "rung 90's customer-bleed fuel closure")?;
     let mdot_d = c.base.mdot_air_design;
     let gas = c.gas();
     let n_lp = nu_lp * powp(c.tt2_d / tt2, 0.5);
@@ -663,7 +667,7 @@ pub fn r90_try_close_fuel(
         let tt4 = ft.try_tt4_from_f(tt3, f)?;
         let wgas = c.base.try_working_gas(f, tt4, pt4)?;
         let wg = wgas.as_ref().unwrap_or(gas);
-        let mdot4 = c.try_a4_trial(wg, tt4, f, pt4, burner_trial * (1.0 + f), nu_lp, nu_hp)? * pt4
+        let mdot4 = c.try_a4_trial(wg, tt4, f, pt4, burner_trial * (1.0 + f), nu_lp, nu_hp, p0)? * pt4
             * try_choked_mfp(wg, tt4, f)? / powp(tt4, 0.5);
         let mdot_imp = mdot4 / (1.0 + f);
         let face_imp = cb.hpc_from_burner(mdot_imp, mdot_d) / (1.0 - b);

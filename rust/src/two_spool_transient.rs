@@ -1407,11 +1407,12 @@ impl TwoSpoolTransientCore {
     /// RUNG 105: every entry point reads the inlet before it closes a flow, so this is where the flight's `p0` is handed to
     /// the core for the HP vane's law (its closure solves the turbines against it; the pin never reads it).
     pub fn inlet(&self, flight: &FlightCondition) -> (f64, f64, f64) {
-        self.inner.base.hp_p0.set(flight.p0);
         self.inner.base.hp_last.set(f64::NAN);
         let pi_d = self.inner.base.pi_d_max * ram_recovery(flight.m0);
         let (state0, v0) = self.inner.base.freestream_for(flight);
-        (state0.tt, pi_d * state0.pt, v0)
+        let (tt2, pt2) = (state0.tt, pi_d * state0.pt);
+        self.inner.base.set_hp_flight(flight.p0, tt2, pt2);
+        (tt2, pt2, v0)
     }
 
     // --- THE DISPATCH POINTS ----------------------------------------------------------------
@@ -2112,6 +2113,8 @@ fn r40_try_close(
     t.inner.base.refuse_customer("rung 40's two-shaft closure");
     t.inner.base.refuse_cooling("rung 40's two-shaft closure");
     let c = &t.inner;
+    // RUNG 105: the flight's p0 at the ENTRY, before the scan below can skip a refusing trial and re-word it.
+    let p0 = c.base.try_hp_p0(tt2, pt2, "rung 40's compressor closure")?;
     let gas = c.gas();
     let n_lp = nu_lp * powp(c.tt2_d / tt2, 0.5);
     let (h2, pr2) = (gas.h_c(tt2), gas.pr_c(tt2));
@@ -2142,7 +2145,7 @@ fn r40_try_close(
         let f = c.base.try_solve_f(tt3, pt4, tt4)?;
         let wgas = c.base.try_working_gas(f, tt4, pt4)?;
         let wg = wgas.as_ref().unwrap_or(gas);
-        let mdot4 = c.try_a4_trial(wg, tt4, f, pt4, mdot_air_face * (1.0 + f), nu_lp, nu_hp)? * pt4 * try_choked_mfp(wg, tt4, f)? / powp(tt4, 0.5);
+        let mdot4 = c.try_a4_trial(wg, tt4, f, pt4, mdot_air_face * (1.0 + f), nu_lp, nu_hp, p0)? * pt4 * try_choked_mfp(wg, tt4, f)? / powp(tt4, 0.5);
         let mdot_imp = mdot4 / (1.0 + f);
         let m_imp = (mdot_imp * powp(tt2, 0.5) / pt2) / c.mcorr_lp_d;
         Ok(CloseState {

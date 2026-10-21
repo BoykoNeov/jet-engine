@@ -731,17 +731,16 @@ impl CombustorTransient {
             let tt4_t = tt4_b - g_gain * (tt4_b - tm); // metal heat sink
             let wgas = mm.try_working_gas(f, tt4_t, pt4)?;
             let wg: &Gas = wgas.as_ref().unwrap_or(gas);
-            if mm.hp_vane() != crate::hp_vane::HpVane::Pin {
-                return Err(Abort("rung-105: rung 37's metal-soak closure cannot run the HP vane's reaction law yet (its \
-                                  vane flow needs the turbine, which this closure never solves)".into()));
-            }
-            let mdot4 = mm.a4 * pt4 * try_choked_mfp(wg, tt4_t, f)? / powp(tt4_t, 0.5);
+            // RUNG 105: rung 35's vane flow at the turbine-inlet temperature the metal leaves — the pin's literal line,
+            // or under the HP vane's law the turbine expansion the nozzle needs for this trial's gas, read off
+            // [`try_instant_soak`](Self::try_instant_soak)'s flight.
+            let (mdot4, hp) = self.inner.a4_flow(wg, tt4_t, f, pt4, mdot_air * (1.0 + f), cmap, "rung 37's metal-soak closure")?;
             let mdot_air_ngv = mdot4 / (1.0 + f);
             let m_imp = (mdot_air_ngv * powp(tt2, 0.5) / pt2) / self.inner.inner.mdot_corr_d;
             Ok(SoakClose {
                 comp: CompState {
                     m, m_imp, phi: flowcoef, tau_c, eta_c, tt3, tt4: tt4_t, pi_c, pt4, f, wgas,
-                    mdot4, mdot_air, hp: None,
+                    mdot4, mdot_air, hp,
                 },
                 tt4_b,
                 tt4_t,
@@ -780,7 +779,11 @@ impl CombustorTransient {
         INSTANT_SOAK_CALLS.with(|c| c.set(c.get() + 1));
         let cmap = self.cmap(cmap);
         let (tt2, pt2, n, v0) = self.face(flight, nu);
-        let comp = self.try_close_compressor_fuel_soak(tt2, pt2, &cmap, n, mdot_fuel, tm)?;
+        // RUNG 105: the flight the closure's vane flow reads under the HP vane's law (rung 35's instant does the same).
+        let comp = {
+            let _at = crate::spool::HpAt::set(&self.inner, flight.p0, nu);
+            self.try_close_compressor_fuel_soak(tt2, pt2, &cmap, n, mdot_fuel, tm)?
+        };
         let inst = self.inner.try_instant_tail(
             flight, nu, comp.tt4_t, &comp.comp, n, tt2, pt2, v0, &cmap,
         )?;

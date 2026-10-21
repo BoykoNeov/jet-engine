@@ -1,0 +1,236 @@
+Census after the flight wiring - the whole gate built with `hp-law-default` (the HP vane law the default everywhere),
+2026-10-21, on fc69393 + this change. 238 programs: 2 776 tests passed, 198 failed (202 panic lines: two tests in rung104
+and slice_af_oracle each print a caught refusal first, as in R1b). Classes as R1b's (../rung105/r1b.txt). Eight messages
+were lost in the parallel run (a quiet panic hook in a sibling test); they were re-read by running each program alone.
+
+Against R1b (199 failed):
+  C2 (a refusal swallowed and re-worded "does not bracket"): 15 -> 0.
+     slice_v_oracle 2, slice_v_smoke 2 now RUN (their numbers move: class A); rung57 2 and rung37's equilibrium now RUN
+     and pass; rung62, rung64, slice_x_dispatch (direct closure calls) and rung102's five afterburner tests now
+     refuse in the law's own words (C1).
+  C1 (the law refusing in its own words): 12 -> 17. rung37's five soak refusals are gone (the soak is wired); the rest
+     are direct inner calls that never read a flight (two_spool_transient_oracle 3, combustor_oracle, slice_q_smoke,
+     sandbox_transient 2, rung62, rung64, slice_x_dispatch), rung102's afterburner (5), and two programs written
+     after R1b: rung34_low_speed_wall (the afterburner) and sandbox_fly (the page's own afterburner refusal).
+  No new crash: D is R1b's rung 78 reader (now worded by b166ba9, still a panic). The flight check's refusals are all
+     MISSING flights, none stale: two_spool_transient_oracle (section B), rung62, rung64 and slice_x_dispatch read the inlet on one machine and close on a
+     sibling that never read it (each machine carries its own flight); the one-shaft ones call a closure with no instant.
+  New since R1b, NOT this change (all fail identically on fc69393 under the feature, re-run in a worktree):
+     rung38, rung73, slice_ag_cells, slice_w_oracle 2 (bit-equality on the pin, ~1e-14..1e-16), sandbox-browser
+     (the page built with the law as default is not the committed page). rung33_double_root and the other three
+     rung34_low_speed_wall tests are cells chosen on the pin (E, written after R1b).
+  rung102:685 (Part C, two shafts, "rung-43 fuel closure does not bracket") stays B: the closure's flight check
+     passed at entry, so this is the scan's own physics, not a swallowed refusal.
+
+== A: 149
+   cli_golden :: tests\cli_golden.rs:222:13: step 32 (print_offdesign_table) differs from its golden; first differing line 10:
+   cli_golden :: tests\cli_golden.rs:278:13: print_turbine_cooling_table differs from its golden; first differing line 10:
+   fingerprint :: tests\fingerprint.rs:1806:5: kernel E: 33 of 42 values moved off the anchor (bit-equality):
+   fingerprint :: tests\fingerprint.rs:1806:5: kernel r66: 4144 of 6152 values moved off the anchor (bit-equality):
+   fingerprint :: tests\fingerprint.rs:1806:5: kernel r67: 65 of 148 values moved off the anchor (bit-equality):
+   fingerprint :: tests\fingerprint.rs:1806:5: kernel r68: 1229 of 1663 values moved off the anchor (bit-equality):
+   fingerprint :: tests\fingerprint.rs:1806:5: kernel r69: 2188 of 3346 values moved off the anchor (bit-equality):
+   fingerprint :: tests\fingerprint.rs:1806:5: kernel r70: 910 of 1346 values moved off the anchor (bit-equality):
+   fingerprint :: tests\fingerprint.rs:1806:5: kernel r71: 188 of 309 values moved off the anchor (bit-equality):
+   fingerprint :: tests\fingerprint.rs:1806:5: kernel r72: 261 of 708 values moved off the anchor (bit-equality):
+   fingerprint :: tests\fingerprint.rs:1806:5: kernel r73: 259 of 794 values moved off the anchor (bit-equality):
+   fingerprint :: tests\fingerprint.rs:1806:5: kernel r74: 72 of 196 values moved off the anchor (bit-equality):
+   fingerprint :: tests\fingerprint.rs:1806:5: kernel r75: 182 of 1207 values moved off the anchor (bit-equality):
+   fingerprint :: tests\fingerprint.rs:1806:5: kernel r76: 47 of 223 values moved off the anchor (bit-equality):
+   fingerprint :: tests\fingerprint.rs:1806:5: kernel r77: 435 of 591 values moved off the anchor (bit-equality):
+   fingerprint :: tests\fingerprint.rs:1806:5: kernel r78: 1355 of 2393 values moved off the anchor (bit-equality):
+   fingerprint :: tests\fingerprint.rs:1806:5: kernel r79: 149 of 331 values moved off the anchor (bit-equality):
+   fingerprint :: tests\fingerprint.rs:1806:5: kernel r80: 269 of 1092 values moved off the anchor (bit-equality):
+   fingerprint :: tests\fingerprint.rs:1806:5: kernel r81: 5168 of 11462 values moved off the anchor (bit-equality):
+   fingerprint :: tests\fingerprint.rs:1806:5: kernel r81m: 284 of 784 values moved off the anchor (bit-equality):
+   fingerprint :: tests\fingerprint.rs:1806:5: kernel r82: 15 of 153 values moved off the anchor (bit-equality):
+   fingerprint :: tests\fingerprint.rs:1806:5: kernel r82r: 10 of 111 values moved off the anchor (bit-equality):
+   fingerprint :: tests\fingerprint.rs:1806:5: kernel r82t: 48 of 176 values moved off the anchor (bit-equality):
+   fuel_transient_oracle :: tests\fuel_transient_oracle.rs:283:9: 1 of 1133 compared keys differ:
+   fuel_transient_oracle :: tests\fuel_transient_oracle.rs:283:9: 1925 of 5802 compared keys differ:
+   fuel_transient_oracle :: tests\fuel_transient_oracle.rs:283:9: 2036 of 4669 compared keys differ:
+   fuel_transient_oracle :: tests\fuel_transient_oracle.rs:283:9: 2036 of 4669 compared keys differ:
+   map_oracle :: tests\common\double_root.rs:102:5: assertion `left == right` failed: census/reduce_subsonic_cells: moved by 6 (rust 10, oracle 4), the named cells account for 4
+   map_oracle :: tests\common\double_root.rs:102:5: assertion `left == right` failed: census/reduce_subsonic_cells: moved by 6 (rust 10, oracle 4), the named cells account for 4
+   offdesign_oracle :: tests\offdesign_oracle.rs:316:5: assertion `left == right` failed: the map-evaluation count SPREADS: {12, 10, 23, 47, 8, 13} — P1 says it is fixed
+   offdesign_oracle :: tests\offdesign_oracle.rs:316:5: assertion `left == right` failed: the map-evaluation count SPREADS: {23, 47, 10, 13, 8, 12} — P1 says it is fixed
+   release_oracle :: tests\release_oracle.rs:194:9: 1396 CPG float keys drifted between interpreters — every cell here is CPG, so a                  drift is a defect, not content:
+   release_oracle :: tests\release_oracle.rs:205:9: 1396 of 4179 compared keys differ:
+   rung104 :: tests\rung104.rs:392:17: 550: 38 piHPT shipped 0.541801713729815 hand 0.5574939227936893
+   rung33 :: tests\rung33.rs:253:9: Tt4=580: pi_t 0.42799213753247145 vs indep 0.4279993286856595
+   rung38 :: testsung38.rs:407:5: the cost SPREAD: 1128 tau_of calls over 16 solves (message lost in the parallel run; re-run alone)
+   rung71 :: testsung71.rs:578:5: BandContainment ... slack 6.661e-16 vs 0.0 (message lost; re-run alone)
+   rung73 :: testsung73.rs:698:5: 4.336808689942018e-14 vs 0.0 (message lost; re-run alone)
+   rung75 :: tests\rung75.rs:494:9: 0.000000006701544360236477
+   rung83 :: tests\rung83.rs:353:5: assertion `left == right` failed: F is not PyPy's
+   rung86 :: tests\rung86.rs:332:17: tilted r=0.25 sm=0.38 S0B1
+   rung86 :: tests\rung86.rs:367:21: tilted r=0.25 sm=0.38 B1
+   rung91 :: tests\rung91.rs:393:13: A1 (1.0, 0.0) Tt4=1500: pi_HPT 0.7082259670902099 vs model 0.7510722803032714
+   slice_aa_oracle :: tests\slice_aa_oracle.rs:215:9: 7041 float keys drifted against CPython OUTSIDE the declared exemption (worst 1.903e3). The exemption is a NAMED LIST carrying ONE reader's 101-term `sum()` -- read this file's header before widening 
+   slice_aa_oracle :: tests\slice_aa_oracle.rs:236:9: 7045 of 12084 compared keys differ:
+   slice_ab_oracle :: tests\slice_ab_oracle.rs:450:9: 8470 float keys drifted against CPython OUTSIDE the declared exemption (worst 1.701e2). The exemption is a NAMED LIST rooted in ONE three-element `sum()` -- read this file's header before widening it,
+   slice_ab_oracle :: tests\slice_ab_oracle.rs:474:9: 8530 of 15957 compared keys differ:
+   slice_ac_oracle :: tests\slice_ac_oracle.rs:533:9: 2082 float keys drifted against CPython OUTSIDE the declared exemption (worst 2.787e1). The exemption is a NAMED LIST rooted in TWO `sum()` sites (§ 5.27 (iv)) -- read this file's header before widen
+   slice_ac_oracle :: tests\slice_ac_oracle.rs:557:9: 2285 of 5351 compared keys differ:
+   slice_ad_oracle :: tests\slice_ad_oracle.rs:608:9: 25907 float keys drifted against CPython OUTSIDE the declared exemption (worst 1.000e0). The exemption is a NAMED LIST measured off this dump's own diff and pre-registered as P7 (§ 5.28.3 (h)) -- rea
+   slice_ad_oracle :: tests\slice_ad_oracle.rs:632:9: 26075 of 54116 compared keys differ:
+   slice_ae_dispatch :: tests\slice_ae_dispatch.rs:800:9: assertion `left == right` failed: inc=true
+   slice_ae_oracle :: tests\slice_ae_oracle.rs:1164:9: 36148 float keys drifted against CPython OUTSIDE the declared exemption (worst 6.000e0). The exemption is a NAMED LIST measured against the PORT and pre-registered as P3 (§ 5.29 (ix)) — read this f
+   slice_ae_oracle :: tests\slice_ae_oracle.rs:1193:9: 36592 of 76770 compared keys differ:
+   slice_af_march :: tests\slice_af_march.rs:375:5: assertion `left == right` failed: the fuel leg never rides above the schedule on this arm; the governor does
+   slice_af_march :: tests\slice_af_march.rs:466:5: assertion `left == right` failed: and the FUEL leg, which is below the schedule either way, is bit-identical -- so the difference is the stop and not a second change
+   slice_af_march :: tests\slice_af_march.rs:635:9: s = 0: the AUTHORITATIVE leg is bit-identical (message lost; re-run alone)
+   slice_af_oracle :: tests\slice_af_oracle.rs:332:9: 
+   slice_af_oracle :: tests\slice_af_oracle.rs:332:9: 
+   slice_ag_cells :: tests\slice_ag_cells.rs:452:5: AND THE BURNT FUEL IS BIT-IDENTICAL (message lost; re-run alone)
+   slice_ag_dispatch :: tests\slice_ag_dispatch.rs:1082:5: assertion `left == right` failed: the anchor: § 5.31 (i)'s `1.025497e+01`, which independently reproduces `docs/rung76-spec.md` § 1.3's `1179.24 -> 1168.98 K`
+   slice_ag_oracle :: tests\slice_ag_oracle.rs:885:5: 8979 of 38100 keys differ:
+   slice_ag_oracle :: tests\slice_ag_oracle.rs:940:5: a CPython difference on a path neither `_charpoly4` nor a trajectory `sum()` reaches — 8563 keys, the first 25:
+   slice_ai_march :: tests\slice_ai_march.rs:198:5: assertion `left == right` failed
+   slice_ai_march :: tests\slice_ai_march.rs:239:5: assertion `left == right` failed
+   slice_ai_oracle :: tests\slice_ai_oracle.rs:854:5: 9736 of 37945 keys differ:
+   slice_ai_oracle :: tests\slice_ai_oracle.rs:915:5: 9456 CPython differences OFF the two predicted sum paths -- the prediction is FALSIFIED:
+   slice_ai_oracle :: tests\slice_ai_oracle.rs:985:9: thread A: 4052 of 13654 keys differ:
+   slice_ai_scan :: tests\slice_ai_scan.rs:190:5: assertion `left == right` failed
+   slice_ai_scan :: tests\slice_ai_scan.rs:240:9: assertion `left == right` failed: s = 0.11000000000000003: w0
+   slice_ai_scan :: tests\slice_ai_scan.rs:268:5: assertion `left == right` failed
+   slice_ai_split :: tests\slice_ai_split.rs:228:13: assertion `left == right` failed: arrest: row 0 field `phi0` -- got 0x3fe8bd5e367dc50b (0.7731162132533042), Python 0x3fe8bd5e367dc510 (0.7731162132533047)
+   slice_ai_split :: tests\slice_ai_split.rs:228:13: assertion `left == right` failed: gains clip: row 0 field `phi` -- got 0x3fe7eb3ea4d935f6 (0.7474663943955295), Python 0x3fe7eb3ea4d935f8 (0.7474663943955298)
+   slice_ai_split :: tests\slice_ai_split.rs:228:13: assertion `left == right` failed: gains demand: row 0 field `phi` -- got 0x3fe8b0a1a7fe549c (0.7715614586947086), Python 0x3fe8b0a1a7fe549d (0.7715614586947087)
+   slice_ai_split :: tests\slice_ai_split.rs:228:13: assertion `left == right` failed: liveness: row 0 field `phi0` -- got 0x3fe8bd5e367dc50b (0.7731162132533042), Python 0x3fe8bd5e367dc510 (0.7731162132533047)
+   slice_ai_split :: tests\slice_ai_split.rs:228:13: assertion `left == right` failed: saturation: row 0 field `b0` -- got 0x3f83b10f6a28383a (0.009615059306295238), Python 0x3f83b10f6a28376b (0.009615059306294879)
+   slice_aj_clock :: tests\slice_aj_clock.rs:152:5: clock: 5168 of 12614 lines differ (lengths got 12614, want 12614)
+   slice_aj_clock :: tests\slice_aj_clock.rs:152:5: clock_latched: 833 of 1998 lines differ (lengths got 1998, want 1998)
+   slice_aj_clock :: tests\slice_aj_clock.rs:152:5: clock_single: 112 of 316 lines differ (lengths got 316, want 316)
+   slice_aj_clock :: tests\slice_aj_clock.rs:152:5: mask: 284 of 876 lines differ (lengths got 876, want 876)
+   slice_aj_clock :: tests\slice_aj_clock.rs:152:5: mask_clip: 72 of 315 lines differ (lengths got 315, want 315)
+   slice_aj_corrector :: tests\slice_aj_corrector.rs:175:5: read_ctl: 13 of 49 lines differ (lengths got 49, want 49)
+   slice_aj_corrector :: tests\slice_aj_corrector.rs:175:5: read_v1: 2 of 48 lines differ (lengths got 48, want 48)
+   slice_aj_corrector :: tests\slice_aj_corrector.rs:175:5: secant_clamp: 9 of 41 lines differ (lengths got 41, want 41)
+   slice_aj_corrector :: tests\slice_aj_corrector.rs:175:5: secant_iter_v4: 5 of 29 lines differ (lengths got 29, want 29)
+   slice_aj_corrector :: tests\slice_aj_corrector.rs:175:5: secant_jump: 22 of 65 lines differ (lengths got 65, want 65)
+   slice_aj_corrector :: tests\slice_aj_corrector.rs:175:5: secant_ok: 24 of 65 lines differ (lengths got 65, want 65)
+   slice_aj_corrector :: tests\slice_aj_corrector.rs:175:5: secant_s2: 5 of 29 lines differ (lengths got 29, want 29)
+   slice_aj_corrector :: tests\slice_aj_corrector.rs:175:5: secant_start_v4: 3 of 23 lines differ (lengths got 23, want 23)
+   slice_aj_corrector :: tests\slice_aj_corrector.rs:175:5: shape_cross: 31 of 117 lines differ (lengths got 117, want 117)
+   slice_aj_corrector :: tests\slice_aj_corrector.rs:175:5: shape_jump: 42 of 163 lines differ (lengths got 163, want 163)
+   slice_aj_corrector :: tests\slice_aj_corrector.rs:175:5: shape_v1: 15 of 104 lines differ (lengths got 104, want 104)
+   slice_aj_oracle :: tests\slice_aj_oracle.rs:501:5: readings differ from PyPy: ["p_clock", "p_mask", "p_law", "p_ref", "p_terms", "p_scan", "p_read", "p_shape_n4", "p_secant", "p_secant_iter_v4", "p_edge_lo", "p_edge_hi", "p_scan_p4", "p_number", "p_ro
+   slice_aj_oracle :: tests\slice_aj_oracle.rs:575:5: assertion `left == right` failed: the CPython differences are not the frozen list
+   slice_aj_staircase :: tests\slice_aj_staircase.rs:174:5: edge_cross_lo: 46 of 152 lines differ (lengths got 152, want 152)
+   slice_aj_staircase :: tests\slice_aj_staircase.rs:174:5: edge_jump_lo: 51 of 167 lines differ (lengths got 167, want 167)
+   slice_aj_staircase :: tests\slice_aj_staircase.rs:174:5: root_cross: 6 of 25 lines differ (lengths got 25, want 25)
+   slice_aj_staircase :: tests\slice_aj_staircase.rs:174:5: root_jump: 7 of 26 lines differ (lengths got 26, want 26)
+   slice_aj_staircase :: tests\slice_aj_staircase.rs:174:5: scan_p4: 520 of 1690 lines differ (lengths got 1690, want 1690)
+   slice_aj_staircase :: tests\slice_aj_staircase.rs:174:5: sn_bare: 4 of 20 lines differ (lengths got 20, want 20)
+   slice_aj_staircase :: tests\slice_aj_staircase.rs:174:5: sn_ok: 6 of 20 lines differ (lengths got 20, want 20)
+   slice_aj_staircase :: tests\slice_aj_staircase.rs:174:5: sn_zero: 4 of 20 lines differ (lengths got 20, want 20)
+   slice_aj_threshold :: tests\slice_aj_threshold.rs:175:5: bisect_v1: 4 of 65 lines differ (lengths got 65, want 65)
+   slice_aj_threshold :: tests\slice_aj_threshold.rs:175:5: bisect_v3_g: 15 of 69 lines differ (lengths got 69, want 69)
+   slice_aj_threshold :: tests\slice_aj_threshold.rs:175:5: bisect_v3_hi: 16 of 69 lines differ (lengths got 69, want 69)
+   slice_aj_threshold :: tests\slice_aj_threshold.rs:175:5: bisect_v3_lo: 15 of 69 lines differ (lengths got 69, want 69)
+   slice_aj_threshold :: tests\slice_aj_threshold.rs:175:5: law: 15 of 160 lines differ (lengths got 160, want 160)
+   slice_aj_threshold :: tests\slice_aj_threshold.rs:175:5: law_fine: 5 of 85 lines differ (lengths got 85, want 85)
+   slice_aj_threshold :: tests\slice_aj_threshold.rs:175:5: ref: 10 of 120 lines differ (lengths got 120, want 120)
+   slice_aj_threshold :: tests\slice_aj_threshold.rs:175:5: scan_ctl: 8 of 33 lines differ (lengths got 33, want 33)
+   slice_aj_threshold :: tests\slice_aj_threshold.rs:175:5: scan_v1: 2 of 32 lines differ (lengths got 32, want 32)
+   slice_aj_threshold :: tests\slice_aj_threshold.rs:175:5: terms: 48 of 190 lines differ (lengths got 190, want 190)
+   slice_aj_threshold :: tests\slice_aj_threshold.rs:175:5: terms_void: 8 of 58 lines differ (lengths got 58, want 58)
+   slice_l_oracle :: tests\slice_l_oracle.rs:884:5: 20 value(s) outside the measured bar:
+   slice_m_oracle :: tests\slice_m_oracle.rs:393:5: 6 of 10950 keys differ:
+   slice_n_oracle :: tests\slice_n_oracle.rs:761:5: 1 of 5649 keys differ:
+   slice_o_oracle :: tests\slice_o_oracle.rs:417:5: 1 of 8700 reads differ:
+   slice_p_smoke :: tests\slice_p_smoke.rs:381:9: assertion `left == right` failed: eq_flat_1500: Rust ran 235 Illinois residual evaluations, PyPy ran 227
+   slice_p_smoke :: tests\slice_p_smoke.rs:42:5: assertion `left == right` failed: A/nu: Rust 0.9999999999997535 (bits 4607182418800015188) != PyPy bits 4607182418799998932
+   slice_p_smoke :: tests\slice_p_smoke.rs:42:5: assertion `left == right` failed: B/nu: Rust 0.580975517110353 (bits 4603408181790015550) != PyPy bits 4603399355079703454
+   slice_p_smoke :: tests\slice_p_smoke.rs:42:5: assertion `left == right` failed: C/pi_c: Rust 8.600561809370607 (bits 4621031303924740698) != PyPy bits 4621030851400889938
+   slice_p_smoke :: tests\slice_p_smoke.rs:42:5: assertion `left == right` failed: D/mf: Rust 0.012055840571354897 (bits 4578103340706466819) != PyPy bits 4578102469382629501
+   slice_p_smoke :: tests\slice_p_smoke.rs:42:5: assertion `left == right` failed: E/n: Rust 0.9096122451790537 (bits 4606368278282156469) != PyPy bits 4606367321277454572
+   slice_p_smoke :: tests\slice_p_smoke.rs:42:5: assertion `left == right` failed: F/SM_N: Rust 0.26717638775507346 (bits 4598484641839249696) != PyPy bits 4598482601969735012
+   slice_r_smoke :: tests\slice_r_smoke.rs:123:9: 253 of 1182 slice-R smoke values differ:
+   slice_s_smoke :: tests\slice_s_smoke.rs:120:9: 3224 of 5536 slice-S smoke values differ:
+   slice_v_dispatch :: tests\slice_v_dispatch.rs:397:9: assertion `left == right` failed: hp_only/tsm/margin_min_lp: the clean reading is not the committed golden `A/hp_only/tsm/margin_min_lp`
+   slice_v_oracle :: tests\slice_v_oracle.rs:205:9: 4295 CPG float keys drifted between interpreters — every cell in this file is CPG, so a drift is a DEFECT, not content:
+   slice_v_oracle :: tests\slice_v_oracle.rs:218:9: 4295 of 6819 compared keys differ:
+   slice_v_smoke :: tests\slice_v_smoke.rs:123:13: no golden for J/floor_phi0/regime/both_pinned
+   slice_v_smoke :: tests\slice_v_smoke.rs:123:13: no golden for J/floor_phi0/regime/both_pinned
+   slice_w_oracle :: tests\slice_w_oracle.rs:276:9: 4554 CPG float keys drifted (rel ~1e-16) (message lost; re-run alone)
+   slice_w_oracle :: tests\slice_w_oracle.rs:293:9: 4560 of 9422 compared keys differ (message lost; re-run alone)
+   slice_w_smoke :: tests\slice_w_smoke.rs:104:9: 186 of 522 slice-W smoke values differ:
+   slice_x_oracle :: tests\slice_x_oracle.rs:148:9: 1146 float keys drifted against CPython (worst 5.085e0). This arm was MEASURED bit-exact at 0 of 1 744, because rung 64's readers contain no `sum()` -- so a drift means an accumulation became order-de
+   slice_x_oracle :: tests\slice_x_oracle.rs:161:9: 1146 of 1906 compared keys differ:
+   slice_x_smoke :: tests\slice_x_smoke.rs:121:9: 170 of 318 slice-X smoke values differ:
+   slice_y_oracle :: tests\common\ceiling_rule.rs:75:5: assertion `left == right` failed: slice_y_oracle: (changed, new, lost) under the switch, against the measured pin. Changed: ["B/dremoved", "B/moved/lo/b_end", "B/moved/lo/n_ride", "B/moved/lo/npts", "
+   slice_y_oracle :: tests\slice_y_oracle.rs:190:9: 18317 float keys drifted against CPython (worst 3.000e0). This arm was MEASURED bit-exact at 0 of 35 994, because rung 65's 479 lines contain no `sum()` -- so a drift means an accumulation became orde
+   slice_y_oracle :: tests\slice_y_oracle.rs:204:9: 18317 of 35994 compared keys differ:
+   slice_y_smoke :: tests\slice_y_smoke.rs:106:5: assertion `left == right` failed: min_phi_lp
+   slice_z_oracle :: tests\slice_z_oracle.rs:210:9: 23744 float keys drifted against CPython OUTSIDE the declared exemption (worst 3.272e-7). The exemption is a NAMED LIST of eight keys carrying two quantities, measured — read this file's header befo
+   slice_z_oracle :: tests\slice_z_oracle.rs:232:9: 23752 of 35335 compared keys differ:
+   spool_oracle :: tests\spool_oracle.rs:399:5: key SETS differ — only in PyPy: []; only in Rust: ["spooldown/flat/105/M9", "spooldown/flat/105/Phi", "spooldown/flat/105/Tt4", "spooldown/flat/105/branch", "spooldown/flat/105/f", "spooldown/flat/1
+   topping_oracle :: tests\topping_oracle.rs:285:9: 794 of 1729 compared keys differ:
+   topping_oracle :: tests\topping_oracle.rs:285:9: 795 of 1729 compared keys differ:
+   two_spool_oracle :: tests\two_spool_oracle.rs:526:9: assertion `left == right` failed: the (star) bisection cost is not uniform: 1128 tau_of calls over 16 solves
+   two_spool_oracle :: tests\two_spool_oracle.rs:526:9: assertion `left == right` failed: the (star) bisection cost is not uniform: 1128 tau_of calls over 16 solves
+   two_spool_transient_oracle :: tests\two_spool_transient_oracle.rs:265:9: 86 of 1120 compared keys differ:
+
+== B: 10
+   rung102 :: tests\rung102.rs:488:5: assertion failed: why(r#""ab":"lit","Tt7":2600"#).contains("cannot reach 2600 K")
+   rung102 :: tests\rung102.rs:685:9: rung-43 fuel closure does not bracket at nu=(0.7806,0.8160), mdot_fuel=0.01869 - off the modeled speed-line region.
+   rung104 :: src\two_spool.rs:1278:33: nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=88142 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+   rung104 :: src\two_spool.rs:1278:33: nozzle back-pressure p9=101325 Pa exceeds total pressure pt9=97822 Pa — the nozzle cannot expand to it (raise pi_n / lower p_exit)
+   sandbox_altitude :: tests\sandbox_altitude.rs:164:5: {"ok":0,"reason":"At the starting throttle (600 K): the engine has no steady operating point: the compressors would have to run off the part of their maps the model covers. Mostly this is a low thrott
+   sandbox_controls :: tests\sandbox_controls.rs:757:5: At the starting throttle (1000 K): the engine has no steady operating point: the compressors would have to run off the part of their maps the model covers. Mostly this is a low throttle with a fixed l
+   sandbox_controls :: tests\sandbox_controls.rs:780:5: At the final throttle (530 K): the engine has no steady operating point: the aircraft's customer bleed would take more than half of the HP compressor's air here, which starves the burner. A fixed amou
+   sandbox_transient :: tests\sandbox_transient.rs:143:47: SlamSettings { fly: FlySettings { design: Settings { t0: 256.53008876148436, p0: 6214.567360155657, m0: 0.9869783017310311, pi_c: 13.69074829711004, tt4: 1864.0962008362205, mdot: 20.0, pi_d_max: 0.96
+   slice_af_oracle :: src\demand_coordinate.rs:1405:5: rung-74: the joint initial condition did not converge (residual 2.898e-03 after 60 iterations) in order 'rqvf', at wf = 7.635049e-02, wr = 1.834324e-01, under ('demand', 'applied'). Under MIN-SELECT t
+   slice_af_oracle :: src\demand_coordinate.rs:1405:5: rung-74: the joint initial condition did not converge (residual 2.898e-03 after 60 iterations) in order 'rqvf', at wf = 7.635049e-02, wr = 1.834324e-01, under ('demand', 'applied'). Under MIN-SELECT t
+
+== C1: 17
+   combustor_oracle :: tests\combustor_oracle.rs:291:18: the soak closure brackets on the running line: Abort("rung-105: rung 34's compressor closure reached the HP vane's reaction law without its flight's ambient pressure — call it through an instant (wh
+   rung102 :: tests\rung102.rs:373:85: called `Result::unwrap()` on an `Err` value: Abort("rung-105: rung 102's afterburner runs with the HP turbine's vanes choked (the old model) only: under the reaction law the vanes' flow depends on how
+   rung102 :: tests\rung102.rs:390:85: called `Result::unwrap()` on an `Err` value: Abort("rung-105: rung 102's afterburner runs with the HP turbine's vanes choked (the old model) only: under the reaction law the vanes' flow depends on how
+   rung102 :: tests\rung102.rs:411:84: called `Result::unwrap()` on an `Err` value: Abort("rung-105: rung 102's afterburner runs with the HP turbine's vanes choked (the old model) only: under the reaction law the vanes' flow depends on how
+   rung102 :: tests\rung102.rs:447:81: called `Result::unwrap()` on an `Err` value: Abort("rung-105: rung 102's afterburner runs with the HP turbine's vanes choked (the old model) only: under the reaction law the vanes' flow depends on how
+   rung102 :: tests\rung102.rs:508:81: called `Result::unwrap()` on an `Err` value: Abort("rung-105: rung 102's afterburner runs with the HP turbine's vanes choked (the old model) only: under the reaction law the vanes' flow depends on how
+   rung34_low_speed_wall :: tests\rung34_low_speed_wall.rs:112:79: 725 K runs: Abort("rung-105: rung 102's afterburner runs with the HP turbine's vanes choked (the old model) only: under the reaction law the vanes' flow depends on how far the turbine expands, and beh
+   rung62 :: src\fuel_transient.rs:1969:33: rung-105: rung 62's bled fuel closure reached the HP vane's reaction law without its flight's ambient pressure — call it through an instant (which reads the flight's inlet first), not on its own
+   rung64 :: src\fuel_transient.rs:1969:33: rung-105: rung 43's fuel closure reached the HP vane's reaction law without its flight's ambient pressure — call it through an instant (which reads the flight's inlet first), not on its own
+   sandbox_fly :: tests\sandbox_fly.rs:297:9: Some(Unlit): The afterburner on Fly it runs with the HP turbine's vanes choked (the old model) only: under the reaction law the vanes' flow depends on how far the turbine expands, and that depends on 
+   sandbox_transient :: tests\sandbox_transient.rs:231:5: both answers occur on the grid: 20 fail (0 rescued), 0 pass
+   sandbox_transient :: tests\sandbox_transient.rs:417:85: called `Result::unwrap()` on an `Err` value: Abort("rung-105: rung 34's compressor closure reached the HP vane's reaction law without its flight's ambient pressure — call it through an instant (whic
+   slice_q_smoke :: tests\slice_q_smoke.rs:276:14: the soak closure brackets at the running-line speed: Abort("rung-105: rung 34's compressor closure reached the HP vane's reaction law without its flight's ambient pressure — call it through an insta
+   slice_x_dispatch :: tests\slice_x_dispatch.rs:340:10: the closure converges at this state: Abort("rung-105: rung 43's fuel closure reached the HP vane's reaction law without its flight's ambient pressure — call it through an instant (which reads the fl
+   two_spool_transient_oracle :: src\two_spool_transient.rs:1430:72: rung-105: rung 40's compressor closure reached the HP vane's reaction law without its flight's ambient pressure — call it through an instant (which reads the flight's inlet first), not on its own
+   two_spool_transient_oracle :: src\two_spool_transient.rs:1430:72: rung-105: rung 40's compressor closure reached the HP vane's reaction law without its flight's ambient pressure — call it through an instant (which reads the flight's inlet first), not on its own
+   two_spool_transient_oracle :: src\two_spool_transient.rs:1430:72: rung-105: rung 40's compressor closure reached the HP vane's reaction law without its flight's ambient pressure — call it through an instant (which reads the flight's inlet first), not on its own
+
+== D: 7
+   rung78 :: src\residual_gauge.rs:1605:29: rung-78: no point of the march rides the valve with the stator riding, so there is no first riding point to take c at
+   rung78 :: tests\rung78.rs:529:27: a point of the march rides the valve with the stator riding
+   slice_ah_dispatch :: tests\slice_ah_dispatch.rs:643:13: R77 baseline gauge_march: Broke("rung-78: no point of the march rides the valve with the stator riding, so there is no first riding point to take c at")
+   slice_ah_march :: src\residual_gauge.rs:1605:29: rung-78: no point of the march rides the valve with the stator riding, so there is no first riding point to take c at
+   slice_ah_oracle :: src\residual_gauge.rs:1605:29: rung-78: no point of the march rides the valve with the stator riding, so there is no first riding point to take c at
+   slice_ah_oracle :: src\residual_gauge.rs:1605:29: rung-78: no point of the march rides the valve with the stator riding, so there is no first riding point to take c at
+   slice_ah_oracle :: src\residual_gauge.rs:1605:29: rung-78: no point of the march rides the valve with the stator riding, so there is no first riding point to take c at
+
+== E: 19
+   rung102 :: tests\rung102.rs:467:36: the afterburner block
+   rung104 :: tests\rung104.rs:234:5: the pin is not the old model:
+   rung105 :: tests\rung105.rs:673:5: the law moves Fly it below choke
+   rung33_double_root :: tests\rung33_double_root.rs:124:9: ThermallyPerfect: 640 K has a root — pick a lower throttle
+   rung33_double_root :: tests\rung33_double_root.rs:77:13: ThermallyPerfect 700: the march's ends straddle — vacuous
+   rung34 :: tests\rung34.rs:383:5: RUNG 34's turbine solve never fired — the inner matcher is carrying rung 31's table, and every value gate on a CHOKED cell would still be ~9e-12 out rather than failing loudly (§ 5.13 probe 2)
+   rung34_low_speed_wall :: tests\rung34_low_speed_wall.rs:136:5: the old march ran from below the wall (61 points) — vacuous
+   rung34_low_speed_wall :: tests\rung34_low_speed_wall.rs:61:50: page map, thermally perfect 700: the old search runs — vacuous: 0.532778962527683
+   rung34_low_speed_wall :: tests\rung34_low_speed_wall.rs:93:46: 650 K: the old search runs — pick a lower throttle: 0.43641507162173465
+   rung37 :: tests\rung37.rs:381:5: assertion `left == right` failed: the plenum instant must reach the rung-34 hook exactly ONCE per call
+   rung48 :: tests\rung48.rs:485:5: assertion `left == right` failed: the discrepancy must be CONFINED to row 0: []
+   rung74 :: tests\rung74.rs:704:5: the probe point must BIND for this gate to mean anything: shipped = 0.009584107736261152, mf_sched = 0.009584107736261152
+   rung97 :: tests\rung97.rs:49:5: assertion `left == right` failed: the HP turbine is untouched
+   sandbox-browser :: the_committed_page_is_current: the page built with the law as default is not the committed (pin-default) page
+   slice_af_march :: tests\slice_af_march.rs:742:5: assertion `left == right` failed: Python's own count on this arm — an EMPTY set here is exactly the silent failure the widening exists to prevent
+   slice_ah_dispatch :: tests\slice_ah_dispatch.rs:629:9: assertion `left == right` failed: R77 MacroNone is NOT a pure observer — every count below would be taken from a different plant
+   slice_ah_dispatch :: tests\slice_ah_dispatch.rs:659:5: assertion `left == right` failed: P2: no VALUE sees rung 77's `at_lever`
+   slice_ah_dispatch :: tests\slice_ah_dispatch.rs:687:9: assertion `left == right` failed: R78 AtLever
+   slice_ah_dispatch :: tests\slice_ah_dispatch.rs:718:5: the gauged branch RAN at `gauge_march`: [0, 0, 0, 0, 0, 0, 0, 0]
+

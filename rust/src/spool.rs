@@ -319,10 +319,10 @@ pub struct CompState {
 
 /// RUNG 105: the flight and shaft speed an instant closes its compressor at, set for the length of the closure and cleared
 /// on every exit, panics included — a closure reached any other way refuses the law in words.
-struct HpAt<'a>(&'a SpoolTransient);
+pub(crate) struct HpAt<'a>(&'a SpoolTransient);
 
 impl<'a> HpAt<'a> {
-    fn set(st: &'a SpoolTransient, p0: f64, nu: f64) -> Self {
+    pub(crate) fn set(st: &'a SpoolTransient, p0: f64, nu: f64) -> Self {
         st.hp_at.set((p0, nu));
         st.hp_last.set(f64::NAN);
         HpAt(st)
@@ -527,8 +527,8 @@ impl SpoolTransient {
     /// choked or not; the vane's law then evaluated ONCE — anchor C2's count: a root on "vane = nozzle" cost ~10 vane
     /// flows a trial). At the closure's root the compressor, the vane and the nozzle pass the same gas, so the two forms
     /// have the same answer.
-    fn a4_flow(
-        &self, wg: &Gas, tt4: f64, f: f64, pt4: f64, mdot4_c: f64, cmap: &ComponentMap,
+    pub(crate) fn a4_flow(
+        &self, wg: &Gas, tt4: f64, f: f64, pt4: f64, mdot4_c: f64, cmap: &ComponentMap, who: &str,
     ) -> Result<(f64, Option<HpTurb>), Abort> {
         let mm = self.m();
         let pin = || -> Result<(f64, Option<HpTurb>), Abort> {
@@ -539,7 +539,7 @@ impl SpoolTransient {
         }
         let (p0, nu) = self.hp_at.get();
         if nu.is_nan() {
-            return Err(crate::hp_vane::no_flight("rung 34's compressor closure"));
+            return Err(crate::hp_vane::no_flight(who));
         }
         let cap = mm.hp_cap.get();
         let eta_t = cmap.eta_t_at(mm.eta_t, nu * powp(self.inner.tt4_d / tt4, 0.5));
@@ -632,7 +632,7 @@ impl SpoolTransient {
         let wgas = mm.try_working_gas(f, tt4, pt4)?;
         let wg = wgas.as_ref().unwrap_or(gas);
         let mdot_face = m * self.inner.mdot_corr_d * pt2 / powp(tt2, 0.5);
-        let (mdot4, hp) = self.a4_flow(wg, tt4, f, pt4, mdot_face * (1.0 + f), cmap)?;
+        let (mdot4, hp) = self.a4_flow(wg, tt4, f, pt4, mdot_face * (1.0 + f), cmap, "rung 34's compressor closure")?;
         let mdot_air = mdot4 / (1.0 + f);
         let m_imp = (mdot_air * powp(tt2, 0.5) / pt2) / self.inner.mdot_corr_d;
         Ok(CompState {
@@ -1365,7 +1365,7 @@ impl SpoolTransient {
         let tt4 = self.tt4_from_f(tt3, f);
         let wgas = mm.try_working_gas(f, tt4, pt4)?;
         let wg = wgas.as_ref().unwrap_or(gas);
-        let (mdot4, hp) = self.a4_flow(wg, tt4, f, pt4, mdot_air * (1.0 + f), cmap)?;
+        let (mdot4, hp) = self.a4_flow(wg, tt4, f, pt4, mdot_air * (1.0 + f), cmap, "rung 35's fuel closure")?;
         let mdot_air_ngv = mdot4 / (1.0 + f);
         let m_imp = (mdot_air_ngv * powp(tt2, 0.5) / pt2) / self.inner.mdot_corr_d;
         Ok(CompState {

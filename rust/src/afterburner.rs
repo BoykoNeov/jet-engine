@@ -878,6 +878,15 @@ impl<'a> FlyAfterburner<'a> {
         FlyAfterburner { st, ab, a6, a8_dry: m.a8 / ab.pi_fh }
     }
 
+    /// RUNG 105: the HP vane's reaction law is refused here in words, at every entry (`crate::hp_vane::afterburner_refused`);
+    /// a no-op on the pin.
+    fn law_refused(&self) -> Result<(), Abort> {
+        if self.st.inner.inner.hp_vane() == crate::hp_vane::HpVane::Pin {
+            return Ok(());
+        }
+        Err(crate::hp_vane::afterburner_refused())
+    }
+
     /// Station 5 → 7 at a trial `π_t`, on `g` (a scratch copy on the equilibrium gas): the turbine (rung 34's inverse
     /// read), the duct's Mach off its area, the afterburner. `(τ_t, s5, s7, detail)`.
     #[allow(clippy::too_many_arguments)]
@@ -999,6 +1008,7 @@ impl<'a> FlyAfterburner<'a> {
         &self, flight: &FlightCondition, nu: f64, tt4: f64, cmap: &ComponentMap, mode: AbMode, a8: f64,
         pi_t_hint: Option<f64>, below_choke: bool,
     ) -> Result<FlyPoint, Abort> {
+        self.law_refused()?;
         let st = self.st;
         let mm = &st.inner.inner;
         let pi_d = mm.pi_d_max * ram_recovery(flight.m0);
@@ -1087,6 +1097,7 @@ impl<'a> FlyAfterburner<'a> {
     pub fn try_equilibrium_from(
         &self, flight: &FlightCondition, tt4: f64, cmap: &ComponentMap, mode: AbMode, a8: f64, nu_hint: Option<f64>,
     ) -> Result<FlyPoint, Abort> {
+        self.law_refused()?;
         let refusal: RefCell<Option<Abort>> = RefCell::new(None);
         let pi_t_last: std::cell::Cell<Option<f64>> = std::cell::Cell::new(None);
         let resid = |nu: f64| -> Result<f64, Abort> {
@@ -1213,6 +1224,7 @@ impl<'a> FlyAfterburner<'a> {
     pub fn match_area(&self, flight: &FlightCondition, tt4: f64, cmap: &ComponentMap, dry: &FlyPoint)
         -> Result<f64, Abort>
     {
+        self.law_refused()?;
         let mm = &self.st.inner.inner;
         let comp = self.st.try_close_compressor(tt4, dry.eq.tt2, dry.eq.pt2, cmap, dry.eq.n)?;
         let s4 = FlowState { tt: tt4, pt: comp.pt4, mdot: comp.mdot4, far: comp.f };

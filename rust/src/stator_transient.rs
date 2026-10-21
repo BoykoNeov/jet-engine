@@ -2106,6 +2106,9 @@ impl ScheduledStatorCore {
             Spool::Lp => self.at_stator(StatorArm::constant(v, 0.0)),
             Spool::Hp => self.at_stator(StatorArm::constant(0.0, v)),
         };
+        // RUNG 105: the sibling is a fresh machine — its own inlet step hands it the flight's `p0` (the same face as
+        // `tt2`/`pt2` above); a no-op on the pin.
+        sib.fuel.inner.inlet(flight);
         let b = sib.fuel.close_fuel(state.0, state.1, state.2, tt2, pt2);
         ArrowToggle {
             spool,

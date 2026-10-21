@@ -252,10 +252,20 @@ impl HpCapacity {
 }
 
 /// A transient closure reached under the law without the flight it runs at (the turbine below choke needs the flight's
-/// ambient pressure) — refused in words rather than silently run on the pin.
+/// ambient pressure), or — on two shafts — fed a compressor face other than the one its engine's inlet step last read
+/// (the stored pressure would be another flight's) — refused in words rather than silently run on the pin.
 pub fn no_flight(who: &str) -> Abort {
-    Abort(format!("rung-105: {who} reached the HP vane's reaction law without its flight's ambient pressure — this path \
-                   cannot run the law yet"))
+    Abort(format!("rung-105: {who} reached the HP vane's reaction law without its flight's ambient pressure — call it \
+                   through an instant (which reads the flight's inlet first), not on its own"))
+}
+
+/// Rung 102's one-shaft afterburner under the law: its turbine is solved against the nozzle BEHIND the afterburner
+/// (station 7: the duct's loss, the throat `A8`, the heat added lit), which the vane's closure ([`crate::spool`]'s
+/// `a4_flow`, the dry nozzle at station 5) does not have — refused at every entry, before any speed search can skip it.
+pub fn afterburner_refused() -> Abort {
+    Abort("rung-105: rung 102's afterburner runs with the HP turbine's vanes choked (the old model) only: under the \
+           reaction law the vanes' flow depends on how far the turbine expands, and behind an afterburner that is set by \
+           the afterburner's own nozzle — a solve not built yet".into())
 }
 
 /// The COST instrument (anchor § COST): (vane sonic points, vane flows, interstage residuals, closure turbine

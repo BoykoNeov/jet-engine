@@ -761,10 +761,11 @@ pub struct TwoSpoolCore {
     pub law_shortcut: std::cell::Cell<bool>,
     /// RUNG 105: the HP vane's flow law and its design capture (`crate::hp_vane`).
     pub hp_cap: std::cell::Cell<crate::hp_vane::HpCapacity>,
-    /// RUNG 105: the flight's `p0` a transient closure solves its turbines against under the HP vane's law — set by the
-    /// transients' shared inlet step ([`crate::two_spool_transient::TwoSpoolTransientCore::inlet`]); NaN until then, and a
-    /// closure reached under the law without it refuses in words.
-    pub hp_p0: std::cell::Cell<f64>,
+    /// RUNG 105: the flight's `p0` a transient closure solves its turbines against under the HP vane's law, with the
+    /// compressor-face `(Tt2, pt2)` that flight's inlet gave — set by the transients' shared inlet step
+    /// ([`crate::two_spool_transient::TwoSpoolTransientCore::inlet`]), read only through [`Self::try_hp_p0`], which
+    /// hands `p0` only to a closure fed that same face. NaN until then.
+    hp_flight: std::cell::Cell<[f64; 3]>,
     /// RUNG 105: where the joint HP search starts — NaN (the design ratio, from cold: every steady solve and every tail)
     /// except for the length of one closure trial under the law, when it holds `hp_last`.
     pub hp_warm: std::cell::Cell<f64>,
@@ -965,7 +966,7 @@ impl TwoSpoolCore {
             law_shortcut: std::cell::Cell::new(true),
             lp_capacity,
             hp_cap: std::cell::Cell::new(hp_cap),
-            hp_p0: std::cell::Cell::new(f64::NAN),
+            hp_flight: std::cell::Cell::new([f64::NAN; 3]),
             hp_warm: std::cell::Cell::new(f64::NAN),
             hp_last: std::cell::Cell::new(f64::NAN),
         }
@@ -977,6 +978,26 @@ impl TwoSpoolCore {
     /// RUNG 105: switch the HP vane's law (recaptured on the same design).
     pub fn set_hp_vane(&self, law: crate::hp_vane::HpVane) {
         self.hp_cap.set(self.hp_cap.get().with_law(self.gas(), law));
+    }
+
+    /// RUNG 105: record the flight a transient's inlet step just read — its `p0` and the face `(Tt2, pt2)` it gave.
+    pub fn set_hp_flight(&self, p0: f64, tt2: f64, pt2: f64) {
+        self.hp_flight.set([p0, tt2, pt2]);
+    }
+
+    /// RUNG 105: the flight's `p0` for a transient closure fed the face `(tt2, pt2)` — read at the closure's ENTRY, before
+    /// any trial-skipping search can re-word a refusal. NaN on the pin (which never reads it). Under the law, refused in
+    /// words where this engine's inlet step has not run, or last ran for a different face: the stored `p0` would be
+    /// another flight's, and the turbines would be solved against the wrong ambient pressure without a sign.
+    pub fn try_hp_p0(&self, tt2: f64, pt2: f64, who: &str) -> Result<f64, Abort> {
+        if self.hp_vane() == crate::hp_vane::HpVane::Pin {
+            return Ok(f64::NAN);
+        }
+        let [p0, t, p] = self.hp_flight.get();
+        if p0.is_nan() || t.to_bits() != tt2.to_bits() || p.to_bits() != pt2.to_bits() {
+            return Err(crate::hp_vane::no_flight(who));
+        }
+        Ok(p0)
     }
 
     /// RUNG 102: set the afterburner's light-off fraction for march time `s` (a no-op unfitted).
@@ -1579,18 +1600,15 @@ impl TwoSpoolMapCore {
     /// there — read at the design expansions, never solved per trial (the prototype's per-trial solves cost 25×: G5).
     ///
     /// `m4` is the gas the trial's compressor delivers through the burner (kg/s): the turbines' expansions follow from it
-    /// and the LP side alone ([`TwoSpoolCore::try_hp_from_flow`]); the vane's law is then read once.
+    /// and the LP side alone ([`TwoSpoolCore::try_hp_from_flow`]); the vane's law is then read once. `p0` is the flight's,
+    /// as the closure's entry read it ([`TwoSpoolCore::try_hp_p0`]).
     #[allow(clippy::too_many_arguments)]
     pub fn try_a4_trial(
-        &self, wg: &Gas, tt4: f64, f: f64, pt4: f64, m4: f64, nu_lp: f64, nu_hp: f64,
+        &self, wg: &Gas, tt4: f64, f: f64, pt4: f64, m4: f64, nu_lp: f64, nu_hp: f64, p0: f64,
     ) -> Result<f64, Abort> {
         let b = &self.base;
         if b.hp_vane() == crate::hp_vane::HpVane::Pin {
             return Ok(b.a4);
-        }
-        let p0 = b.hp_p0.get();
-        if p0.is_nan() {
-            return Err(crate::hp_vane::no_flight("a two-shaft transient's compressor closure"));
         }
         let eta_hpt = self.map_hp().eta_t_at(b.eta_hpt, nu_hp * powp(self.tt4_d / tt4, 0.5));
         let lp_eta = |tt45: f64| self.map_lp().eta_t_at(b.eta_lpt, nu_lp * powp(self.tt45_d / tt45, 0.5));

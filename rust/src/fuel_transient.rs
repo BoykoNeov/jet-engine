@@ -4022,6 +4022,8 @@ fn r43_try_close_fuel(
     ft.inner.inner.base.refuse_cooling("rung 43's fuel closure");
     let t = &ft.inner;
     let c = &t.inner;
+    // RUNG 105: the flight's p0 at the ENTRY, before the scan below can skip a refusing trial and re-word it.
+    let p0 = c.base.try_hp_p0(tt2, pt2, "rung 43's fuel closure")?;
     let gas = c.gas();
     let n_lp = nu_lp * powp(c.tt2_d / tt2, 0.5);
     let (h2, pr2) = (gas.h_c(tt2), gas.pr_c(tt2));
@@ -4061,7 +4063,7 @@ fn r43_try_close_fuel(
         let tt4 = ft.try_tt4_from_f(tt3, f)?;
         let wgas = c.base.try_working_gas(f, tt4, pt4)?;
         let wg = wgas.as_ref().unwrap_or(gas);
-        let mdot4 = c.try_a4_trial(wg, tt4, f, pt4, mdot_air_face * (1.0 + f), nu_lp, nu_hp)? * pt4 * try_choked_mfp(wg, tt4, f)? / powp(tt4, 0.5);
+        let mdot4 = c.try_a4_trial(wg, tt4, f, pt4, mdot_air_face * (1.0 + f), nu_lp, nu_hp, p0)? * pt4 * try_choked_mfp(wg, tt4, f)? / powp(tt4, 0.5);
         let mdot_imp = mdot4 / (1.0 + f);
         let m_imp = (mdot_imp * powp(tt2, 0.5) / pt2) / c.mcorr_lp_d;
         Ok(FuelCloseState {

@@ -341,22 +341,18 @@ pub fn try_cooled_pair_flow(
 /// RUNG 105: the cooled engine's effective `A4` at a transient closure's trial — the HP rotor's ratio at which the LP side
 /// passes the gas this trial delivers (the burner's gas plus both coolants: `(G + ε)·ṁ_HPC`), against the flight's `p0`
 /// ([`TwoSpoolCore::try_hp_from_flow`]), the vane's law read once there. `burner` is the burner's share of the HP
-/// compressor air, `mdot_hpc` that air (kg/s). `A4` itself on the pin.
+/// compressor air, `mdot_hpc` that air (kg/s), `p0` the flight's as the closure's entry read it. `A4` itself on the pin.
 ///
 /// [`TwoSpoolCore::try_hp_from_flow`]: crate::two_spool::TwoSpoolCore::try_hp_from_flow
 #[allow(clippy::too_many_arguments)]
 fn cooled_a4_trial(
     t: &TwoSpoolTransientCore, wg: &Gas, tt4: f64, f: f64, pt4: f64, tt3: f64, nu_lp: f64, nu_hp: f64,
-    cool: TurbineCooling, burner: f64, mdot_hpc: f64,
+    cool: TurbineCooling, burner: f64, mdot_hpc: f64, p0: f64,
 ) -> Result<f64, Abort> {
     let core = &t.inner;
     let base = &core.base;
     if base.hp_vane() == crate::hp_vane::HpVane::Pin {
         return Ok(base.a4);
-    }
-    let p0 = base.hp_p0.get();
-    if p0.is_nan() {
-        return Err(crate::hp_vane::no_flight("rung 91's cooled compressor closure"));
     }
     let (e1, e2) = (cool.vane, cool.blade);
     let g = burner * (1.0 + f);
@@ -772,6 +768,8 @@ pub fn r91_try_close(
     let eps = cool.total();
     let cb = customer_of(t);
     let c = &t.inner;
+    // RUNG 105: the flight's p0 at the ENTRY, before the scan below can skip a refusing trial and re-word it.
+    let p0 = c.base.try_hp_p0(tt2, pt2, "rung 91's cooled compressor closure")?;
     let mdot_d = c.base.mdot_air_design;
     let gas = c.gas();
     let n_lp = nu_lp * powp(c.tt2_d / tt2, 0.5);
@@ -803,7 +801,7 @@ pub fn r91_try_close(
         let wg = wgas.as_ref().unwrap_or(gas);
         // RUNG 105: under the HP vane's law the vane's flow needs the cooled pair, whose burner share follows the flow.
         let a4 = cooled_a4_trial(t, wg, tt4, f, pt4, tt3, nu_lp, nu_hp, cool,
-                                 1.0 - customer_raw(cb, mdot_hpc, mdot_d) - eps, mdot_hpc)?;
+                                 1.0 - customer_raw(cb, mdot_hpc, mdot_d) - eps, mdot_hpc, p0)?;
         let mdot4 = a4 * pt4 * try_choked_mfp(wg, tt4, f)? / powp(tt4, 0.5);
         // The BURNER air the A4 choke imposes; the HPC air that implies (customer and cooling
         // added back); the face air that implies.
@@ -879,6 +877,8 @@ pub fn r91_try_close_fuel(
     let eps = cool.total();
     let cb = customer_of(&ft.inner);
     let c = &ft.inner.inner;
+    // RUNG 105: the flight's p0 at the ENTRY, before the scan below can skip a refusing trial and re-word it.
+    let p0 = c.base.try_hp_p0(tt2, pt2, "rung 91's cooled fuel closure")?;
     let mdot_d = c.base.mdot_air_design;
     let gas = c.gas();
     let n_lp = nu_lp * powp(c.tt2_d / tt2, 0.5);
@@ -917,7 +917,7 @@ pub fn r91_try_close_fuel(
         let tt4 = ft.try_tt4_from_f(tt3, f)?;
         let wgas = c.base.try_working_gas(f, tt4, pt4)?;
         let wg = wgas.as_ref().unwrap_or(gas);
-        let a4 = cooled_a4_trial(&ft.inner, wg, tt4, f, pt4, tt3, nu_lp, nu_hp, cool, burner_trial / mdot_hpc, mdot_hpc)?;
+        let a4 = cooled_a4_trial(&ft.inner, wg, tt4, f, pt4, tt3, nu_lp, nu_hp, cool, burner_trial / mdot_hpc, mdot_hpc, p0)?;
         let mdot4 = a4 * pt4 * try_choked_mfp(wg, tt4, f)? / powp(tt4, 0.5);
         let mdot_imp = mdot4 / (1.0 + f);
         let face_imp = hpc_from_burner(cb, eps, mdot_imp, mdot_d) / (1.0 - b);

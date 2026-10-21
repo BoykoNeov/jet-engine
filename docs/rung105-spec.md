@@ -6,7 +6,8 @@ interstage search's warm start), `no_flight`, the `census` counters; the cargo f
 `matcher.rs` — `OffDesignMatcher::{hp_cap, hp_shortcut, set_hp_vane, hp_is_pin, try_a4_choked, try_a4_free,
 try_law_solve_turbine}`, the dispatch in `try_solve_turbine`, the law's own below-choke search `law_subsonic_root`;
 `map.rs` (rung 32's airflow); `spool.rs` — rung 34's closure under the law (`a4_flow`, `HpTurb`, `HpAt`, `hp_last`) and
-the tail that reads its turbine (`instant_out`); `combustor.rs` (rung 37's plenum wired, its metal-soak closure refuses).
+the tail that reads its turbine (`instant_out`); `combustor.rs` (rung 37's plenum and, since § The paths wired after the
+rung, its metal soak wired).
 Two shafts: `two_spool.rs` — `TwoSpoolEngine::with_hp_vane`, the core's `hp_cap` / `hp_p0` / `hp_warm` / `hp_last`,
 `HpWarm`, `Cascade::a4`, `TwoSpoolMapCore::try_a4_trial`; `turbine_law.rs` — `try_turbine_pair_hp` (the pair and the
 effective `A4` it used), `pair_shortcut`, `try_turbine_pair_flow`, `try_hp_from_flow`, `try_joint_hp`'s HP flow as a
@@ -130,12 +131,11 @@ choked.
   state between the vane exit's static and total one as its inlet total).
 * **One stage.** With two equal HP stages the first vane's drop halves and `R*` falls below −0.6: the vane is unchoked
   whatever (anchor G1).
-* **Fly it's afterburner and rung 37's metal-soak closure refuse the law in words** — each needs the turbine solved with
-  a nozzle it does not have in its closure.
-* **Paths the law is not wired on refuse it, sometimes in the wrong words** (R1b): rungs 43–64's two-shaft fuel rigs and
-  rung 102's one-shaft afterburner match never give the law its flight's ambient pressure, so every trial refuses; their
-  searches skip failing trials and report "does not bracket". No number is wrong (every trial refuses), and the pages
-  never take these paths.
+* **Fly it's afterburner (rung 102's one-shaft engine) refuses the law in words** — its turbine needs the nozzle behind
+  the afterburner, which the vane's closure does not have. Since § The paths wired after the rung the refusal comes at
+  every entry, in the afterburner's own words. (Rung 37's metal soak, once refused here too, is wired there.)
+* ~~Paths the law is not wired on refuse it, sometimes in the wrong words~~ — **REPAIRED 2026-10-21**, § The paths wired
+  after the rung.
 * **COST deviations** (§ COST below): with the law on, three two-shaft requests stay over their 3× trigger.
 
 ## COST (anchor § COST — triggers, counted before anything changed)
@@ -167,6 +167,7 @@ plumbing on the two-shaft solves).
 
 * **Wire the law's flight pressure through the paths R1b found unwired** (rungs 43–64's fuel rigs, rung 102's one-shaft
   afterburner match, rung 37's soak), and let those searches pass the law's refusal through in its own words.
+  **REPAIRED 2026-10-21** — § The paths wired after the rung.
 
 * **Rung 33's double root** (anchor G4): the one-shaft subsonic residual has two roots at 318 K / sea level / Mach 0.30,
   650–900 K, the pin too; the two-ended march refuses "SUB-IDLE" there. Its own repair, after this rung (the user).
@@ -176,3 +177,36 @@ plumbing on the two-shaft solves).
   (Commit `bbfee58`'s message says "646 K to ~1000 K at every sea-level flight" — that overstates it.)
 * The afterburner's held light-off re-scored on its own grid under rung 104's LP law (rung 104's other seam) — once,
   since the HP law is off by default.
+
+## The paths wired after the rung (2026-10-21)
+
+The first seam above, repaired. R1b (the whole gate run with the law as the default, `scratch-archive/rung105/r1b.txt`)
+found three kinds of path where the law could not run: rung 37's metal soak refused it; the two-shaft fuel rigs (rungs
+43–64, their bleed, customer-bleed and cooling variants) read the flight's ambient pressure from a value the inlet step
+left behind, so a fresh or sibling machine had none, and a scan that skips failing trials turned the refusal into "does
+not bracket" (15 failures); rung 102's one-shaft afterburner ran its speed search into the same swallowed refusal.
+
+* **Rung 37's soak runs the law.** Its closure takes the vane flow from rung 34's `a4_flow` (the pin's literal line on
+  the pin, so the default is bit for bit), and its instant sets the flight for the closure as rung 34's does.
+* **The two-shaft closures check their flight at the door.** The inlet step stores the ambient pressure together with
+  the compressor face it computed (`tt2`, `pt2`); each closure reads it once at its ENTRY, before any scan, and only for
+  that same face (to the bit). A missing pressure, or one left by another flight, is refused in the law's own words
+  ("…reached the HP vane's reaction law without its flight's ambient pressure — call it through an instant…"). On the
+  pin the check is skipped. Rung 57's arrow toggle now gives its fresh sibling machine the flight.
+* **The one-shaft afterburner refuses the law at every entry, in its own words, before any search** (the reason is the
+  first concession's).
+* **Gate** `rust/tests/rung105_flight.rs` (7 tests): the soak equilibrium equals rung 35's point under the law (bar
+  1e-9) and the law moves it (> 1e-6, so not a pin in disguise); the soak's excursion runs, cold < hot < adiabatic;
+  rung 43's fuel equilibrium is rung 40's point under the law (1e-10; at the 1500 K design point the law IS the design
+  run, so "moved" is asserted only off it); another flight's face is refused in words, and the pin accepts it; a fresh
+  machine's closure names the law, not a bracket; rung 57's toggle under the law is the pin's to 1e-12 on the perfect
+  gas (measured ≤ 9.3e-14) with vane flows counted > 0; the afterburner refuses with zero trials and instants counted.
+* **Census** (`scratch-archive/rung105-flight/census.txt`, the gate again with the law as default; 198 failed against
+  R1b's 199): the 15 swallowed refusals are gone — four now run and move numbers like every bit-for-bit gate under the
+  law, three run and pass (rung 57, rung 37's equilibrium), eight refuse in the law's own words (direct calls on a
+  machine that never read the flight, and the afterburner). No new crash. Every flight-check refusal is a MISSING
+  flight; none fired on a stale one. Five failures absent from R1b's list fail identically on the code before this
+  change (their messages were lost in R1b's parallel run).
+* **With the law off nothing moves**: the default gate is green (238 programs), oracles and goldens unchanged; the
+  sandbox page was rebuilt only because the model it carries gained the new refusal words.
+* `scratch-archive/rung105-flight/noflight-paths.txt` — the probe's list of the unwired call paths this repair closed.
