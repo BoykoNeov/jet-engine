@@ -1154,6 +1154,16 @@ pub struct FlyAb {
     pub curve: Vec<(f64, f64)>,
 }
 
+/// Fly it's below-idle refusal (plan § 42; the pages' rule, § 38): the shaft settles at a speed, but the point has no
+/// positive thrust. The shared scoring is not built for that (its efficiency check cannot pass below zero thrust), so
+/// such a point reached the page as "the efficiency bookkeeping failed"; rung 34's low-speed wall had hidden most of them.
+fn fly_below_idle(thrust: f64) -> DoesNotRun {
+    DoesNotRun(format!(
+        "At this throttle and flight the shaft settles at a steady speed, but the engine makes more drag than thrust \
+         (net {thrust:.0} N): the jet's push no longer pays for the drag of the air the engine takes in. This is below \
+         idle. Raise the throttle (the turbine-inlet temperature)."))
+}
+
 /// An afterburner Fly-it failure in words: its own refusals are words already; the speed search's "does not bracket"
 /// gets [`explain_fly`]'s, anything else [`explain`]'s beside the model's message.
 fn fly_words(e: Abort) -> DoesNotRun {
@@ -1176,6 +1186,9 @@ fn fly_ab(s: &FlySettings, mode: AbMode, st: &SpoolTransient, fl: &FlightConditi
         (AbMode::Unlit, Throat::Held(x)) if x == 1.0 => dry,
         (_, throat) => fa.try_point_after_dry(fl, s.tt4, cmap, mode, throat, &dry).map_err(fly_words)?,
     };
+    if !(point.eq.thrust > 0.0) {
+        return Err(fly_below_idle(point.eq.thrust));
+    }
     let m = &st.inner.inner;
     let pi_d = m.pi_d_max * ram_recovery(fl.m0);
     let eq = &point.eq;
@@ -1227,6 +1240,9 @@ pub fn fly(s: &FlySettings) -> Result<FlyOutcome, DoesNotRun> {
         return Ok(FlyOutcome { settings: *s, design, result, point, stall, ts, curves, ab: Some(FlyAb { curve, ..fab }) });
     }
     let eq = st.equilibrium(&fl, s.tt4, Some(&cmap));
+    if !(eq.thrust > 0.0) {
+        return Err(fly_below_idle(eq.thrust));
+    }
     let stall = stall_reading(&st, &eq, &cmap);
     // The station table: the forward rebuild every matcher ends with, at the equilibrium's
     // (pi_c, mdot, eta_c, eta_t) — it fires every conservation assert on the operating point.

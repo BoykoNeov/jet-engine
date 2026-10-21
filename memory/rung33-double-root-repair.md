@@ -16,7 +16,7 @@ equilibrium to 3.9e-11, bar 1e-9; below the merge still refuses, old words first
 `map_oracle`'s rung-31 cross-check, SUB-IDLE → subsonic point. **User chose "allow by a rule"** over a default-off
 setting. Then the user chose option 3: this first, then the Fly-it page's own low-throttle refusal (rung 34:
 cannot evaluate below ~0.6 design speed, "nozzle back-pressure exceeds pt9"; the running point sits just below —
-hot day 650–725 K) — the NEXT repair, its check is this repair's roots.
+hot day 650–725 K) — repaired the same day, [[rung34-low-speed-wall-repair]]; its check is this repair's roots.
 
 **Lesson 1 — trace the page's call path before saying "you can hit it on the page".** I recommended the fix as a
 page bug; Fly it solves through rung 34, not rung 33. A side agent and the advisor both flagged it; re-asked.

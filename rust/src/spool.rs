@@ -823,7 +823,7 @@ impl SpoolTransient {
     pub fn try_instant(
         &self, flight: &FlightCondition, nu: f64, tt4: f64, cmap: Option<&ComponentMap>,
     ) -> Result<Instant, Abort> {
-        self.try_instant_walled(flight, nu, tt4, cmap, false)
+        self.try_instant_walled(flight, nu, tt4, cmap, false, false)
     }
 
     /// [`try_instant`](Self::try_instant) through
@@ -832,12 +832,20 @@ impl SpoolTransient {
     pub fn try_instant_marched(
         &self, flight: &FlightCondition, nu: f64, tt4: f64, cmap: Option<&ComponentMap>,
     ) -> Result<Instant, Abort> {
-        self.try_instant_walled(flight, nu, tt4, cmap, true)
+        self.try_instant_walled(flight, nu, tt4, cmap, true, false)
+    }
+
+    /// [`try_instant`](Self::try_instant) with the low-speed wall lifted — the instant the
+    /// equilibrium's second pass searches on ([`try_instant_tail_at`](Self::try_instant_tail_at)).
+    pub fn try_instant_below_choke(
+        &self, flight: &FlightCondition, nu: f64, tt4: f64, cmap: Option<&ComponentMap>,
+    ) -> Result<Instant, Abort> {
+        self.try_instant_walled(flight, nu, tt4, cmap, false, true)
     }
 
     fn try_instant_walled(
         &self, flight: &FlightCondition, nu: f64, tt4: f64, cmap: Option<&ComponentMap>,
-        march_wall: bool,
+        march_wall: bool, below_choke: bool,
     ) -> Result<Instant, Abort> {
         let cmap = self.cmap(cmap);
         let mm = self.m();
@@ -849,7 +857,7 @@ impl SpoolTransient {
             let _at = HpAt::set(self, flight.p0, nu);
             self.try_close_compressor_walled(tt4, tt2, pt2, &cmap, n, march_wall)?
         };
-        self.try_instant_tail(flight, nu, tt4, &comp, n, tt2, pt2, v0, &cmap)
+        self.try_instant_tail_at(flight, nu, tt4, &comp, n, tt2, pt2, v0, &cmap, below_choke)
     }
 
     pub fn instant(
@@ -879,6 +887,19 @@ impl SpoolTransient {
         &self, flight: &FlightCondition, nu: f64, tt4: f64, comp: &CompState, n: f64, tt2: f64,
         pt2: f64, v0: f64, cmap: &ComponentMap,
     ) -> Result<Instant, Abort> {
+        self.try_instant_tail_at(flight, nu, tt4, comp, n, tt2, pt2, v0, cmap, false)
+    }
+
+    /// [`try_instant_tail`](Self::try_instant_tail), and with `below_choke` the low-speed wall
+    /// lifted: where the gas at the choke `pi_t` cannot even reach `p0` the nozzle is unchoked by a
+    /// wide margin, and the turbine is solved for the subsonic nozzle directly instead of the
+    /// choked-star rebuild refusing. Only the equilibrium's SECOND pass sets it (see
+    /// [`equilibrium_nu_below_choke`](Self::equilibrium_nu_below_choke)).
+    #[allow(clippy::too_many_arguments)]
+    fn try_instant_tail_at(
+        &self, flight: &FlightCondition, nu: f64, tt4: f64, comp: &CompState, n: f64, tt2: f64,
+        pt2: f64, v0: f64, cmap: &ComponentMap, below_choke: bool,
+    ) -> Result<Instant, Abort> {
         let mm = self.m();
         let (f, pt4) = (comp.f, comp.pt4);
         let wgas = comp.gas(mm);
@@ -898,7 +919,15 @@ impl SpoolTransient {
         // as rung 33 does (the convergent Nozzle decides choked vs subsonic).
         let (mut pi_t, mut tau_t, mut tt5) = mm.try_solve_turbine(wgas, tt4, f, Some(eta_t))?;
         let s5 = FlowState { tt: tt5, pt: pi_t * pt4, mdot: mdot_air, far: f };
-        let mut exit = Nozzle::convergent(flight.p0, mm.pi_n).try_apply(&s5, wgas)?;
+        let mut exit = match Nozzle::convergent(flight.p0, mm.pi_n).try_apply(&s5, wgas) {
+            Ok(e) => e,
+            Err(e) if below_choke && e.0.starts_with("nozzle back-pressure") => {
+                let (a, b, c, ex) = self.try_turbine_subsonic(wgas, tt4, f, pt4, mdot4, eta_t, flight.p0)?;
+                return Ok(self.instant_out(flight, nu, tt4, comp, n, tt2, pt2, v0, eta_t, nu_t, Branch::Subsonic,
+                                           a, b, c, ex));
+            }
+            Err(e) => return Err(e),
+        };
         let branch = if exit.p9 > flight.p0 + 1e-6 { Branch::Choked } else { Branch::Subsonic };
         if branch == Branch::Subsonic {
             match self.try_turbine_subsonic(wgas, tt4, f, pt4, mdot4, eta_t, flight.p0) {
@@ -966,7 +995,13 @@ impl SpoolTransient {
     pub fn equilibrium(
         &self, flight: &FlightCondition, tt4: f64, cmap: Option<&ComponentMap>,
     ) -> Instant {
-        let nu = self.find_equilibrium_nu(|nu| Ok(self.try_instant(flight, nu, tt4, cmap)?.phi));
+        let (nu, below_choke) = self.equilibrium_nu_below_choke(
+            |nu| Ok(self.try_instant(flight, nu, tt4, cmap)?.phi),
+            |nu| Ok(self.try_instant_below_choke(flight, nu, tt4, cmap)?.phi),
+        );
+        if below_choke {
+            return self.try_instant_below_choke(flight, nu, tt4, cmap).unwrap_or_else(|e| panic!("{}", e.0));
+        }
         self.instant(flight, nu, tt4, cmap)
     }
 
@@ -982,6 +1017,46 @@ impl SpoolTransient {
     /// evaluable running-line zero. It is counted, because a port that propagated the error
     /// instead would fail loudly on some cells and silently return a different root on others.
     pub fn find_equilibrium_nu<F>(&self, mut resid: F) -> f64
+    where
+        F: FnMut(f64) -> Result<f64, Abort>,
+    {
+        match Self::try_bracket_nu(&mut resid, false) {
+            Ok(b) => Self::illinois_nu(&mut resid, b),
+            Err(words) => panic!("{words}"),
+        }
+    }
+
+    /// The low-speed wall (2026-10-21, `docs/rung34-spec.md` § The low-speed wall). Below about
+    /// 0.6 of design speed the choked-star rebuild cannot reach `p0`, so `strict` refuses there
+    /// and the first pass's bracket can miss the running point just above it. **The first pass
+    /// is [`find_equilibrium_nu`](Self::find_equilibrium_nu) unchanged** — wherever it brackets,
+    /// the root is the same arithmetic, bit for bit (the user's choice: no saved result moves).
+    /// Only where it refuses does a second pass run on `low`, the instant with that wall lifted.
+    ///
+    /// There `Phi` is NOT monotone: it crosses zero twice — an UNSTABLE equilibrium at the low
+    /// speed (rung 33's weak root) and the stable running point above it — so both ends can read
+    /// negative. The second pass then walks up from its low end, by the march's own 0.02, to the
+    /// first speed whose shaft accelerates; that brackets the stable point. Where the second pass
+    /// fails too, the FIRST pass's words are raised, so a refusal reads exactly as before.
+    /// Returns the speed and whether the second pass found it.
+    fn equilibrium_nu_below_choke<F, G>(&self, mut strict: F, mut low: G) -> (f64, bool)
+    where
+        F: FnMut(f64) -> Result<f64, Abort>,
+        G: FnMut(f64) -> Result<f64, Abort>,
+    {
+        match Self::try_bracket_nu(&mut strict, false) {
+            Ok(b) => (Self::illinois_nu(&mut strict, b), false),
+            Err(words) => match Self::try_bracket_nu(&mut low, true) {
+                Ok(b) => (Self::illinois_nu(&mut low, b), true),
+                Err(_) => panic!("{words}"),
+            },
+        }
+    }
+
+    /// The bracket march: both ends marched in until evaluable, and with `walk_up` (the second
+    /// pass only) a low end below the unstable equilibrium walked up to the first accelerating
+    /// speed. `(lo, hi, Phi_lo, Phi_hi)`, or the refusal's words.
+    fn try_bracket_nu<F>(resid: &mut F, walk_up: bool) -> Result<(f64, f64, f64, f64), String>
     where
         F: FnMut(f64) -> Result<f64, Abort>,
     {
@@ -1008,21 +1083,42 @@ impl SpoolTransient {
             }
             nu -= 0.02;
         }
-        let (lo, hi) = match (lo, hi) {
-            (Some(a), Some(b)) if flo.unwrap() > 0.0 && 0.0 > fhi.unwrap() => (a, b),
-            _ => panic!(
+        if let (true, Some(a), Some(b), Some(fa), Some(fb)) = (walk_up, lo, hi, flo, fhi) {
+            if fa <= 0.0 && fb < 0.0 {
+                let mut nu = a + 0.02;
+                while nu < b {
+                    match resid(nu) {
+                        Ok(v) if v > 0.0 => {
+                            (lo, flo) = (Some(nu), Some(v));
+                            break;
+                        }
+                        Ok(_) => nu += 0.02,
+                        Err(_) => break,
+                    }
+                }
+            }
+        }
+        match (lo, hi) {
+            (Some(a), Some(b)) if flo.unwrap() > 0.0 && 0.0 > fhi.unwrap() => Ok((a, b, flo.unwrap(), fhi.unwrap())),
+            _ => Err(format!(
                 "rung-34 equilibrium does not bracket (Phi[{lo:?}]={flo:?}, Phi[{hi:?}]={fhi:?})"
-            ),
-        };
+            )),
+        }
+    }
+
+    /// The Illinois root inside a bracket from [`try_bracket_nu`](Self::try_bracket_nu), with
+    /// the interior sentinel.
+    fn illinois_nu<F>(resid: &mut F, (lo, hi, flo, fhi): (f64, f64, f64, f64)) -> f64
+    where
+        F: FnMut(f64) -> Result<f64, Abort>,
+    {
         let mut resid_safe = |nu: f64| -> f64 {
             resid(nu).unwrap_or_else(|_| {
                 RESID_SENTINELS.with(|c| c.set(c.get() + 1));
                 1e9
             })
         };
-        illinois(
-            &mut resid_safe, lo, hi, flo.unwrap(), fhi.unwrap(), Self::N_TOL, ILLINOIS_MAXIT,
-        )
+        illinois(&mut resid_safe, lo, hi, flo, fhi, Self::N_TOL, ILLINOIS_MAXIT)
     }
 
     /// The steady running line: `(nu, pi_c, Tt4)` at each `Tt4`, sorted by `nu`.
@@ -1303,6 +1399,14 @@ impl SpoolTransient {
     pub fn try_instant_fuel(
         &self, flight: &FlightCondition, nu: f64, mdot_fuel: f64, cmap: Option<&ComponentMap>,
     ) -> Result<Instant, Abort> {
+        self.try_instant_fuel_at(flight, nu, mdot_fuel, cmap, false)
+    }
+
+    /// [`try_instant_fuel`](Self::try_instant_fuel), with `below_choke` as in
+    /// [`try_instant_tail_at`](Self::try_instant_tail_at).
+    fn try_instant_fuel_at(
+        &self, flight: &FlightCondition, nu: f64, mdot_fuel: f64, cmap: Option<&ComponentMap>, below_choke: bool,
+    ) -> Result<Instant, Abort> {
         let cmap = self.cmap(cmap);
         let mm = self.m();
         let pi_d = mm.pi_d_max * ram_recovery(flight.m0);
@@ -1313,7 +1417,7 @@ impl SpoolTransient {
             let _at = HpAt::set(self, flight.p0, nu);
             self.try_close_compressor_fuel(tt2, pt2, &cmap, n, mdot_fuel)?
         };
-        self.try_instant_tail(flight, nu, comp.tt4, &comp, n, tt2, pt2, v0, &cmap)
+        self.try_instant_tail_at(flight, nu, comp.tt4, &comp, n, tt2, pt2, v0, &cmap, below_choke)
     }
 
     pub fn instant_fuel(
@@ -1328,8 +1432,13 @@ impl SpoolTransient {
     pub fn equilibrium_fuel(
         &self, flight: &FlightCondition, mdot_fuel: f64, cmap: Option<&ComponentMap>,
     ) -> Instant {
-        let nu =
-            self.find_equilibrium_nu(|nu| Ok(self.try_instant_fuel(flight, nu, mdot_fuel, cmap)?.phi));
+        let (nu, below_choke) = self.equilibrium_nu_below_choke(
+            |nu| Ok(self.try_instant_fuel(flight, nu, mdot_fuel, cmap)?.phi),
+            |nu| Ok(self.try_instant_fuel_at(flight, nu, mdot_fuel, cmap, true)?.phi),
+        );
+        if below_choke {
+            return self.try_instant_fuel_at(flight, nu, mdot_fuel, cmap, true).unwrap_or_else(|e| panic!("{}", e.0));
+        }
         self.instant_fuel(flight, nu, mdot_fuel, cmap)
     }
 

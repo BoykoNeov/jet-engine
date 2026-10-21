@@ -1,0 +1,56 @@
+diff --git a/rust/src/spool.rs b/rust/src/spool.rs
+index 74e1700..c32ea05 100644
+--- a/rust/src/spool.rs
++++ b/rust/src/spool.rs
+@@ -898,8 +898,24 @@ impl SpoolTransient {
+         // as rung 33 does (the convergent Nozzle decides choked vs subsonic).
+         let (mut pi_t, mut tau_t, mut tt5) = mm.try_solve_turbine(wgas, tt4, f, Some(eta_t))?;
+         let s5 = FlowState { tt: tt5, pt: pi_t * pt4, mdot: mdot_air, far: f };
+-        let mut exit = Nozzle::convergent(flight.p0, mm.pi_n).try_apply(&s5, wgas)?;
+-        let branch = if exit.p9 > flight.p0 + 1e-6 { Branch::Choked } else { Branch::Subsonic };
++        // TRIAL (rung 34 low-speed wall): at the choke pi_t the gas may not reach p0 at all — then the nozzle is
++        // unchoked by a wide margin, not a failure; dispatch subsonic.
++        let star = match Nozzle::convergent(flight.p0, mm.pi_n).try_apply(&s5, wgas) {
++            Ok(e) => Some(e),
++            Err(e) if e.0.starts_with("nozzle back-pressure") => None,
++            Err(e) => return Err(e),
++        };
++        let branch = match &star { Some(e) if e.p9 > flight.p0 + 1e-6 => Branch::Choked, _ => Branch::Subsonic };
++        let mut exit = match star {
++            Some(e) => e,
++            None => match self.try_turbine_subsonic(wgas, tt4, f, pt4, mdot4, eta_t, flight.p0) {
++                Ok((a, b, c, e)) => {
++                    (pi_t, tau_t, tt5) = (a, b, c);
++                    return Ok(self.instant_out(flight, nu, tt4, comp, n, tt2, pt2, v0, eta_t, nu_t, branch, pi_t, tau_t, tt5, e));
++                }
++                Err(e) => return Err(e),
++            },
++        };
+         if branch == Branch::Subsonic {
+             match self.try_turbine_subsonic(wgas, tt4, f, pt4, mdot4, eta_t, flight.p0) {
+                 Ok((a, b, c, e)) => {
+@@ -1008,6 +1024,24 @@ impl SpoolTransient {
+             }
+             nu -= 0.02;
+         }
++        // TRIAL: both ends negative — the low end sits below the UNSTABLE equilibrium (the weak root); walk up to the
++        // first speed whose shaft accelerates, which brackets the stable one.
++        if let (Some(a), Some(b), Some(fa), Some(fb)) = (lo, hi, flo, fhi) {
++            if fa <= 0.0 && fb < 0.0 {
++                let mut nu = a + 0.02;
++                while nu < b {
++                    match resid(nu) {
++                        Ok(v) if v > 0.0 => {
++                            lo = Some(nu);
++                            flo = Some(v);
++                            break;
++                        }
++                        Ok(_) => nu += 0.02,
++                        Err(_) => break,
++                    }
++                }
++            }
++        }
+         let (lo, hi) = match (lo, hi) {
+             (Some(a), Some(b)) if flo.unwrap() > 0.0 && 0.0 > fhi.unwrap() => (a, b),
+             _ => panic!(

@@ -2171,3 +2171,27 @@ and a reaction box (0.05–0.6, opening at 0.3) shown when the law is chosen. Re
   built).
 * **Cost with the law on** (spec § COST): Fly it a point 5–15× the pin (≤ 60 ms), a slam 2–3 s; Controls 1.4× by default,
   3.5× below choke, ~60× with turbine cooling (under a second).
+
+## 42. Fly it's speed search below the low-speed wall (2026-10-21) — a solver repair, not a slice, not a rung
+
+Found beside rung 33's double root. On a hot day at a low throttle Fly it refused points that run: rung 34's instant
+assumes the nozzle choked first, and below about 0.6 of design speed that nozzle cannot reach the ambient pressure, so
+the speed search skipped the speeds the running point sits among. Cause, repair and numbers: `docs/rung34-spec.md`
+§ The low-speed wall.
+- **The user's choices** (asked in plain terms, each after its cost was measured): fix the step everywhere; then, shown
+  that lifting it everywhere moves ~4 600 Python-held values in their last digits, **the old search first, the new step
+  only where it refuses** — so no oracle and no page reply that ran moves (§ 14.1's precedent).
+- **On the page:** at 45 °C sea level, Mach 0.3, the lowest running throttle drops from 728 to 675 K (thermally perfect
+  gas; 737 to 680 K perfect). In 800 seeded requests 18 refusals now run (560–745 K), all on the stable point; the other
+  28 are below idle (26 byte-identical, two reworded — below). With an afterburner fitted its own copy of the search is repaired the same way
+  (725 K now runs unlit on that day; 700 K is below idle there — the duct's loss).
+- **Fly it now refuses a point with no positive thrust below idle, in words** (the user's choice, asked after the
+  measurement; § 38's rule, which had found "no running point with negative thrust" on this view — the wall was why).
+  Such a point had reached the page as "The efficiency bookkeeping failed": the shared scoring's check cannot pass
+  below zero thrust. In 3 000 wide random fly requests (300–900 K, Mach 0–2) 65 did before the repair, all negative
+  thrust (Mach 0.5–2), and the repair added 20 that had read "spool down" (the shaft does settle there). All 85 now
+  read below idle; 82 others now run; nothing else moved. With the afterburner too.
+- **Still reachable:** the "No shaft speed gives a workable…" words (very low throttles, ~300–510 K).
+- **The gate:** `tests/rung34_low_speed_wall.rs`; `tests/rung33_double_root.rs` now compares all its cells with rung 34;
+  `tests/sandbox_fly.rs`' below-idle case.
+  Probes archived: `docs/plans/scratch-archive/rung34-low-speed-wall/`.

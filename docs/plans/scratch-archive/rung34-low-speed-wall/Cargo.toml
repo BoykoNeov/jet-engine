@@ -1,0 +1,51 @@
+[package]
+name = "rung34-lsw"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+turbojet = { path = "W:/Claude_projects/jet engine/rust" }
+
+[[bin]]
+name = "fc"
+path = "src/fc.rs"
+
+[[bin]]
+name = "q7"
+path = "src/q7.rs"
+
+[[bin]]
+name = "q8"
+path = "src/q8.rs"
+
+[[bin]]
+name = "q9"
+path = "src/q9.rs"
+
+[[bin]]
+name = "q10"
+path = "src/q10.rs"
+
+[[bin]]
+name = "q11"
+path = "src/q11.rs"
+
+[[bin]]
+name = "q12"
+path = "src/q12.rs"
+
+[[bin]]
+name = "q13"
+path = "src/q13.rs"
+
+[[bin]]
+name = "q14"
+path = "src/q14.rs"
+
+[[bin]]
+name = "q15"
+path = "src/q15.rs"
+
+[[bin]]
+name = "q16"
+path = "src/q16.rs"

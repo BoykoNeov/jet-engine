@@ -160,6 +160,66 @@ ram-driven turbine work just balances compressor drag — exists **within** the 
 is left to the numerics: it is discovered, not predicted, and may report SUB-IDLE (rung 33's lower
 bound) rather than a fixed point.
 
+### The low-speed wall — refusing points that run (repaired 2026-10-21)
+
+Found beside rung 33's double root (`docs/rung33-spec.md` § The double root), on the page that flies
+this rung (Fly it). **The instant assumes choked first**: it solves (★), rebuilds the nozzle at that
+`π_t`, and only then dispatches subsonic. Below about 0.6 of design speed the gas at the choke `π_t`
+cannot even reach `p0`, so the nozzle REFUSES ("nozzle back-pressure … exceeds total pressure")
+before the subsonic solve runs. The speed search marches its low end in past those speeds; on a hot
+day at a low throttle the running point sits just below where it lands, both ends read the shaft
+slowing, and the search refused points that run. Measured on the Fly-it engine, 45 °C sea level,
+Mach 0.3, the page's map: the lowest running throttle was 728.0 K (thermally perfect) / 736.5 K
+(perfect gas); the true one is 675.4 / 679.6 K (bisected; every throttle above runs, 5 K scan to
+1000 K).
+
+**Below the wall `Φ` is not monotone.** It crosses zero twice: an UNSTABLE equilibrium at a low speed
+(rung 33's weak root — on the flat map at 700 K near `ν` 0.33, `π_c` 1.33) and the stable running
+point above it (`ν` 0.589, `π_c` 2.385 — rung 33's working root). So the doc comment's "`Φ` falls with
+speed, the root is unique" holds only above the wall.
+
+**The repair** (`spool.rs` `equilibrium_nu_below_choke`; the user's choice, 2026-10-21, after both
+were measured). The search runs **unchanged first**; only where it refuses does a second pass search
+on the instant with the wall lifted (`try_instant_below_choke`: where the choke `π_t`'s nozzle
+refuses, the turbine is solved for the subsonic nozzle directly), walking its low end up past the
+unstable equilibrium to the first speed whose shaft accelerates. Where the second pass fails too, the
+first pass's words are raised — every refusal reads as before. The same second pass is in the fuel
+control's equilibrium and in rung 102's copy of the search (`afterburner.rs`; its subsonic solve's
+lower end steps up past a choke root whose nozzle refuses). Not reached: the time march, rung 37's
+equilibria.
+
+**Why not lift the wall everywhere** (measured first, in a throwaway copy): the search's skipped low
+speeds then succeed, the bracket starts elsewhere, and the same roots land in other last digits —
+about 4 600 Python-held values in four oracle gates moved (up to ~4e-9 relative, apart from leftovers
+at roots and work counts), 395 of 754 page replies at ≤ 1e-9. Sandbox plan § 14.1 met the same
+thing on 2026-10-10 and kept the steady search; so does this.
+
+**Negative thrust.** Below the wall the second pass also finds running points whose thrust is below
+zero (the shaft settles; the jet's push no longer pays for the inlet's drag). The shared scoring
+cannot pass its efficiency check there (its tolerance is a fraction of a negative number), so such a
+point had reached Fly it as "the efficiency bookkeeping failed" — 65 of 3 000 wide random fly
+requests (Mach 0.5–2, low throttles) before the repair, every one a negative-thrust point, and the
+repair added 20 that had read "spool down". So Fly it now refuses a point with no positive thrust in
+below-idle words (sandbox plan § 42; the pages' rule, § 38) — with the afterburner too. This is also
+why § 38 found no running point with negative thrust on the Fly view.
+
+**Measured on the page** (800 seeded Fly it / running point / slam requests, before and after): the
+754 that ran are byte-identical; 18 of the 46 refusals now run (throttles 560–745 K), every one on
+the stable point (`Φ` positive 0.01 below, negative 0.01 above); of the 28 left, 26 are
+byte-identical, one is a lit afterburner whose dry point now solves (the same plain words now quote
+the lit search), and one (Mach 1.37, 571 K) reads below idle instead of the bookkeeping failure. In
+3 000 wide random fly requests (300–900 K): 82 refusals run, the 85 bookkeeping failures read below
+idle, nothing else moves. With an afterburner fitted (unlit) the duct's loss raises the lowest
+running throttle on that day: 700 K is below idle (`Φ` at best −0.004), 725 K runs.
+
+**Gates:** `tests/rung34_low_speed_wall.rs` (the old search refuses the cells; the answer is subsonic,
+with thrust, and stable; where the old search runs the equilibrium is its root bit for bit; below the
+lowest running throttle the refusal's words are the old search's; the afterburner's search the same);
+`tests/sandbox_fly.rs` (a point with no positive thrust is refused below idle, in words, with and
+without the afterburner).
+`tests/rung33_double_root.rs` now compares all eight cells with this rung's flat-map equilibrium
+(675/700 K were skipped; they agree to 6e-13). No oracle moved.
+
 ---
 
 ## Reduce-to-prior contract (the spine)

@@ -758,7 +758,17 @@ fn bracket_top_first(f: &impl Fn(f64) -> Result<f64, Abort>, lo: f64, hi: f64, s
 /// [`SpoolTransient::find_equilibrium_nu`], COPIED fallible (same march, same sentinel, same Illinois): the original
 /// panics when the speed search does not bracket; here that is an `Err` carrying the SAME message, so the page's
 /// plain words (`sandbox::explain_fly`) read it unchanged, and the afterburner's own refusal can be reported instead.
-pub fn try_find_equilibrium_nu<F>(mut resid: F) -> Result<f64, Abort>
+pub fn try_find_equilibrium_nu<F>(resid: F) -> Result<f64, Abort>
+where
+    F: FnMut(f64) -> Result<f64, Abort>,
+{
+    try_find_equilibrium_nu_from(resid, false)
+}
+
+/// [`try_find_equilibrium_nu`], and with `walk_up` (the second pass below rung 34's low-speed wall only) a low end
+/// below the unstable equilibrium walked up, by the march's own 0.02, to the first speed whose shaft accelerates —
+/// as `SpoolTransient`'s second pass does.
+fn try_find_equilibrium_nu_from<F>(mut resid: F, walk_up: bool) -> Result<f64, Abort>
 where
     F: FnMut(f64) -> Result<f64, Abort>,
 {
@@ -784,6 +794,21 @@ where
             break;
         }
         nu -= 0.02;
+    }
+    if let (true, Some(a), Some(b), Some(fa), Some(fb)) = (walk_up, lo, hi, flo, fhi) {
+        if fa <= 0.0 && fb < 0.0 {
+            let mut nu = a + 0.02;
+            while nu < b {
+                match resid(nu) {
+                    Ok(v) if v > 0.0 => {
+                        (lo, flo) = (Some(nu), Some(v));
+                        break;
+                    }
+                    Ok(_) => nu += 0.02,
+                    Err(_) => break,
+                }
+            }
+        }
     }
     let (lo, hi) = match (lo, hi) {
         (Some(a), Some(b)) if flo.unwrap() > 0.0 && 0.0 > fhi.unwrap() => (a, b),
@@ -925,7 +950,17 @@ impl<'a> FlyAfterburner<'a> {
             let (_, flux, mdot7) = self.exit_at(&gs, s4, mdot_air, eta_t, pi_t, mode, p0)?;
             Ok(mdot7 - a8 * flux)
         };
-        let (lo, rlo) = (pi_t_c, resid(pi_t_c)?);
+        // Below rung 34's low-speed wall (the instant's second pass) the gas at the choke root cannot reach `p0` at all:
+        // step up to the first `π_t` that can — there the nozzle barely flows, the flow-short side. Wherever the choke
+        // root's nozzle solved, the first trial runs and the loop never steps.
+        let mut lo = pi_t_c;
+        let rlo = loop {
+            match resid(lo) {
+                Ok(r) => break r,
+                Err(e) if !e.0.starts_with("nozzle back-pressure") || lo + 0.01 >= 0.9995 => return Err(e),
+                Err(_) => lo += 0.01,
+            }
+        };
         let mut hi = 0.9995;
         let rhi = loop {
             match resid(hi) {
@@ -945,14 +980,24 @@ impl<'a> FlyAfterburner<'a> {
     pub fn try_instant(
         &self, flight: &FlightCondition, nu: f64, tt4: f64, cmap: &ComponentMap, mode: AbMode, a8: f64,
     ) -> Result<FlyPoint, Abort> {
-        self.try_instant_hinted(flight, nu, tt4, cmap, mode, a8, None)
+        self.try_instant_hinted(flight, nu, tt4, cmap, mode, a8, None, false)
     }
 
-    /// [`Self::try_instant`] with the turbine's `π_t` bracketed first near `pi_t_hint` ([`Self::solve_choked`]).
+    /// [`Self::try_instant`] with rung 34's low-speed wall lifted — the instant the equilibrium's second pass
+    /// searches on.
+    pub fn try_instant_below_choke(
+        &self, flight: &FlightCondition, nu: f64, tt4: f64, cmap: &ComponentMap, mode: AbMode, a8: f64,
+    ) -> Result<FlyPoint, Abort> {
+        self.try_instant_hinted(flight, nu, tt4, cmap, mode, a8, None, true)
+    }
+
+    /// [`Self::try_instant`] with the turbine's `π_t` bracketed first near `pi_t_hint` ([`Self::solve_choked`]), and with
+    /// `below_choke` rung 34's low-speed wall lifted (`SpoolTransient::try_instant_tail_at`): where the station-7 gas at
+    /// the choke `π_t` cannot reach `p0`, the turbine is solved for the subsonic nozzle directly.
     #[allow(clippy::too_many_arguments)]
     fn try_instant_hinted(
         &self, flight: &FlightCondition, nu: f64, tt4: f64, cmap: &ComponentMap, mode: AbMode, a8: f64,
-        pi_t_hint: Option<f64>,
+        pi_t_hint: Option<f64>, below_choke: bool,
     ) -> Result<FlyPoint, Abort> {
         let st = self.st;
         let mm = &st.inner.inner;
@@ -973,9 +1018,18 @@ impl<'a> FlyAfterburner<'a> {
         let mut pi_t = self.solve_choked(wgas, &s4, mdot_air, eta_t, a8, mode, pi_t_hint)?;
         let mut g = scratch(wgas, &s4)?;
         let (mut tau_t, mut s5, mut s7, mut d) = self.trial(&g, &s4, mdot_air, eta_t, pi_t, mode, false)?;
-        let mut exit = Nozzle::convergent(p0, mm.pi_n).try_apply(&s7, &g)?;
-        let branch = if exit.p9 > p0 + 1e-6 { Branch::Choked } else { Branch::Subsonic };
-        if branch == Branch::Subsonic {
+        let (mut exit, star_refused) = match Nozzle::convergent(p0, mm.pi_n).try_apply(&s7, &g) {
+            Ok(e) => (e, false),
+            Err(e) if below_choke && e.0.starts_with("nozzle back-pressure") => {
+                pi_t = self.solve_subsonic(wgas, &s4, mdot_air, eta_t, a8, mode, p0, pi_t)?;
+                g = scratch(wgas, &s4)?;
+                (tau_t, s5, s7, d) = self.trial(&g, &s4, mdot_air, eta_t, pi_t, mode, false)?;
+                (Nozzle::convergent(p0, mm.pi_n).try_apply(&s7, &g)?, true)
+            }
+            Err(e) => return Err(e),
+        };
+        let branch = if !star_refused && exit.p9 > p0 + 1e-6 { Branch::Choked } else { Branch::Subsonic };
+        if branch == Branch::Subsonic && !star_refused {
             match self.solve_subsonic(wgas, &s4, mdot_air, eta_t, a8, mode, p0, pi_t) {
                 Ok(p) => {
                     pi_t = p;
@@ -1036,7 +1090,7 @@ impl<'a> FlyAfterburner<'a> {
         let refusal: RefCell<Option<Abort>> = RefCell::new(None);
         let pi_t_last: std::cell::Cell<Option<f64>> = std::cell::Cell::new(None);
         let resid = |nu: f64| -> Result<f64, Abort> {
-            match self.try_instant_hinted(flight, nu, tt4, cmap, mode, a8, pi_t_last.get()) {
+            match self.try_instant_hinted(flight, nu, tt4, cmap, mode, a8, pi_t_last.get(), false) {
                 Ok(p) => { pi_t_last.set(Some(p.eq.pi_t)); Ok(p.eq.phi) }
                 Err(e) => { if is_refusal(&e) { *refusal.borrow_mut() = Some(e.clone()); } Err(e) }
             }
@@ -1049,11 +1103,28 @@ impl<'a> FlyAfterburner<'a> {
             }
             None => try_find_equilibrium_nu(resid),
         };
-        let nu = match found {
-            Ok(nu) => nu,
-            Err(e) => return Err(match refusal.take() { Some(r) => self.name_refusal(flight, tt4, cmap, &r), None => e }),
+        // Rung 34's low-speed wall (`SpoolTransient::equilibrium`): only where the search above refused, and for no
+        // refusal of the afterburner's own, a second pass searches on the instant with the wall lifted, walking up past
+        // the unstable equilibrium; where it fails too, the first pass's words.
+        let (nu, below_choke) = match found {
+            Ok(nu) => (nu, false),
+            Err(e) => {
+                if let Some(r) = refusal.take() {
+                    return Err(self.name_refusal(flight, tt4, cmap, &r));
+                }
+                pi_t_last.set(None);
+                let low = |nu: f64| -> Result<f64, Abort> {
+                    let p = self.try_instant_hinted(flight, nu, tt4, cmap, mode, a8, pi_t_last.get(), true)?;
+                    pi_t_last.set(Some(p.eq.pi_t));
+                    Ok(p.eq.phi)
+                };
+                match try_find_equilibrium_nu_from(low, true) {
+                    Ok(nu) => (nu, true),
+                    Err(_) => return Err(e),
+                }
+            }
         };
-        match self.try_instant_hinted(flight, nu, tt4, cmap, mode, a8, pi_t_last.get()) {
+        match self.try_instant_hinted(flight, nu, tt4, cmap, mode, a8, pi_t_last.get(), below_choke) {
             Ok(p) if p.eq.phi.abs() < PHI_BALANCED => Ok(p),
             Ok(p) => {
                 let why = refusal.take().map(|r| self.name_refusal(flight, tt4, cmap, &r).0).unwrap_or_default();
@@ -1133,7 +1204,7 @@ impl<'a> FlyAfterburner<'a> {
         -> Result<FlyPoint, Abort>
     {
         let a8 = self.match_area(flight, tt4, cmap, dry)?;
-        self.try_instant_hinted(flight, dry.eq.nu, tt4, cmap, AbMode::Lit, a8, Some(dry.eq.pi_t))
+        self.try_instant_hinted(flight, dry.eq.nu, tt4, cmap, AbMode::Lit, a8, Some(dry.eq.pi_t), true)
             .map_err(|e| self.name_refusal(flight, tt4, cmap, &e))
     }
 

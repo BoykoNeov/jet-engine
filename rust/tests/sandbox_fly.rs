@@ -278,3 +278,23 @@ fn a_low_stall_line_reads_the_constant_flow_margin_as_off_the_map_not_a_crash() 
     let o = fly(&s).unwrap_or_else(|e| panic!("{}", e.0));
     assert!(matches!(o.stall, Stall::Margin { sm_flow: None, sm_n } if sm_n > 0.0), "{:?}", o.stall);
 }
+
+/// Plan § 42: a running point with no positive thrust is refused below idle, in words (the pages' rule, § 38) — it had
+/// reached the page as "the efficiency bookkeeping failed" (the shared scoring cannot pass below zero thrust), and
+/// rung 34's low-speed wall had hidden most of them. With and without the afterburner fitted.
+#[test]
+fn a_fly_point_with_no_positive_thrust_is_refused_below_idle_in_words() {
+    use turbojet::afterburner::AbMode;
+    for ab in [None, Some(AbMode::Unlit)] {
+        let s = FlySettings { gas: GasModel::Perfect, map: MapShape::ALL[0], t0: 288.15, p0: 101_325.0, m0: 0.6,
+                              tt4: 450.0, ab, ..FlySettings::defaults() };
+        let st = fly_solver(&s);
+        let eq = st.equilibrium(&s.flight(), s.tt4, Some(&s.map.map().with_phi_surge(s.phi_surge)));
+        if ab.is_none() {
+            assert!(eq.thrust < 0.0, "the dry point is not below idle ({} N) — vacuous", eq.thrust);
+        }
+        let e = quiet(|| fly(&s).map(|_| ())).expect("no panic").expect_err("a below-idle point runs");
+        assert!(e.0.contains("more drag than thrust") && e.0.contains("below idle"), "{ab:?}: {}", e.0);
+        assert!(e.0.is_ascii(), "the words must stay ASCII (slice 5)");
+    }
+}

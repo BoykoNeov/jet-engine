@@ -104,17 +104,16 @@ fn it_is_rung_34s_flat_map_equilibrium() {
         let st = SpoolTransient::new(e, fl, mdot, ComponentMap::flat());
         for tt4 in TT4S {
             let od = m.match_point(&hot(), tt4);
-            let eq = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| st.equilibrium(&hot(), tt4, None)));
-            // Rung 34's own speed search stops short of the lowest throttles on this day (675/700 K: it cannot evaluate
-            // below ~0.6 of design speed, the next repair's seam). Measured worst where it runs: 3.9e-11.
-            let Ok(eq) = eq else { continue };
+            // At 675/700 K rung 34 reaches it only through its second pass, below its low-speed wall
+            // (`tests/rung34_low_speed_wall.rs`).
+            let eq = st.equilibrium(&hot(), tt4, None);
             assert_eq!(eq.branch, Branch::Subsonic, "{g:?} {tt4}");
             let d = (od.pi_t - eq.pi_t).abs().max((od.pi_c - eq.pi_c).abs() / od.pi_c);
             println!("{g:?} {tt4}: pi_t {:.12} vs {:.12}, pi_c {:.10} vs {:.10}, worst {d:.2e}", od.pi_t, eq.pi_t, od.pi_c, eq.pi_c);
             worst = worst.max(d);
         }
     }
-    assert!(worst > 0.0, "every cell skipped, or bit-equal — the comparison ran nowhere it could disagree");
+    assert!(worst > 0.0, "every cell bit-equal — the comparison ran nowhere it could disagree");
     assert!(worst < 1e-9, "rung 33's repaired root is not rung 34's flat-map equilibrium: worst {worst:.2e}");
 }
 

@@ -175,7 +175,8 @@ walk finds nothing (below the merge, or two roots closer than 0.02 within ~1 K a
 is the old words, with a sentence appended. Gates (`tests/rung33_double_root.rs`): the cells do have
 two roots and same-sign ends; the answer is the LOWER root to 1e-10, with thrust; it is rung 34's
 flat-map equilibrium (reached through the forward closure, never through this matcher) to 3.9e-11
-(bar 1e-9) wherever rung 34 runs; below the merge it still refuses. **The oracles:** six
+(bar 1e-9) at all eight cells (at first only where rung 34 ran; its low-speed wall, repaired the same
+day, had skipped 675/700 K); below the merge it still refuses. **The oracles:** six
 `offdesign_oracle` cells (all three gases, Mach 0.3, 600/650 K) and the matching four cells of
 `map_oracle`'s rung-31 cross-check moved from SUB-IDLE to a subsonic point (190–256 N·s/kg) —
 licensed as a rule in `tests/common/double_root.rs` (the user's choice, 2026-10-21): the cells are
@@ -183,8 +184,9 @@ NAMED by the physical test (same-sign ends, a root between, not settled choked),
 move by exactly them. Nothing else moved; every other test unchanged.
 
 **What it does NOT reach.** No page uses this matcher — Fly it solves through rung 34. On the same
-hot day Fly it refuses 650–725 K for its own reason (its speed search cannot evaluate below ~0.6 of
-design speed, and the running point sits just below that edge; the next repair).
+hot day Fly it refused up to 728 K for its own reason (its speed search could not evaluate below ~0.6
+of design speed, and the running point sat just below that edge) — repaired the same day,
+`docs/rung34-spec.md` § The low-speed wall; the comparison with rung 34 now runs at all eight cells.
 
 ---
 
