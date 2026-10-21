@@ -28,3 +28,10 @@ and against a throwaway worktree for each trial). Spec: `docs/rung34-spec.md` §
 * `q15.rs` — those 85 operating points: every one a settled shaft with NEGATIVE thrust (Mach 0.5–2), where the scoring's
   efficiency check cannot pass (its tolerance is a fraction of a negative number).
 * `q16.rs` — round-number below-idle cases for the test (sea level, Mach 0.6, 450 K, perfect gas).
+* `q17.rs` — the running-line chart (`running_point_json` over `running_line_grid`) at six flights, two gases, three
+  maps, shipped code vs the repair: identical (600 points, none with negative thrust; the grid's 75 K steps miss
+  the throttles the repair opens).
+* The slams: in `fc`'s replies an `"ok":1` slam can carry a stop. With the first commit three throttle-up slams from a
+  low start stopped at step 1 (the march kept the wall); with the page's march switch two run to the end and one
+  stops at the fuel cap at step 3 (a fast fuel-metered ramp); no other reply moves; no slam endpoint has negative
+  thrust (555 endpoints).

@@ -118,3 +118,29 @@ fn the_afterburner_search_has_the_same_second_pass() {
     assert_eq!(p.eq.branch, Branch::Subsonic);
     assert!(p.eq.thrust > 0.0 && below > 0.0 && above < 0.0, "not the stable running point ({below}, {above})");
 }
+
+/// The time march past the wall (plan § 42): off by default — the old march, which ends where the choke `pi_t`'s
+/// nozzle refuses (every Python-held trajectory) — and on in the page's slam. From a start below the wall the old
+/// march stops at once and the switched one runs to the end; from a start above it the two are bit for bit.
+#[test]
+fn the_time_march_past_the_wall_is_a_switch_off_by_default() {
+    let st = spool(GasModel::ThermallyPerfect, None);
+    let ramp = |lo: f64, hi: f64| move |s: f64| if s >= 0.5 { hi } else { lo + (hi - lo) * s / 0.5 };
+    let (s_end, ds) = (3.0, 0.05);
+    let full = (s_end / ds) as usize + 1;
+    assert!(!st.march_below_choke.get(), "the switch is on by default");
+    let low = st.equilibrium(&hot(), 700.0, None);
+    let off = st.integrate(&hot(), ramp(700.0, 1100.0), low.nu, s_end, ds, None);
+    st.march_below_choke.set(true);
+    let on = st.integrate(&hot(), ramp(700.0, 1100.0), low.nu, s_end, ds, None);
+    assert!(off.len() < 3, "the old march ran from below the wall ({} points) — vacuous", off.len());
+    assert_eq!(on.len(), full, "the switched march stopped early");
+    let high = st.equilibrium(&hot(), 900.0, None);
+    let a = st.integrate(&hot(), ramp(900.0, 1100.0), high.nu, s_end, ds, None);
+    st.march_below_choke.set(false);
+    let b = st.integrate(&hot(), ramp(900.0, 1100.0), high.nu, s_end, ds, None);
+    assert_eq!(a.len(), b.len());
+    for (p, q) in a.iter().zip(&b) {
+        assert_eq!((p.nu.to_bits(), p.phi.to_bits()), (q.nu.to_bits(), q.phi.to_bits()), "moved at s {}", p.s);
+    }
+}

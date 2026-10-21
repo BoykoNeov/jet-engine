@@ -31,4 +31,7 @@ instant, not just the answer.
 sweep run on one side only. Re-run on both, it was FALSE: the repair had turned 20 "spool down" refusals into "the
 efficiency bookkeeping failed" (65 → 85) — negative-thrust points the wall had hidden (and why plan § 38 saw none on
 Fly it). Asked; the user chose Fly it refuses no-positive-thrust points below idle (§ 38's rule). Diff per request.
+**Lesson 5 — an "ok" reply is not "it runs".** My crash-map classifier counted any `"ok":1` as running; three slams
+replied ok and carried a stop at step 1 (the time march kept the wall). The advisor caught it after the push; the
+commit message overstated, corrected in the docs (not amended). Classify a slam by its points vs `expected_points`.
 Related: [[solver-walls-repair]], [[lean-wall-repair]], [[idle-floor]].

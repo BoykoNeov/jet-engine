@@ -185,8 +185,11 @@ refuses, the turbine is solved for the subsonic nozzle directly), walking its lo
 unstable equilibrium to the first speed whose shaft accelerates. Where the second pass fails too, the
 first pass's words are raised — every refusal reads as before. The same second pass is in the fuel
 control's equilibrium and in rung 102's copy of the search (`afterburner.rs`; its subsonic solve's
-lower end steps up past a choke root whose nozzle refuses). Not reached: the time march, rung 37's
-equilibria.
+lower end steps up past a choke root whose nozzle refuses). **The time march** ends where a step
+refuses, so a march from a start below the wall stopped at once: `march_below_choke`, `false` by
+default (the old march — Python-held trajectories that end early stay as they were), set by the
+pages' slam, solves such a step below choke instead (it acts only where the old instant refused).
+Not reached: rung 37's equilibria.
 
 **Why not lift the wall everywhere** (measured first, in a throwaway copy): the search's skipped low
 speeds then succeed, the bracket starts elsewhere, and the same roots land in other last digits —
@@ -204,8 +207,11 @@ below-idle words (sandbox plan § 42; the pages' rule, § 38) — with the after
 why § 38 found no running point with negative thrust on the Fly view.
 
 **Measured on the page** (800 seeded Fly it / running point / slam requests, before and after): the
-754 that ran are byte-identical; 18 of the 46 refusals now run (throttles 560–745 K), every one on
-the stable point (`Φ` positive 0.01 below, negative 0.01 above); of the 28 left, 26 are
+754 that ran are byte-identical; 18 of the 46 refusals now answer (throttles 560–745 K), every one on
+the stable point (`Φ` positive 0.01 below, negative 0.01 above) — 17 run to the end and one fast
+fuel-metered slam stops at the fuel cap at step 3 (without the march switch, three throttle-up slams
+from a low start found their start and stopped at the first step: an "ok" slam reply can carry a
+stop); of the 28 left, 26 are
 byte-identical, one is a lit afterburner whose dry point now solves (the same plain words now quote
 the lit search), and one (Mach 1.37, 571 K) reads below idle instead of the bookkeeping failure. In
 3 000 wide random fly requests (300–900 K): 82 refusals run, the 85 bookkeeping failures read below
@@ -216,7 +222,8 @@ running throttle on that day: 700 K is below idle (`Φ` at best −0.004), 725 K
 with thrust, and stable; where the old search runs the equilibrium is its root bit for bit; below the
 lowest running throttle the refusal's words are the old search's; the afterburner's search the same);
 `tests/sandbox_fly.rs` (a point with no positive thrust is refused below idle, in words, with and
-without the afterburner).
+without the afterburner; the march switch: off, a march from below the wall stops at once; on, it
+runs to the end; above the wall the two are bit for bit).
 `tests/rung33_double_root.rs` now compares all eight cells with this rung's flat-map equilibrium
 (675/700 K were skipped; they agree to 6e-13). No oracle moved.
 

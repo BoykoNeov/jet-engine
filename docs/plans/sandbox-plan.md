@@ -2182,8 +2182,13 @@ the speed search skipped the speeds the running point sits among. Cause, repair 
   that lifting it everywhere moves ~4 600 Python-held values in their last digits, **the old search first, the new step
   only where it refuses** — so no oracle and no page reply that ran moves (§ 14.1's precedent).
 - **On the page:** at 45 °C sea level, Mach 0.3, the lowest running throttle drops from 728 to 675 K (thermally perfect
-  gas; 737 to 680 K perfect). In 800 seeded requests 18 refusals now run (560–745 K), all on the stable point; the other
-  28 are below idle (26 byte-identical, two reworded — below). With an afterburner fitted its own copy of the search is repaired the same way
+  gas; 737 to 680 K perfect). In 800 seeded requests 18 refusals now answer (560–745 K), all on the stable point: 17
+  run to the end, one fast fuel-metered slam stops at the fuel cap; the other 28 are below idle (26 byte-identical, two
+  reworded — below). **Corrected after the first commit (`358d7d2`, which said all 18 run):** three of them were
+  throttle-up slams from a low start that found their start and then stopped at the first time step (an "ok" slam
+  reply carrying a stop), because the time march kept the wall. Asked; the user chose to lift it on the page: a
+  switch, `SpoolTransient::march_below_choke`, off by default (every Python-held trajectory, some of which end early
+  on purpose) and set by the slam (`sandbox_transient.rs`). Measured: only those three slams change. With an afterburner fitted its own copy of the search is repaired the same way
   (725 K now runs unlit on that day; 700 K is below idle there — the duct's loss).
 - **Fly it now refuses a point with no positive thrust below idle, in words** (the user's choice, asked after the
   measurement; § 38's rule, which had found "no running point with negative thrust" on this view — the wall was why).

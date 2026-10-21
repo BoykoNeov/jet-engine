@@ -483,6 +483,11 @@ pub struct SpoolTransient {
     /// starts there (anchor C2's count: ~13 residuals a search from the design expansion). Cleared with `hp_at`, so each
     /// instant runs the same sequence whatever ran before it.
     hp_last: std::cell::Cell<f64>,
+    /// The time march past rung 34's low-speed wall (2026-10-21, `docs/rung34-spec.md` § The low-speed wall): `false` by
+    /// default (the old march, which ends where the choke `π_t`'s nozzle refuses — every Python-held trajectory); the
+    /// pages' slam sets it, so a step there is solved for the subsonic nozzle instead. It acts only where the old
+    /// instant refused, so a march that ran is the same arithmetic.
+    pub march_below_choke: std::cell::Cell<bool>,
 }
 
 impl SpoolTransient {
@@ -512,7 +517,7 @@ impl SpoolTransient {
         let pc_spec_d = gas.h_c(s3.tt) - gas.h_c(s2.tt);
         let p_ref = inner.inner.mdot_air_design * pc_spec_d;
         Self { inner, pc_spec_d, p_ref, hp_at: std::cell::Cell::new((f64::NAN, f64::NAN)),
-               hp_last: std::cell::Cell::new(f64::NAN) }
+               hp_last: std::cell::Cell::new(f64::NAN), march_below_choke: std::cell::Cell::new(false) }
     }
 
     fn m(&self) -> &OffDesignMatcher { &self.inner.inner }
@@ -832,7 +837,7 @@ impl SpoolTransient {
     pub fn try_instant_marched(
         &self, flight: &FlightCondition, nu: f64, tt4: f64, cmap: Option<&ComponentMap>,
     ) -> Result<Instant, Abort> {
-        self.try_instant_walled(flight, nu, tt4, cmap, true, false)
+        self.try_instant_walled(flight, nu, tt4, cmap, true, self.march_below_choke.get())
     }
 
     /// [`try_instant`](Self::try_instant) with the low-speed wall lifted — the instant the
@@ -1420,6 +1425,14 @@ impl SpoolTransient {
         self.try_instant_tail_at(flight, nu, comp.tt4, &comp, n, tt2, pt2, v0, &cmap, below_choke)
     }
 
+    /// [`try_instant_fuel`](Self::try_instant_fuel) as the fuel-control time march steps it: past the low-speed wall
+    /// when [`march_below_choke`](Self::march_below_choke) is set.
+    pub fn try_instant_fuel_marched(
+        &self, flight: &FlightCondition, nu: f64, mdot_fuel: f64, cmap: Option<&ComponentMap>,
+    ) -> Result<Instant, Abort> {
+        self.try_instant_fuel_at(flight, nu, mdot_fuel, cmap, self.march_below_choke.get())
+    }
+
     pub fn instant_fuel(
         &self, flight: &FlightCondition, nu: f64, mdot_fuel: f64, cmap: Option<&ComponentMap>,
     ) -> Instant {
@@ -1462,7 +1475,7 @@ impl SpoolTransient {
         S: Fn(f64) -> f64,
     {
         self.march(nu0, s_end, ds, |nu, s| {
-            self.try_instant_fuel(flight, nu, fuel_schedule(s), cmap)
+            self.try_instant_fuel_marched(flight, nu, fuel_schedule(s), cmap)
         })
     }
 

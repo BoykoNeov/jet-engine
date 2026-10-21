@@ -227,7 +227,7 @@ fn instant_at(st: &SlamSolver, nu: f64, s: f64) -> Result<Instant, String> {
     let cmap = st.cmap;
     match st.settings.mode {
         ThrottleMode::Temperature => st.st.try_instant_marched(&fl, nu, (st.schedule)(s), Some(&cmap)),
-        ThrottleMode::Fuel => st.st.try_instant_fuel(&fl, nu, (st.schedule)(s), Some(&cmap)),
+        ThrottleMode::Fuel => st.st.try_instant_fuel_marched(&fl, nu, (st.schedule)(s), Some(&cmap)),
     }.map_err(|e| e.0)
 }
 
@@ -249,6 +249,8 @@ impl SlamSolver {
     /// does — the page reads it with `explain_fly`), and build the schedule for the mode.
     pub fn new(s: &SlamSettings) -> Self {
         let st = fly_solver(&s.at(s.to));
+        // The march past rung 34's low-speed wall (plan § 42): a step the old march ended on is solved below choke.
+        st.march_below_choke.set(true);
         let cmap = s.fly.map.map().with_phi_surge(s.fly.phi_surge);
         let fl = s.fly.flight();
         let eq0 = st.equilibrium(&fl, s.from, Some(&cmap));

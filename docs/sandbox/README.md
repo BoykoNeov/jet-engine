@@ -109,7 +109,10 @@ overshoot outran the model); the unchoked-nozzle solve's known gap; on a fast co
 commanded temperature that has fallen to the compressor's own exit temperature (the burner would need
 no fuel or less — a flame-out); a time step too coarse for a very fast shaft (Mach 3.3). Until
 2026-10-10 a commanded cut also stopped when the airflow search's FIRST trial asked the burner to cool
-the air; rung 34's march now walks that trial in (plan § 14), and the cuts it stopped run through. A crash in a steady solve names
+the air; rung 34's march now walks that trial in (plan § 14), and the cuts it stopped run through. Since
+2026-10-21 a low throttle on a hot or fast day, below about 0.6 of design speed, is solved too (plan § 42):
+the endpoint search and the march step past rung 34's low-speed wall, and Fly it refuses a point with no
+positive thrust below idle, in words. A crash in a steady solve names
 the throttle it happened at. The equilibrium gas is refused: the model cannot meter fuel on it.
 
 ## Slice 4 (B) — Controls (shipped 2026-10-08)
