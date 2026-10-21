@@ -170,7 +170,9 @@ plumbing on the two-shaft solves).
 
 * **Rung 33's double root** (anchor G4): the one-shaft subsonic residual has two roots at 318 K / sea level / Mach 0.30,
   650–900 K, the pin too; the two-ended march refuses "SUB-IDLE" there. Its own repair, after this rung (the user).
-  **REPAIRED 2026-10-21** (`docs/rung33-spec.md` § The double root): wider than G4 saw — 646 K to ~1000 K, every
-  sea-level flight probed; the pin's march now walks up from its low end where both ends share a sign.
+  **REPAIRED 2026-10-21** (`docs/rung33-spec.md` § The double root): wider than G4 saw, and its edges move with the
+  flight — on the 45 °C day at Mach 0.3, 646 K to 975–1000 K; at other sea-level flights from 550–725 K up to
+  775 K–past 1000 K (per flight in that spec); the pin's march now walks up from its low end where both ends share a sign.
+  (Commit `bbfee58`'s message says "646 K to ~1000 K at every sea-level flight" — that overstates it.)
 * The afterburner's held light-off re-scored on its own grid under rung 104's LP law (rung 104's other seam) — once,
   since the HP law is off by default.

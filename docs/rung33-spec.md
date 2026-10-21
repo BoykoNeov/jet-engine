@@ -160,10 +160,12 @@ is read) has only one root and lands on the working one.
 
 **The bug.** Above the working root the residual is negative; above the weak root positive again.
 So the march in from 0.15 and in from 0.9995 read the SAME sign and refused SUB-IDLE from the merge
-up to near choke — at 45 °C / Mach 0.3 every throttle from 646 K to 975–1000 K; at ISA sea level
-static from 650 K to past 1000 K (the probe's top); at the oracle's 250 K / 50 kPa / Mach 0.3, 600 and 650 K (Python too). It never returned
-the wrong root: over 69 subsonic points it did return on six flights, none had two roots on a
-1 600-interval grid (two roots always give two same-sign ends).
+up to near choke. **Both edges move with the flight** (25 K probe grid, 550–1000 K; perfect /
+thermally perfect gas): sea level 45 °C Mach 0.3, 650–1000 / 650–975 K; 45 °C Mach 0.1, 725–1000 K;
+ISA static, 650–1000 K (past the probe's top); ISA Mach 0.3, 600–925 / 600–900 K; 250 K Mach 0.3,
+550–800 / 550–775 K; and at the oracle's 250 K / 50 kPa / Mach 0.3, 600 and 650 K (Python too; not
+at the design flight). It never returned the wrong root: over 69 subsonic points it did return on
+twelve flights, none had two roots on a 1 600-interval grid (two roots always give two same-sign ends).
 
 **The repair** (`matcher.rs` `match_subsonic`, the pin path — rung 105's law path already searched
 from the design expansion). Where both ends read positive, the bracket is walked UP from the low

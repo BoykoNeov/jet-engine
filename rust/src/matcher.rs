@@ -757,7 +757,8 @@ impl OffDesignMatcher {
     /// root).** Near the top of the range the turbine barely expands, the compressor barely
     /// compresses, and the nozzle's demand falls faster than the vane's supply — the residual
     /// turns positive again. So off the design flight (sea level, Mach 0–0.3) it has TWO roots
-    /// from a lowest throttle (~646 K on the Fly-it engine, where they merge) up to near choke:
+    /// from a lowest throttle where they merge (on the Fly-it engine ~646 K on a 45 °C day at
+    /// Mach 0.3; 550–725 K across the sea-level flights probed) up to near choke:
     /// the working point and a weak one (`pi_c` 1.2–1.8, about half the air). Both ends then read
     /// positive and the march refused SUB-IDLE on points that run. Where it does that, the bracket
     /// is now walked UP from the low end in the march's own 0.02 steps to the first sign change —

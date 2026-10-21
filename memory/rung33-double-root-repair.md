@@ -1,11 +1,11 @@
 ---
 name: rung33-double-root-repair
-description: "2026-10-21 solver repair (not a rung): rung 33's subsonic residual has two roots off the design flight, so its two-ended march refused SUB-IDLE from ~646 K to ~1000 K at every sea-level flight; the march now walks up from its low end where both ends share a sign; oracle cells licensed by a rule (user) — lessons: trace the PAGE's call path before calling a bug page-visible; a probe's grid is not the bug's extent; a licence predicate must follow the code's own dispatch; a licence predicate can cost more than the gate"
+description: "2026-10-21 solver repair (not a rung): rung 33's subsonic residual has two roots off the design flight, so its two-ended march refused SUB-IDLE on points that run (edges move with the flight: 550–725 K up to 775 K–past 1000 K at sea level); the march now walks up from its low end where both ends share a sign; oracle cells licensed by a rule (user) — lessons: trace the PAGE's call path before calling a bug page-visible; a probe's grid is not the bug's extent; a licence predicate must follow the code's own dispatch; a licence predicate can cost more than the gate"
 metadata:
   node_type: memory
   type: project
   originSessionId: a0a0dec2-0c90-4244-8b8c-6d2c29d3915f
-  modified: 2026-10-21T08:59:14.431Z
+  modified: 2026-10-21T09:47:37.833Z
 ---
 
 Repair (not a rung), 2026-10-21, closing rung 105's seam (anchor G4). Spec: `docs/rung33-spec.md` § The double root.
@@ -20,8 +20,8 @@ hot day 650–725 K) — the NEXT repair, its check is this repair's roots.
 
 **Lesson 1 — trace the page's call path before saying "you can hit it on the page".** I recommended the fix as a
 page bug; Fly it solves through rung 34, not rung 33. A side agent and the advisor both flagged it; re-asked.
-**Lesson 2 — a probe's grid is not the bug's extent.** G4 said "650–900 K, one flight"; it was 646 K to ~1000 K at
-every sea-level flight probed (ISA static included). Bisect both edges before quoting an extent.
+**Lesson 2 — a probe's grid is not the bug's extent.** G4 said "650–900 K, one flight"; it reached six sea-level
+flights, ISA static included — and then I overstated it the other way in the commit message ("646 K to ~1000 K at every sea-level flight"; the advisor caught it: edges 550–725 K / 775 K–past 1000 K by flight). Quote an extent per flight, from the tally, never from the headline cell.
 **Lesson 3 — a licence predicate must follow the code's own dispatch.** "Same-sign ends + a root between" also
 named CHOKED cells (900–1500 K): the subsonic residual has the same shape there, but the choke solve settles them
 first. An exit-Mach test did not separate them; the matcher's branch (upstream of the repair) did.
