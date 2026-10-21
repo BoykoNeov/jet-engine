@@ -1,0 +1,16 @@
+hp_rate 0.1 design (density 1.00): worst 7.89e-5 at lag 0.10; stops 0; over 1e-4: []
+hp_rate 0.1 thin (density 0.45): worst 8.61e-5 at lag 0.10; stops 0; over 1e-4: []
+hp_rate 0.1 dense (density 1.31): worst 4.23e-5 at lag 0.10; stops 0; over 1e-4: []
+hp_rate 0.1: OVERALL 8.61e-5 CLEAN
+hp_rate 0.15 design (density 1.00): worst 5.71e-5 at lag 0.10; stops 0; over 1e-4: []
+hp_rate 0.15 thin (density 0.45): worst 4.14e-5 at lag 0.10; stops 0; over 1e-4: []
+hp_rate 0.15 dense (density 1.31): worst 1.54e-5 at lag 0.10; stops 0; over 1e-4: []
+hp_rate 0.15: OVERALL 5.71e-5 CLEAN
+thrust 0 design (density 1.00): worst 6.76e-6 at lag 0.10; stops 0; over 1e-4: []
+thrust 0 thin (density 0.45): worst 5.95e-5 at lag 0.54; stops 0; over 1e-4: []
+thrust 0 dense (density 1.31): worst 1.86e-5 at lag 0.10; stops 0; over 1e-4: []
+thrust 0: OVERALL 5.95e-5 CLEAN
+epr 0 design (density 1.00): worst 1.55e-5 at lag 0.10; stops 0; over 1e-4: []
+epr 0 thin (density 0.45): worst 6.69e-5 at lag 0.56; stops 0; over 1e-4: []
+epr 0 dense (density 1.31): worst 3.81e-5 at lag 0.10; stops 0; over 1e-4: []
+epr 0: OVERALL 6.69e-5 CLEAN

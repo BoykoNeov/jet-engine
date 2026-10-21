@@ -1,0 +1,12 @@
+hp_prop 15 design (density 1.00): worst 1.50e-4 at lag 0.10; stops 0; over 1e-4: [0.10:1.5e-4 0.12:1.4e-4]
+hp_prop 15 thin (density 0.45): worst 8.88e-5 at lag 0.10; stops 0; over 1e-4: []
+hp_prop 15 dense (density 1.31): worst 5.20e-5 at lag 0.10; stops 0; over 1e-4: []
+hp_prop 15: OVERALL 1.50e-4 ROUGH
+lp_prop 7 design (density 1.00): worst 1.32e-5 at lag 0.10; stops 0; over 1e-4: []
+lp_prop 7 thin (density 0.45): worst 7.75e-5 at lag 0.10; stops 0; over 1e-4: []
+lp_prop 7 dense (density 1.31): worst 1.05e-5 at lag 0.10; stops 0; over 1e-4: []
+lp_prop 7: OVERALL 7.75e-5 CLEAN
+lp_prop 5 design (density 1.00): worst 6.01e-5 at lag 0.10; stops 0; over 1e-4: []
+lp_prop 5 thin (density 0.45): worst 5.60e-5 at lag 0.48; stops 0; over 1e-4: []
+lp_prop 5 dense (density 1.31): worst 3.77e-6 at lag 0.10; stops 0; over 1e-4: []
+lp_prop 5: OVERALL 6.01e-5 CLEAN

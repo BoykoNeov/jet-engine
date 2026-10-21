@@ -1,6 +1,6 @@
 ---
 name: rung106-governor-lag
-description: "Rung 106 (2026-10-21), the governor beside rung 47's slow temperature limiter — process lessons: a crash map's slow tail was rung 95's route regressing 20–150× since it shipped (time on the shipping commit); a claim about a comparison case must be re-run on the SAME configurations (my first 'the open ramp never gets there' rested on 6 runs); a side note can catch an unrealistic setup a result rests on — ask before predicting; an all-HIT sweep earns a look past the grid (H4 flipped at lag ~0.9); `cmd start /wait` on a missing exe hangs forever — check the build before launching"
+description: "Rung 106 (2026-10-21), the governor beside rung 47's slow temperature limiter — process lessons: a crash map's slow tail was rung 95's route 12–160× slower than when it shipped, mostly rung 104's default law (time on the shipping commit); a claim about a comparison case must be re-run on the SAME configurations (my first 'the open ramp never gets there' rested on 6 runs); a side note can catch an unrealistic setup a result rests on — ask before predicting; an all-HIT sweep earns a look past the grid (H4 flipped at lag ~0.9); `cmd start /wait` on a missing exe hangs forever — check the build before launching"
 metadata:
   node_type: memory
   type: project
@@ -26,11 +26,15 @@ cut paid back after the move, the thrust climbs then SAGS (only in this combinat
 3. **All HIT ⇒ look past the grid at the named risk.** H4 ("later to 95 % thrust") was 20/20 on τ ≤ 0.8 but the
    reading jumps at τ ≈ 0.9 (the first climb clears 95 %); looking for it found the real finding — the thrust SAGS
    after the move, which no prediction named. Report the flip with the grid.
-4. **The step check moved the knob floor twice** (one step → 0.06 → 0.1): two fast clocks (lag and the speed law's
-   τ_N) compound; check the floor at every hold's own fastest knob, not the default.
+4. **A step-check floor set from three points is a guess — sweep the knob it sits beside, at three flights.** I set the
+   lag floor 0.1 from τ 0.1/0.2/0.4 at the design flight; the advisor asked for the whole range: every speed law was
+   rough at scattered lags (to 6.5e−4), not at a threshold, and only at its OWN fastest setting. Asked twice (first for
+   one law, again when the sweep showed all four): each law now has a measured clean edge. Ask again when the evidence
+   widens past the question the user answered.
 5. **A crash map's slow tail can be someone else's regression — time it on the shipping commit.** The 15–20 s
-   requests were the same with the lag off; on rung 95's commit (a worktree, back to back) they took 0.2–1.8 s — 20–150×
-   slower today, untraced (sandbox plan § 43, OPEN). A side note pushed for the check; it took ten minutes.
+   requests were the same with the lag off; on rung 95's commit (a worktree, back to back) they took 0.2–1.8 s — 12–160×
+   slower today; with the old turbine pin 3.9–5.6 s, so mostly rung 104's default law (the advisor's check: name a
+   cause only after timing the obvious suspect); the rest untraced (sandbox plan § 43, OPEN). A side note pushed for the check; it took ten minutes.
 6. **`cmd start /b /wait` on an exe that failed to build waits FOREVER** (documented in
    [[windows-tooling-file-hazards]] for a mistyped path; here a compile error). Gate the run on the exe existing
    (`test -f … &&`). And AGAIN the `\$e` trap: a loop variable after a backslash inside a cmd string stays literal —

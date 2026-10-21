@@ -1,0 +1,12 @@
+lp_rate 0.1 design (density 1.00): worst 6.45e-5 at lag 0.10; stops 0; over 1e-4: []
+lp_rate 0.1 thin (density 0.45): worst 1.55e-4 at lag 0.10; stops 0; over 1e-4: [0.10:1.6e-4 0.12:1.3e-4 0.14:1.2e-4 0.16:1.0e-4]
+lp_rate 0.1 dense (density 1.31): worst 2.70e-5 at lag 0.10; stops 0; over 1e-4: []
+lp_rate 0.1: OVERALL 1.55e-4 ROUGH
+lp_rate 0.15 design (density 1.00): worst 6.97e-5 at lag 0.10; stops 0; over 1e-4: []
+lp_rate 0.15 thin (density 0.45): worst 5.28e-5 at lag 0.10; stops 0; over 1e-4: []
+lp_rate 0.15 dense (density 1.31): worst 3.15e-6 at lag 0.10; stops 0; over 1e-4: []
+lp_rate 0.15: OVERALL 6.97e-5 CLEAN
+lp_rate 0.2 design (density 1.00): worst 2.72e-6 at lag 0.10; stops 0; over 1e-4: []
+lp_rate 0.2 thin (density 0.45): worst 5.51e-5 at lag 0.14; stops 0; over 1e-4: []
+lp_rate 0.2 dense (density 1.31): worst 1.69e-5 at lag 0.10; stops 0; over 1e-4: []
+lp_rate 0.2: OVERALL 5.51e-5 CLEAN

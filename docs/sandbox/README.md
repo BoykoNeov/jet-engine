@@ -147,7 +147,9 @@ engine with the generator off, or on this one). The thrust chart then shows the 
 thrust the engine gives. Since rung 106 (plan § 43) the governor also runs beside the temperature limiter's **lag**
 (rung 47): the limiter's slow cut is measured off what the governor asks, so it overshoots the limit further than on the
 plain ramp and stores a cut that it pays back after the move — the governed thrust climbs, then sags. The lag starts at
-0.1 τ with the governor on, and a run that starts above the limiter's temperature is refused (a working limiter would
+0.1 τ with the governor on, and each speed governor has a tighter edge beside it (HP speed: time constant 0.1 or gain 10;
+fan speed: 0.15 or 7 — faster settings are worked out too roughly there; switching the lag on moves a knob past its edge
+to it, and says so); and a run that starts above the limiter's temperature is refused (a working limiter would
 not let the engine settle there), as is one whose governor already asks for more than the limiter allows at the start; where the leftover cut would take the fuel below what the engine burns, it is held
 at that edge and marked as the minimum-fuel stop.
 

@@ -2212,11 +2212,15 @@ leftover would take the fuel below what the engine burns.
   marked; a start above the redline REFUSED in words; and (asked after the crash map) a governor's request above the
   redline at the start, where the metal cap holds the engine lower, refused too.
 * **The lag's floor with the governor on is 0.1 τ** (`GOV_LAG_MIN`, the step check — rung 47's open route keeps one
-  step). Refused in words below it.
+  step), and beside the lag each speed law has its own edge, measured at three flights (the user's "limit each law"):
+  HP-speed rate ≥ 0.1 τ, fan-speed rate ≥ 0.15 τ, HP-speed gain ≤ 10, fan-speed gain ≤ 7, scaled by the density as § 27's.
+  Refused in words past them; switching the lag (or the governor, hold, law or reading) on moves an out-of-range knob to
+  its edge and says so under the lag (the user's choice — two page defaults sat past the edges).
 * **What moves:** nothing that ran before (the combination was refused); the request list's former "refused: a lag"
   entry now runs, with two new refusals beside it.
 * **Cost:** a governed lagged run costs what rung 95's governed run with the instant limiter does (~0.3 s natively).
-* **OPEN — found here, not caused here: governed Controls runs with the HP-shaft generator are 20–150× slower than when
+* **OPEN — found here, not caused here: governed Controls runs with the HP-shaft generator are 12–160× slower than when
   rung 95 shipped.** The crash map's five slowest requests take 21–37 s today and 0.2–1.8 s on rung 95's commit
-  `096367d` (timed back to back, the lag off; `docs/rung106-spec.md` § 4). Untraced; a bisect over the commits since is
-  the next step. On the page such a run reads as a hang.
+  `096367d` (timed back to back, the lag off; `docs/rung106-spec.md` § 4). With rung 104's old pin they take 3.9–5.6 s,
+  so most of it is rung 104's default LP-turbine law; the rest (~3–20×) untraced — a bisect is the next step. On the page
+  such a run reads as a hang.

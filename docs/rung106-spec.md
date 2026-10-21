@@ -4,7 +4,8 @@
 the gate's second code path), `try_der` / `try_rk_step` / `march` (the three-state march, the clip recorded as rung 52's
 `PointExtra::Asym { g, required }`); `governor.rs` — `Leg::Lag`, `Leg::MinFuel`, `wall` made public. The Controls view
 (`sandbox_controls.rs`): `Route::GovernorLag`, `ControlsSolver::{clip_lag, lag_limiters, gov_lag_der, gov_lag_step}`,
-`Holder::MinFuel`, `GOV_LAG_MIN`, the refusals. **Gates:** `rust/tests/rung106.rs`. **Panel:** `print_governor_lag_table`
+`Holder::MinFuel`, `GOV_LAG_MIN` and the speed laws' edges `GOV_LAG_{TAU_N_MIN, TAU_LP_MIN, GAIN_MAX, GAIN_MAX_LP}`,
+the refusals. **Gates:** `rust/tests/rung106.rs`. **Panel:** `print_governor_lag_table`
 (born in Rust, `rust/oracle/rust_owned/`, a change detector only). **Anchor:** `docs/plans/rung106-anchor-governor-lag.md`,
 committed as `ca5504f` before any rung-106 code. **Scratch:** `docs/plans/scratch-archive/rung106/`.
 
@@ -20,7 +21,7 @@ while another limit holds the engine lower (the metal cap), refused too.
 > back after the move, so the thrust it holds climbs and then SAGS.** Rung 95's "nothing winds up" was a fact about the
 > governor; the limiter's lagged cut is measured off the governor's demand, and that demand rises faster than the open
 > ramp, so the cut both lets through MORE (the redline overshoot about doubles: 272 K against rung 47's 138 K at the
-> default lag) and stores MORE (the fuel later withheld below the instant limiter: about twice the open ramp's). After
+> default lag) and stores MORE (the fuel later withheld below the instant limiter: 1.8–3.1× the open ramp's). After
 > the move the governor's demand falls back and the stored cut lags it down: on the default slam the thrust reaches 83 %
 > of its step at the end of the move, falls to 78 %, and reaches 95 % at 1.53 τ against 1.32 τ with an instant limiter —
 > later, and hotter on the way. On the open ramp the thrust never falls; with an instant limiter it never falls. The
@@ -51,7 +52,12 @@ now run together (`route: "governor_lag"`); the top strip marks the clip (`lag`)
 Refused in words: beside the realistic release or the slow valve (as before); beside rung 101's lagged exhaust sensor
 (two lags at once — another session); a start above the redline, or a governor's request above it at the start; a lag
 under **0.1 τ** (`GOV_LAG_MIN`, the step check
-below — rung 47's open route keeps its one-step floor).
+below — rung 47's open route keeps its one-step floor); and, beside the lag, each speed law past its own clean edge — the
+HP-speed rate under 0.1 τ, the fan-speed rate under 0.15 τ, the HP-speed gain over 10, the fan-speed gain over 7
+(scaled by the density as rung 95's limits are; the user's "limit each law", § 4). Since those refuse two of the page's own defaults
+(the HP-speed gain 20, the fan-speed time constant 0.1), the page MOVES an out-of-range gain or time constant to the edge
+when the lag, the governor, the hold, the law or the reading is switched, and says so in a line under the lag (the
+user's choice); a value typed afterwards is answered by the refusal.
 
 ## 2. Gates (anchor § 2, bars frozen at `ca5504f`) — all pass
 
@@ -64,7 +70,7 @@ below — rung 47's open route keeps its one-step floor).
 | the clip's ledger (D1), bar `2e−2·τ·max g` | 1.3e−3 … 5.9e−3 of `τ·max g`, four maps × five lags; 3.2e−6 → 8.3e−7 when the step halves (second order) |
 | the lean hold at model level (1700 → 900 K, redline 1480, called directly) | holds at the wall (runs; 1e−9 leaner does not), marked, runs to the end; the page refuses the request |
 | every lagged governed step re-runs from its recorded point | bit for bit (four settings) |
-| step check at the floor | under 1e−4 in flow coefficient on every hold at `τ` 0.1 (largest 6.9e−5, the fastest speed law); see § 4 |
+| step check at the floor | under 1e−4 in flow coefficient on every hold at `τ` 0.1, each speed law at its edge (§ 4); the sweeps over the lag 0.1–1.0 at three flights: largest 8.6e−5 |
 
 ## 3. Scored (anchor § 3) — every claim HIT
 
@@ -102,10 +108,18 @@ during the move and sags after it (to 92 % at `τ` 1.0).
   overshoot is SMALLER than the open ramp's (76 K against 200 K at `τ` 0.1; 106 against 419 at 0.4) — a temperature
   demand has no fuel overshoot of its own for the clip to chase (rung 95: "a commanded `Tt4` cannot overshoot itself").
   The peak is 1556.2 K on every map to 0.07 K: the clip's error in temperature depends on the demand line, not the maps.
-* **The step check set the page's floor.** At one step (0.02, rung 47's own floor) the governed march moves the flow
-  coefficients by ~2.0e−4 against a step four times finer under thrust and HP speed (the open ramp 9.4e−5); at three
-  steps the fastest speed law (`τ_N` 0.04) still 2.0e−4 — two fast clocks together — and from 0.1 every hold is under
-  1e−4. So the governed lag starts at 0.1 τ.
+* **The step check set the page's floors.** At one step (0.02, rung 47's own floor) the governed march moves the flow
+  coefficients by ~2.0e−4 against a step four times finer under thrust and HP speed (the open ramp 9.4e−5); so the
+  governed lag starts at 0.1 τ. The advisor then asked for the floor's whole range: a sweep of the lag 0.1–1.0 (step
+  0.02) at the design flight, a thin one (220 K, 20 kPa — density 0.45) and a dense one (sea level, Mach 0.3 — 1.31)
+  found **every speed law ROUGH at its rung-95/96 edge beside the lag** — scattered lags, not a threshold: the HP rate at
+  `τ_N` 0.04 up to 5.1e−4, the fan-speed rate at 0.04 up to 2.9e−4 (and 1.6e−4 at 0.1, thin air), the HP gain 50 up to
+  6.5e−4, the fan-speed gain 50 up to 4.9e−4 (and gains 30/20/15 still over somewhere; the roughness is not monotone in
+  the knob — HP gain 15 was worse at the design flight than 20). Asked; the user chose to **limit each law** at its first
+  measured clean value: HP rate 0.1 (largest 8.6e−5), fan-speed rate 0.15 (7.0e−5), HP gain 10 (8.2e−5), fan-speed gain 7
+  (7.8e−5). The thrust and pressure-ratio holds were clean throughout (6.0e−5, 6.7e−5). These are measured clean POINTS
+  with the law's knob below them assumed cleaner (true of every value tried below an edge), not a smooth boundary
+  (`scratch-archive/rung106/edge.rs`, `edge_*.txt`).
 * **Cost:** a governed lagged run 0.23–0.30 s natively, the same as rung 95 with the instant redline (0.26–0.32 s).
 * **The crash map** (`scratch-archive/rung106/crash.txt`, 1 000 requests, seed 12 — every one governed with the
   redline and its lag on, the lag 0.02–1.0, the redline 1200–1800 K): **no panic, no "other" stop.** Its first run: 499
@@ -119,12 +133,13 @@ during the move and sags after it (to 92 % at `τ` 1.0).
   **Re-run with that refusal** (`crash.txt`): no panic, no "other" stop, **no minimum-fuel stop**; 5 requests newly
   refused by it (#896 among them; 425 ran to the end, 69 stopped early as before). Its timings are not quoted (the
   whole gate ran beside it).
-* **Its slowest requests (15–20 s) are not the lag's — they are a REGRESSION of rung 95's route since it shipped.** The
-  five slowest, all with the HP-shaft generator, take the same time with the lag off (14.6–17.4 s). The same requests
+* **Its slowest requests (15–20 s) are not the lag's — rung 95's route is much slower than when it shipped.** The five
+  slowest, all with the HP-shaft generator, take the same time with the lag off (14.6–17.4 s). The same requests
   (stripped of the keys rung 95 did not know) on rung 95's own commit `096367d`: 0.23 / 0.42 / 1.37 / 1.84 s (one refused
-  there, by a rule since lifted), against 21–37 s on today's code, timed back to back — 20–150× slower. Not this rung's;
-  not traced here (candidates: rungs 103–105's turbine laws, the solver repairs of sandbox plan §§ 36–42). On the page
-  such a run reads as a hang. Recorded as an open item (`docs/plans/sandbox-plan.md` § 43).
+  there, by a rule since lifted), against 37 / 27 / 31 / 21 s on today's code, timed back to back — 12–160× slower. With
+  `"turbine":"pin"` (rung 104's old choked pin, the only law when rung 95 shipped) today's take 3.9–5.6 s (timed beside
+  another run): **most of it is rung 104's default LP-turbine law**, the rest (still ~3–20×) untraced. Not this rung's.
+  On the page such a run reads as a hang. Recorded as an open item (`docs/plans/sandbox-plan.md` § 43).
 
 ## 5. Why — the model
 

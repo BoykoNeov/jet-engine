@@ -1,0 +1,16 @@
+   Compiling turbojet v0.1.0 (W:\Claude_projects\jet engine\rust)
+    Finished `release` profile [optimized] target(s) in 22.16s
+     Running tests\rung106.rs (rust\target\release\deps\rung106-adfb4b27ab01c788.exe)
+
+running 1 test
+[thrust] design (density 1.00, tau_N 0.040): worst 6.76e-6 at lag 0.10
+  0.10:6.8e-6 0.14:4.4e-6 0.18:3.2e-6 0.22:2.6e-6 0.26:2.1e-6 0.30:1.8e-6 0.34:1.6e-6 0.38:1.4e-6 0.42:1.3e-6 0.46:1.1e-6 0.50:1.0e-6 0.54:9.7e-7 0.58:9.0e-7 0.62:8.4e-7 0.66:7.9e-7 0.70:7.5e-7 0.74:7.1e-7 0.78:6.7e-7 0.82:6.4e-7 0.86:6.1e-7 0.90:5.9e-7 0.94:5.6e-7 0.98:5.4e-7
+test probe_floor_sweep_across_flights has been running for over 60 seconds
+[thrust] thin (density 0.45, tau_N 0.088): worst 5.95e-5 at lag 0.54
+  0.10:1.4e-5 0.14:2.3e-5 0.18:5.9e-6 0.22:2.2e-5 0.26:2.0e-5 0.30:1.3e-5 0.34:1.2e-5 0.38:6.5e-6 0.42:9.4e-6 0.46:2.5e-5 0.50:2.9e-6 0.54:5.9e-5 0.58:9.4e-6 0.62:1.1e-5 0.66:2.1e-5 0.70:7.8e-6 0.74:1.2e-5 0.78:4.0e-7 0.82:3.8e-7 0.86:3.6e-7 0.90:3.4e-7 0.94:3.3e-7 0.98:3.1e-7
+[thrust] dense (density 1.31, tau_N 0.040): worst 1.86e-5 at lag 0.10
+  0.10:1.9e-5 0.14:1.3e-5 0.18:1.0e-5 0.22:8.3e-6 0.26:7.1e-6 0.30:6.2e-6 0.34:5.5e-6 0.38:4.9e-6 0.42:4.5e-6 0.46:4.1e-6 0.50:3.8e-6 0.54:3.6e-6 0.58:3.3e-6 0.62:3.1e-6 0.66:3.0e-6 0.70:2.8e-6 0.74:2.7e-6 0.78:2.6e-6 0.82:2.5e-6 0.86:2.4e-6 0.90:2.3e-6 0.94:2.2e-6 0.98:2.1e-6
+test probe_floor_sweep_across_flights ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 11 filtered out; finished in 170.03s
+

@@ -32,3 +32,8 @@ After the build (the SHIPPED device, `rust/src/governor_lag.rs`):
 - `r95time.rs` (+ `r95time_reqs.txt`) → `r95_vs_today.txt` — the five slowest requests, stripped of keys rung 95 did not
   know, timed on a worktree at rung 95's `096367d` and on today's code, back to back: 0.2–1.8 s then, 21–37 s now — a
   regression of rung 95's route, not this rung's (spec § 4).
+- `floor_probe.rs` / `floor.rs` → `floor*.txt` — the advisor's check of the 0.1 lag floor: a sweep of the lag 0.1–1.0 at
+  three flights per law (`floor_prop.txt` is empty: that run had been moved out of the tests first; `floor_n1_01.txt`
+  and the prop case were re-run from `floor.rs`).
+- `edge.rs` → `edge_A…E.txt` — the user's "limit each law": each speed law's candidate edges over the lag 0.1–1.0 (step
+  0.02) at three flights; the first CLEAN value of each became the page's limit (spec § 4).

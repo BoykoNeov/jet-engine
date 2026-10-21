@@ -1,0 +1,16 @@
+lp_prop 50 design (density 1.00): worst 4.90e-4 at lag 0.22; stops 0; over 1e-4: [0.16:1.0e-4 0.20:2.6e-4 0.22:4.9e-4 0.24:2.8e-4 0.26:1.1e-4 0.28:1.1e-4 0.30:1.0e-4 0.32:1.0e-4]
+lp_prop 50 thin (density 0.45): worst 3.34e-4 at lag 0.78; stops 0; over 1e-4: [0.12:1.2e-4 0.14:1.4e-4 0.16:1.5e-4 0.18:1.5e-4 0.20:1.5e-4 0.22:1.4e-4 0.24:1.3e-4 0.26:1.2e-4 0.28:1.2e-4 0.30:1.1e-4 0.32:1.0e-4 0.34:1.6e-4 0.36:1.5e-4 0.42:1.2e-4 0.50:1.6e-4 0.52:1.9e-4 0.56:1.4e-4 0.60:1.7e-4 0.62:1.5e-4 0.66:1.3e-4 0.70:1.1e-4 0.72:2.8e-4 0.74:1.1e-4 0.76:1.4e-4 0.78:3.3e-4 0.86:2.6e-4 0.92:1.3e-4 0.96:2.2e-4]
+lp_prop 50 dense (density 1.31): worst 4.14e-4 at lag 0.10; stops 0; over 1e-4: [0.10:4.1e-4 0.12:1.5e-4 0.14:1.3e-4 0.16:1.2e-4 0.18:1.1e-4 0.20:1.0e-4]
+lp_prop 50: OVERALL 4.90e-4 ROUGH
+lp_prop 30 design (density 1.00): worst 3.84e-4 at lag 0.14; stops 0; over 1e-4: [0.10:1.0e-4 0.12:1.3e-4 0.14:3.8e-4 0.18:1.2e-4 0.20:1.1e-4]
+lp_prop 30 thin (density 0.45): worst 2.07e-4 at lag 0.10; stops 0; over 1e-4: [0.10:2.1e-4 0.12:1.4e-4 0.52:1.1e-4 0.68:1.0e-4 0.74:1.1e-4 0.82:1.1e-4 0.98:1.3e-4]
+lp_prop 30 dense (density 1.31): worst 3.74e-5 at lag 0.10; stops 0; over 1e-4: []
+lp_prop 30: OVERALL 3.84e-4 ROUGH
+lp_prop 20 design (density 1.00): worst 1.15e-4 at lag 0.14; stops 0; over 1e-4: [0.14:1.1e-4]
+lp_prop 20 thin (density 0.45): worst 1.53e-4 at lag 1.00; stops 0; over 1e-4: [0.66:1.0e-4 0.84:1.2e-4 1.00:1.5e-4]
+lp_prop 20 dense (density 1.31): worst 7.23e-5 at lag 0.10; stops 0; over 1e-4: []
+lp_prop 20: OVERALL 1.53e-4 ROUGH
+lp_prop 10 design (density 1.00): worst 2.11e-5 at lag 0.10; stops 0; over 1e-4: []
+lp_prop 10 thin (density 0.45): worst 1.13e-4 at lag 0.10; stops 0; over 1e-4: [0.10:1.1e-4]
+lp_prop 10 dense (density 1.31): worst 2.38e-5 at lag 0.10; stops 0; over 1e-4: []
+lp_prop 10: OVERALL 1.13e-4 ROUGH

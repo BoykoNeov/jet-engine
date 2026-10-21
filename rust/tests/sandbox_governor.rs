@@ -66,6 +66,12 @@ fn every_refusal_is_words() {
     // Rung 106 lifted the temperature limiter's lag beside the governor; what it still refuses there:
     refused(&ControlsSettings { redline_on: true, gov_lag_on: true, gov_lag: 0.05, ..d }, "at least 0.1 spool time constants");
     refused(&ControlsSettings { redline_on: true, gov_lag_on: true, from: 1500.0, to: 1000.0, ..d }, "above the temperature limiter's");
+    refused(&ControlsSettings { redline_on: true, gov_lag_on: true, hold: Hold::HpSpeed, gov_tau: 0.04, ..d },
+            "the speed governor's time constant must be at least 0.1");
+    refused(&ControlsSettings { redline_on: true, gov_lag_on: true, hold: Hold::HpSpeed, speed_law: SpeedLaw::Prop, gov_gain: 20.0, ..d },
+            "the speed governor's gain must be above 0 and at most 10");
+    refused(&ControlsSettings { redline_on: true, gov_lag_on: true, hold: Hold::Thrust, thrust_by: turbojet::sandbox_controls::ThrustBy::N1, ..d },
+            "the fan-speed governor's time constant must be at least 0.15");
     refused(&ControlsSettings { accel_on: true, release_on: true, ..d }, "realistic release");
     refused(&ControlsSettings { lever: LeverChoice::Bleed, bleed_mode: BleedMode::Valve, valve_lag_on: true, ..d },
             "instant valve");

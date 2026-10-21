@@ -572,7 +572,8 @@ footer p { max-width: 90ch; }
         <label class="swrow"><input type="checkbox" id="ctl-gov_lag_on"> …that reacts with a lag <small>rung 47</small></label>
         <div class="swbox" id="ctl-gov_lag-box">
           <div class="knob"><label for="ctl-gov_lag">Its lag <small>τ</small></label><input type="number" id="ctl-gov_lag" step="0.01">
-            <input type="range" id="ctl-gov_lag-r" min="0.02" max="1" step="0.01" aria-label="Limiter lag slider"></div></div>
+            <input type="range" id="ctl-gov_lag-r" min="0.02" max="1" step="0.01" aria-label="Limiter lag slider"></div>
+          <p class="note" id="ctl-lagnudge" hidden></p></div>
       </div>
       <label class="swrow"><input type="checkbox" id="ctl-accel_on"> Acceleration schedule <small>rung 48</small></label>
       <div class="swbox" id="ctl-accel-box">
@@ -1594,6 +1595,7 @@ function showSettings() {
     $("ctl-gpower-box").hidden = C.generator_by !== "power"; $("ctl-gshare-box").hidden = C.generator_by !== "share";
     $("ctl-bsched-box").hidden = C.bleed_mode !== "schedule"; $("ctl-valve-box").hidden = C.bleed_mode !== "valve";
     $("ctl-redline-box").hidden = C.redline_on !== 1; $("ctl-gov_lag-box").hidden = C.gov_lag_on !== 1;
+    if (!(C.govern && C.redline_on && C.gov_lag_on)) $("ctl-lagnudge").hidden = true;   // rung 106's note goes with the lag
     $("ctl-accel-box").hidden = C.accel_on !== 1; $("ctl-floor-box").hidden = C.floor_on !== 1;
     $("ctl-release-box").hidden = C.release_on !== 1; $("ctl-ref-row").hidden = !stators(C);
     $("ctl-stator-box").hidden = !stators(C); $("ctl-bleed-box").hidden = !bleeds(C);
@@ -2142,6 +2144,27 @@ function drawCtl() {
 const closest = (r, sp) => Math.min(...r["phi_" + sp].map((v, i) => (v / r["stall_" + sp][i] - 1) * 100));
 const HOLD_WORDS = { redline: "temperature limiter", accel: "acceleration schedule", floor: "stall floor", lag: "a lag's cut",
                      metal: "metal cap", min_fuel: "minimum-fuel stop" };
+// Rung 106: beside the slow limiter each speed governor has a tighter edge (measured at three flights; the model refuses
+// past it, scaled by the air's density as rung 95's limits are). When the switches come to need it, move the knob to the
+// edge and say so — a value typed in afterwards is left alone (the refusal answers it).
+const LAG_EDGE = { hp: { tau: 0.1, gain: 10 }, fan: { tau: 0.15, gain: 7 } };
+function govLagNudge() {
+  const note = $("ctl-lagnudge");
+  const fan = C.hold === "thrust" && C.thrust_by === "n1";
+  if (!(C.govern && C.redline_on && C.gov_lag_on && (C.hold === "speed" || fan))) { note.hidden = true; return; }
+  const e = LAG_EDGE[fan ? "fan" : "hp"], rho = (crun && crun.density_ratio) || 1;
+  const tauMin = Math.ceil(e.tau / Math.min(1, rho) * 1000) / 1000, gainMax = Math.floor(e.gain / Math.max(1, rho) * 10) / 10;
+  const who = fan ? "fan-speed" : "speed";
+  if (C.speed_law === "rate" && C.gov_tau < tauMin) {
+    C.gov_tau = tauMin;
+    note.textContent = `Beside the slow limiter the ${who} governor's time constant must be at least ${tauMin} τ (faster is worked out too roughly there): moved to ${tauMin}.`;
+    note.hidden = false;
+  } else if (C.speed_law === "prop" && C.gov_gain > gainMax) {
+    C.gov_gain = gainMax;
+    note.textContent = `Beside the slow limiter the ${who} governor's gain must be at most ${gainMax} (larger is worked out too roughly there): moved to ${gainMax}.`;
+    note.hidden = false;
+  } else note.hidden = true;
+}
 // Rung 95: what the governor held, and how long it sat at an edge of what the engine can burn.
 function govFor(r) {
   if (!r.governor) return "off: the fuel ramps between the ends";
@@ -3243,6 +3266,7 @@ function wire() {
   for (const k of CTL_SW) $("ctl-" + k).addEventListener("change", () => {
     C[k] = $("ctl-" + k).checked ? 1 : 0;
     if (k === "redline_on" && !C.redline_on) C.gov_lag_on = 0;   // the lag belongs to the limiter
+    if (["gov_lag_on", "govern", "redline_on"].includes(k)) govLagNudge();
     showSettings(); scheduleCtl();
   });
   hpWire("ctl", () => C, () => scheduleCtl());
@@ -3264,11 +3288,12 @@ function wire() {
   $("mode-controls").addEventListener("click", enterControls);
   // Rung 93's metal readout on the slam.
   for (const t of TECH) cclick("ctl-mtech-" + t, () => { C.metal_tech = t; });
-  for (const h of ["tt4", "thrust", "speed"]) cclick("ctl-hold-" + h, () => { C.hold = h; if (h === "tt4") C.hold_cap = 0; });
+  for (const h of ["tt4", "thrust", "speed"]) cclick("ctl-hold-" + h, () => { C.hold = h; if (h === "tt4") C.hold_cap = 0; govLagNudge(); });
   // Rung 95: the speed governor's law.
-  cclick("ctl-slaw-rate", () => { C.speed_law = "rate"; }); cclick("ctl-slaw-prop", () => { C.speed_law = "prop"; });
+  cclick("ctl-slaw-rate", () => { C.speed_law = "rate"; govLagNudge(); });
+  cclick("ctl-slaw-prop", () => { C.speed_law = "prop"; govLagNudge(); });
   // Rung 96: where a governed thrust is read from (the metal cap is not built beside an inferred thrust).
-  for (const k of ["true", "epr", "n1"]) cclick("ctl-by-" + k, () => { C.thrust_by = k; if (k !== "true") C.hold_cap = 0; });
+  for (const k of ["true", "epr", "n1"]) cclick("ctl-by-" + k, () => { C.thrust_by = k; if (k !== "true") C.hold_cap = 0; govLagNudge(); });
   // Rung 98: where the control's tables are made.
   for (const a of ["design", "flight"]) cclick("ctl-tat-" + a, () => { C.table_at = a; });
   // Rung 99: how a design-flight table is corrected for flight speed.

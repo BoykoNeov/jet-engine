@@ -553,7 +553,18 @@ try {
       return p.className; })()`;
     await ev(unclip(true)); await shot('controls-inferred'); await ev(unclip(false));
   }
-  await ev(`window.sandbox.controls({govern: 0, hold: 'tt4', thrust_by: 'true'}).then(r => r.run)`);
+  // Rung 106: govern HP speed by the proportional law at the page's default gain (20) with the temperature limiter on,
+  // then tick its lag through its own checkbox -- the page nudges the gain to the lag's edge (10) and says so, the run
+  // takes the lagged-governor route, and the lag's cut holds the fuel somewhere.
+  await ev(`window.sandbox.controls({thrust_by: 'true', hold: 'speed', speed_law: 'prop', gov_gain: 20, redline_on: 1, gov_lag_on: 0}).then(r => r.run)`);
+  await ev(`(() => { const e = document.getElementById('ctl-gov_lag_on'); e.checked = true; e.dispatchEvent(new Event('change', {bubbles: true})); })()`);
+  const lOn = await waitFor(`window.sandbox.ctlState === 'done' && window.sandbox.last.controls && window.sandbox.last.controls.gov_lag_on === 1`, 60000);
+  const lr = await ev(`(() => { const r = window.sandbox.last, n = document.getElementById('ctl-lagnudge');
+      return [r.route, r.controls.gov_gain, document.getElementById('ctl-gov_gain').value, n.hidden, /moved to 10/.test(n.textContent),
+              r.holder.includes('lag')]; })()`);
+  check('the_lag_beside_the_governor_nudges_the_gain_and_runs_the_lagged_route', lOn && lr[0] === 'governor_lag' && lr[1] === 10
+        && lr[2] === '10' && lr[3] === false && lr[4] && lr[5], JSON.stringify([lOn, lr]));
+  await ev(`window.sandbox.controls({govern: 0, hold: 'tt4', thrust_by: 'true', speed_law: 'rate', gov_gain: 20, redline_on: 0, gov_lag_on: 0}).then(r => r.run)`);
   await ev(`document.getElementById('ctlq-Tt4').click()`);
   await ev(`window.sandbox.controls({lever: 'none', floor_on: 0, floor_phi: 0.75, floor_ref: 'phi', bleed_mode: 'schedule',
             valve_ref: 'phi', valve_speed: 'instant', valve_close: 'same', customer: 'off'}).then(r => r.run)`);

@@ -204,8 +204,8 @@ fn every_lagged_governed_step_reruns_bit_for_bit() {
     use turbojet::sandbox_controls::{replay_step, stop_reason};
     for s in [gl_on(ControlsSettings { hold: Hold::Thrust, accel_on: true, ..d() }),
               gl_on(ControlsSettings { hold: Hold::HpSpeed, floor_on: true, ..d() }),
-              gl_on(ControlsSettings { hold: Hold::HpSpeed, speed_law: SpeedLaw::Prop, to: 1600.0, gov_lag: 0.1, ..d() }),
-              gl_on(ControlsSettings { hold: Hold::Thrust, thrust_by: ThrustBy::N1, ..d() })] {
+              gl_on(ControlsSettings { hold: Hold::HpSpeed, speed_law: SpeedLaw::Prop, gov_gain: 10.0, to: 1600.0, gov_lag: 0.1, ..d() }),
+              gl_on(ControlsSettings { hold: Hold::Thrust, thrust_by: ThrustBy::N1, gov_tau: 0.15, ..d() })] {
         let (sv, o) = controls(&s).unwrap();
         assert_eq!(sv.route(), Route::GovernorLag);
         assert_eq!(o.points.len(), s.expected_points());
@@ -223,15 +223,20 @@ fn the_step_check_at_the_fastest_lag() {
     // § 12.10's class at the governed lag's floor: the march at 0.02 against 0.005, flow coefficients to 1e-4, on each
     // hold at its own most demanding knob (rung 95's step-check floors). Measured first: at ONE step (0.02, rung 47's
     // floor alone) the governed march misses by ~2e-4 under thrust and HP speed (the open ramp: 9.4e-5); at three steps
-    // the fastest speed law (TAU_MIN) still 2.0e-4, at 0.1 6.9e-5, at 0.2 9.4e-5 — so the governed floor is 0.1.
-    use turbojet::sandbox_controls::{GOV_LAG_MIN, GAIN_MAX, TAU_MIN};
-    // (each hold at the floor, and the fastest speed law also at rung 47's own default lag 0.2)
+    // the fastest speed law (TAU_MIN) still 2.0e-4 — so the governed floor is 0.1. A sweep of the lag 0.1–1.0 at three
+    // flights then found the fastest speed law ROUGH at scattered lags (up to 5e-4, the governor on the rich wall), and
+    // clean from a commanded rate of 0.1 on — the page's floor for it beside the lag (scratch-archive/rung106/floor_probe.rs).
+    use turbojet::sandbox_controls::{GOV_LAG_MIN, GOV_LAG_TAU_N_MIN, GOV_LAG_TAU_LP_MIN, GOV_LAG_GAIN_MAX, GOV_LAG_GAIN_MAX_LP};
+    // (each hold at the page's floor and each speed law at its edge beside the lag; the HP rate also at 0.16, its worst
+    // lag at TAU_MIN — the full sweeps at three flights: scratch-archive/rung106/edge.rs)
     for (s, lag) in [(ControlsSettings { hold: Hold::Thrust, ..d() }, GOV_LAG_MIN),
-                     (ControlsSettings { hold: Hold::HpSpeed, gov_tau: TAU_MIN, ..d() }, GOV_LAG_MIN),
-                     (ControlsSettings { hold: Hold::HpSpeed, gov_tau: TAU_MIN, ..d() }, 0.2),
-                     (ControlsSettings { hold: Hold::HpSpeed, speed_law: SpeedLaw::Prop, gov_gain: GAIN_MAX, ..d() }, GOV_LAG_MIN),
+                     (ControlsSettings { hold: Hold::HpSpeed, gov_tau: GOV_LAG_TAU_N_MIN, ..d() }, GOV_LAG_MIN),
+                     (ControlsSettings { hold: Hold::HpSpeed, gov_tau: GOV_LAG_TAU_N_MIN, ..d() }, 0.16),
+                     (ControlsSettings { hold: Hold::HpSpeed, speed_law: SpeedLaw::Prop, gov_gain: GOV_LAG_GAIN_MAX, ..d() }, GOV_LAG_MIN),
                      (ControlsSettings { hold: Hold::Thrust, thrust_by: ThrustBy::Epr, ..d() }, GOV_LAG_MIN),
-                     (ControlsSettings { hold: Hold::Thrust, thrust_by: ThrustBy::N1, ..d() }, GOV_LAG_MIN),
+                     (ControlsSettings { hold: Hold::Thrust, thrust_by: ThrustBy::N1, gov_tau: GOV_LAG_TAU_LP_MIN, ..d() }, GOV_LAG_MIN),
+                     (ControlsSettings { hold: Hold::Thrust, thrust_by: ThrustBy::N1, speed_law: SpeedLaw::Prop,
+                                         gov_gain: GOV_LAG_GAIN_MAX_LP, ..d() }, GOV_LAG_MIN),
                      (ControlsSettings { hold: Hold::BurnerTemp, to: 1600.0, ..d() }, GOV_LAG_MIN)] {
         let s = gl_on(ControlsSettings { gov_lag: lag, ..s });
         let sv = build(&s).unwrap();
@@ -309,3 +314,4 @@ fn h4_the_lag_makes_the_governed_thrust_later_and_the_thrust_sags_after_the_move
         assert!(fi.windows(2).all(|w| w[1] >= w[0] - 1e-9), "the instant limiter's thrust never falls");
     }
 }
+

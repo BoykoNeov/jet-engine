@@ -71,8 +71,19 @@ pub const DS: f64 = 0.02;
 /// Rung 106: the temperature limiter's lag beside the governor must be at least five march steps — the step check
 /// (`tests/rung106.rs`): the governed march at the page's step against one four times finer moves the flow coefficients
 /// by ~2e−4 at a lag of one step (thrust or HP speed), and at three steps still by 2.0e−4 under the fastest speed law
-/// (`TAU_MIN`) — two fast clocks together; from 0.1 every hold is under 1e−4. Rung 47's open route keeps its one step.
+/// (`TAU_MIN`) — two fast clocks together; from 0.1, with each speed law at its own edge beside the lag (below), every
+/// hold is under 1e−4. Rung 47's open route keeps its one step.
 pub const GOV_LAG_MIN: f64 = 0.1;
+/// Rung 106 (the user's choice, "limit each law", after sweeps of the lag 0.1–1.0 at the design, a thin and a dense
+/// flight): beside the lag every speed law is ROUGH in the step at its rung-95/96 edge — up to 5e−4 (HP rate at
+/// `TAU_MIN`), 2.9e−4 (fan-speed rate at `TAU_MIN_LP`), 6.5e−4 (HP gain 50), 4.9e−4 (fan-speed gain 50) in flow
+/// coefficient, at scattered lags. Each edge below is the first measured value under 1e−4 at every lag and all three
+/// flights (`docs/plans/scratch-archive/rung106/edge.rs`); scaled by the density as rung 95's are (plan § 27). The thrust
+/// and pressure-ratio holds were clean throughout and need none.
+pub const GOV_LAG_TAU_N_MIN: f64 = 0.1;
+pub const GOV_LAG_TAU_LP_MIN: f64 = 0.15;
+pub const GOV_LAG_GAIN_MAX: f64 = 10.0;
+pub const GOV_LAG_GAIN_MAX_LP: f64 = 7.0;
 
 /// RUNG 102's defaults on this view: the afterburner's temperature (Fly it's), and the light-off at the ramp's end of
 /// the page's opening run (full throttle reached — where a pilot lights it).
@@ -1045,8 +1056,29 @@ pub fn controls_precheck(s: &ControlsSettings) -> Result<(), DoesNotRun> {
         if s.gov_lag_on && s.redline_on && !(s.gov_lag >= GOV_LAG_MIN - 1e-12) {
             return Err(DoesNotRun(format!(
                 "Beside the governor the temperature limiter's lag must be at least {GOV_LAG_MIN} spool time constants \
-                 (three march steps): measured, a faster lag moves the flow coefficients by up to 0.0002 against a finer \
-                 step.")));
+                 (five march steps): measured, a faster lag beside a fast governor moves the flow coefficients by up to \
+                 0.0002 against a finer step.")));
+        }
+        // Rung 106 (the user's "limit each law"): beside the lag, each speed law's own clean edge (`GOV_LAG_*`).
+        let fan = s.hold == Hold::Thrust && s.thrust_by == ThrustBy::N1;
+        if s.gov_lag_on && s.redline_on && (s.hold == Hold::HpSpeed || fan) {
+            let (shaft, tau_edge, gain_edge) = match fan {
+                true => ("fan-speed", GOV_LAG_TAU_LP_MIN, GOV_LAG_GAIN_MAX_LP),
+                false => ("speed", GOV_LAG_TAU_N_MIN, GOV_LAG_GAIN_MAX),
+            };
+            let (rate_min, gain_max) = (tau_edge / s.density_ratio().min(1.0), gain_edge / s.density_ratio().max(1.0));
+            if s.speed_law == SpeedLaw::Rate && !(s.gov_tau >= rate_min - 1e-12) {
+                return Err(DoesNotRun(format!(
+                    "Beside the temperature limiter's lag the {shaft} governor's time constant must be at least {} spool \
+                     time constants{}: measured, a faster one there gives numbers that depend on the step by up to 0.0005 \
+                     in flow coefficient.", tau_text(rate_min), thin_words(s, ""))));
+            }
+            if s.speed_law == SpeedLaw::Prop && !(s.gov_gain > 0.0 && s.gov_gain <= gain_max + 1e-12) {
+                return Err(DoesNotRun(format!(
+                    "Beside the temperature limiter's lag the {shaft} governor's gain must be above 0 and at most {}{}: \
+                     measured, a larger one there gives numbers that depend on the step by up to 0.0006 in flow \
+                     coefficient.", gain_text(gain_max), dense_words(s))));
+            }
         }
         if s.release_on {
             return no("The governor runs with the instant limiters only: the realistic release carries its cut as a \
