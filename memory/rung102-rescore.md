@@ -28,6 +28,7 @@ the `pin` arm reproduced `score_c.txt` and `tt4hold.txt` line for line (the advi
 might move C10/C12 — they did not). Only then is every other-law difference the law's. Keep a diff script
 (`cmp.py`) in the archive beside the outputs.
 
-Also: the PowerShell `Start-Process` launch of a page test ran at NORMAL priority — use the Bash `cmd //v:on //c "start
-/belownormal …"` form; a path with a space needs the PowerShell route only with `-PriorityClass` set after launch, which
-misses children ([[run-tests-below-normal]]).
+Also: a page test launched by PowerShell `Start-Process` ran at NORMAL priority. The trigger was my own `jet^ engine`
+escaping inside the cmd string, not the space: from the repo root `cmd //v:on //c "start /belownormal /b /wait cargo test
+--release --manifest-path rust\Cargo.toml --test X & exit !errorlevel!"` has no space and works (re-run, 13/13)
+([[run-tests-below-normal]]).
