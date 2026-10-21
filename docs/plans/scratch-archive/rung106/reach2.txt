@@ -1,0 +1,494 @@
+(a) flat-LP + floor: rung 95's own march
+  Tt4       : r95 43 pts, lagged 43 pts; lagged stop: rk s=0.840: rung-49 phi floor 0.7500 on the LP spool is UNREACHABLE at nu=(0.7284,0.7221) -- no fuel this side of flame-out restores it. Lower the floor (it must sit below the running-line phi).
+  thrust    : r95 42 pts, lagged 42 pts; lagged stop: rk s=0.820: rung-49 phi floor 0.7500 on the LP spool is UNREACHABLE at nu=(0.7324,0.7253) -- no fuel this side of flame-out restores it. Lower the floor (it must sit below the running-line phi).
+  HP rate .1: r95 42 pts, lagged 42 pts; lagged stop: rk s=0.820: rung-49 phi floor 0.7500 on the LP spool is UNREACHABLE at nu=(0.7324,0.7253) -- no fuel this side of flame-out restores it. Lower the floor (it must sit below the running-line phi).
+  HP prop 20: r95 42 pts, lagged 42 pts; lagged stop: rk s=0.820: rung-49 phi floor 0.7500 on the LP spool is UNREACHABLE at nu=(0.7324,0.7253) -- no fuel this side of flame-out restores it. Lower the floor (it must sit below the running-line phi).
+  EPR       : r95 42 pts, lagged 42 pts; lagged stop: rk s=0.820: rung-49 phi floor 0.7500 on the LP spool is UNREACHABLE at nu=(0.7324,0.7253) -- no fuel this side of flame-out restores it. Lower the floor (it must sit below the running-line phi).
+  N1 rate   : r95 42 pts, lagged 42 pts; lagged stop: rk s=0.820: rung-49 phi floor 0.7500 on the LP spool is UNREACHABLE at nu=(0.7324,0.7253) -- no fuel this side of flame-out restores it. Lower the floor (it must sit below the running-line phi).
+  N1 prop   : r95 42 pts, lagged 42 pts; lagged stop: rk s=0.820: rung-49 phi floor 0.7500 on the LP spool is UNREACHABLE at nu=(0.7324,0.7253) -- no fuel this side of flame-out restores it. Lower the floor (it must sit below the running-line phi).
+(b) fast ramp 0.16, redline 1440
+  flow/press Tt4        tau 0.02: 109/109 pts, applied-lean 0
+  flow/press Tt4        tau 0.2: 109/109 pts, applied-lean 0
+  flow/press Tt4        tau 0.8: 109/109 pts, applied-lean 0
+  flow/press thrust     tau 0.02: 109/109 pts, applied-lean 0
+  flow/press thrust     tau 0.2: 109/109 pts, applied-lean 0
+  flow/press thrust     tau 0.8: 109/109 pts, applied-lean 0
+  flow/press HP rate .1 tau 0.02: 109/109 pts, applied-lean 0
+  flow/press HP rate .1 tau 0.2: 109/109 pts, applied-lean 0
+  flow/press HP rate .1 tau 0.8: 109/109 pts, applied-lean 0
+  flow/press HP prop 20 tau 0.02: 109/109 pts, applied-lean 0
+  flow/press HP prop 20 tau 0.2: 109/109 pts, applied-lean 0
+  flow/press HP prop 20 tau 0.8: 109/109 pts, applied-lean 0
+  flow/press EPR        tau 0.02: 109/109 pts, applied-lean 0
+  flow/press EPR        tau 0.2: 109/109 pts, applied-lean 0
+  flow/press EPR        tau 0.8: 109/109 pts, applied-lean 0
+  flow/press N1 rate    tau 0.02: 109/109 pts, applied-lean 0
+  flow/press N1 rate    tau 0.2: 109/109 pts, applied-lean 0
+  flow/press N1 rate    tau 0.8: 109/109 pts, applied-lean 0
+  flow/press N1 prop    tau 0.02: 109/109 pts, applied-lean 0
+  flow/press N1 prop    tau 0.2: 109/109 pts, applied-lean 0
+  flow/press N1 prop    tau 0.8: 109/109 pts, applied-lean 0
+  press/flow Tt4        tau 0.02: 109/109 pts, applied-lean 0
+  press/flow Tt4        tau 0.2: 109/109 pts, applied-lean 0
+  press/flow Tt4        tau 0.8: 109/109 pts, applied-lean 0
+  press/flow thrust     tau 0.02: 109/109 pts, applied-lean 0
+  press/flow thrust     tau 0.2: 109/109 pts, applied-lean 0
+  press/flow thrust     tau 0.8: 109/109 pts, applied-lean 0
+  press/flow HP rate .1 tau 0.02: 109/109 pts, applied-lean 0
+  press/flow HP rate .1 tau 0.2: 109/109 pts, applied-lean 0
+  press/flow HP rate .1 tau 0.8: 109/109 pts, applied-lean 0
+  press/flow HP prop 20 tau 0.02: 109/109 pts, applied-lean 0
+  press/flow HP prop 20 tau 0.2: 109/109 pts, applied-lean 0
+  press/flow HP prop 20 tau 0.8: 109/109 pts, applied-lean 0
+  press/flow EPR        tau 0.02: 109/109 pts, applied-lean 0
+  press/flow EPR        tau 0.2: 109/109 pts, applied-lean 0
+  press/flow EPR        tau 0.8: 109/109 pts, applied-lean 0
+  press/flow N1 rate    tau 0.02: 109/109 pts, applied-lean 0
+  press/flow N1 rate    tau 0.2: 109/109 pts, applied-lean 0
+  press/flow N1 rate    tau 0.8: 109/109 pts, applied-lean 0
+  press/flow N1 prop    tau 0.02: 109/109 pts, applied-lean 0
+  press/flow N1 prop    tau 0.2: 109/109 pts, applied-lean 0
+  press/flow N1 prop    tau 0.8: 109/109 pts, applied-lean 0
+  tilted     Tt4        tau 0.02: 109/109 pts, applied-lean 0
+  tilted     Tt4        tau 0.2: 109/109 pts, applied-lean 0
+  tilted     Tt4        tau 0.8: 109/109 pts, applied-lean 0
+  tilted     thrust     tau 0.02: 109/109 pts, applied-lean 0
+  tilted     thrust     tau 0.2: 109/109 pts, applied-lean 0
+  tilted     thrust     tau 0.8: 109/109 pts, applied-lean 0
+  tilted     HP rate .1 tau 0.02: 109/109 pts, applied-lean 0
+  tilted     HP rate .1 tau 0.2: 109/109 pts, applied-lean 0
+  tilted     HP rate .1 tau 0.8: 109/109 pts, applied-lean 0
+  tilted     HP prop 20 tau 0.02: 109/109 pts, applied-lean 0
+  tilted     HP prop 20 tau 0.2: 109/109 pts, applied-lean 0
+  tilted     HP prop 20 tau 0.8: 109/109 pts, applied-lean 0
+  tilted     EPR        tau 0.02: 109/109 pts, applied-lean 0
+  tilted     EPR        tau 0.2: 109/109 pts, applied-lean 0
+  tilted     EPR        tau 0.8: 109/109 pts, applied-lean 0
+  tilted     N1 rate    tau 0.02: 109/109 pts, applied-lean 0
+  tilted     N1 rate    tau 0.2: 109/109 pts, applied-lean 0
+  tilted     N1 rate    tau 0.8: 109/109 pts, applied-lean 0
+  tilted     N1 prop    tau 0.02: 109/109 pts, applied-lean 0
+  tilted     N1 prop    tau 0.2: 109/109 pts, applied-lean 0
+  tilted     N1 prop    tau 0.8: 109/109 pts, applied-lean 0
+  flat-lp    Tt4        tau 0.02: 109/109 pts, applied-lean 0
+  flat-lp    Tt4        tau 0.2: 109/109 pts, applied-lean 0
+  flat-lp    Tt4        tau 0.8: 109/109 pts, applied-lean 0
+  flat-lp    thrust     tau 0.02: 109/109 pts, applied-lean 0
+  flat-lp    thrust     tau 0.2: 109/109 pts, applied-lean 0
+  flat-lp    thrust     tau 0.8: 109/109 pts, applied-lean 0
+  flat-lp    HP rate .1 tau 0.02: 109/109 pts, applied-lean 0
+  flat-lp    HP rate .1 tau 0.2: 109/109 pts, applied-lean 0
+  flat-lp    HP rate .1 tau 0.8: 109/109 pts, applied-lean 0
+  flat-lp    HP prop 20 tau 0.02: 109/109 pts, applied-lean 0
+  flat-lp    HP prop 20 tau 0.2: 109/109 pts, applied-lean 0
+  flat-lp    HP prop 20 tau 0.8: 109/109 pts, applied-lean 0
+  flat-lp    EPR        tau 0.02: 109/109 pts, applied-lean 0
+  flat-lp    EPR        tau 0.2: 109/109 pts, applied-lean 0
+  flat-lp    EPR        tau 0.8: 109/109 pts, applied-lean 0
+  flat-lp    N1 rate    tau 0.02: 109/109 pts, applied-lean 0
+  flat-lp    N1 rate    tau 0.2: 109/109 pts, applied-lean 0
+  flat-lp    N1 rate    tau 0.8: 109/109 pts, applied-lean 0
+  flat-lp    N1 prop    tau 0.02: 109/109 pts, applied-lean 0
+  flat-lp    N1 prop    tau 0.2: 109/109 pts, applied-lean 0
+  flat-lp    N1 prop    tau 0.8: 109/109 pts, applied-lean 0
+(c) wider sweep: applied-lean counts
+  LEAN 1450->1000 rl 1300 ramp 0.1 flow/press thrust tau 0.02: 10 pts
+  LEAN 1450->1000 rl 1300 ramp 0.1 flow/press thrust tau 0.8: 10 pts
+  LEAN 1450->1000 rl 1300 ramp 0.1 flow/press HP rate .1 tau 0.02: 29 pts
+  LEAN 1450->1000 rl 1300 ramp 0.1 flow/press HP rate .1 tau 0.8: 31 pts
+  LEAN 1450->1000 rl 1300 ramp 0.1 flow/press HP prop 20 tau 0.02: 26 pts
+  LEAN 1450->1000 rl 1300 ramp 0.1 flow/press HP prop 20 tau 0.8: 27 pts
+  LEAN 1450->1000 rl 1300 ramp 0.1 flow/press EPR tau 0.02: 20 pts
+  LEAN 1450->1000 rl 1300 ramp 0.1 flow/press EPR tau 0.8: 20 pts
+  LEAN 1450->1000 rl 1300 ramp 0.1 flow/press N1 rate tau 0.02: 20 pts
+  LEAN 1450->1000 rl 1300 ramp 0.1 flow/press N1 rate tau 0.8: 20 pts
+  LEAN 1450->1000 rl 1300 ramp 0.1 flow/press N1 prop tau 0.02: 9 pts
+  LEAN 1450->1000 rl 1300 ramp 0.1 flow/press N1 prop tau 0.8: 9 pts
+  LEAN 1450->1000 rl 1300 ramp 0.1 press/flow thrust tau 0.02: 12 pts
+  LEAN 1450->1000 rl 1300 ramp 0.1 press/flow thrust tau 0.8: 12 pts
+  LEAN 1450->1000 rl 1300 ramp 0.1 press/flow HP rate .1 tau 0.02: 27 pts
+  LEAN 1450->1000 rl 1300 ramp 0.1 press/flow HP rate .1 tau 0.8: 27 pts
+  LEAN 1450->1000 rl 1300 ramp 0.1 press/flow HP prop 20 tau 0.02: 24 pts
+  LEAN 1450->1000 rl 1300 ramp 0.1 press/flow HP prop 20 tau 0.8: 24 pts
+  LEAN 1450->1000 rl 1300 ramp 0.1 press/flow EPR tau 0.02: 20 pts
+  LEAN 1450->1000 rl 1300 ramp 0.1 press/flow EPR tau 0.8: 21 pts
+  LEAN 1450->1000 rl 1300 ramp 0.1 press/flow N1 rate tau 0.02: 24 pts
+  LEAN 1450->1000 rl 1300 ramp 0.1 press/flow N1 rate tau 0.8: 24 pts
+  LEAN 1450->1000 rl 1300 ramp 0.1 press/flow N1 prop tau 0.02: 11 pts
+  LEAN 1450->1000 rl 1300 ramp 0.1 press/flow N1 prop tau 0.8: 11 pts
+  LEAN 1450->1000 rl 1300 ramp 0.1 tilted thrust tau 0.02: 11 pts
+  LEAN 1450->1000 rl 1300 ramp 0.1 tilted thrust tau 0.8: 11 pts
+  LEAN 1450->1000 rl 1300 ramp 0.1 tilted HP rate .1 tau 0.02: 27 pts
+  LEAN 1450->1000 rl 1300 ramp 0.1 tilted HP rate .1 tau 0.8: 29 pts
+  LEAN 1450->1000 rl 1300 ramp 0.1 tilted HP prop 20 tau 0.02: 25 pts
+  LEAN 1450->1000 rl 1300 ramp 0.1 tilted HP prop 20 tau 0.8: 25 pts
+  LEAN 1450->1000 rl 1300 ramp 0.1 tilted EPR tau 0.02: 20 pts
+  LEAN 1450->1000 rl 1300 ramp 0.1 tilted EPR tau 0.8: 20 pts
+  LEAN 1450->1000 rl 1300 ramp 0.1 tilted N1 rate tau 0.02: 22 pts
+  LEAN 1450->1000 rl 1300 ramp 0.1 tilted N1 rate tau 0.8: 22 pts
+  LEAN 1450->1000 rl 1300 ramp 0.1 tilted N1 prop tau 0.02: 10 pts
+  LEAN 1450->1000 rl 1300 ramp 0.1 tilted N1 prop tau 0.8: 10 pts
+  LEAN 1450->1000 rl 1300 ramp 0.1 flat-lp thrust tau 0.02: 10 pts
+  LEAN 1450->1000 rl 1300 ramp 0.1 flat-lp thrust tau 0.8: 10 pts
+  LEAN 1450->1000 rl 1300 ramp 0.1 flat-lp HP rate .1 tau 0.02: 30 pts
+  LEAN 1450->1000 rl 1300 ramp 0.1 flat-lp HP rate .1 tau 0.8: 31 pts
+  LEAN 1450->1000 rl 1300 ramp 0.1 flat-lp HP prop 20 tau 0.02: 26 pts
+  LEAN 1450->1000 rl 1300 ramp 0.1 flat-lp HP prop 20 tau 0.8: 26 pts
+  LEAN 1450->1000 rl 1300 ramp 0.1 flat-lp EPR tau 0.02: 18 pts
+  LEAN 1450->1000 rl 1300 ramp 0.1 flat-lp EPR tau 0.8: 18 pts
+  LEAN 1450->1000 rl 1300 ramp 0.1 flat-lp N1 rate tau 0.02: 7 pts
+  LEAN 1450->1000 rl 1300 ramp 0.1 flat-lp N1 rate tau 0.8: 7 pts
+  LEAN 1450->1000 rl 1300 ramp 0.1 flat-lp N1 prop tau 0.02: 3 pts
+  LEAN 1450->1000 rl 1300 ramp 0.1 flat-lp N1 prop tau 0.8: 3 pts
+  LEAN 1450->1000 rl 1300 ramp 0.5 flow/press HP rate .1 tau 0.02: 22 pts
+  LEAN 1450->1000 rl 1300 ramp 0.5 flow/press HP rate .1 tau 0.8: 25 pts
+  LEAN 1450->1000 rl 1300 ramp 0.5 flow/press HP prop 20 tau 0.02: 18 pts
+  LEAN 1450->1000 rl 1300 ramp 0.5 flow/press HP prop 20 tau 0.8: 18 pts
+  LEAN 1450->1000 rl 1300 ramp 0.5 flow/press EPR tau 0.02: 9 pts
+  LEAN 1450->1000 rl 1300 ramp 0.5 flow/press EPR tau 0.8: 9 pts
+  LEAN 1450->1000 rl 1300 ramp 0.5 flow/press N1 rate tau 0.02: 10 pts
+  LEAN 1450->1000 rl 1300 ramp 0.5 flow/press N1 rate tau 0.8: 10 pts
+  LEAN 1450->1000 rl 1300 ramp 0.5 press/flow HP rate .1 tau 0.02: 19 pts
+  LEAN 1450->1000 rl 1300 ramp 0.5 press/flow HP rate .1 tau 0.8: 20 pts
+  LEAN 1450->1000 rl 1300 ramp 0.5 press/flow HP prop 20 tau 0.02: 14 pts
+  LEAN 1450->1000 rl 1300 ramp 0.5 press/flow HP prop 20 tau 0.8: 14 pts
+  LEAN 1450->1000 rl 1300 ramp 0.5 press/flow EPR tau 0.02: 10 pts
+  LEAN 1450->1000 rl 1300 ramp 0.5 press/flow EPR tau 0.8: 10 pts
+  LEAN 1450->1000 rl 1300 ramp 0.5 press/flow N1 rate tau 0.02: 14 pts
+  LEAN 1450->1000 rl 1300 ramp 0.5 press/flow N1 rate tau 0.8: 16 pts
+  LEAN 1450->1000 rl 1300 ramp 0.5 tilted HP rate .1 tau 0.02: 19 pts
+  LEAN 1450->1000 rl 1300 ramp 0.5 tilted HP rate .1 tau 0.8: 23 pts
+  LEAN 1450->1000 rl 1300 ramp 0.5 tilted HP prop 20 tau 0.02: 16 pts
+  LEAN 1450->1000 rl 1300 ramp 0.5 tilted HP prop 20 tau 0.8: 16 pts
+  LEAN 1450->1000 rl 1300 ramp 0.5 tilted EPR tau 0.02: 10 pts
+  LEAN 1450->1000 rl 1300 ramp 0.5 tilted EPR tau 0.8: 10 pts
+  LEAN 1450->1000 rl 1300 ramp 0.5 tilted N1 rate tau 0.02: 12 pts
+  LEAN 1450->1000 rl 1300 ramp 0.5 tilted N1 rate tau 0.8: 13 pts
+  LEAN 1450->1000 rl 1300 ramp 0.5 flat-lp HP rate .1 tau 0.02: 21 pts
+  LEAN 1450->1000 rl 1300 ramp 0.5 flat-lp HP rate .1 tau 0.8: 26 pts
+  LEAN 1450->1000 rl 1300 ramp 0.5 flat-lp HP prop 20 tau 0.02: 17 pts
+  LEAN 1450->1000 rl 1300 ramp 0.5 flat-lp HP prop 20 tau 0.8: 18 pts
+  LEAN 1450->1000 rl 1300 ramp 0.5 flat-lp EPR tau 0.02: 7 pts
+  LEAN 1450->1000 rl 1300 ramp 0.5 flat-lp EPR tau 0.8: 7 pts
+  LEAN 1700->900 rl 1300 ramp 0.1 flow/press thrust tau 0.02: 29 pts
+  LEAN 1700->900 rl 1300 ramp 0.1 flow/press thrust tau 0.8: 34 pts
+  LEAN 1700->900 rl 1300 ramp 0.1 flow/press HP rate .1 tau 0.02: 32 pts
+  LEAN 1700->900 rl 1300 ramp 0.1 flow/press HP rate .1 tau 0.8: 58 pts
+  LEAN 1700->900 rl 1300 ramp 0.1 flow/press HP prop 20 tau 0.02: 31 pts
+  LEAN 1700->900 rl 1300 ramp 0.1 flow/press HP prop 20 tau 0.8: 51 pts
+  LEAN 1700->900 rl 1300 ramp 0.1 flow/press EPR tau 0.02: 30 pts
+  LEAN 1700->900 rl 1300 ramp 0.1 flow/press EPR tau 0.8: 44 pts
+  LEAN 1700->900 rl 1300 ramp 0.1 flow/press N1 rate tau 0.02: 30 pts
+  LEAN 1700->900 rl 1300 ramp 0.1 flow/press N1 rate tau 0.8: 44 pts
+  LEAN 1700->900 rl 1300 ramp 0.1 flow/press N1 prop tau 0.02: 29 pts
+  LEAN 1700->900 rl 1300 ramp 0.1 flow/press N1 prop tau 0.8: 30 pts
+  LEAN 1700->900 rl 1300 ramp 0.1 press/flow thrust tau 0.02: 29 pts
+  LEAN 1700->900 rl 1300 ramp 0.1 press/flow thrust tau 0.8: 34 pts
+  LEAN 1700->900 rl 1300 ramp 0.1 press/flow HP rate .1 tau 0.02: 31 pts
+  LEAN 1700->900 rl 1300 ramp 0.1 press/flow HP rate .1 tau 0.8: 49 pts
+  LEAN 1700->900 rl 1300 ramp 0.1 press/flow HP prop 20 tau 0.02: 31 pts
+  LEAN 1700->900 rl 1300 ramp 0.1 press/flow HP prop 20 tau 0.8: 45 pts
+  LEAN 1700->900 rl 1300 ramp 0.1 press/flow EPR tau 0.02: 31 pts
+  LEAN 1700->900 rl 1300 ramp 0.1 press/flow EPR tau 0.8: 44 pts
+  LEAN 1700->900 rl 1300 ramp 0.1 press/flow N1 rate tau 0.02: 32 pts
+  LEAN 1700->900 rl 1300 ramp 0.1 press/flow N1 rate tau 0.8: 49 pts
+  LEAN 1700->900 rl 1300 ramp 0.1 press/flow N1 prop tau 0.02: 31 pts
+  LEAN 1700->900 rl 1300 ramp 0.1 press/flow N1 prop tau 0.8: 33 pts
+  LEAN 1700->900 rl 1300 ramp 0.1 tilted thrust tau 0.02: 29 pts
+  LEAN 1700->900 rl 1300 ramp 0.1 tilted thrust tau 0.8: 34 pts
+  LEAN 1700->900 rl 1300 ramp 0.1 tilted HP rate .1 tau 0.02: 31 pts
+  LEAN 1700->900 rl 1300 ramp 0.1 tilted HP rate .1 tau 0.8: 55 pts
+  LEAN 1700->900 rl 1300 ramp 0.1 tilted HP prop 20 tau 0.02: 31 pts
+  LEAN 1700->900 rl 1300 ramp 0.1 tilted HP prop 20 tau 0.8: 48 pts
+  LEAN 1700->900 rl 1300 ramp 0.1 tilted EPR tau 0.02: 30 pts
+  LEAN 1700->900 rl 1300 ramp 0.1 tilted EPR tau 0.8: 44 pts
+  LEAN 1700->900 rl 1300 ramp 0.1 tilted N1 rate tau 0.02: 31 pts
+  LEAN 1700->900 rl 1300 ramp 0.1 tilted N1 rate tau 0.8: 46 pts
+  LEAN 1700->900 rl 1300 ramp 0.1 tilted N1 prop tau 0.02: 30 pts
+  LEAN 1700->900 rl 1300 ramp 0.1 tilted N1 prop tau 0.8: 31 pts
+  LEAN 1700->900 rl 1300 ramp 0.1 flat-lp thrust tau 0.02: 30 pts
+  LEAN 1700->900 rl 1300 ramp 0.1 flat-lp thrust tau 0.8: 30 pts
+  LEAN 1700->900 rl 1300 ramp 0.1 flat-lp HP rate .1 tau 0.02: 30 pts
+  LEAN 1700->900 rl 1300 ramp 0.1 flat-lp HP rate .1 tau 0.8: 59 pts
+  LEAN 1700->900 rl 1300 ramp 0.1 flat-lp HP prop 20 tau 0.02: 30 pts
+  LEAN 1700->900 rl 1300 ramp 0.1 flat-lp HP prop 20 tau 0.8: 52 pts
+  LEAN 1700->900 rl 1300 ramp 0.1 flat-lp EPR tau 0.02: 30 pts
+  LEAN 1700->900 rl 1300 ramp 0.1 flat-lp EPR tau 0.8: 39 pts
+  LEAN 1700->900 rl 1300 ramp 0.1 flat-lp N1 rate tau 0.02: 22 pts
+  LEAN 1700->900 rl 1300 ramp 0.1 flat-lp N1 rate tau 0.8: 23 pts
+  LEAN 1700->900 rl 1300 ramp 0.1 flat-lp N1 prop tau 0.02: 15 pts
+  LEAN 1700->900 rl 1300 ramp 0.1 flat-lp N1 prop tau 0.8: 16 pts
+  LEAN 1700->900 rl 1300 ramp 0.5 flow/press thrust tau 0.02: 20 pts
+  LEAN 1700->900 rl 1300 ramp 0.5 flow/press thrust tau 0.8: 25 pts
+  LEAN 1700->900 rl 1300 ramp 0.5 flow/press HP rate .1 tau 0.02: 27 pts
+  LEAN 1700->900 rl 1300 ramp 0.5 flow/press HP rate .1 tau 0.8: 54 pts
+  LEAN 1700->900 rl 1300 ramp 0.5 flow/press HP prop 20 tau 0.02: 27 pts
+  LEAN 1700->900 rl 1300 ramp 0.5 flow/press HP prop 20 tau 0.8: 47 pts
+  LEAN 1700->900 rl 1300 ramp 0.5 flow/press EPR tau 0.02: 21 pts
+  LEAN 1700->900 rl 1300 ramp 0.5 flow/press EPR tau 0.8: 36 pts
+  LEAN 1700->900 rl 1300 ramp 0.5 flow/press N1 rate tau 0.02: 22 pts
+  LEAN 1700->900 rl 1300 ramp 0.5 flow/press N1 rate tau 0.8: 37 pts
+  LEAN 1700->900 rl 1300 ramp 0.5 flow/press N1 prop tau 0.02: 18 pts
+  LEAN 1700->900 rl 1300 ramp 0.5 flow/press N1 prop tau 0.8: 21 pts
+  LEAN 1700->900 rl 1300 ramp 0.5 press/flow thrust tau 0.02: 19 pts
+  LEAN 1700->900 rl 1300 ramp 0.5 press/flow thrust tau 0.8: 26 pts
+  LEAN 1700->900 rl 1300 ramp 0.5 press/flow HP rate .1 tau 0.02: 26 pts
+  LEAN 1700->900 rl 1300 ramp 0.5 press/flow HP rate .1 tau 0.8: 46 pts
+  LEAN 1700->900 rl 1300 ramp 0.5 press/flow HP prop 20 tau 0.02: 26 pts
+  LEAN 1700->900 rl 1300 ramp 0.5 press/flow HP prop 20 tau 0.8: 40 pts
+  LEAN 1700->900 rl 1300 ramp 0.5 press/flow EPR tau 0.02: 20 pts
+  LEAN 1700->900 rl 1300 ramp 0.5 press/flow EPR tau 0.8: 37 pts
+  LEAN 1700->900 rl 1300 ramp 0.5 press/flow N1 rate tau 0.02: 22 pts
+  LEAN 1700->900 rl 1300 ramp 0.5 press/flow N1 rate tau 0.8: 42 pts
+  LEAN 1700->900 rl 1300 ramp 0.5 press/flow N1 prop tau 0.02: 19 pts
+  LEAN 1700->900 rl 1300 ramp 0.5 press/flow N1 prop tau 0.8: 25 pts
+  LEAN 1700->900 rl 1300 ramp 0.5 tilted thrust tau 0.02: 19 pts
+  LEAN 1700->900 rl 1300 ramp 0.5 tilted thrust tau 0.8: 26 pts
+  LEAN 1700->900 rl 1300 ramp 0.5 tilted HP rate .1 tau 0.02: 28 pts
+  LEAN 1700->900 rl 1300 ramp 0.5 tilted HP rate .1 tau 0.8: 50 pts
+  LEAN 1700->900 rl 1300 ramp 0.5 tilted HP prop 20 tau 0.02: 28 pts
+  LEAN 1700->900 rl 1300 ramp 0.5 tilted HP prop 20 tau 0.8: 44 pts
+  LEAN 1700->900 rl 1300 ramp 0.5 tilted EPR tau 0.02: 21 pts
+  LEAN 1700->900 rl 1300 ramp 0.5 tilted EPR tau 0.8: 37 pts
+  LEAN 1700->900 rl 1300 ramp 0.5 tilted N1 rate tau 0.02: 23 pts
+  LEAN 1700->900 rl 1300 ramp 0.5 tilted N1 rate tau 0.8: 40 pts
+  LEAN 1700->900 rl 1300 ramp 0.5 tilted N1 prop tau 0.02: 19 pts
+  LEAN 1700->900 rl 1300 ramp 0.5 tilted N1 prop tau 0.8: 22 pts
+  LEAN 1700->900 rl 1300 ramp 0.5 flat-lp thrust tau 0.02: 18 pts
+  LEAN 1700->900 rl 1300 ramp 0.5 flat-lp thrust tau 0.8: 22 pts
+  LEAN 1700->900 rl 1300 ramp 0.5 flat-lp HP rate .1 tau 0.02: 27 pts
+  LEAN 1700->900 rl 1300 ramp 0.5 flat-lp HP rate .1 tau 0.8: 55 pts
+  LEAN 1700->900 rl 1300 ramp 0.5 flat-lp HP prop 20 tau 0.02: 27 pts
+  LEAN 1700->900 rl 1300 ramp 0.5 flat-lp HP prop 20 tau 0.8: 48 pts
+  LEAN 1700->900 rl 1300 ramp 0.5 flat-lp EPR tau 0.02: 19 pts
+  LEAN 1700->900 rl 1300 ramp 0.5 flat-lp EPR tau 0.8: 32 pts
+  LEAN 1700->900 rl 1300 ramp 0.5 flat-lp N1 rate tau 0.02: 15 pts
+  LEAN 1700->900 rl 1300 ramp 0.5 flat-lp N1 rate tau 0.8: 16 pts
+  LEAN 1700->900 rl 1300 ramp 0.5 flat-lp N1 prop tau 0.02: 5 pts
+  LEAN 1700->900 rl 1300 ramp 0.5 flat-lp N1 prop tau 0.8: 8 pts
+  LEAN 1700->900 rl 1300 ramp 2 flow/press HP rate .1 tau 0.8: 11 pts
+  LEAN 1700->900 rl 1300 ramp 2 flow/press EPR tau 0.8: 8 pts
+  LEAN 1700->900 rl 1300 ramp 2 flow/press N1 rate tau 0.8: 9 pts
+  LEAN 1700->900 rl 1300 ramp 2 press/flow HP rate .1 tau 0.8: 4 pts
+  LEAN 1700->900 rl 1300 ramp 2 press/flow EPR tau 0.8: 8 pts
+  LEAN 1700->900 rl 1300 ramp 2 press/flow N1 rate tau 0.8: 11 pts
+  LEAN 1700->900 rl 1300 ramp 2 tilted HP rate .1 tau 0.8: 8 pts
+  LEAN 1700->900 rl 1300 ramp 2 tilted EPR tau 0.8: 8 pts
+  LEAN 1700->900 rl 1300 ramp 2 tilted N1 rate tau 0.8: 10 pts
+  LEAN 1700->900 rl 1300 ramp 2 flat-lp HP rate .1 tau 0.8: 12 pts
+  LEAN 1700->900 rl 1300 ramp 2 flat-lp EPR tau 0.8: 8 pts
+  LEAN 1700->900 rl 1480 ramp 0.1 flow/press thrust tau 0.02: 28 pts
+  LEAN 1700->900 rl 1480 ramp 0.1 flow/press thrust tau 0.8: 33 pts
+  LEAN 1700->900 rl 1480 ramp 0.1 flow/press HP rate .1 tau 0.02: 30 pts
+  LEAN 1700->900 rl 1480 ramp 0.1 flow/press HP rate .1 tau 0.8: 58 pts
+  LEAN 1700->900 rl 1480 ramp 0.1 flow/press HP prop 20 tau 0.02: 30 pts
+  LEAN 1700->900 rl 1480 ramp 0.1 flow/press HP prop 20 tau 0.8: 51 pts
+  LEAN 1700->900 rl 1480 ramp 0.1 flow/press EPR tau 0.02: 28 pts
+  LEAN 1700->900 rl 1480 ramp 0.1 flow/press EPR tau 0.8: 44 pts
+  LEAN 1700->900 rl 1480 ramp 0.1 flow/press N1 rate tau 0.02: 28 pts
+  LEAN 1700->900 rl 1480 ramp 0.1 flow/press N1 rate tau 0.8: 44 pts
+  LEAN 1700->900 rl 1480 ramp 0.1 flow/press N1 prop tau 0.02: 28 pts
+  LEAN 1700->900 rl 1480 ramp 0.1 flow/press N1 prop tau 0.8: 30 pts
+  LEAN 1700->900 rl 1480 ramp 0.1 press/flow thrust tau 0.02: 28 pts
+  LEAN 1700->900 rl 1480 ramp 0.1 press/flow thrust tau 0.8: 34 pts
+  LEAN 1700->900 rl 1480 ramp 0.1 press/flow HP rate .1 tau 0.02: 29 pts
+  LEAN 1700->900 rl 1480 ramp 0.1 press/flow HP rate .1 tau 0.8: 49 pts
+  LEAN 1700->900 rl 1480 ramp 0.1 press/flow HP prop 20 tau 0.02: 30 pts
+  LEAN 1700->900 rl 1480 ramp 0.1 press/flow HP prop 20 tau 0.8: 45 pts
+  LEAN 1700->900 rl 1480 ramp 0.1 press/flow EPR tau 0.02: 28 pts
+  LEAN 1700->900 rl 1480 ramp 0.1 press/flow EPR tau 0.8: 44 pts
+  LEAN 1700->900 rl 1480 ramp 0.1 press/flow N1 rate tau 0.02: 29 pts
+  LEAN 1700->900 rl 1480 ramp 0.1 press/flow N1 rate tau 0.8: 49 pts
+  LEAN 1700->900 rl 1480 ramp 0.1 press/flow N1 prop tau 0.02: 29 pts
+  LEAN 1700->900 rl 1480 ramp 0.1 press/flow N1 prop tau 0.8: 33 pts
+  LEAN 1700->900 rl 1480 ramp 0.1 tilted thrust tau 0.02: 28 pts
+  LEAN 1700->900 rl 1480 ramp 0.1 tilted thrust tau 0.8: 34 pts
+  LEAN 1700->900 rl 1480 ramp 0.1 tilted HP rate .1 tau 0.02: 30 pts
+  LEAN 1700->900 rl 1480 ramp 0.1 tilted HP rate .1 tau 0.8: 55 pts
+  LEAN 1700->900 rl 1480 ramp 0.1 tilted HP prop 20 tau 0.02: 30 pts
+  LEAN 1700->900 rl 1480 ramp 0.1 tilted HP prop 20 tau 0.8: 48 pts
+  LEAN 1700->900 rl 1480 ramp 0.1 tilted EPR tau 0.02: 28 pts
+  LEAN 1700->900 rl 1480 ramp 0.1 tilted EPR tau 0.8: 44 pts
+  LEAN 1700->900 rl 1480 ramp 0.1 tilted N1 rate tau 0.02: 28 pts
+  LEAN 1700->900 rl 1480 ramp 0.1 tilted N1 rate tau 0.8: 46 pts
+  LEAN 1700->900 rl 1480 ramp 0.1 tilted N1 prop tau 0.02: 28 pts
+  LEAN 1700->900 rl 1480 ramp 0.1 tilted N1 prop tau 0.8: 31 pts
+  LEAN 1700->900 rl 1480 ramp 0.1 flat-lp thrust tau 0.02: 28 pts
+  LEAN 1700->900 rl 1480 ramp 0.1 flat-lp thrust tau 0.8: 30 pts
+  LEAN 1700->900 rl 1480 ramp 0.1 flat-lp HP rate .1 tau 0.02: 30 pts
+  LEAN 1700->900 rl 1480 ramp 0.1 flat-lp HP rate .1 tau 0.8: 59 pts
+  LEAN 1700->900 rl 1480 ramp 0.1 flat-lp HP prop 20 tau 0.02: 30 pts
+  LEAN 1700->900 rl 1480 ramp 0.1 flat-lp HP prop 20 tau 0.8: 52 pts
+  LEAN 1700->900 rl 1480 ramp 0.1 flat-lp EPR tau 0.02: 28 pts
+  LEAN 1700->900 rl 1480 ramp 0.1 flat-lp EPR tau 0.8: 39 pts
+  LEAN 1700->900 rl 1480 ramp 0.1 flat-lp N1 rate tau 0.02: 23 pts
+  LEAN 1700->900 rl 1480 ramp 0.1 flat-lp N1 rate tau 0.8: 23 pts
+  LEAN 1700->900 rl 1480 ramp 0.1 flat-lp N1 prop tau 0.02: 16 pts
+  LEAN 1700->900 rl 1480 ramp 0.1 flat-lp N1 prop tau 0.8: 16 pts
+  LEAN 1700->900 rl 1480 ramp 0.5 flow/press thrust tau 0.02: 15 pts
+  LEAN 1700->900 rl 1480 ramp 0.5 flow/press thrust tau 0.8: 25 pts
+  LEAN 1700->900 rl 1480 ramp 0.5 flow/press HP rate .1 tau 0.02: 26 pts
+  LEAN 1700->900 rl 1480 ramp 0.5 flow/press HP rate .1 tau 0.8: 54 pts
+  LEAN 1700->900 rl 1480 ramp 0.5 flow/press HP prop 20 tau 0.02: 25 pts
+  LEAN 1700->900 rl 1480 ramp 0.5 flow/press HP prop 20 tau 0.8: 47 pts
+  LEAN 1700->900 rl 1480 ramp 0.5 flow/press EPR tau 0.02: 18 pts
+  LEAN 1700->900 rl 1480 ramp 0.5 flow/press EPR tau 0.8: 36 pts
+  LEAN 1700->900 rl 1480 ramp 0.5 flow/press N1 rate tau 0.02: 19 pts
+  LEAN 1700->900 rl 1480 ramp 0.5 flow/press N1 rate tau 0.8: 37 pts
+  LEAN 1700->900 rl 1480 ramp 0.5 flow/press N1 prop tau 0.02: 15 pts
+  LEAN 1700->900 rl 1480 ramp 0.5 flow/press N1 prop tau 0.8: 20 pts
+  LEAN 1700->900 rl 1480 ramp 0.5 press/flow thrust tau 0.02: 15 pts
+  LEAN 1700->900 rl 1480 ramp 0.5 press/flow thrust tau 0.8: 25 pts
+  LEAN 1700->900 rl 1480 ramp 0.5 press/flow HP rate .1 tau 0.02: 24 pts
+  LEAN 1700->900 rl 1480 ramp 0.5 press/flow HP rate .1 tau 0.8: 46 pts
+  LEAN 1700->900 rl 1480 ramp 0.5 press/flow HP prop 20 tau 0.02: 24 pts
+  LEAN 1700->900 rl 1480 ramp 0.5 press/flow HP prop 20 tau 0.8: 40 pts
+  LEAN 1700->900 rl 1480 ramp 0.5 press/flow EPR tau 0.02: 17 pts
+  LEAN 1700->900 rl 1480 ramp 0.5 press/flow EPR tau 0.8: 36 pts
+  LEAN 1700->900 rl 1480 ramp 0.5 press/flow N1 rate tau 0.02: 20 pts
+  LEAN 1700->900 rl 1480 ramp 0.5 press/flow N1 rate tau 0.8: 42 pts
+  LEAN 1700->900 rl 1480 ramp 0.5 press/flow N1 prop tau 0.02: 16 pts
+  LEAN 1700->900 rl 1480 ramp 0.5 press/flow N1 prop tau 0.8: 24 pts
+  LEAN 1700->900 rl 1480 ramp 0.5 tilted thrust tau 0.02: 14 pts
+  LEAN 1700->900 rl 1480 ramp 0.5 tilted thrust tau 0.8: 26 pts
+  LEAN 1700->900 rl 1480 ramp 0.5 tilted HP rate .1 tau 0.02: 25 pts
+  LEAN 1700->900 rl 1480 ramp 0.5 tilted HP rate .1 tau 0.8: 50 pts
+  LEAN 1700->900 rl 1480 ramp 0.5 tilted HP prop 20 tau 0.02: 26 pts
+  LEAN 1700->900 rl 1480 ramp 0.5 tilted HP prop 20 tau 0.8: 44 pts
+  LEAN 1700->900 rl 1480 ramp 0.5 tilted EPR tau 0.02: 16 pts
+  LEAN 1700->900 rl 1480 ramp 0.5 tilted EPR tau 0.8: 36 pts
+  LEAN 1700->900 rl 1480 ramp 0.5 tilted N1 rate tau 0.02: 18 pts
+  LEAN 1700->900 rl 1480 ramp 0.5 tilted N1 rate tau 0.8: 40 pts
+  LEAN 1700->900 rl 1480 ramp 0.5 tilted N1 prop tau 0.02: 14 pts
+  LEAN 1700->900 rl 1480 ramp 0.5 tilted N1 prop tau 0.8: 21 pts
+  LEAN 1700->900 rl 1480 ramp 0.5 flat-lp thrust tau 0.02: 14 pts
+  LEAN 1700->900 rl 1480 ramp 0.5 flat-lp thrust tau 0.8: 20 pts
+  LEAN 1700->900 rl 1480 ramp 0.5 flat-lp HP rate .1 tau 0.02: 25 pts
+  LEAN 1700->900 rl 1480 ramp 0.5 flat-lp HP rate .1 tau 0.8: 55 pts
+  LEAN 1700->900 rl 1480 ramp 0.5 flat-lp HP prop 20 tau 0.02: 25 pts
+  LEAN 1700->900 rl 1480 ramp 0.5 flat-lp HP prop 20 tau 0.8: 48 pts
+  LEAN 1700->900 rl 1480 ramp 0.5 flat-lp EPR tau 0.02: 16 pts
+  LEAN 1700->900 rl 1480 ramp 0.5 flat-lp EPR tau 0.8: 32 pts
+  LEAN 1700->900 rl 1480 ramp 0.5 flat-lp N1 rate tau 0.02: 15 pts
+  LEAN 1700->900 rl 1480 ramp 0.5 flat-lp N1 rate tau 0.8: 16 pts
+  LEAN 1700->900 rl 1480 ramp 0.5 flat-lp N1 prop tau 0.02: 6 pts
+  LEAN 1700->900 rl 1480 ramp 0.5 flat-lp N1 prop tau 0.8: 6 pts
+  LEAN 1700->900 rl 1480 ramp 2 flow/press HP rate .1 tau 0.8: 11 pts
+  LEAN 1700->900 rl 1480 ramp 2 flow/press EPR tau 0.8: 7 pts
+  LEAN 1700->900 rl 1480 ramp 2 flow/press N1 rate tau 0.8: 8 pts
+  LEAN 1700->900 rl 1480 ramp 2 press/flow HP rate .1 tau 0.8: 5 pts
+  LEAN 1700->900 rl 1480 ramp 2 press/flow EPR tau 0.8: 7 pts
+  LEAN 1700->900 rl 1480 ramp 2 press/flow N1 rate tau 0.8: 11 pts
+  LEAN 1700->900 rl 1480 ramp 2 tilted HP rate .1 tau 0.8: 8 pts
+  LEAN 1700->900 rl 1480 ramp 2 tilted EPR tau 0.8: 7 pts
+  LEAN 1700->900 rl 1480 ramp 2 tilted N1 rate tau 0.8: 10 pts
+  LEAN 1700->900 rl 1480 ramp 2 flat-lp HP rate .1 tau 0.8: 12 pts
+  LEAN 1700->900 rl 1480 ramp 2 flat-lp EPR tau 0.8: 6 pts
+  LEAN 1700->900 rl 1600 ramp 0.1 flow/press thrust tau 0.02: 26 pts
+  LEAN 1700->900 rl 1600 ramp 0.1 flow/press thrust tau 0.8: 33 pts
+  LEAN 1700->900 rl 1600 ramp 0.1 flow/press HP rate .1 tau 0.02: 29 pts
+  LEAN 1700->900 rl 1600 ramp 0.1 flow/press HP rate .1 tau 0.8: 58 pts
+  LEAN 1700->900 rl 1600 ramp 0.1 flow/press HP prop 20 tau 0.02: 29 pts
+  LEAN 1700->900 rl 1600 ramp 0.1 flow/press HP prop 20 tau 0.8: 51 pts
+  LEAN 1700->900 rl 1600 ramp 0.1 flow/press EPR tau 0.02: 27 pts
+  LEAN 1700->900 rl 1600 ramp 0.1 flow/press EPR tau 0.8: 44 pts
+  LEAN 1700->900 rl 1600 ramp 0.1 flow/press N1 rate tau 0.02: 27 pts
+  LEAN 1700->900 rl 1600 ramp 0.1 flow/press N1 rate tau 0.8: 44 pts
+  LEAN 1700->900 rl 1600 ramp 0.1 flow/press N1 prop tau 0.02: 28 pts
+  LEAN 1700->900 rl 1600 ramp 0.1 flow/press N1 prop tau 0.8: 29 pts
+  LEAN 1700->900 rl 1600 ramp 0.1 press/flow thrust tau 0.02: 26 pts
+  LEAN 1700->900 rl 1600 ramp 0.1 press/flow thrust tau 0.8: 34 pts
+  LEAN 1700->900 rl 1600 ramp 0.1 press/flow HP rate .1 tau 0.02: 28 pts
+  LEAN 1700->900 rl 1600 ramp 0.1 press/flow HP rate .1 tau 0.8: 49 pts
+  LEAN 1700->900 rl 1600 ramp 0.1 press/flow HP prop 20 tau 0.02: 29 pts
+  LEAN 1700->900 rl 1600 ramp 0.1 press/flow HP prop 20 tau 0.8: 45 pts
+  LEAN 1700->900 rl 1600 ramp 0.1 press/flow EPR tau 0.02: 27 pts
+  LEAN 1700->900 rl 1600 ramp 0.1 press/flow EPR tau 0.8: 44 pts
+  LEAN 1700->900 rl 1600 ramp 0.1 press/flow N1 rate tau 0.02: 27 pts
+  LEAN 1700->900 rl 1600 ramp 0.1 press/flow N1 rate tau 0.8: 49 pts
+  LEAN 1700->900 rl 1600 ramp 0.1 press/flow N1 prop tau 0.02: 27 pts
+  LEAN 1700->900 rl 1600 ramp 0.1 press/flow N1 prop tau 0.8: 33 pts
+  LEAN 1700->900 rl 1600 ramp 0.1 tilted thrust tau 0.02: 26 pts
+  LEAN 1700->900 rl 1600 ramp 0.1 tilted thrust tau 0.8: 34 pts
+  LEAN 1700->900 rl 1600 ramp 0.1 tilted HP rate .1 tau 0.02: 30 pts
+  LEAN 1700->900 rl 1600 ramp 0.1 tilted HP rate .1 tau 0.8: 55 pts
+  LEAN 1700->900 rl 1600 ramp 0.1 tilted HP prop 20 tau 0.02: 30 pts
+  LEAN 1700->900 rl 1600 ramp 0.1 tilted HP prop 20 tau 0.8: 48 pts
+  LEAN 1700->900 rl 1600 ramp 0.1 tilted EPR tau 0.02: 28 pts
+  LEAN 1700->900 rl 1600 ramp 0.1 tilted EPR tau 0.8: 44 pts
+  LEAN 1700->900 rl 1600 ramp 0.1 tilted N1 rate tau 0.02: 28 pts
+  LEAN 1700->900 rl 1600 ramp 0.1 tilted N1 rate tau 0.8: 46 pts
+  LEAN 1700->900 rl 1600 ramp 0.1 tilted N1 prop tau 0.02: 28 pts
+  LEAN 1700->900 rl 1600 ramp 0.1 tilted N1 prop tau 0.8: 31 pts
+  LEAN 1700->900 rl 1600 ramp 0.1 flat-lp thrust tau 0.02: 26 pts
+  LEAN 1700->900 rl 1600 ramp 0.1 flat-lp thrust tau 0.8: 30 pts
+  LEAN 1700->900 rl 1600 ramp 0.1 flat-lp HP rate .1 tau 0.02: 29 pts
+  LEAN 1700->900 rl 1600 ramp 0.1 flat-lp HP rate .1 tau 0.8: 59 pts
+  LEAN 1700->900 rl 1600 ramp 0.1 flat-lp HP prop 20 tau 0.02: 30 pts
+  LEAN 1700->900 rl 1600 ramp 0.1 flat-lp HP prop 20 tau 0.8: 52 pts
+  LEAN 1700->900 rl 1600 ramp 0.1 flat-lp EPR tau 0.02: 26 pts
+  LEAN 1700->900 rl 1600 ramp 0.1 flat-lp EPR tau 0.8: 39 pts
+  LEAN 1700->900 rl 1600 ramp 0.1 flat-lp N1 rate tau 0.02: 23 pts
+  LEAN 1700->900 rl 1600 ramp 0.1 flat-lp N1 rate tau 0.8: 23 pts
+  LEAN 1700->900 rl 1600 ramp 0.1 flat-lp N1 prop tau 0.02: 16 pts
+  LEAN 1700->900 rl 1600 ramp 0.1 flat-lp N1 prop tau 0.8: 16 pts
+  LEAN 1700->900 rl 1600 ramp 0.5 flow/press thrust tau 0.02: 13 pts
+  LEAN 1700->900 rl 1600 ramp 0.5 flow/press thrust tau 0.8: 25 pts
+  LEAN 1700->900 rl 1600 ramp 0.5 flow/press HP rate .1 tau 0.02: 24 pts
+  LEAN 1700->900 rl 1600 ramp 0.5 flow/press HP rate .1 tau 0.8: 54 pts
+  LEAN 1700->900 rl 1600 ramp 0.5 flow/press HP prop 20 tau 0.02: 23 pts
+  LEAN 1700->900 rl 1600 ramp 0.5 flow/press HP prop 20 tau 0.8: 47 pts
+  LEAN 1700->900 rl 1600 ramp 0.5 flow/press EPR tau 0.02: 14 pts
+  LEAN 1700->900 rl 1600 ramp 0.5 flow/press EPR tau 0.8: 36 pts
+  LEAN 1700->900 rl 1600 ramp 0.5 flow/press N1 rate tau 0.02: 17 pts
+  LEAN 1700->900 rl 1600 ramp 0.5 flow/press N1 rate tau 0.8: 37 pts
+  LEAN 1700->900 rl 1600 ramp 0.5 flow/press N1 prop tau 0.02: 12 pts
+  LEAN 1700->900 rl 1600 ramp 0.5 flow/press N1 prop tau 0.8: 19 pts
+  LEAN 1700->900 rl 1600 ramp 0.5 press/flow thrust tau 0.02: 11 pts
+  LEAN 1700->900 rl 1600 ramp 0.5 press/flow thrust tau 0.8: 25 pts
+  LEAN 1700->900 rl 1600 ramp 0.5 press/flow HP rate .1 tau 0.02: 22 pts
+  LEAN 1700->900 rl 1600 ramp 0.5 press/flow HP rate .1 tau 0.8: 46 pts
+  LEAN 1700->900 rl 1600 ramp 0.5 press/flow HP prop 20 tau 0.02: 22 pts
+  LEAN 1700->900 rl 1600 ramp 0.5 press/flow HP prop 20 tau 0.8: 40 pts
+  LEAN 1700->900 rl 1600 ramp 0.5 press/flow EPR tau 0.02: 14 pts
+  LEAN 1700->900 rl 1600 ramp 0.5 press/flow EPR tau 0.8: 36 pts
+  LEAN 1700->900 rl 1600 ramp 0.5 press/flow N1 rate tau 0.02: 17 pts
+  LEAN 1700->900 rl 1600 ramp 0.5 press/flow N1 rate tau 0.8: 42 pts
+  LEAN 1700->900 rl 1600 ramp 0.5 press/flow N1 prop tau 0.02: 13 pts
+  LEAN 1700->900 rl 1600 ramp 0.5 press/flow N1 prop tau 0.8: 24 pts
+  LEAN 1700->900 rl 1600 ramp 0.5 tilted thrust tau 0.02: 11 pts
+  LEAN 1700->900 rl 1600 ramp 0.5 tilted thrust tau 0.8: 25 pts
+  LEAN 1700->900 rl 1600 ramp 0.5 tilted HP rate .1 tau 0.02: 21 pts
+  LEAN 1700->900 rl 1600 ramp 0.5 tilted HP rate .1 tau 0.8: 50 pts
+  LEAN 1700->900 rl 1600 ramp 0.5 tilted HP prop 20 tau 0.02: 22 pts
+  LEAN 1700->900 rl 1600 ramp 0.5 tilted HP prop 20 tau 0.8: 44 pts
+  LEAN 1700->900 rl 1600 ramp 0.5 tilted EPR tau 0.02: 14 pts
+  LEAN 1700->900 rl 1600 ramp 0.5 tilted EPR tau 0.8: 36 pts
+  LEAN 1700->900 rl 1600 ramp 0.5 tilted N1 rate tau 0.02: 16 pts
+  LEAN 1700->900 rl 1600 ramp 0.5 tilted N1 rate tau 0.8: 40 pts
+  LEAN 1700->900 rl 1600 ramp 0.5 tilted N1 prop tau 0.02: 12 pts
+  LEAN 1700->900 rl 1600 ramp 0.5 tilted N1 prop tau 0.8: 21 pts
+  LEAN 1700->900 rl 1600 ramp 0.5 flat-lp thrust tau 0.02: 12 pts
+  LEAN 1700->900 rl 1600 ramp 0.5 flat-lp thrust tau 0.8: 20 pts
+  LEAN 1700->900 rl 1600 ramp 0.5 flat-lp HP rate .1 tau 0.02: 22 pts
+  LEAN 1700->900 rl 1600 ramp 0.5 flat-lp HP rate .1 tau 0.8: 55 pts
+  LEAN 1700->900 rl 1600 ramp 0.5 flat-lp HP prop 20 tau 0.02: 22 pts
+  LEAN 1700->900 rl 1600 ramp 0.5 flat-lp HP prop 20 tau 0.8: 48 pts
+  LEAN 1700->900 rl 1600 ramp 0.5 flat-lp EPR tau 0.02: 16 pts
+  LEAN 1700->900 rl 1600 ramp 0.5 flat-lp EPR tau 0.8: 32 pts
+  LEAN 1700->900 rl 1600 ramp 0.5 flat-lp N1 rate tau 0.02: 10 pts
+  LEAN 1700->900 rl 1600 ramp 0.5 flat-lp N1 rate tau 0.8: 15 pts
+  LEAN 1700->900 rl 1600 ramp 0.5 flat-lp N1 prop tau 0.02: 6 pts
+  LEAN 1700->900 rl 1600 ramp 0.5 flat-lp N1 prop tau 0.8: 6 pts
+  LEAN 1700->900 rl 1600 ramp 2 flow/press HP rate .1 tau 0.8: 11 pts
+  LEAN 1700->900 rl 1600 ramp 2 flow/press EPR tau 0.8: 7 pts
+  LEAN 1700->900 rl 1600 ramp 2 flow/press N1 rate tau 0.8: 8 pts
+  LEAN 1700->900 rl 1600 ramp 2 press/flow HP rate .1 tau 0.8: 5 pts
+  LEAN 1700->900 rl 1600 ramp 2 press/flow EPR tau 0.8: 7 pts
+  LEAN 1700->900 rl 1600 ramp 2 press/flow N1 rate tau 0.8: 11 pts
+  LEAN 1700->900 rl 1600 ramp 2 tilted HP rate .1 tau 0.8: 8 pts
+  LEAN 1700->900 rl 1600 ramp 2 tilted EPR tau 0.8: 7 pts
+  LEAN 1700->900 rl 1600 ramp 2 tilted N1 rate tau 0.8: 10 pts
+  LEAN 1700->900 rl 1600 ramp 2 flat-lp HP rate .1 tau 0.8: 12 pts
+  LEAN 1700->900 rl 1600 ramp 2 flat-lp EPR tau 0.8: 6 pts
+  2520 runs, 399 with an applied fuel at the lean wall, 0 stopped early

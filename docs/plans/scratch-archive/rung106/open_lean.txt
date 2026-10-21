@@ -1,0 +1,680 @@
+  stop 700->1400 rl 1300 ramp 0.1 flow/press Tt4 tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6313,0.6710), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.1 flow/press Tt4 tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6359,0.6752), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.1 flow/press thrust tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6313,0.6710), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.1 flow/press thrust tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6359,0.6752), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.1 flow/press HP rate .1 tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6313,0.6710), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.1 flow/press HP rate .1 tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6359,0.6752), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.1 flow/press HP prop 20 tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6313,0.6710), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.1 flow/press HP prop 20 tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6359,0.6752), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.1 flow/press EPR tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6313,0.6710), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.1 flow/press EPR tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6359,0.6752), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.1 flow/press N1 rate tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6313,0.6710), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.1 flow/press N1 rate tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6359,0.6752), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.1 flow/press N1 prop tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6313,0.6710), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.1 flow/press N1 prop tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6359,0.6752), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.1 press/flow Tt4 tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6127,0.6775), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.1 press/flow Tt4 tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6175,0.6818), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.1 press/flow thrust tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6127,0.6775), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.1 press/flow thrust tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6175,0.6818), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.1 press/flow HP rate .1 tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6127,0.6775), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.1 press/flow HP rate .1 tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6175,0.6818), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.1 press/flow HP prop 20 tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6127,0.6775), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.1 press/flow HP prop 20 tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6175,0.6818), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.1 press/flow EPR tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6127,0.6775), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.1 press/flow EPR tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6175,0.6818), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.1 press/flow N1 rate tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6127,0.6775), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.1 press/flow N1 rate tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6175,0.6818), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.1 press/flow N1 prop tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6127,0.6775), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.1 press/flow N1 prop tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6175,0.6818), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.1 tilted Tt4 tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6199,0.6713), mdot_fuel=0.01752 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.1 tilted Tt4 tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6281,0.6786), mdot_fuel=0.01948 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.1 tilted thrust tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6199,0.6713), mdot_fuel=0.01752 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.1 tilted thrust tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6281,0.6786), mdot_fuel=0.01948 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.1 tilted HP rate .1 tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6199,0.6713), mdot_fuel=0.01752 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.1 tilted HP rate .1 tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6281,0.6786), mdot_fuel=0.01948 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.1 tilted HP prop 20 tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6199,0.6713), mdot_fuel=0.01752 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.1 tilted HP prop 20 tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6281,0.6786), mdot_fuel=0.01948 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.1 tilted EPR tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6199,0.6713), mdot_fuel=0.01752 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.1 tilted EPR tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6281,0.6786), mdot_fuel=0.01948 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.1 tilted N1 rate tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6199,0.6713), mdot_fuel=0.01752 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.1 tilted N1 rate tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6281,0.6786), mdot_fuel=0.01948 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.1 tilted N1 prop tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6199,0.6713), mdot_fuel=0.01752 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.1 tilted N1 prop tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6281,0.6786), mdot_fuel=0.01948 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.1 flat-lp Tt4 tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6947,0.6711), mdot_fuel=0.01951 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.1 flat-lp Tt4 tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6989,0.6751), mdot_fuel=0.01951 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.1 flat-lp thrust tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6947,0.6711), mdot_fuel=0.01951 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.1 flat-lp thrust tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6989,0.6751), mdot_fuel=0.01951 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.1 flat-lp HP rate .1 tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6947,0.6711), mdot_fuel=0.01951 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.1 flat-lp HP rate .1 tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6989,0.6751), mdot_fuel=0.01951 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.1 flat-lp HP prop 20 tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6947,0.6711), mdot_fuel=0.01951 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.1 flat-lp HP prop 20 tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6989,0.6751), mdot_fuel=0.01951 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.1 flat-lp EPR tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6947,0.6711), mdot_fuel=0.01951 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.1 flat-lp EPR tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6989,0.6751), mdot_fuel=0.01951 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.1 flat-lp N1 rate tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6947,0.6711), mdot_fuel=0.01951 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.1 flat-lp N1 rate tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6989,0.6751), mdot_fuel=0.01951 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.1 flat-lp N1 prop tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6947,0.6711), mdot_fuel=0.01951 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.1 flat-lp N1 prop tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6989,0.6751), mdot_fuel=0.01951 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.5 press/flow Tt4 tau 0.02: rk s=0.480: rung-43 fuel closure does not bracket at nu=(0.6803,0.7380), mdot_fuel=0.02301 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.5 press/flow thrust tau 0.02: rk s=0.480: rung-43 fuel closure does not bracket at nu=(0.6803,0.7380), mdot_fuel=0.02301 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.5 press/flow HP rate .1 tau 0.02: rk s=0.480: rung-43 fuel closure does not bracket at nu=(0.6803,0.7380), mdot_fuel=0.02301 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.5 press/flow HP prop 20 tau 0.02: rk s=0.480: rung-43 fuel closure does not bracket at nu=(0.6803,0.7380), mdot_fuel=0.02301 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.5 press/flow EPR tau 0.02: rk s=0.480: rung-43 fuel closure does not bracket at nu=(0.6803,0.7380), mdot_fuel=0.02301 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.5 press/flow N1 rate tau 0.02: rk s=0.480: rung-43 fuel closure does not bracket at nu=(0.6803,0.7380), mdot_fuel=0.02301 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.5 press/flow N1 prop tau 0.02: rk s=0.480: rung-43 fuel closure does not bracket at nu=(0.6803,0.7380), mdot_fuel=0.02301 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.5 tilted Tt4 tau 0.02: rk s=0.460: rung-43 fuel closure does not bracket at nu=(0.6892,0.7321), mdot_fuel=0.02262 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.5 tilted thrust tau 0.02: rk s=0.460: rung-43 fuel closure does not bracket at nu=(0.6892,0.7321), mdot_fuel=0.02262 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.5 tilted HP rate .1 tau 0.02: rk s=0.460: rung-43 fuel closure does not bracket at nu=(0.6892,0.7321), mdot_fuel=0.02262 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.5 tilted HP prop 20 tau 0.02: rk s=0.460: rung-43 fuel closure does not bracket at nu=(0.6892,0.7321), mdot_fuel=0.02262 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.5 tilted EPR tau 0.02: rk s=0.460: rung-43 fuel closure does not bracket at nu=(0.6892,0.7321), mdot_fuel=0.02262 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.5 tilted N1 rate tau 0.02: rk s=0.460: rung-43 fuel closure does not bracket at nu=(0.6892,0.7321), mdot_fuel=0.02262 - off the modeled speed-line region.
+  stop 700->1400 rl 1300 ramp 0.5 tilted N1 prop tau 0.02: rk s=0.460: rung-43 fuel closure does not bracket at nu=(0.6892,0.7321), mdot_fuel=0.02262 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 flow/press Tt4 tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6329,0.6724), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 flow/press Tt4 tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6360,0.6752), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 flow/press thrust tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6329,0.6724), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 flow/press thrust tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6360,0.6752), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 flow/press HP rate .1 tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6329,0.6724), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 flow/press HP rate .1 tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6360,0.6752), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 flow/press HP prop 20 tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6329,0.6724), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 flow/press HP prop 20 tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6360,0.6752), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 flow/press EPR tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6329,0.6724), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 flow/press EPR tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6360,0.6752), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 flow/press N1 rate tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6329,0.6724), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 flow/press N1 rate tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6360,0.6752), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 flow/press N1 prop tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6329,0.6724), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 flow/press N1 prop tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6360,0.6752), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 press/flow Tt4 tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6143,0.6789), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 press/flow Tt4 tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6176,0.6819), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 press/flow thrust tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6143,0.6789), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 press/flow thrust tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6176,0.6819), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 press/flow HP rate .1 tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6143,0.6789), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 press/flow HP rate .1 tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6176,0.6819), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 press/flow HP prop 20 tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6143,0.6789), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 press/flow HP prop 20 tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6176,0.6819), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 press/flow EPR tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6143,0.6789), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 press/flow EPR tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6176,0.6819), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 press/flow N1 rate tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6143,0.6789), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 press/flow N1 rate tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6176,0.6819), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 press/flow N1 prop tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6143,0.6789), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 press/flow N1 prop tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6176,0.6819), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 tilted Tt4 tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6248,0.6756), mdot_fuel=0.01948 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 tilted Tt4 tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6281,0.6786), mdot_fuel=0.01948 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 tilted thrust tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6248,0.6756), mdot_fuel=0.01948 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 tilted thrust tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6281,0.6786), mdot_fuel=0.01948 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 tilted HP rate .1 tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6248,0.6756), mdot_fuel=0.01948 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 tilted HP rate .1 tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6281,0.6786), mdot_fuel=0.01948 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 tilted HP prop 20 tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6248,0.6756), mdot_fuel=0.01948 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 tilted HP prop 20 tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6281,0.6786), mdot_fuel=0.01948 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 tilted EPR tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6248,0.6756), mdot_fuel=0.01948 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 tilted EPR tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6281,0.6786), mdot_fuel=0.01948 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 tilted N1 rate tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6248,0.6756), mdot_fuel=0.01948 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 tilted N1 rate tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6281,0.6786), mdot_fuel=0.01948 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 tilted N1 prop tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6248,0.6756), mdot_fuel=0.01948 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 tilted N1 prop tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6281,0.6786), mdot_fuel=0.01948 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 flat-lp Tt4 tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6962,0.6724), mdot_fuel=0.01951 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 flat-lp Tt4 tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6990,0.6752), mdot_fuel=0.01951 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 flat-lp thrust tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6962,0.6724), mdot_fuel=0.01951 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 flat-lp thrust tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6990,0.6752), mdot_fuel=0.01951 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 flat-lp HP rate .1 tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6962,0.6724), mdot_fuel=0.01951 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 flat-lp HP rate .1 tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6990,0.6752), mdot_fuel=0.01951 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 flat-lp HP prop 20 tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6962,0.6724), mdot_fuel=0.01951 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 flat-lp HP prop 20 tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6990,0.6752), mdot_fuel=0.01951 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 flat-lp EPR tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6962,0.6724), mdot_fuel=0.01951 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 flat-lp EPR tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6990,0.6752), mdot_fuel=0.01951 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 flat-lp N1 rate tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6962,0.6724), mdot_fuel=0.01951 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 flat-lp N1 rate tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6990,0.6752), mdot_fuel=0.01951 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 flat-lp N1 prop tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6962,0.6724), mdot_fuel=0.01951 - off the modeled speed-line region.
+  stop 700->1400 rl 1480 ramp 0.1 flat-lp N1 prop tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6990,0.6752), mdot_fuel=0.01951 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 flow/press Tt4 tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6337,0.6732), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 flow/press Tt4 tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6360,0.6753), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 flow/press thrust tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6337,0.6732), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 flow/press thrust tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6360,0.6753), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 flow/press HP rate .1 tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6337,0.6732), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 flow/press HP rate .1 tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6360,0.6753), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 flow/press HP prop 20 tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6337,0.6732), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 flow/press HP prop 20 tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6360,0.6753), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 flow/press EPR tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6337,0.6732), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 flow/press EPR tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6360,0.6753), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 flow/press N1 rate tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6337,0.6732), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 flow/press N1 rate tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6360,0.6753), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 flow/press N1 prop tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6337,0.6732), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 flow/press N1 prop tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6360,0.6753), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 press/flow Tt4 tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6151,0.6797), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 press/flow Tt4 tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6176,0.6819), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 press/flow thrust tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6151,0.6797), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 press/flow thrust tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6176,0.6819), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 press/flow HP rate .1 tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6151,0.6797), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 press/flow HP rate .1 tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6176,0.6819), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 press/flow HP prop 20 tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6151,0.6797), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 press/flow HP prop 20 tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6176,0.6819), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 press/flow EPR tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6151,0.6797), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 press/flow EPR tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6176,0.6819), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 press/flow N1 rate tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6151,0.6797), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 press/flow N1 rate tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6176,0.6819), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 press/flow N1 prop tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6151,0.6797), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 press/flow N1 prop tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6176,0.6819), mdot_fuel=0.01949 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 tilted Tt4 tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6256,0.6763), mdot_fuel=0.01948 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 tilted Tt4 tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6282,0.6787), mdot_fuel=0.01948 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 tilted thrust tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6256,0.6763), mdot_fuel=0.01948 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 tilted thrust tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6282,0.6787), mdot_fuel=0.01948 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 tilted HP rate .1 tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6256,0.6763), mdot_fuel=0.01948 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 tilted HP rate .1 tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6282,0.6787), mdot_fuel=0.01948 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 tilted HP prop 20 tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6256,0.6763), mdot_fuel=0.01948 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 tilted HP prop 20 tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6282,0.6787), mdot_fuel=0.01948 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 tilted EPR tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6256,0.6763), mdot_fuel=0.01948 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 tilted EPR tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6282,0.6787), mdot_fuel=0.01948 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 tilted N1 rate tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6256,0.6763), mdot_fuel=0.01948 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 tilted N1 rate tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6282,0.6787), mdot_fuel=0.01948 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 tilted N1 prop tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6256,0.6763), mdot_fuel=0.01948 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 tilted N1 prop tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6282,0.6787), mdot_fuel=0.01948 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 flat-lp Tt4 tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6969,0.6732), mdot_fuel=0.01951 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 flat-lp Tt4 tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6990,0.6752), mdot_fuel=0.01951 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 flat-lp thrust tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6969,0.6732), mdot_fuel=0.01951 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 flat-lp thrust tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6990,0.6752), mdot_fuel=0.01951 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 flat-lp HP rate .1 tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6969,0.6732), mdot_fuel=0.01951 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 flat-lp HP rate .1 tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6990,0.6752), mdot_fuel=0.01951 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 flat-lp HP prop 20 tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6969,0.6732), mdot_fuel=0.01951 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 flat-lp HP prop 20 tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6990,0.6752), mdot_fuel=0.01951 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 flat-lp EPR tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6969,0.6732), mdot_fuel=0.01951 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 flat-lp EPR tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6990,0.6752), mdot_fuel=0.01951 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 flat-lp N1 rate tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6969,0.6732), mdot_fuel=0.01951 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 flat-lp N1 rate tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6990,0.6752), mdot_fuel=0.01951 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 flat-lp N1 prop tau 0.02: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6969,0.6732), mdot_fuel=0.01951 - off the modeled speed-line region.
+  stop 700->1400 rl 1600 ramp 0.1 flat-lp N1 prop tau 0.8: rk s=0.060: rung-43 fuel closure does not bracket at nu=(0.6990,0.6752), mdot_fuel=0.01951 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 flow/press Tt4 tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7739,0.8054), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 flow/press Tt4 tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7903,0.8201), mdot_fuel=0.03380 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 flow/press thrust tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7739,0.8054), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 flow/press thrust tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7903,0.8201), mdot_fuel=0.03380 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 flow/press HP rate .1 tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7739,0.8054), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 flow/press HP rate .1 tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7903,0.8201), mdot_fuel=0.03380 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 flow/press HP prop 20 tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7739,0.8054), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 flow/press HP prop 20 tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7903,0.8201), mdot_fuel=0.03380 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 flow/press EPR tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7739,0.8054), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 flow/press EPR tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7903,0.8201), mdot_fuel=0.03380 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 flow/press N1 rate tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7739,0.8054), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 flow/press N1 rate tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7903,0.8201), mdot_fuel=0.03380 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 flow/press N1 prop tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7739,0.8054), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 flow/press N1 prop tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7903,0.8201), mdot_fuel=0.03380 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 press/flow Tt4 tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7574,0.8114), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 press/flow Tt4 tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7674,0.8206), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 press/flow thrust tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7574,0.8114), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 press/flow thrust tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7674,0.8206), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 press/flow HP rate .1 tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7574,0.8114), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 press/flow HP rate .1 tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7674,0.8206), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 press/flow HP prop 20 tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7574,0.8114), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 press/flow HP prop 20 tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7674,0.8206), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 press/flow EPR tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7574,0.8114), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 press/flow EPR tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7674,0.8206), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 press/flow N1 rate tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7574,0.8114), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 press/flow N1 rate tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7674,0.8206), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 press/flow N1 prop tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7574,0.8114), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 press/flow N1 prop tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7674,0.8206), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 tilted Tt4 tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7662,0.8083), mdot_fuel=0.03137 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 tilted Tt4 tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7763,0.8175), mdot_fuel=0.03137 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 tilted thrust tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7662,0.8083), mdot_fuel=0.03137 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 tilted thrust tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7763,0.8175), mdot_fuel=0.03137 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 tilted HP rate .1 tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7662,0.8083), mdot_fuel=0.03137 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 tilted HP rate .1 tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7763,0.8175), mdot_fuel=0.03137 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 tilted HP prop 20 tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7662,0.8083), mdot_fuel=0.03137 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 tilted HP prop 20 tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7763,0.8175), mdot_fuel=0.03137 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 tilted EPR tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7662,0.8083), mdot_fuel=0.03137 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 tilted EPR tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7763,0.8175), mdot_fuel=0.03137 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 tilted N1 rate tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7662,0.8083), mdot_fuel=0.03137 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 tilted N1 rate tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7763,0.8175), mdot_fuel=0.03137 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 tilted N1 prop tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7662,0.8083), mdot_fuel=0.03137 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 tilted N1 prop tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7763,0.8175), mdot_fuel=0.03137 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 flat-lp Tt4 tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.8301,0.8055), mdot_fuel=0.03141 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 flat-lp Tt4 tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.8464,0.8203), mdot_fuel=0.03382 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 flat-lp thrust tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.8301,0.8055), mdot_fuel=0.03141 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 flat-lp thrust tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.8464,0.8203), mdot_fuel=0.03382 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 flat-lp HP rate .1 tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.8301,0.8055), mdot_fuel=0.03141 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 flat-lp HP rate .1 tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.8464,0.8203), mdot_fuel=0.03382 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 flat-lp HP prop 20 tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.8301,0.8055), mdot_fuel=0.03141 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 flat-lp HP prop 20 tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.8464,0.8203), mdot_fuel=0.03382 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 flat-lp EPR tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.8301,0.8055), mdot_fuel=0.03141 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 flat-lp EPR tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.8464,0.8203), mdot_fuel=0.03382 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 flat-lp N1 rate tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.8301,0.8055), mdot_fuel=0.03141 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 flat-lp N1 rate tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.8464,0.8203), mdot_fuel=0.03382 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 flat-lp N1 prop tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.8301,0.8055), mdot_fuel=0.03141 - off the modeled speed-line region.
+  stop 1000->1600 rl 1300 ramp 0.1 flat-lp N1 prop tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.8464,0.8203), mdot_fuel=0.03382 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 flow/press Tt4 tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7775,0.8086), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 flow/press Tt4 tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7906,0.8203), mdot_fuel=0.03380 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 flow/press thrust tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7775,0.8086), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 flow/press thrust tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7906,0.8203), mdot_fuel=0.03380 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 flow/press HP rate .1 tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7775,0.8086), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 flow/press HP rate .1 tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7906,0.8203), mdot_fuel=0.03380 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 flow/press HP prop 20 tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7775,0.8086), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 flow/press HP prop 20 tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7906,0.8203), mdot_fuel=0.03380 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 flow/press EPR tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7775,0.8086), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 flow/press EPR tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7906,0.8203), mdot_fuel=0.03380 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 flow/press N1 rate tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7775,0.8086), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 flow/press N1 rate tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7906,0.8203), mdot_fuel=0.03380 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 flow/press N1 prop tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7775,0.8086), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 flow/press N1 prop tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7906,0.8203), mdot_fuel=0.03380 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 press/flow Tt4 tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7609,0.8146), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 press/flow Tt4 tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7676,0.8208), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 press/flow thrust tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7609,0.8146), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 press/flow thrust tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7676,0.8208), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 press/flow HP rate .1 tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7609,0.8146), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 press/flow HP rate .1 tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7676,0.8208), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 press/flow HP prop 20 tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7609,0.8146), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 press/flow HP prop 20 tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7676,0.8208), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 press/flow EPR tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7609,0.8146), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 press/flow EPR tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7676,0.8208), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 press/flow N1 rate tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7609,0.8146), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 press/flow N1 rate tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7676,0.8208), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 press/flow N1 prop tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7609,0.8146), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 press/flow N1 prop tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7676,0.8208), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 tilted Tt4 tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7697,0.8115), mdot_fuel=0.03137 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 tilted Tt4 tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7765,0.8177), mdot_fuel=0.03137 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 tilted thrust tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7697,0.8115), mdot_fuel=0.03137 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 tilted thrust tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7765,0.8177), mdot_fuel=0.03137 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 tilted HP rate .1 tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7697,0.8115), mdot_fuel=0.03137 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 tilted HP rate .1 tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7765,0.8177), mdot_fuel=0.03137 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 tilted HP prop 20 tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7697,0.8115), mdot_fuel=0.03137 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 tilted HP prop 20 tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7765,0.8177), mdot_fuel=0.03137 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 tilted EPR tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7697,0.8115), mdot_fuel=0.03137 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 tilted EPR tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7765,0.8177), mdot_fuel=0.03137 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 tilted N1 rate tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7697,0.8115), mdot_fuel=0.03137 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 tilted N1 rate tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7765,0.8177), mdot_fuel=0.03137 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 tilted N1 prop tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7697,0.8115), mdot_fuel=0.03137 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 tilted N1 prop tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7765,0.8177), mdot_fuel=0.03137 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 flat-lp Tt4 tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.8337,0.8087), mdot_fuel=0.03141 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 flat-lp Tt4 tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.8466,0.8205), mdot_fuel=0.03382 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 flat-lp thrust tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.8337,0.8087), mdot_fuel=0.03141 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 flat-lp thrust tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.8466,0.8205), mdot_fuel=0.03382 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 flat-lp HP rate .1 tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.8337,0.8087), mdot_fuel=0.03141 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 flat-lp HP rate .1 tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.8466,0.8205), mdot_fuel=0.03382 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 flat-lp HP prop 20 tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.8337,0.8087), mdot_fuel=0.03141 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 flat-lp HP prop 20 tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.8466,0.8205), mdot_fuel=0.03382 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 flat-lp EPR tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.8337,0.8087), mdot_fuel=0.03141 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 flat-lp EPR tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.8466,0.8205), mdot_fuel=0.03382 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 flat-lp N1 rate tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.8337,0.8087), mdot_fuel=0.03141 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 flat-lp N1 rate tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.8466,0.8205), mdot_fuel=0.03382 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 flat-lp N1 prop tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.8337,0.8087), mdot_fuel=0.03141 - off the modeled speed-line region.
+  stop 1000->1600 rl 1480 ramp 0.1 flat-lp N1 prop tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.8466,0.8205), mdot_fuel=0.03382 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 flow/press Tt4 tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7831,0.8135), mdot_fuel=0.03380 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 flow/press Tt4 tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7907,0.8204), mdot_fuel=0.03380 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 flow/press thrust tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7831,0.8135), mdot_fuel=0.03380 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 flow/press thrust tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7907,0.8204), mdot_fuel=0.03380 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 flow/press HP rate .1 tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7831,0.8135), mdot_fuel=0.03380 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 flow/press HP rate .1 tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7907,0.8204), mdot_fuel=0.03380 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 flow/press HP prop 20 tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7831,0.8135), mdot_fuel=0.03380 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 flow/press HP prop 20 tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7907,0.8204), mdot_fuel=0.03380 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 flow/press EPR tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7831,0.8135), mdot_fuel=0.03380 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 flow/press EPR tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7907,0.8204), mdot_fuel=0.03380 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 flow/press N1 rate tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7831,0.8135), mdot_fuel=0.03380 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 flow/press N1 rate tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7907,0.8204), mdot_fuel=0.03380 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 flow/press N1 prop tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7831,0.8135), mdot_fuel=0.03380 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 flow/press N1 prop tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7907,0.8204), mdot_fuel=0.03380 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 press/flow Tt4 tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7628,0.8163), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 press/flow Tt4 tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7677,0.8209), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 press/flow thrust tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7628,0.8163), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 press/flow thrust tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7677,0.8209), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 press/flow HP rate .1 tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7628,0.8163), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 press/flow HP rate .1 tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7677,0.8209), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 press/flow HP prop 20 tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7628,0.8163), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 press/flow HP prop 20 tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7677,0.8209), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 press/flow EPR tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7628,0.8163), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 press/flow EPR tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7677,0.8209), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 press/flow N1 rate tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7628,0.8163), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 press/flow N1 rate tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7677,0.8209), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 press/flow N1 prop tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7628,0.8163), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 press/flow N1 prop tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7677,0.8209), mdot_fuel=0.03138 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 tilted Tt4 tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7716,0.8132), mdot_fuel=0.03137 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 tilted Tt4 tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7766,0.8178), mdot_fuel=0.03137 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 tilted thrust tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7716,0.8132), mdot_fuel=0.03137 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 tilted thrust tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7766,0.8178), mdot_fuel=0.03137 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 tilted HP rate .1 tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7716,0.8132), mdot_fuel=0.03137 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 tilted HP rate .1 tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7766,0.8178), mdot_fuel=0.03137 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 tilted HP prop 20 tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7716,0.8132), mdot_fuel=0.03137 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 tilted HP prop 20 tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7766,0.8178), mdot_fuel=0.03137 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 tilted EPR tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7716,0.8132), mdot_fuel=0.03137 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 tilted EPR tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7766,0.8178), mdot_fuel=0.03137 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 tilted N1 rate tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7716,0.8132), mdot_fuel=0.03137 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 tilted N1 rate tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7766,0.8178), mdot_fuel=0.03137 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 tilted N1 prop tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7716,0.8132), mdot_fuel=0.03137 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 tilted N1 prop tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.7766,0.8178), mdot_fuel=0.03137 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 flat-lp Tt4 tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.8355,0.8103), mdot_fuel=0.03141 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 flat-lp Tt4 tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.8468,0.8206), mdot_fuel=0.03382 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 flat-lp thrust tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.8355,0.8103), mdot_fuel=0.03141 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 flat-lp thrust tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.8468,0.8206), mdot_fuel=0.03382 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 flat-lp HP rate .1 tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.8355,0.8103), mdot_fuel=0.03141 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 flat-lp HP rate .1 tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.8468,0.8206), mdot_fuel=0.03382 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 flat-lp HP prop 20 tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.8355,0.8103), mdot_fuel=0.03141 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 flat-lp HP prop 20 tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.8468,0.8206), mdot_fuel=0.03382 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 flat-lp EPR tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.8355,0.8103), mdot_fuel=0.03141 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 flat-lp EPR tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.8468,0.8206), mdot_fuel=0.03382 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 flat-lp N1 rate tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.8355,0.8103), mdot_fuel=0.03141 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 flat-lp N1 rate tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.8468,0.8206), mdot_fuel=0.03382 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 flat-lp N1 prop tau 0.02: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.8355,0.8103), mdot_fuel=0.03141 - off the modeled speed-line region.
+  stop 1000->1600 rl 1600 ramp 0.1 flat-lp N1 prop tau 0.8: rk s=0.080: rung-43 fuel closure does not bracket at nu=(0.8468,0.8206), mdot_fuel=0.03382 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 flow/press Tt4 tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6731,0.7115), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 flow/press Tt4 tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6754,0.7136), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 flow/press thrust tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6731,0.7115), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 flow/press thrust tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6754,0.7136), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 flow/press HP rate .1 tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6731,0.7115), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 flow/press HP rate .1 tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6754,0.7136), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 flow/press HP prop 20 tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6731,0.7115), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 flow/press HP prop 20 tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6754,0.7136), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 flow/press EPR tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6731,0.7115), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 flow/press EPR tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6754,0.7136), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 flow/press N1 rate tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6731,0.7115), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 flow/press N1 rate tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6754,0.7136), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 flow/press N1 prop tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6731,0.7115), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 flow/press N1 prop tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6754,0.7136), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 press/flow Tt4 tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6547,0.7181), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 press/flow Tt4 tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6571,0.7202), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 press/flow thrust tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6547,0.7181), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 press/flow thrust tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6571,0.7202), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 press/flow HP rate .1 tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6547,0.7181), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 press/flow HP rate .1 tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6571,0.7202), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 press/flow HP prop 20 tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6547,0.7181), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 press/flow HP prop 20 tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6571,0.7202), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 press/flow EPR tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6547,0.7181), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 press/flow EPR tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6571,0.7202), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 press/flow N1 rate tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6547,0.7181), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 press/flow N1 rate tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6571,0.7202), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 press/flow N1 prop tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6547,0.7181), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 press/flow N1 prop tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6571,0.7202), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 tilted Tt4 tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6649,0.7147), mdot_fuel=0.02267 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 tilted Tt4 tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6673,0.7169), mdot_fuel=0.02267 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 tilted thrust tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6649,0.7147), mdot_fuel=0.02267 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 tilted thrust tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6673,0.7169), mdot_fuel=0.02267 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 tilted HP rate .1 tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6649,0.7147), mdot_fuel=0.02267 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 tilted HP rate .1 tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6673,0.7169), mdot_fuel=0.02267 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 tilted HP prop 20 tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6649,0.7147), mdot_fuel=0.02267 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 tilted HP prop 20 tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6673,0.7169), mdot_fuel=0.02267 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 tilted EPR tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6649,0.7147), mdot_fuel=0.02267 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 tilted EPR tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6673,0.7169), mdot_fuel=0.02267 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 tilted N1 rate tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6649,0.7147), mdot_fuel=0.02267 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 tilted N1 rate tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6673,0.7169), mdot_fuel=0.02267 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 tilted N1 prop tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6649,0.7147), mdot_fuel=0.02267 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 tilted N1 prop tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6673,0.7169), mdot_fuel=0.02267 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 flat-lp Tt4 tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.7364,0.7116), mdot_fuel=0.02277 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 flat-lp Tt4 tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.7385,0.7136), mdot_fuel=0.02277 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 flat-lp thrust tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.7364,0.7116), mdot_fuel=0.02277 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 flat-lp thrust tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.7385,0.7136), mdot_fuel=0.02277 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 flat-lp HP rate .1 tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.7364,0.7116), mdot_fuel=0.02277 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 flat-lp HP rate .1 tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.7385,0.7136), mdot_fuel=0.02277 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 flat-lp HP prop 20 tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.7364,0.7116), mdot_fuel=0.02277 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 flat-lp HP prop 20 tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.7385,0.7136), mdot_fuel=0.02277 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 flat-lp EPR tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.7364,0.7116), mdot_fuel=0.02277 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 flat-lp EPR tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.7385,0.7136), mdot_fuel=0.02277 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 flat-lp N1 rate tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.7364,0.7116), mdot_fuel=0.02277 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 flat-lp N1 rate tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.7385,0.7136), mdot_fuel=0.02277 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 flat-lp N1 prop tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.7364,0.7116), mdot_fuel=0.02277 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.1 flat-lp N1 prop tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.7385,0.7136), mdot_fuel=0.02277 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 flow/press Tt4 tau 0.02: rk s=0.260: rung-43 fuel closure does not bracket at nu=(0.7116,0.7444), mdot_fuel=0.02476 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 flow/press Tt4 tau 0.8: rk s=0.400: rung-43 fuel closure does not bracket at nu=(0.8111,0.8340), mdot_fuel=0.03445 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 flow/press thrust tau 0.02: rk s=0.260: rung-43 fuel closure does not bracket at nu=(0.7116,0.7444), mdot_fuel=0.02476 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 flow/press thrust tau 0.8: rk s=0.400: rung-43 fuel closure does not bracket at nu=(0.8111,0.8340), mdot_fuel=0.03445 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 flow/press HP rate .1 tau 0.02: rk s=0.260: rung-43 fuel closure does not bracket at nu=(0.7116,0.7444), mdot_fuel=0.02476 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 flow/press HP rate .1 tau 0.8: rk s=0.400: rung-43 fuel closure does not bracket at nu=(0.8111,0.8340), mdot_fuel=0.03445 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 flow/press HP prop 20 tau 0.02: rk s=0.260: rung-43 fuel closure does not bracket at nu=(0.7116,0.7444), mdot_fuel=0.02476 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 flow/press HP prop 20 tau 0.8: rk s=0.400: rung-43 fuel closure does not bracket at nu=(0.8111,0.8340), mdot_fuel=0.03445 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 flow/press EPR tau 0.02: rk s=0.260: rung-43 fuel closure does not bracket at nu=(0.7116,0.7444), mdot_fuel=0.02476 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 flow/press EPR tau 0.8: rk s=0.400: rung-43 fuel closure does not bracket at nu=(0.8111,0.8340), mdot_fuel=0.03445 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 flow/press N1 rate tau 0.02: rk s=0.260: rung-43 fuel closure does not bracket at nu=(0.7116,0.7444), mdot_fuel=0.02476 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 flow/press N1 rate tau 0.8: rk s=0.400: rung-43 fuel closure does not bracket at nu=(0.8111,0.8340), mdot_fuel=0.03445 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 flow/press N1 prop tau 0.02: rk s=0.260: rung-43 fuel closure does not bracket at nu=(0.7116,0.7444), mdot_fuel=0.02476 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 flow/press N1 prop tau 0.8: rk s=0.400: rung-43 fuel closure does not bracket at nu=(0.8111,0.8340), mdot_fuel=0.03445 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 press/flow Tt4 tau 0.02: rk s=0.260: rung-43 fuel closure does not bracket at nu=(0.6905,0.7499), mdot_fuel=0.02407 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 press/flow Tt4 tau 0.8: rk s=0.360: rung-43 fuel closure does not bracket at nu=(0.7715,0.8240), mdot_fuel=0.03168 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 press/flow thrust tau 0.02: rk s=0.260: rung-43 fuel closure does not bracket at nu=(0.6905,0.7499), mdot_fuel=0.02407 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 press/flow thrust tau 0.8: rk s=0.360: rung-43 fuel closure does not bracket at nu=(0.7715,0.8240), mdot_fuel=0.03168 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 press/flow HP rate .1 tau 0.02: rk s=0.260: rung-43 fuel closure does not bracket at nu=(0.6905,0.7499), mdot_fuel=0.02407 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 press/flow HP rate .1 tau 0.8: rk s=0.360: rung-43 fuel closure does not bracket at nu=(0.7715,0.8240), mdot_fuel=0.03168 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 press/flow HP prop 20 tau 0.02: rk s=0.260: rung-43 fuel closure does not bracket at nu=(0.6905,0.7499), mdot_fuel=0.02407 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 press/flow HP prop 20 tau 0.8: rk s=0.360: rung-43 fuel closure does not bracket at nu=(0.7715,0.8240), mdot_fuel=0.03168 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 press/flow EPR tau 0.02: rk s=0.260: rung-43 fuel closure does not bracket at nu=(0.6905,0.7499), mdot_fuel=0.02407 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 press/flow EPR tau 0.8: rk s=0.360: rung-43 fuel closure does not bracket at nu=(0.7715,0.8240), mdot_fuel=0.03168 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 press/flow N1 rate tau 0.02: rk s=0.260: rung-43 fuel closure does not bracket at nu=(0.6905,0.7499), mdot_fuel=0.02407 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 press/flow N1 rate tau 0.8: rk s=0.360: rung-43 fuel closure does not bracket at nu=(0.7715,0.8240), mdot_fuel=0.03168 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 press/flow N1 prop tau 0.02: rk s=0.260: rung-43 fuel closure does not bracket at nu=(0.6905,0.7499), mdot_fuel=0.02407 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 press/flow N1 prop tau 0.8: rk s=0.360: rung-43 fuel closure does not bracket at nu=(0.7715,0.8240), mdot_fuel=0.03168 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 tilted Tt4 tau 0.02: rk s=0.260: rung-43 fuel closure does not bracket at nu=(0.7009,0.7460), mdot_fuel=0.02405 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 tilted Tt4 tau 0.8: rk s=0.360: rung-43 fuel closure does not bracket at nu=(0.7824,0.8200), mdot_fuel=0.03166 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 tilted thrust tau 0.02: rk s=0.260: rung-43 fuel closure does not bracket at nu=(0.7009,0.7460), mdot_fuel=0.02405 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 tilted thrust tau 0.8: rk s=0.360: rung-43 fuel closure does not bracket at nu=(0.7824,0.8200), mdot_fuel=0.03166 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 tilted HP rate .1 tau 0.02: rk s=0.260: rung-43 fuel closure does not bracket at nu=(0.7009,0.7460), mdot_fuel=0.02405 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 tilted HP rate .1 tau 0.8: rk s=0.360: rung-43 fuel closure does not bracket at nu=(0.7824,0.8200), mdot_fuel=0.03166 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 tilted HP prop 20 tau 0.02: rk s=0.260: rung-43 fuel closure does not bracket at nu=(0.7009,0.7460), mdot_fuel=0.02405 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 tilted HP prop 20 tau 0.8: rk s=0.360: rung-43 fuel closure does not bracket at nu=(0.7824,0.8200), mdot_fuel=0.03166 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 tilted EPR tau 0.02: rk s=0.260: rung-43 fuel closure does not bracket at nu=(0.7009,0.7460), mdot_fuel=0.02405 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 tilted EPR tau 0.8: rk s=0.360: rung-43 fuel closure does not bracket at nu=(0.7824,0.8200), mdot_fuel=0.03166 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 tilted N1 rate tau 0.02: rk s=0.260: rung-43 fuel closure does not bracket at nu=(0.7009,0.7460), mdot_fuel=0.02405 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 tilted N1 rate tau 0.8: rk s=0.360: rung-43 fuel closure does not bracket at nu=(0.7824,0.8200), mdot_fuel=0.03166 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 tilted N1 prop tau 0.02: rk s=0.260: rung-43 fuel closure does not bracket at nu=(0.7009,0.7460), mdot_fuel=0.02405 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 tilted N1 prop tau 0.8: rk s=0.360: rung-43 fuel closure does not bracket at nu=(0.7824,0.8200), mdot_fuel=0.03166 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 flat-lp Tt4 tau 0.02: rk s=0.260: rung-43 fuel closure does not bracket at nu=(0.7747,0.7446), mdot_fuel=0.02485 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 flat-lp Tt4 tau 0.8: rk s=0.380: rung-43 fuel closure does not bracket at nu=(0.8618,0.8250), mdot_fuel=0.03317 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 flat-lp thrust tau 0.02: rk s=0.260: rung-43 fuel closure does not bracket at nu=(0.7747,0.7446), mdot_fuel=0.02485 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 flat-lp thrust tau 0.8: rk s=0.380: rung-43 fuel closure does not bracket at nu=(0.8618,0.8250), mdot_fuel=0.03317 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 flat-lp HP rate .1 tau 0.02: rk s=0.260: rung-43 fuel closure does not bracket at nu=(0.7747,0.7446), mdot_fuel=0.02485 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 flat-lp HP rate .1 tau 0.8: rk s=0.380: rung-43 fuel closure does not bracket at nu=(0.8618,0.8250), mdot_fuel=0.03317 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 flat-lp HP prop 20 tau 0.02: rk s=0.260: rung-43 fuel closure does not bracket at nu=(0.7747,0.7446), mdot_fuel=0.02485 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 flat-lp HP prop 20 tau 0.8: rk s=0.380: rung-43 fuel closure does not bracket at nu=(0.8618,0.8250), mdot_fuel=0.03317 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 flat-lp EPR tau 0.02: rk s=0.260: rung-43 fuel closure does not bracket at nu=(0.7747,0.7446), mdot_fuel=0.02485 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 flat-lp EPR tau 0.8: rk s=0.380: rung-43 fuel closure does not bracket at nu=(0.8618,0.8250), mdot_fuel=0.03317 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 flat-lp N1 rate tau 0.02: rk s=0.260: rung-43 fuel closure does not bracket at nu=(0.7747,0.7446), mdot_fuel=0.02485 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 flat-lp N1 rate tau 0.8: rk s=0.380: rung-43 fuel closure does not bracket at nu=(0.8618,0.8250), mdot_fuel=0.03317 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 flat-lp N1 prop tau 0.02: rk s=0.260: rung-43 fuel closure does not bracket at nu=(0.7747,0.7446), mdot_fuel=0.02485 - off the modeled speed-line region.
+  stop 800->1700 rl 1300 ramp 0.5 flat-lp N1 prop tau 0.8: rk s=0.380: rung-43 fuel closure does not bracket at nu=(0.8618,0.8250), mdot_fuel=0.03317 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 flow/press Tt4 tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6741,0.7124), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 flow/press Tt4 tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6755,0.7136), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 flow/press thrust tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6741,0.7124), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 flow/press thrust tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6755,0.7136), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 flow/press HP rate .1 tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6741,0.7124), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 flow/press HP rate .1 tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6755,0.7136), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 flow/press HP prop 20 tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6741,0.7124), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 flow/press HP prop 20 tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6755,0.7136), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 flow/press EPR tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6741,0.7124), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 flow/press EPR tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6755,0.7136), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 flow/press N1 rate tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6741,0.7124), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 flow/press N1 rate tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6755,0.7136), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 flow/press N1 prop tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6741,0.7124), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 flow/press N1 prop tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6755,0.7136), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 press/flow Tt4 tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6557,0.7190), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 press/flow Tt4 tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6572,0.7203), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 press/flow thrust tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6557,0.7190), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 press/flow thrust tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6572,0.7203), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 press/flow HP rate .1 tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6557,0.7190), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 press/flow HP rate .1 tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6572,0.7203), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 press/flow HP prop 20 tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6557,0.7190), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 press/flow HP prop 20 tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6572,0.7203), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 press/flow EPR tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6557,0.7190), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 press/flow EPR tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6572,0.7203), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 press/flow N1 rate tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6557,0.7190), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 press/flow N1 rate tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6572,0.7203), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 press/flow N1 prop tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6557,0.7190), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 press/flow N1 prop tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6572,0.7203), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 tilted Tt4 tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6659,0.7156), mdot_fuel=0.02267 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 tilted Tt4 tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6674,0.7169), mdot_fuel=0.02267 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 tilted thrust tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6659,0.7156), mdot_fuel=0.02267 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 tilted thrust tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6674,0.7169), mdot_fuel=0.02267 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 tilted HP rate .1 tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6659,0.7156), mdot_fuel=0.02267 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 tilted HP rate .1 tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6674,0.7169), mdot_fuel=0.02267 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 tilted HP prop 20 tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6659,0.7156), mdot_fuel=0.02267 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 tilted HP prop 20 tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6674,0.7169), mdot_fuel=0.02267 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 tilted EPR tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6659,0.7156), mdot_fuel=0.02267 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 tilted EPR tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6674,0.7169), mdot_fuel=0.02267 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 tilted N1 rate tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6659,0.7156), mdot_fuel=0.02267 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 tilted N1 rate tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6674,0.7169), mdot_fuel=0.02267 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 tilted N1 prop tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6659,0.7156), mdot_fuel=0.02267 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 tilted N1 prop tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6674,0.7169), mdot_fuel=0.02267 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 flat-lp Tt4 tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.7373,0.7124), mdot_fuel=0.02277 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 flat-lp Tt4 tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.7386,0.7137), mdot_fuel=0.02277 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 flat-lp thrust tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.7373,0.7124), mdot_fuel=0.02277 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 flat-lp thrust tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.7386,0.7137), mdot_fuel=0.02277 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 flat-lp HP rate .1 tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.7373,0.7124), mdot_fuel=0.02277 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 flat-lp HP rate .1 tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.7386,0.7137), mdot_fuel=0.02277 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 flat-lp HP prop 20 tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.7373,0.7124), mdot_fuel=0.02277 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 flat-lp HP prop 20 tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.7386,0.7137), mdot_fuel=0.02277 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 flat-lp EPR tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.7373,0.7124), mdot_fuel=0.02277 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 flat-lp EPR tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.7386,0.7137), mdot_fuel=0.02277 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 flat-lp N1 rate tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.7373,0.7124), mdot_fuel=0.02277 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 flat-lp N1 rate tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.7386,0.7137), mdot_fuel=0.02277 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 flat-lp N1 prop tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.7373,0.7124), mdot_fuel=0.02277 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.1 flat-lp N1 prop tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.7386,0.7137), mdot_fuel=0.02277 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 flow/press Tt4 tau 0.02: rk s=0.280: rung-43 fuel closure does not bracket at nu=(0.7270,0.7581), mdot_fuel=0.02614 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 flow/press Tt4 tau 0.8: rk s=0.460: rung-43 fuel closure does not bracket at nu=(0.8414,0.8615), mdot_fuel=0.03791 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 flow/press thrust tau 0.02: rk s=0.280: rung-43 fuel closure does not bracket at nu=(0.7270,0.7581), mdot_fuel=0.02614 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 flow/press thrust tau 0.8: rk s=0.460: rung-43 fuel closure does not bracket at nu=(0.8414,0.8615), mdot_fuel=0.03791 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 flow/press HP rate .1 tau 0.02: rk s=0.280: rung-43 fuel closure does not bracket at nu=(0.7270,0.7581), mdot_fuel=0.02614 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 flow/press HP rate .1 tau 0.8: rk s=0.460: rung-43 fuel closure does not bracket at nu=(0.8414,0.8615), mdot_fuel=0.03791 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 flow/press HP prop 20 tau 0.02: rk s=0.280: rung-43 fuel closure does not bracket at nu=(0.7270,0.7581), mdot_fuel=0.02614 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 flow/press HP prop 20 tau 0.8: rk s=0.460: rung-43 fuel closure does not bracket at nu=(0.8414,0.8615), mdot_fuel=0.03791 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 flow/press EPR tau 0.02: rk s=0.280: rung-43 fuel closure does not bracket at nu=(0.7270,0.7581), mdot_fuel=0.02614 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 flow/press EPR tau 0.8: rk s=0.460: rung-43 fuel closure does not bracket at nu=(0.8414,0.8615), mdot_fuel=0.03791 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 flow/press N1 rate tau 0.02: rk s=0.280: rung-43 fuel closure does not bracket at nu=(0.7270,0.7581), mdot_fuel=0.02614 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 flow/press N1 rate tau 0.8: rk s=0.460: rung-43 fuel closure does not bracket at nu=(0.8414,0.8615), mdot_fuel=0.03791 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 flow/press N1 prop tau 0.02: rk s=0.280: rung-43 fuel closure does not bracket at nu=(0.7270,0.7581), mdot_fuel=0.02614 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 flow/press N1 prop tau 0.8: rk s=0.460: rung-43 fuel closure does not bracket at nu=(0.8414,0.8615), mdot_fuel=0.03791 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 press/flow Tt4 tau 0.02: rk s=0.280: rung-43 fuel closure does not bracket at nu=(0.7052,0.7632), mdot_fuel=0.02545 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 press/flow Tt4 tau 0.8: rk s=0.380: rung-43 fuel closure does not bracket at nu=(0.7847,0.8361), mdot_fuel=0.03306 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 press/flow thrust tau 0.02: rk s=0.280: rung-43 fuel closure does not bracket at nu=(0.7052,0.7632), mdot_fuel=0.02545 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 press/flow thrust tau 0.8: rk s=0.380: rung-43 fuel closure does not bracket at nu=(0.7847,0.8361), mdot_fuel=0.03306 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 press/flow HP rate .1 tau 0.02: rk s=0.280: rung-43 fuel closure does not bracket at nu=(0.7052,0.7632), mdot_fuel=0.02545 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 press/flow HP rate .1 tau 0.8: rk s=0.380: rung-43 fuel closure does not bracket at nu=(0.7847,0.8361), mdot_fuel=0.03306 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 press/flow HP prop 20 tau 0.02: rk s=0.280: rung-43 fuel closure does not bracket at nu=(0.7052,0.7632), mdot_fuel=0.02545 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 press/flow HP prop 20 tau 0.8: rk s=0.380: rung-43 fuel closure does not bracket at nu=(0.7847,0.8361), mdot_fuel=0.03306 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 press/flow EPR tau 0.02: rk s=0.280: rung-43 fuel closure does not bracket at nu=(0.7052,0.7632), mdot_fuel=0.02545 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 press/flow EPR tau 0.8: rk s=0.380: rung-43 fuel closure does not bracket at nu=(0.7847,0.8361), mdot_fuel=0.03306 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 press/flow N1 rate tau 0.02: rk s=0.280: rung-43 fuel closure does not bracket at nu=(0.7052,0.7632), mdot_fuel=0.02545 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 press/flow N1 rate tau 0.8: rk s=0.380: rung-43 fuel closure does not bracket at nu=(0.7847,0.8361), mdot_fuel=0.03306 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 press/flow N1 prop tau 0.02: rk s=0.280: rung-43 fuel closure does not bracket at nu=(0.7052,0.7632), mdot_fuel=0.02545 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 press/flow N1 prop tau 0.8: rk s=0.380: rung-43 fuel closure does not bracket at nu=(0.7847,0.8361), mdot_fuel=0.03306 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 tilted Tt4 tau 0.02: rk s=0.280: rung-43 fuel closure does not bracket at nu=(0.7157,0.7592), mdot_fuel=0.02543 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 tilted Tt4 tau 0.8: rk s=0.380: rung-43 fuel closure does not bracket at nu=(0.7956,0.8321), mdot_fuel=0.03305 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 tilted thrust tau 0.02: rk s=0.280: rung-43 fuel closure does not bracket at nu=(0.7157,0.7592), mdot_fuel=0.02543 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 tilted thrust tau 0.8: rk s=0.380: rung-43 fuel closure does not bracket at nu=(0.7956,0.8321), mdot_fuel=0.03305 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 tilted HP rate .1 tau 0.02: rk s=0.280: rung-43 fuel closure does not bracket at nu=(0.7157,0.7592), mdot_fuel=0.02543 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 tilted HP rate .1 tau 0.8: rk s=0.380: rung-43 fuel closure does not bracket at nu=(0.7956,0.8321), mdot_fuel=0.03305 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 tilted HP prop 20 tau 0.02: rk s=0.280: rung-43 fuel closure does not bracket at nu=(0.7157,0.7592), mdot_fuel=0.02543 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 tilted HP prop 20 tau 0.8: rk s=0.380: rung-43 fuel closure does not bracket at nu=(0.7956,0.8321), mdot_fuel=0.03305 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 tilted EPR tau 0.02: rk s=0.280: rung-43 fuel closure does not bracket at nu=(0.7157,0.7592), mdot_fuel=0.02543 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 tilted EPR tau 0.8: rk s=0.380: rung-43 fuel closure does not bracket at nu=(0.7956,0.8321), mdot_fuel=0.03305 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 tilted N1 rate tau 0.02: rk s=0.280: rung-43 fuel closure does not bracket at nu=(0.7157,0.7592), mdot_fuel=0.02543 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 tilted N1 rate tau 0.8: rk s=0.380: rung-43 fuel closure does not bracket at nu=(0.7956,0.8321), mdot_fuel=0.03305 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 tilted N1 prop tau 0.02: rk s=0.280: rung-43 fuel closure does not bracket at nu=(0.7157,0.7592), mdot_fuel=0.02543 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 tilted N1 prop tau 0.8: rk s=0.380: rung-43 fuel closure does not bracket at nu=(0.7956,0.8321), mdot_fuel=0.03305 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 flat-lp Tt4 tau 0.02: rk s=0.280: rung-43 fuel closure does not bracket at nu=(0.7898,0.7583), mdot_fuel=0.02624 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 flat-lp Tt4 tau 0.8: rk s=0.420: rung-43 fuel closure does not bracket at nu=(0.8804,0.8423), mdot_fuel=0.03525 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 flat-lp thrust tau 0.02: rk s=0.280: rung-43 fuel closure does not bracket at nu=(0.7898,0.7583), mdot_fuel=0.02624 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 flat-lp thrust tau 0.8: rk s=0.420: rung-43 fuel closure does not bracket at nu=(0.8804,0.8423), mdot_fuel=0.03525 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 flat-lp HP rate .1 tau 0.02: rk s=0.280: rung-43 fuel closure does not bracket at nu=(0.7898,0.7583), mdot_fuel=0.02624 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 flat-lp HP rate .1 tau 0.8: rk s=0.420: rung-43 fuel closure does not bracket at nu=(0.8804,0.8423), mdot_fuel=0.03525 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 flat-lp HP prop 20 tau 0.02: rk s=0.280: rung-43 fuel closure does not bracket at nu=(0.7898,0.7583), mdot_fuel=0.02624 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 flat-lp HP prop 20 tau 0.8: rk s=0.420: rung-43 fuel closure does not bracket at nu=(0.8804,0.8423), mdot_fuel=0.03525 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 flat-lp EPR tau 0.02: rk s=0.280: rung-43 fuel closure does not bracket at nu=(0.7898,0.7583), mdot_fuel=0.02624 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 flat-lp EPR tau 0.8: rk s=0.420: rung-43 fuel closure does not bracket at nu=(0.8804,0.8423), mdot_fuel=0.03525 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 flat-lp N1 rate tau 0.02: rk s=0.280: rung-43 fuel closure does not bracket at nu=(0.7898,0.7583), mdot_fuel=0.02624 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 flat-lp N1 rate tau 0.8: rk s=0.420: rung-43 fuel closure does not bracket at nu=(0.8804,0.8423), mdot_fuel=0.03525 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 flat-lp N1 prop tau 0.02: rk s=0.280: rung-43 fuel closure does not bracket at nu=(0.7898,0.7583), mdot_fuel=0.02624 - off the modeled speed-line region.
+  stop 800->1700 rl 1480 ramp 0.5 flat-lp N1 prop tau 0.8: rk s=0.420: rung-43 fuel closure does not bracket at nu=(0.8804,0.8423), mdot_fuel=0.03525 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 flow/press Tt4 tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6745,0.7128), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 flow/press Tt4 tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6755,0.7136), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 flow/press thrust tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6745,0.7128), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 flow/press thrust tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6755,0.7136), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 flow/press HP rate .1 tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6745,0.7128), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 flow/press HP rate .1 tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6755,0.7136), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 flow/press HP prop 20 tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6745,0.7128), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 flow/press HP prop 20 tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6755,0.7136), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 flow/press EPR tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6745,0.7128), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 flow/press EPR tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6755,0.7136), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 flow/press N1 rate tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6745,0.7128), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 flow/press N1 rate tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6755,0.7136), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 flow/press N1 prop tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6745,0.7128), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 flow/press N1 prop tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6755,0.7136), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 press/flow Tt4 tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6561,0.7193), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 press/flow Tt4 tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6572,0.7203), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 press/flow thrust tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6561,0.7193), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 press/flow thrust tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6572,0.7203), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 press/flow HP rate .1 tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6561,0.7193), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 press/flow HP rate .1 tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6572,0.7203), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 press/flow HP prop 20 tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6561,0.7193), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 press/flow HP prop 20 tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6572,0.7203), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 press/flow EPR tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6561,0.7193), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 press/flow EPR tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6572,0.7203), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 press/flow N1 rate tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6561,0.7193), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 press/flow N1 rate tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6572,0.7203), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 press/flow N1 prop tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6561,0.7193), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 press/flow N1 prop tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6572,0.7203), mdot_fuel=0.02268 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 tilted Tt4 tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6663,0.7160), mdot_fuel=0.02267 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 tilted Tt4 tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6674,0.7169), mdot_fuel=0.02267 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 tilted thrust tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6663,0.7160), mdot_fuel=0.02267 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 tilted thrust tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6674,0.7169), mdot_fuel=0.02267 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 tilted HP rate .1 tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6663,0.7160), mdot_fuel=0.02267 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 tilted HP rate .1 tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6674,0.7169), mdot_fuel=0.02267 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 tilted HP prop 20 tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6663,0.7160), mdot_fuel=0.02267 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 tilted HP prop 20 tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6674,0.7169), mdot_fuel=0.02267 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 tilted EPR tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6663,0.7160), mdot_fuel=0.02267 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 tilted EPR tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6674,0.7169), mdot_fuel=0.02267 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 tilted N1 rate tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6663,0.7160), mdot_fuel=0.02267 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 tilted N1 rate tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6674,0.7169), mdot_fuel=0.02267 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 tilted N1 prop tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6663,0.7160), mdot_fuel=0.02267 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 tilted N1 prop tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.6674,0.7169), mdot_fuel=0.02267 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 flat-lp Tt4 tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.7377,0.7128), mdot_fuel=0.02277 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 flat-lp Tt4 tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.7386,0.7137), mdot_fuel=0.02277 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 flat-lp thrust tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.7377,0.7128), mdot_fuel=0.02277 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 flat-lp thrust tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.7386,0.7137), mdot_fuel=0.02277 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 flat-lp HP rate .1 tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.7377,0.7128), mdot_fuel=0.02277 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 flat-lp HP rate .1 tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.7386,0.7137), mdot_fuel=0.02277 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 flat-lp HP prop 20 tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.7377,0.7128), mdot_fuel=0.02277 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 flat-lp HP prop 20 tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.7386,0.7137), mdot_fuel=0.02277 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 flat-lp EPR tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.7377,0.7128), mdot_fuel=0.02277 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 flat-lp EPR tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.7386,0.7137), mdot_fuel=0.02277 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 flat-lp N1 rate tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.7377,0.7128), mdot_fuel=0.02277 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 flat-lp N1 rate tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.7386,0.7137), mdot_fuel=0.02277 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 flat-lp N1 prop tau 0.02: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.7377,0.7128), mdot_fuel=0.02277 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.1 flat-lp N1 prop tau 0.8: rk s=0.040: rung-43 fuel closure does not bracket at nu=(0.7386,0.7137), mdot_fuel=0.02277 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.5 flow/press Tt4 tau 0.02: rk s=0.300: rung-43 fuel closure does not bracket at nu=(0.7396,0.7693), mdot_fuel=0.02753 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.5 flow/press thrust tau 0.02: rk s=0.300: rung-43 fuel closure does not bracket at nu=(0.7396,0.7693), mdot_fuel=0.02753 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.5 flow/press HP rate .1 tau 0.02: rk s=0.300: rung-43 fuel closure does not bracket at nu=(0.7396,0.7693), mdot_fuel=0.02753 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.5 flow/press HP prop 20 tau 0.02: rk s=0.300: rung-43 fuel closure does not bracket at nu=(0.7396,0.7693), mdot_fuel=0.02753 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.5 flow/press EPR tau 0.02: rk s=0.300: rung-43 fuel closure does not bracket at nu=(0.7396,0.7693), mdot_fuel=0.02753 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.5 flow/press N1 rate tau 0.02: rk s=0.300: rung-43 fuel closure does not bracket at nu=(0.7396,0.7693), mdot_fuel=0.02753 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.5 flow/press N1 prop tau 0.02: rk s=0.300: rung-43 fuel closure does not bracket at nu=(0.7396,0.7693), mdot_fuel=0.02753 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.5 press/flow Tt4 tau 0.02: rk s=0.280: rung-43 fuel closure does not bracket at nu=(0.7142,0.7714), mdot_fuel=0.02614 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.5 press/flow Tt4 tau 0.8: rk s=0.400: rung-43 fuel closure does not bracket at nu=(0.7972,0.8477), mdot_fuel=0.03444 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.5 press/flow thrust tau 0.02: rk s=0.280: rung-43 fuel closure does not bracket at nu=(0.7142,0.7714), mdot_fuel=0.02614 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.5 press/flow thrust tau 0.8: rk s=0.400: rung-43 fuel closure does not bracket at nu=(0.7972,0.8477), mdot_fuel=0.03444 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.5 press/flow HP rate .1 tau 0.02: rk s=0.280: rung-43 fuel closure does not bracket at nu=(0.7142,0.7714), mdot_fuel=0.02614 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.5 press/flow HP rate .1 tau 0.8: rk s=0.400: rung-43 fuel closure does not bracket at nu=(0.7972,0.8477), mdot_fuel=0.03444 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.5 press/flow HP prop 20 tau 0.02: rk s=0.280: rung-43 fuel closure does not bracket at nu=(0.7142,0.7714), mdot_fuel=0.02614 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.5 press/flow HP prop 20 tau 0.8: rk s=0.400: rung-43 fuel closure does not bracket at nu=(0.7972,0.8477), mdot_fuel=0.03444 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.5 press/flow EPR tau 0.02: rk s=0.280: rung-43 fuel closure does not bracket at nu=(0.7142,0.7714), mdot_fuel=0.02614 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.5 press/flow EPR tau 0.8: rk s=0.400: rung-43 fuel closure does not bracket at nu=(0.7972,0.8477), mdot_fuel=0.03444 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.5 press/flow N1 rate tau 0.02: rk s=0.280: rung-43 fuel closure does not bracket at nu=(0.7142,0.7714), mdot_fuel=0.02614 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.5 press/flow N1 rate tau 0.8: rk s=0.400: rung-43 fuel closure does not bracket at nu=(0.7972,0.8477), mdot_fuel=0.03444 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.5 press/flow N1 prop tau 0.02: rk s=0.280: rung-43 fuel closure does not bracket at nu=(0.7142,0.7714), mdot_fuel=0.02614 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.5 press/flow N1 prop tau 0.8: rk s=0.400: rung-43 fuel closure does not bracket at nu=(0.7972,0.8477), mdot_fuel=0.03444 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.5 tilted Tt4 tau 0.02: rk s=0.280: rung-43 fuel closure does not bracket at nu=(0.7247,0.7674), mdot_fuel=0.02613 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.5 tilted Tt4 tau 0.8: rk s=0.400: rung-43 fuel closure does not bracket at nu=(0.8082,0.8436), mdot_fuel=0.03443 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.5 tilted thrust tau 0.02: rk s=0.280: rung-43 fuel closure does not bracket at nu=(0.7247,0.7674), mdot_fuel=0.02613 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.5 tilted thrust tau 0.8: rk s=0.400: rung-43 fuel closure does not bracket at nu=(0.8082,0.8436), mdot_fuel=0.03443 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.5 tilted HP rate .1 tau 0.02: rk s=0.280: rung-43 fuel closure does not bracket at nu=(0.7247,0.7674), mdot_fuel=0.02613 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.5 tilted HP rate .1 tau 0.8: rk s=0.400: rung-43 fuel closure does not bracket at nu=(0.8082,0.8436), mdot_fuel=0.03443 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.5 tilted HP prop 20 tau 0.02: rk s=0.280: rung-43 fuel closure does not bracket at nu=(0.7247,0.7674), mdot_fuel=0.02613 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.5 tilted HP prop 20 tau 0.8: rk s=0.400: rung-43 fuel closure does not bracket at nu=(0.8082,0.8436), mdot_fuel=0.03443 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.5 tilted EPR tau 0.02: rk s=0.280: rung-43 fuel closure does not bracket at nu=(0.7247,0.7674), mdot_fuel=0.02613 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.5 tilted EPR tau 0.8: rk s=0.400: rung-43 fuel closure does not bracket at nu=(0.8082,0.8436), mdot_fuel=0.03443 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.5 tilted N1 rate tau 0.02: rk s=0.280: rung-43 fuel closure does not bracket at nu=(0.7247,0.7674), mdot_fuel=0.02613 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.5 tilted N1 rate tau 0.8: rk s=0.400: rung-43 fuel closure does not bracket at nu=(0.8082,0.8436), mdot_fuel=0.03443 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.5 tilted N1 prop tau 0.02: rk s=0.280: rung-43 fuel closure does not bracket at nu=(0.7247,0.7674), mdot_fuel=0.02613 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.5 tilted N1 prop tau 0.8: rk s=0.400: rung-43 fuel closure does not bracket at nu=(0.8082,0.8436), mdot_fuel=0.03443 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.5 flat-lp Tt4 tau 0.02: rk s=0.300: rung-43 fuel closure does not bracket at nu=(0.7991,0.7669), mdot_fuel=0.02693 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.5 flat-lp Tt4 tau 0.8: rk s=0.460: rung-43 fuel closure does not bracket at nu=(0.9039,0.8643), mdot_fuel=0.03802 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.5 flat-lp thrust tau 0.02: rk s=0.300: rung-43 fuel closure does not bracket at nu=(0.7991,0.7669), mdot_fuel=0.02693 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.5 flat-lp thrust tau 0.8: rk s=0.460: rung-43 fuel closure does not bracket at nu=(0.9039,0.8643), mdot_fuel=0.03802 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.5 flat-lp HP rate .1 tau 0.02: rk s=0.300: rung-43 fuel closure does not bracket at nu=(0.7991,0.7669), mdot_fuel=0.02693 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.5 flat-lp HP rate .1 tau 0.8: rk s=0.460: rung-43 fuel closure does not bracket at nu=(0.9039,0.8643), mdot_fuel=0.03802 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.5 flat-lp HP prop 20 tau 0.02: rk s=0.300: rung-43 fuel closure does not bracket at nu=(0.7991,0.7669), mdot_fuel=0.02693 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.5 flat-lp HP prop 20 tau 0.8: rk s=0.460: rung-43 fuel closure does not bracket at nu=(0.9039,0.8643), mdot_fuel=0.03802 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.5 flat-lp EPR tau 0.02: rk s=0.300: rung-43 fuel closure does not bracket at nu=(0.7991,0.7669), mdot_fuel=0.02693 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.5 flat-lp EPR tau 0.8: rk s=0.460: rung-43 fuel closure does not bracket at nu=(0.9039,0.8643), mdot_fuel=0.03802 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.5 flat-lp N1 rate tau 0.02: rk s=0.300: rung-43 fuel closure does not bracket at nu=(0.7991,0.7669), mdot_fuel=0.02693 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.5 flat-lp N1 rate tau 0.8: rk s=0.460: rung-43 fuel closure does not bracket at nu=(0.9039,0.8643), mdot_fuel=0.03802 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.5 flat-lp N1 prop tau 0.02: rk s=0.300: rung-43 fuel closure does not bracket at nu=(0.7991,0.7669), mdot_fuel=0.02693 - off the modeled speed-line region.
+  stop 800->1700 rl 1600 ramp 0.5 flat-lp N1 prop tau 0.8: rk s=0.460: rung-43 fuel closure does not bracket at nu=(0.9039,0.8643), mdot_fuel=0.03802 - off the modeled speed-line region.
+  2520 open runs, 0 with an applied fuel at the lean wall, 679 stopped early
