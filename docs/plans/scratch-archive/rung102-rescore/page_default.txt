@@ -1,0 +1,5 @@
+defaults: shape 0 from 1000 to 1400 settle 2 tt7 2000 light_at 0.5 a8 1
+pin      LP -34.66 %  HP +9.48 %  Tt4 +216.1 K  F +21.36 %  end margins lit-unlit LPflow +0.312 LPpress -0.037 HPflow +0.133 HPpress +0.414  min-after LPflow 0.4043/0.4043 LPpress 0.0680/0.0680
+ellipse  LP -11.99 %  HP -5.32 %  Tt4 +194.1 K  F +24.64 %  end margins lit-unlit LPflow -0.178 LPpress -0.084 HPflow -0.116 HPpress -0.150  min-after LPflow 0.4043/0.4043 LPpress 0.0680/0.0680
+two      LP -13.08 %  HP -4.56 %  Tt4 +194.2 K  F +24.61 %  end margins lit-unlit LPflow -0.159 LPpress -0.082 HPflow -0.103 HPpress -0.129  min-after LPflow 0.4043/0.4043 LPpress 0.0680/0.0680
+one      LP -14.90 %  HP -3.30 %  Tt4 +194.4 K  F +24.53 %  end margins lit-unlit LPflow -0.126 LPpress -0.077 HPflow -0.081 HPpress -0.091  min-after LPflow 0.4043/0.4043 LPpress 0.0680/0.0680

@@ -1,0 +1,22 @@
+[package]
+name = "rung102-rescore"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+turbojet = { path = "W:/Claude_projects/jet engine/rust" }
+
+[profile.release]
+opt-level = 3
+
+[[bin]]
+name = "score_c"
+path = "src/score_c.rs"
+
+[[bin]]
+name = "tt4hold"
+path = "src/tt4hold.rs"
+
+[[bin]]
+name = "page_default"
+path = "src/page_default.rs"

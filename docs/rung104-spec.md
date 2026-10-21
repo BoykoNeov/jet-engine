@@ -216,4 +216,6 @@ the aborts are the law's own.
 
 * The HP vane's own law (reaction, `A4` borderline at high power).
 * The afterburner's held light-off and every lit claim of rung 102 re-scored on its own grid under the law (here: the
-  failing tests' cells and a 24-cell probe).
+  failing tests' cells and a 24-cell probe). **DONE 2026-10-21** (`docs/rung102-spec.md` § Part C re-scored): 235–237 of
+  360 under the three laws, the pin's 335 reproduced line for line; beyond § 5 the end-of-run stall margins flip (all four
+  below unlit), and the Controls page's afterburner note, still the pin's numbers, was corrected.

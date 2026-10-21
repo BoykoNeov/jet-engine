@@ -241,6 +241,10 @@ step 11c flies it lit, matched, slammed and removed.
 > nearer its floor), the burner still runs ~200 K hotter and thrust still rises (+22 … +27 %) — the sign the throttle
 > decides survives. C12's three misses were the pin's: under every law the redline holds through a late held light-off.
 > One row, two rows and the ellipse alike.
+> **RE-SCORED on Part C's own 360 cells (2026-10-21, § Part C re-scored):** 235–237 HIT under the three laws (the pin
+> still 335, line for line). Beyond the above, the margins flip: a held light-off now ENDS with all four stall margins
+> below unlit (C7's flow half, C8 whole) — "its flow margin recovers past where it started" is the pin's. The
+> HP-speed governor's LP slows 5–12 %, not 70–89 %. Held `Tt4` (the headline's own check) still costs thrust.
 
 **Code** (Part C): `afterburner.rs` — `TwoShaftFit` (the page's settings), `TwoShaftAb` (captured on the core: `A6`, the
 dry throat, the nozzle's own `π_n`; `w_at`), `LitAb` (`burn`, station 5 → 7 at the light-off fraction; `try_lp_turbine`,
@@ -332,3 +336,53 @@ light-off and throat): **not fitted, all 1 200 byte-equal to the base; no panic 
 * The steady endpoints (and every table) are the fitted-unlit engine's: a run lights only during the march.
 * `two_spool.rs:936`'s assert is not converted: the census never reached it (an unreachable assert made an `Abort`
   measures nothing); the anchor's § 1 line is retracted (§ 5.0 P9).
+
+## Part C re-scored under rung 104's LP-turbine law (2026-10-21) — a confirmation / correction, not a rung
+
+Rung 104's second seam (and rung 105's third): rung 104 re-scored Part C only on its failing tests' cells and a 24-cell
+probe (`p16.txt`). Here the archived `score_c.rs` and `tt4hold.rs` ran unchanged on today's code except that the LP
+turbine's law is a command-line argument set on every request (`turbine`; the HP vane left at its default, the pin).
+Parts A and B are one-shaft engines with no LP turbine, so the law cannot reach them: not re-scored.
+Probe and outputs: `docs/plans/scratch-archive/rung102-rescore/`.
+
+**The instrument first.** Under the `pin` law both programs reproduce the archived `score_c.txt` (388 lines) and
+`tt4hold.txt` line for line, every digit — so neither rung 103's steady matchers below choke (C10's 650/700 K starts)
+nor the lean-wall repair (sandbox plan § 40; C12's stops) moved a Part C cell, and every difference below is the law.
+Fitted-unlit, the Controls engine (perfect gas, nozzle choked) runs the same bits under every law (rung 104 § 4), so
+C1 and *match* are law-independent; the gate "*match* = unlit bit for bit" holds at all 24 cells under every law.
+
+| claim | pin | ellipse | two rows | one row | under the laws |
+|---|---|---|---|---|---|
+| C1 *match*: thrust × more than √(Tt7/Tt5) | 24/24 | 24/24 | 24/24 | 24/24 | ×1.481–1.537, identical |
+| C2 held: the LP slows, by 8–50 % | 48/48 | **47**/48 | 48/48 | 48/48 | −7.8 … −15.4 % (pin −29.7 … −42.1); the miss is `flat-lp` `ρ` 3, 5 km, late: −7.83 % |
+| C3 held: the HP overspeeds 2–20 % | 24/24 | **0** | **0** | **0** | the HP SLOWS 2.3 … 5.9 % (ellipse 4.4 … 5.9) |
+| C4 held: the main burner hotter | 24/24 | 24/24 | 24/24 | 24/24 | +171 … +183 K (pin +163 … +190) |
+| C5 held: thrust above unlit | 24/24 | 24/24 | 24/24 | 24/24 | +20.4 … +25.8 % (pin +19.3 … +27.1) |
+| C6 held: LP pressure margin dips below unlit's after light-off | 10/24 | 8 | 8 | 8 | late light-offs, curved maps 8/8 everywhere; the pin's two early hits (by < 0.001) are now exact ties — the slam's own minimum |
+| C7 held, end: LP flow margin above unlit, pressure below | 40/48 | **16** | **16** | **16** | flow **0/24**: lit ends 0.11 … 0.23 BELOW unlit; pressure 16/24 as before (`flat-lp` ≡ 0) |
+| C8 held, end: both HP margins above unlit | 48/48 | **0** | **0** | **0** | flow −0.07 … −0.14, pressure −0.05 … −0.16 below unlit |
+| C9 ×1.2 strictly between ×1 and *match* | 72/72 | 72/72 | 72/72 | 72/72 | |
+| C10 light-off below choke | 15/15 | **12** | **12** | **12** | the three "HP speeds up" cells: it slows, by 0.021 … 0.047 of design speed; the lit nozzle still chokes within two steps |
+| C11 HP-speed governor: HP held, LP slows (> 5 %) | 6/6 | **5**/6 | 6/6 | 6/6 | HP held to 0.000 % (pin within 0.26 %); LP −4.7 … −12.1 % (pin −69.6 … −89.4); the miss `flat-lp`, ellipse, −4.73 % |
+| C12 the redline through a late held light-off | 0/3 | 3/3 | 3/3 | 3/3 | max `Tt4` 1480.0, binding after light-off |
+| **total** | **335** | **235** | **237** | **237** | of 360 |
+
+**The headline's own check (`tt4hold`, `Tt4` held all along the move):** held lit thrust BELOW unlit at all three slams
+under every law (×0.870–0.940; pin ×0.871–0.893), above at ×1.15 (×1.112–1.153), ×1.549–1.593 by the rule (identical) —
+"what the throttle holds decides the sign" survives. With `Tt4` held the LP still slows further than metered (to 71–78 %
+of unlit, against 85–88 % metered on the page's default), the HP too (to 83–87 %; pin 100–104 %).
+
+**What changes in Part C's headline under the laws (the shipped default is the ellipse):** the LP slows by about a
+tenth, not a third; the HP slows by about 5 % instead of overspeeding; the burner runs ~170–185 K hotter and thrust still
+rises by a fifth to a quarter; and **a held light-off ends with every compressor nearer stall than unlit** — the LP flow
+margin's recovery "past where it started" and both HP margins' gain were the pin's (the HP's gain followed its
+overspeed). With the HP-speed governor the LP slows only 5–12 % (pin 70–89 %). Not measured: the mechanism of either change, or
+why the margins fall beyond the slower shafts. Two band edges missed (C2, C11, one `flat-lp` cell each); the bars were not moved.
+
+**The page** (`docs/sandbox/template.html`, the Controls afterburner note) and its README still said the pin's
+numbers ("the LP shaft slows by about a third … spins the HP shaft past its design speed") after rung 104 made the
+ellipse the default; both now give the default's and name "Choked" for the old picture. On the page's default request
+(light-off 0.5 τ, `Tt7` 2000 K): ellipse LP −12.0 %, HP −5.3 %, `Tt4` +194 K, thrust +24.6 %, all four margins below
+unlit at the end (`page_default.txt`). Its light-off at 0.5 τ is inside the slam's own dip: the LP's lowest margin after
+it equals unlit's on every law, the pin included — so the note's "dips toward stall right after light-off" now says
+"lit after the engine has settled" (C6's late cells).

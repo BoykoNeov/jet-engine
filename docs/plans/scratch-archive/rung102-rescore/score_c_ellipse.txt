@@ -1,0 +1,389 @@
+LAW ellipse
+HIT  C1: press/flow rho 0.5 design light 0.3: F ratio 1.5370 vs sqrt(Tt7/Tt5) 1.3474
+GATE match = unlit bit for bit: true (press/flow rho 0.5 design light 0.3)
+HIT  C2: press/flow rho 0.5 design light 0.3: dnuL -0.11647
+HIT  C2: press/flow rho 0.5 design light 0.3: dnuL/nuL -12.68 %
+MISS C3: press/flow rho 0.5 design light 0.3: dnuH/nuH -4.47 %
+HIT  C4: press/flow rho 0.5 design light 0.3: dTt4 180.9 K
+HIT  C5: press/flow rho 0.5 design light 0.3: dF 136.24 (24.45 %)
+MISS C6: press/flow rho 0.5 design light 0.3: LP pressure-margin min after light-off 0.0741 vs unlit 0.0741
+MISS C7: press/flow rho 0.5 design light 0.3: end LP flow margin 0.5450 vs 0.7015
+HIT  C7: press/flow rho 0.5 design light 0.3: end LP pressure margin 0.1839 vs 0.3164
+MISS C8: press/flow rho 0.5 design light 0.3: end HP flow margin 0.6583 vs 0.7813
+MISS C8: press/flow rho 0.5 design light 0.3: end HP pressure margin 0.2408 vs 0.3231
+HIT  C9: press/flow rho 0.5 design light 0.3: nuL d(x1.2) -0.05814 vs d(x1) -0.11647
+HIT  C9: press/flow rho 0.5 design light 0.3: nuH d(x1.2) -0.01764 vs d(x1) -0.04205
+HIT  C9: press/flow rho 0.5 design light 0.3: Tt4 d(x1.2) 76.79937 vs d(x1) 180.89261
+HIT  C1: press/flow rho 0.5 design light 3.5: F ratio 1.5370 vs sqrt(Tt7/Tt5) 1.3474
+GATE match = unlit bit for bit: true (press/flow rho 0.5 design light 3.5)
+HIT  C2: press/flow rho 0.5 design light 3.5: dnuL -0.11648
+HIT  C2: press/flow rho 0.5 design light 3.5: dnuL/nuL -12.69 %
+MISS C3: press/flow rho 0.5 design light 3.5: dnuH/nuH -4.47 %
+HIT  C4: press/flow rho 0.5 design light 3.5: dTt4 180.8 K
+HIT  C5: press/flow rho 0.5 design light 3.5: dF 136.31 (24.46 %)
+HIT  C6: press/flow rho 0.5 design light 3.5: LP pressure-margin min after light-off 0.1840 vs unlit 0.3158
+MISS C7: press/flow rho 0.5 design light 3.5: end LP flow margin 0.5451 vs 0.7015
+HIT  C7: press/flow rho 0.5 design light 3.5: end LP pressure margin 0.1840 vs 0.3164
+MISS C8: press/flow rho 0.5 design light 3.5: end HP flow margin 0.6584 vs 0.7813
+MISS C8: press/flow rho 0.5 design light 3.5: end HP pressure margin 0.2409 vs 0.3231
+HIT  C9: press/flow rho 0.5 design light 3.5: nuL d(x1.2) -0.05814 vs d(x1) -0.11648
+HIT  C9: press/flow rho 0.5 design light 3.5: nuH d(x1.2) -0.01762 vs d(x1) -0.04199
+HIT  C9: press/flow rho 0.5 design light 3.5: Tt4 d(x1.2) 76.77689 vs d(x1) 180.80772
+HIT  C1: press/flow rho 0.5 5km M0.6 light 0.3: F ratio 1.4817 vs sqrt(Tt7/Tt5) 1.3474
+GATE match = unlit bit for bit: true (press/flow rho 0.5 5km M0.6 light 0.3)
+HIT  C2: press/flow rho 0.5 5km M0.6 light 0.3: dnuL -0.11823
+HIT  C2: press/flow rho 0.5 5km M0.6 light 0.3: dnuL/nuL -12.72 %
+MISS C3: press/flow rho 0.5 5km M0.6 light 0.3: dnuH/nuH -4.37 %
+HIT  C4: press/flow rho 0.5 5km M0.6 light 0.3: dTt4 182.8 K
+HIT  C5: press/flow rho 0.5 5km M0.6 light 0.3: dF 115.10 (20.40 %)
+MISS C6: press/flow rho 0.5 5km M0.6 light 0.3: LP pressure-margin min after light-off 0.0839 vs unlit 0.0839
+MISS C7: press/flow rho 0.5 5km M0.6 light 0.3: end LP flow margin 0.5888 vs 0.7473
+HIT  C7: press/flow rho 0.5 5km M0.6 light 0.3: end LP pressure margin 0.2136 vs 0.3634
+MISS C8: press/flow rho 0.5 5km M0.6 light 0.3: end HP flow margin 0.6748 vs 0.7961
+MISS C8: press/flow rho 0.5 5km M0.6 light 0.3: end HP pressure margin 0.2568 vs 0.3414
+HIT  C9: press/flow rho 0.5 5km M0.6 light 0.3: nuL d(x1.2) -0.05899 vs d(x1) -0.11823
+HIT  C9: press/flow rho 0.5 5km M0.6 light 0.3: nuH d(x1.2) -0.01722 vs d(x1) -0.04122
+HIT  C9: press/flow rho 0.5 5km M0.6 light 0.3: Tt4 d(x1.2) 77.61473 vs d(x1) 182.79783
+HIT  C1: press/flow rho 0.5 5km M0.6 light 3.5: F ratio 1.4817 vs sqrt(Tt7/Tt5) 1.3474
+GATE match = unlit bit for bit: true (press/flow rho 0.5 5km M0.6 light 3.5)
+HIT  C2: press/flow rho 0.5 5km M0.6 light 3.5: dnuL -0.11825
+HIT  C2: press/flow rho 0.5 5km M0.6 light 3.5: dnuL/nuL -12.72 %
+MISS C3: press/flow rho 0.5 5km M0.6 light 3.5: dnuH/nuH -4.36 %
+HIT  C4: press/flow rho 0.5 5km M0.6 light 3.5: dTt4 182.7 K
+HIT  C5: press/flow rho 0.5 5km M0.6 light 3.5: dF 115.20 (20.41 %)
+HIT  C6: press/flow rho 0.5 5km M0.6 light 3.5: LP pressure-margin min after light-off 0.2137 vs unlit 0.3623
+MISS C7: press/flow rho 0.5 5km M0.6 light 3.5: end LP flow margin 0.5890 vs 0.7473
+HIT  C7: press/flow rho 0.5 5km M0.6 light 3.5: end LP pressure margin 0.2137 vs 0.3634
+MISS C8: press/flow rho 0.5 5km M0.6 light 3.5: end HP flow margin 0.6750 vs 0.7961
+MISS C8: press/flow rho 0.5 5km M0.6 light 3.5: end HP pressure margin 0.2569 vs 0.3414
+HIT  C9: press/flow rho 0.5 5km M0.6 light 3.5: nuL d(x1.2) -0.05899 vs d(x1) -0.11825
+HIT  C9: press/flow rho 0.5 5km M0.6 light 3.5: nuH d(x1.2) -0.01720 vs d(x1) -0.04115
+HIT  C9: press/flow rho 0.5 5km M0.6 light 3.5: Tt4 d(x1.2) 77.58891 vs d(x1) 182.69402
+HIT  C1: press/flow rho 3 design light 0.3: F ratio 1.5366 vs sqrt(Tt7/Tt5) 1.3472
+GATE match = unlit bit for bit: true (press/flow rho 3 design light 0.3)
+HIT  C2: press/flow rho 3 design light 0.3: dnuL -0.11580
+HIT  C2: press/flow rho 3 design light 0.3: dnuL/nuL -12.63 %
+MISS C3: press/flow rho 3 design light 0.3: dnuH/nuH -4.51 %
+HIT  C4: press/flow rho 3 design light 0.3: dTt4 180.6 K
+HIT  C5: press/flow rho 3 design light 0.3: dF 136.34 (24.48 %)
+MISS C6: press/flow rho 3 design light 0.3: LP pressure-margin min after light-off 0.0632 vs unlit 0.0632
+MISS C7: press/flow rho 3 design light 0.3: end LP flow margin 0.5464 vs 0.7033
+HIT  C7: press/flow rho 3 design light 0.3: end LP pressure margin 0.1841 vs 0.3165
+MISS C8: press/flow rho 3 design light 0.3: end HP flow margin 0.6594 vs 0.7831
+MISS C8: press/flow rho 3 design light 0.3: end HP pressure margin 0.2417 vs 0.3249
+HIT  C9: press/flow rho 3 design light 0.3: nuL d(x1.2) -0.05755 vs d(x1) -0.11580
+HIT  C9: press/flow rho 3 design light 0.3: nuH d(x1.2) -0.01791 vs d(x1) -0.04242
+HIT  C9: press/flow rho 3 design light 0.3: Tt4 d(x1.2) 76.54821 vs d(x1) 180.63247
+HIT  C1: press/flow rho 3 design light 3.5: F ratio 1.5366 vs sqrt(Tt7/Tt5) 1.3472
+GATE match = unlit bit for bit: true (press/flow rho 3 design light 3.5)
+HIT  C2: press/flow rho 3 design light 3.5: dnuL -0.10444
+HIT  C2: press/flow rho 3 design light 3.5: dnuL/nuL -11.39 %
+MISS C3: press/flow rho 3 design light 3.5: dnuH/nuH -5.20 %
+HIT  C4: press/flow rho 3 design light 3.5: dTt4 177.4 K
+HIT  C5: press/flow rho 3 design light 3.5: dF 139.29 (25.01 %)
+HIT  C6: press/flow rho 3 design light 3.5: LP pressure-margin min after light-off 0.1817 vs unlit 0.3154
+MISS C7: press/flow rho 3 design light 3.5: end LP flow margin 0.5304 vs 0.7033
+HIT  C7: press/flow rho 3 design light 3.5: end LP pressure margin 0.1821 vs 0.3165
+MISS C8: press/flow rho 3 design light 3.5: end HP flow margin 0.6462 vs 0.7831
+MISS C8: press/flow rho 3 design light 3.5: end HP pressure margin 0.2309 vs 0.3249
+HIT  C9: press/flow rho 3 design light 3.5: nuL d(x1.2) -0.05306 vs d(x1) -0.10444
+HIT  C9: press/flow rho 3 design light 3.5: nuH d(x1.2) -0.02061 vs d(x1) -0.04896
+HIT  C9: press/flow rho 3 design light 3.5: Tt4 d(x1.2) 75.33010 vs d(x1) 177.42341
+HIT  C1: press/flow rho 3 5km M0.6 light 0.3: F ratio 1.4812 vs sqrt(Tt7/Tt5) 1.3471
+GATE match = unlit bit for bit: true (press/flow rho 3 5km M0.6 light 0.3)
+HIT  C2: press/flow rho 3 5km M0.6 light 0.3: dnuL -0.11713
+HIT  C2: press/flow rho 3 5km M0.6 light 0.3: dnuL/nuL -12.64 %
+MISS C3: press/flow rho 3 5km M0.6 light 0.3: dnuH/nuH -4.43 %
+HIT  C4: press/flow rho 3 5km M0.6 light 0.3: dTt4 182.4 K
+HIT  C5: press/flow rho 3 5km M0.6 light 0.3: dF 115.31 (20.45 %)
+MISS C6: press/flow rho 3 5km M0.6 light 0.3: LP pressure-margin min after light-off 0.0716 vs unlit 0.0716
+MISS C7: press/flow rho 3 5km M0.6 light 0.3: end LP flow margin 0.5910 vs 0.7501
+HIT  C7: press/flow rho 3 5km M0.6 light 0.3: end LP pressure margin 0.2139 vs 0.3635
+MISS C8: press/flow rho 3 5km M0.6 light 0.3: end HP flow margin 0.6766 vs 0.7990
+MISS C8: press/flow rho 3 5km M0.6 light 0.3: end HP pressure margin 0.2583 vs 0.3446
+HIT  C9: press/flow rho 3 5km M0.6 light 0.3: nuL d(x1.2) -0.05805 vs d(x1) -0.11713
+HIT  C9: press/flow rho 3 5km M0.6 light 0.3: nuH d(x1.2) -0.01769 vs d(x1) -0.04185
+HIT  C9: press/flow rho 3 5km M0.6 light 0.3: Tt4 d(x1.2) 77.21467 vs d(x1) 182.37721
+HIT  C1: press/flow rho 3 5km M0.6 light 3.5: F ratio 1.4812 vs sqrt(Tt7/Tt5) 1.3471
+GATE match = unlit bit for bit: true (press/flow rho 3 5km M0.6 light 3.5)
+HIT  C2: press/flow rho 3 5km M0.6 light 3.5: dnuL -0.10385
+HIT  C2: press/flow rho 3 5km M0.6 light 3.5: dnuL/nuL -11.21 %
+MISS C3: press/flow rho 3 5km M0.6 light 3.5: dnuH/nuH -5.26 %
+HIT  C4: press/flow rho 3 5km M0.6 light 3.5: dTt4 178.5 K
+HIT  C5: press/flow rho 3 5km M0.6 light 3.5: dF 118.80 (21.07 %)
+HIT  C6: press/flow rho 3 5km M0.6 light 3.5: LP pressure-margin min after light-off 0.2114 vs unlit 0.3612
+MISS C7: press/flow rho 3 5km M0.6 light 3.5: end LP flow margin 0.5722 vs 0.7501
+HIT  C7: press/flow rho 3 5km M0.6 light 3.5: end LP pressure margin 0.2116 vs 0.3635
+MISS C8: press/flow rho 3 5km M0.6 light 3.5: end HP flow margin 0.6602 vs 0.7990
+MISS C8: press/flow rho 3 5km M0.6 light 3.5: end HP pressure margin 0.2444 vs 0.3446
+HIT  C9: press/flow rho 3 5km M0.6 light 3.5: nuL d(x1.2) -0.05276 vs d(x1) -0.10385
+HIT  C9: press/flow rho 3 5km M0.6 light 3.5: nuH d(x1.2) -0.02093 vs d(x1) -0.04970
+HIT  C9: press/flow rho 3 5km M0.6 light 3.5: Tt4 d(x1.2) 75.72748 vs d(x1) 178.50440
+HIT  C1: tilted rho 0.5 design light 0.3: F ratio 1.5370 vs sqrt(Tt7/Tt5) 1.3474
+GATE match = unlit bit for bit: true (tilted rho 0.5 design light 0.3)
+HIT  C2: tilted rho 0.5 design light 0.3: dnuL -0.11288
+HIT  C2: tilted rho 0.5 design light 0.3: dnuL/nuL -12.25 %
+MISS C3: tilted rho 0.5 design light 0.3: dnuH/nuH -4.78 %
+HIT  C4: tilted rho 0.5 design light 0.3: dTt4 180.8 K
+HIT  C5: tilted rho 0.5 design light 0.3: dF 136.25 (24.46 %)
+MISS C6: tilted rho 0.5 design light 0.3: LP pressure-margin min after light-off 0.0405 vs unlit 0.0405
+MISS C7: tilted rho 0.5 design light 0.3: end LP flow margin 0.5318 vs 0.6953
+HIT  C7: tilted rho 0.5 design light 0.3: end LP pressure margin 0.1168 vs 0.2129
+MISS C8: tilted rho 0.5 design light 0.3: end HP flow margin 0.6653 vs 0.7829
+MISS C8: tilted rho 0.5 design light 0.3: end HP pressure margin 0.3148 vs 0.4202
+HIT  C9: tilted rho 0.5 design light 0.3: nuL d(x1.2) -0.05651 vs d(x1) -0.11288
+HIT  C9: tilted rho 0.5 design light 0.3: nuH d(x1.2) -0.01893 vs d(x1) -0.04495
+HIT  C9: tilted rho 0.5 design light 0.3: Tt4 d(x1.2) 76.73057 vs d(x1) 180.81082
+HIT  C1: tilted rho 0.5 design light 3.5: F ratio 1.5370 vs sqrt(Tt7/Tt5) 1.3474
+GATE match = unlit bit for bit: true (tilted rho 0.5 design light 3.5)
+HIT  C2: tilted rho 0.5 design light 3.5: dnuL -0.11292
+HIT  C2: tilted rho 0.5 design light 3.5: dnuL/nuL -12.26 %
+MISS C3: tilted rho 0.5 design light 3.5: dnuH/nuH -4.77 %
+HIT  C4: tilted rho 0.5 design light 3.5: dTt4 180.7 K
+HIT  C5: tilted rho 0.5 design light 3.5: dF 136.38 (24.48 %)
+HIT  C6: tilted rho 0.5 design light 3.5: LP pressure-margin min after light-off 0.1169 vs unlit 0.2123
+MISS C7: tilted rho 0.5 design light 3.5: end LP flow margin 0.5322 vs 0.6953
+HIT  C7: tilted rho 0.5 design light 3.5: end LP pressure margin 0.1169 vs 0.2129
+MISS C8: tilted rho 0.5 design light 3.5: end HP flow margin 0.6655 vs 0.7829
+MISS C8: tilted rho 0.5 design light 3.5: end HP pressure margin 0.3150 vs 0.4202
+HIT  C9: tilted rho 0.5 design light 3.5: nuL d(x1.2) -0.05652 vs d(x1) -0.11292
+HIT  C9: tilted rho 0.5 design light 3.5: nuH d(x1.2) -0.01890 vs d(x1) -0.04484
+HIT  C9: tilted rho 0.5 design light 3.5: Tt4 d(x1.2) 76.68898 vs d(x1) 180.67038
+HIT  C1: tilted rho 0.5 5km M0.6 light 0.3: F ratio 1.4817 vs sqrt(Tt7/Tt5) 1.3474
+GATE match = unlit bit for bit: true (tilted rho 0.5 5km M0.6 light 0.3)
+HIT  C2: tilted rho 0.5 5km M0.6 light 0.3: dnuL -0.11450
+HIT  C2: tilted rho 0.5 5km M0.6 light 0.3: dnuL/nuL -12.30 %
+MISS C3: tilted rho 0.5 5km M0.6 light 0.3: dnuH/nuH -4.69 %
+HIT  C4: tilted rho 0.5 5km M0.6 light 0.3: dTt4 182.6 K
+HIT  C5: tilted rho 0.5 5km M0.6 light 0.3: dF 115.19 (20.41 %)
+MISS C6: tilted rho 0.5 5km M0.6 light 0.3: LP pressure-margin min after light-off 0.0469 vs unlit 0.0469
+MISS C7: tilted rho 0.5 5km M0.6 light 0.3: end LP flow margin 0.5779 vs 0.7435
+HIT  C7: tilted rho 0.5 5km M0.6 light 0.3: end LP pressure margin 0.1381 vs 0.2482
+MISS C8: tilted rho 0.5 5km M0.6 light 0.3: end HP flow margin 0.6814 vs 0.7971
+MISS C8: tilted rho 0.5 5km M0.6 light 0.3: end HP pressure margin 0.3367 vs 0.4454
+HIT  C9: tilted rho 0.5 5km M0.6 light 0.3: nuL d(x1.2) -0.05729 vs d(x1) -0.11450
+HIT  C9: tilted rho 0.5 5km M0.6 light 0.3: nuH d(x1.2) -0.01852 vs d(x1) -0.04416
+HIT  C9: tilted rho 0.5 5km M0.6 light 0.3: Tt4 d(x1.2) 77.53146 vs d(x1) 182.63695
+HIT  C1: tilted rho 0.5 5km M0.6 light 3.5: F ratio 1.4817 vs sqrt(Tt7/Tt5) 1.3474
+GATE match = unlit bit for bit: true (tilted rho 0.5 5km M0.6 light 3.5)
+HIT  C2: tilted rho 0.5 5km M0.6 light 3.5: dnuL -0.11455
+HIT  C2: tilted rho 0.5 5km M0.6 light 3.5: dnuL/nuL -12.30 %
+MISS C3: tilted rho 0.5 5km M0.6 light 3.5: dnuH/nuH -4.67 %
+HIT  C4: tilted rho 0.5 5km M0.6 light 3.5: dTt4 182.5 K
+HIT  C5: tilted rho 0.5 5km M0.6 light 3.5: dF 115.35 (20.44 %)
+HIT  C6: tilted rho 0.5 5km M0.6 light 3.5: LP pressure-margin min after light-off 0.1383 vs unlit 0.2471
+MISS C7: tilted rho 0.5 5km M0.6 light 3.5: end LP flow margin 0.5783 vs 0.7435
+HIT  C7: tilted rho 0.5 5km M0.6 light 3.5: end LP pressure margin 0.1383 vs 0.2482
+MISS C8: tilted rho 0.5 5km M0.6 light 3.5: end HP flow margin 0.6817 vs 0.7971
+MISS C8: tilted rho 0.5 5km M0.6 light 3.5: end HP pressure margin 0.3370 vs 0.4454
+HIT  C9: tilted rho 0.5 5km M0.6 light 3.5: nuL d(x1.2) -0.05730 vs d(x1) -0.11455
+HIT  C9: tilted rho 0.5 5km M0.6 light 3.5: nuH d(x1.2) -0.01848 vs d(x1) -0.04403
+HIT  C9: tilted rho 0.5 5km M0.6 light 3.5: Tt4 d(x1.2) 77.47790 vs d(x1) 182.45137
+HIT  C1: tilted rho 3 design light 0.3: F ratio 1.5366 vs sqrt(Tt7/Tt5) 1.3472
+GATE match = unlit bit for bit: true (tilted rho 3 design light 0.3)
+HIT  C2: tilted rho 3 design light 0.3: dnuL -0.11221
+HIT  C2: tilted rho 3 design light 0.3: dnuL/nuL -12.20 %
+MISS C3: tilted rho 3 design light 0.3: dnuH/nuH -4.82 %
+HIT  C4: tilted rho 3 design light 0.3: dTt4 180.6 K
+HIT  C5: tilted rho 3 design light 0.3: dF 136.34 (24.49 %)
+MISS C6: tilted rho 3 design light 0.3: LP pressure-margin min after light-off 0.0347 vs unlit 0.0347
+MISS C7: tilted rho 3 design light 0.3: end LP flow margin 0.5334 vs 0.6973
+HIT  C7: tilted rho 3 design light 0.3: end LP pressure margin 0.1170 vs 0.2131
+MISS C8: tilted rho 3 design light 0.3: end HP flow margin 0.6665 vs 0.7847
+MISS C8: tilted rho 3 design light 0.3: end HP pressure margin 0.3161 vs 0.4229
+HIT  C9: tilted rho 3 design light 0.3: nuL d(x1.2) -0.05593 vs d(x1) -0.11221
+HIT  C9: tilted rho 3 design light 0.3: nuH d(x1.2) -0.01923 vs d(x1) -0.04535
+HIT  C9: tilted rho 3 design light 0.3: Tt4 d(x1.2) 76.49409 vs d(x1) 180.56851
+HIT  C1: tilted rho 3 design light 3.5: F ratio 1.5366 vs sqrt(Tt7/Tt5) 1.3472
+GATE match = unlit bit for bit: true (tilted rho 3 design light 3.5)
+HIT  C2: tilted rho 3 design light 3.5: dnuL -0.10038
+HIT  C2: tilted rho 3 design light 3.5: dnuL/nuL -10.92 %
+MISS C3: tilted rho 3 design light 3.5: dnuH/nuH -5.51 %
+HIT  C4: tilted rho 3 design light 3.5: dTt4 177.5 K
+HIT  C5: tilted rho 3 design light 3.5: dF 139.29 (25.02 %)
+HIT  C6: tilted rho 3 design light 3.5: LP pressure-margin min after light-off 0.1148 vs unlit 0.2129
+MISS C7: tilted rho 3 design light 3.5: end LP flow margin 0.5169 vs 0.6973
+HIT  C7: tilted rho 3 design light 3.5: end LP pressure margin 0.1152 vs 0.2131
+MISS C8: tilted rho 3 design light 3.5: end HP flow margin 0.6542 vs 0.7847
+MISS C8: tilted rho 3 design light 3.5: end HP pressure margin 0.3021 vs 0.4229
+HIT  C9: tilted rho 3 design light 3.5: nuL d(x1.2) -0.05128 vs d(x1) -0.10038
+HIT  C9: tilted rho 3 design light 3.5: nuH d(x1.2) -0.02195 vs d(x1) -0.05180
+HIT  C9: tilted rho 3 design light 3.5: Tt4 d(x1.2) 75.32558 vs d(x1) 177.47737
+HIT  C1: tilted rho 3 5km M0.6 light 0.3: F ratio 1.4812 vs sqrt(Tt7/Tt5) 1.3471
+GATE match = unlit bit for bit: true (tilted rho 3 5km M0.6 light 0.3)
+HIT  C2: tilted rho 3 5km M0.6 light 0.3: dnuL -0.11341
+HIT  C2: tilted rho 3 5km M0.6 light 0.3: dnuL/nuL -12.21 %
+MISS C3: tilted rho 3 5km M0.6 light 0.3: dnuH/nuH -4.75 %
+HIT  C4: tilted rho 3 5km M0.6 light 0.3: dTt4 182.2 K
+HIT  C5: tilted rho 3 5km M0.6 light 0.3: dF 115.37 (20.46 %)
+MISS C6: tilted rho 3 5km M0.6 light 0.3: LP pressure-margin min after light-off 0.0401 vs unlit 0.0401
+MISS C7: tilted rho 3 5km M0.6 light 0.3: end LP flow margin 0.5803 vs 0.7467
+HIT  C7: tilted rho 3 5km M0.6 light 0.3: end LP pressure margin 0.1384 vs 0.2485
+MISS C8: tilted rho 3 5km M0.6 light 0.3: end HP flow margin 0.6832 vs 0.8000
+MISS C8: tilted rho 3 5km M0.6 light 0.3: end HP pressure margin 0.3389 vs 0.4499
+HIT  C9: tilted rho 3 5km M0.6 light 0.3: nuL d(x1.2) -0.05637 vs d(x1) -0.11341
+HIT  C9: tilted rho 3 5km M0.6 light 0.3: nuH d(x1.2) -0.01902 vs d(x1) -0.04486
+HIT  C9: tilted rho 3 5km M0.6 light 0.3: Tt4 d(x1.2) 77.15879 vs d(x1) 182.24892
+HIT  C1: tilted rho 3 5km M0.6 light 3.5: F ratio 1.4812 vs sqrt(Tt7/Tt5) 1.3471
+GATE match = unlit bit for bit: true (tilted rho 3 5km M0.6 light 3.5)
+HIT  C2: tilted rho 3 5km M0.6 light 3.5: dnuL -0.09980
+HIT  C2: tilted rho 3 5km M0.6 light 3.5: dnuL/nuL -10.75 %
+MISS C3: tilted rho 3 5km M0.6 light 3.5: dnuH/nuH -5.57 %
+HIT  C4: tilted rho 3 5km M0.6 light 3.5: dTt4 178.6 K
+HIT  C5: tilted rho 3 5km M0.6 light 3.5: dF 118.79 (21.07 %)
+HIT  C6: tilted rho 3 5km M0.6 light 3.5: LP pressure-margin min after light-off 0.1361 vs unlit 0.2475
+MISS C7: tilted rho 3 5km M0.6 light 3.5: end LP flow margin 0.5610 vs 0.7467
+HIT  C7: tilted rho 3 5km M0.6 light 3.5: end LP pressure margin 0.1363 vs 0.2485
+MISS C8: tilted rho 3 5km M0.6 light 3.5: end HP flow margin 0.6682 vs 0.8000
+MISS C8: tilted rho 3 5km M0.6 light 3.5: end HP pressure margin 0.3210 vs 0.4499
+HIT  C9: tilted rho 3 5km M0.6 light 3.5: nuL d(x1.2) -0.05098 vs d(x1) -0.09980
+HIT  C9: tilted rho 3 5km M0.6 light 3.5: nuH d(x1.2) -0.02228 vs d(x1) -0.05258
+HIT  C9: tilted rho 3 5km M0.6 light 3.5: Tt4 d(x1.2) 75.74121 vs d(x1) 178.56031
+HIT  C1: flat-lp rho 0.5 design light 0.3: F ratio 1.5369 vs sqrt(Tt7/Tt5) 1.3474
+GATE match = unlit bit for bit: true (flat-lp rho 0.5 design light 0.3)
+HIT  C2: flat-lp rho 0.5 design light 0.3: dnuL -0.08953
+HIT  C2: flat-lp rho 0.5 design light 0.3: dnuL/nuL -9.45 %
+MISS C3: flat-lp rho 0.5 design light 0.3: dnuH/nuH -5.26 %
+HIT  C4: flat-lp rho 0.5 design light 0.3: dTt4 177.7 K
+HIT  C5: flat-lp rho 0.5 design light 0.3: dF 138.28 (24.78 %)
+MISS C6: flat-lp rho 0.5 design light 0.3: LP pressure-margin min after light-off 0.0000 vs unlit 0.0000
+MISS C7: flat-lp rho 0.5 design light 0.3: end LP flow margin 0.4496 vs 0.6517
+MISS C7: flat-lp rho 0.5 design light 0.3: end LP pressure margin 0.0000 vs 0.0000
+MISS C8: flat-lp rho 0.5 design light 0.3: end HP flow margin 0.6720 vs 0.7846
+MISS C8: flat-lp rho 0.5 design light 0.3: end HP pressure margin 0.4623 vs 0.6032
+HIT  C9: flat-lp rho 0.5 design light 0.3: nuL d(x1.2) -0.04532 vs d(x1) -0.08953
+HIT  C9: flat-lp rho 0.5 design light 0.3: nuH d(x1.2) -0.02072 vs d(x1) -0.04935
+HIT  C9: flat-lp rho 0.5 design light 0.3: Tt4 d(x1.2) 75.62549 vs d(x1) 177.74341
+HIT  C1: flat-lp rho 0.5 design light 3.5: F ratio 1.5369 vs sqrt(Tt7/Tt5) 1.3474
+GATE match = unlit bit for bit: true (flat-lp rho 0.5 design light 3.5)
+HIT  C2: flat-lp rho 0.5 design light 3.5: dnuL -0.08985
+HIT  C2: flat-lp rho 0.5 design light 3.5: dnuL/nuL -9.49 %
+MISS C3: flat-lp rho 0.5 design light 3.5: dnuH/nuH -5.23 %
+HIT  C4: flat-lp rho 0.5 design light 3.5: dTt4 177.4 K
+HIT  C5: flat-lp rho 0.5 design light 3.5: dF 138.55 (24.83 %)
+MISS C6: flat-lp rho 0.5 design light 3.5: LP pressure-margin min after light-off 0.0000 vs unlit 0.0000
+MISS C7: flat-lp rho 0.5 design light 3.5: end LP flow margin 0.4506 vs 0.6517
+MISS C7: flat-lp rho 0.5 design light 3.5: end LP pressure margin 0.0000 vs 0.0000
+MISS C8: flat-lp rho 0.5 design light 3.5: end HP flow margin 0.6727 vs 0.7846
+MISS C8: flat-lp rho 0.5 design light 3.5: end HP pressure margin 0.4632 vs 0.6032
+HIT  C9: flat-lp rho 0.5 design light 3.5: nuL d(x1.2) -0.04542 vs d(x1) -0.08985
+HIT  C9: flat-lp rho 0.5 design light 3.5: nuH d(x1.2) -0.02061 vs d(x1) -0.04904
+HIT  C9: flat-lp rho 0.5 design light 3.5: Tt4 d(x1.2) 75.53330 vs d(x1) 177.44578
+HIT  C1: flat-lp rho 0.5 5km M0.6 light 0.3: F ratio 1.4817 vs sqrt(Tt7/Tt5) 1.3474
+GATE match = unlit bit for bit: true (flat-lp rho 0.5 5km M0.6 light 0.3)
+HIT  C2: flat-lp rho 0.5 5km M0.6 light 0.3: dnuL -0.08840
+HIT  C2: flat-lp rho 0.5 5km M0.6 light 0.3: dnuL/nuL -9.33 %
+MISS C3: flat-lp rho 0.5 5km M0.6 light 0.3: dnuH/nuH -5.13 %
+HIT  C4: flat-lp rho 0.5 5km M0.6 light 0.3: dTt4 180.1 K
+HIT  C5: flat-lp rho 0.5 5km M0.6 light 0.3: dF 116.75 (20.68 %)
+MISS C6: flat-lp rho 0.5 5km M0.6 light 0.3: LP pressure-margin min after light-off 0.0000 vs unlit 0.0000
+MISS C7: flat-lp rho 0.5 5km M0.6 light 0.3: end LP flow margin 0.5042 vs 0.7151
+MISS C7: flat-lp rho 0.5 5km M0.6 light 0.3: end LP pressure margin 0.0000 vs 0.0000
+MISS C8: flat-lp rho 0.5 5km M0.6 light 0.3: end HP flow margin 0.6875 vs 0.7981
+MISS C8: flat-lp rho 0.5 5km M0.6 light 0.3: end HP pressure margin 0.4920 vs 0.6366
+HIT  C9: flat-lp rho 0.5 5km M0.6 light 0.3: nuL d(x1.2) -0.04475 vs d(x1) -0.08840
+HIT  C9: flat-lp rho 0.5 5km M0.6 light 0.3: nuH d(x1.2) -0.02016 vs d(x1) -0.04831
+HIT  C9: flat-lp rho 0.5 5km M0.6 light 0.3: Tt4 d(x1.2) 76.68734 vs d(x1) 180.07780
+HIT  C1: flat-lp rho 0.5 5km M0.6 light 3.5: F ratio 1.4817 vs sqrt(Tt7/Tt5) 1.3474
+GATE match = unlit bit for bit: true (flat-lp rho 0.5 5km M0.6 light 3.5)
+HIT  C2: flat-lp rho 0.5 5km M0.6 light 3.5: dnuL -0.08882
+HIT  C2: flat-lp rho 0.5 5km M0.6 light 3.5: dnuL/nuL -9.38 %
+MISS C3: flat-lp rho 0.5 5km M0.6 light 3.5: dnuH/nuH -5.08 %
+HIT  C4: flat-lp rho 0.5 5km M0.6 light 3.5: dTt4 179.7 K
+HIT  C5: flat-lp rho 0.5 5km M0.6 light 3.5: dF 117.12 (20.74 %)
+MISS C6: flat-lp rho 0.5 5km M0.6 light 3.5: LP pressure-margin min after light-off 0.0000 vs unlit 0.0000
+MISS C7: flat-lp rho 0.5 5km M0.6 light 3.5: end LP flow margin 0.5056 vs 0.7151
+MISS C7: flat-lp rho 0.5 5km M0.6 light 3.5: end LP pressure margin 0.0000 vs 0.0000
+MISS C8: flat-lp rho 0.5 5km M0.6 light 3.5: end HP flow margin 0.6883 vs 0.7981
+MISS C8: flat-lp rho 0.5 5km M0.6 light 3.5: end HP pressure margin 0.4933 vs 0.6366
+HIT  C9: flat-lp rho 0.5 5km M0.6 light 3.5: nuL d(x1.2) -0.04488 vs d(x1) -0.08882
+HIT  C9: flat-lp rho 0.5 5km M0.6 light 3.5: nuH d(x1.2) -0.02001 vs d(x1) -0.04788
+HIT  C9: flat-lp rho 0.5 5km M0.6 light 3.5: Tt4 d(x1.2) 76.56011 vs d(x1) 179.66496
+HIT  C1: flat-lp rho 3 design light 0.3: F ratio 1.5364 vs sqrt(Tt7/Tt5) 1.3471
+GATE match = unlit bit for bit: true (flat-lp rho 3 design light 0.3)
+HIT  C2: flat-lp rho 3 design light 0.3: dnuL -0.08869
+HIT  C2: flat-lp rho 3 design light 0.3: dnuL/nuL -9.39 %
+MISS C3: flat-lp rho 3 design light 0.3: dnuH/nuH -5.29 %
+HIT  C4: flat-lp rho 3 design light 0.3: dTt4 177.5 K
+HIT  C5: flat-lp rho 3 design light 0.3: dF 138.35 (24.81 %)
+MISS C6: flat-lp rho 3 design light 0.3: LP pressure-margin min after light-off 0.0000 vs unlit 0.0000
+MISS C7: flat-lp rho 3 design light 0.3: end LP flow margin 0.4517 vs 0.6543
+MISS C7: flat-lp rho 3 design light 0.3: end LP pressure margin 0.0000 vs 0.0000
+MISS C8: flat-lp rho 3 design light 0.3: end HP flow margin 0.6732 vs 0.7863
+MISS C8: flat-lp rho 3 design light 0.3: end HP pressure margin 0.4643 vs 0.6068
+HIT  C9: flat-lp rho 3 design light 0.3: nuL d(x1.2) -0.04470 vs d(x1) -0.08869
+HIT  C9: flat-lp rho 3 design light 0.3: nuH d(x1.2) -0.02095 vs d(x1) -0.04973
+HIT  C9: flat-lp rho 3 design light 0.3: Tt4 d(x1.2) 75.35866 vs d(x1) 177.45094
+HIT  C1: flat-lp rho 3 design light 3.5: F ratio 1.5364 vs sqrt(Tt7/Tt5) 1.3471
+GATE match = unlit bit for bit: true (flat-lp rho 3 design light 3.5)
+HIT  C2: flat-lp rho 3 design light 3.5: dnuL -0.07611
+HIT  C2: flat-lp rho 3 design light 3.5: dnuL/nuL -8.06 %
+MISS C3: flat-lp rho 3 design light 3.5: dnuH/nuH -5.85 %
+HIT  C4: flat-lp rho 3 design light 3.5: dTt4 174.0 K
+HIT  C5: flat-lp rho 3 design light 3.5: dF 141.61 (25.40 %)
+MISS C6: flat-lp rho 3 design light 3.5: LP pressure-margin min after light-off 0.0000 vs unlit 0.0000
+MISS C7: flat-lp rho 3 design light 3.5: end LP flow margin 0.4365 vs 0.6543
+MISS C7: flat-lp rho 3 design light 3.5: end LP pressure margin 0.0000 vs 0.0000
+MISS C8: flat-lp rho 3 design light 3.5: end HP flow margin 0.6645 vs 0.7863
+MISS C8: flat-lp rho 3 design light 3.5: end HP pressure margin 0.4498 vs 0.6068
+HIT  C9: flat-lp rho 3 design light 3.5: nuL d(x1.2) -0.03970 vs d(x1) -0.07611
+HIT  C9: flat-lp rho 3 design light 3.5: nuH d(x1.2) -0.02316 vs d(x1) -0.05492
+HIT  C9: flat-lp rho 3 design light 3.5: Tt4 d(x1.2) 74.08047 vs d(x1) 173.97033
+HIT  C1: flat-lp rho 3 5km M0.6 light 0.3: F ratio 1.4811 vs sqrt(Tt7/Tt5) 1.3470
+GATE match = unlit bit for bit: true (flat-lp rho 3 5km M0.6 light 0.3)
+HIT  C2: flat-lp rho 3 5km M0.6 light 0.3: dnuL -0.08722
+HIT  C2: flat-lp rho 3 5km M0.6 light 0.3: dnuL/nuL -9.24 %
+MISS C3: flat-lp rho 3 5km M0.6 light 0.3: dnuH/nuH -5.18 %
+HIT  C4: flat-lp rho 3 5km M0.6 light 0.3: dTt4 179.7 K
+HIT  C5: flat-lp rho 3 5km M0.6 light 0.3: dF 116.90 (20.72 %)
+MISS C6: flat-lp rho 3 5km M0.6 light 0.3: LP pressure-margin min after light-off 0.0000 vs unlit 0.0000
+MISS C7: flat-lp rho 3 5km M0.6 light 0.3: end LP flow margin 0.5069 vs 0.7187
+MISS C7: flat-lp rho 3 5km M0.6 light 0.3: end LP pressure margin 0.0000 vs 0.0000
+MISS C8: flat-lp rho 3 5km M0.6 light 0.3: end HP flow margin 0.6891 vs 0.8005
+MISS C8: flat-lp rho 3 5km M0.6 light 0.3: end HP pressure margin 0.4947 vs 0.6418
+HIT  C9: flat-lp rho 3 5km M0.6 light 0.3: nuL d(x1.2) -0.04389 vs d(x1) -0.08722
+HIT  C9: flat-lp rho 3 5km M0.6 light 0.3: nuH d(x1.2) -0.02052 vs d(x1) -0.04889
+HIT  C9: flat-lp rho 3 5km M0.6 light 0.3: Tt4 d(x1.2) 76.32956 vs d(x1) 179.67654
+HIT  C1: flat-lp rho 3 5km M0.6 light 3.5: F ratio 1.4811 vs sqrt(Tt7/Tt5) 1.3470
+GATE match = unlit bit for bit: true (flat-lp rho 3 5km M0.6 light 3.5)
+HIT  C2: flat-lp rho 3 5km M0.6 light 3.5: dnuL -0.07391
+MISS C2: flat-lp rho 3 5km M0.6 light 3.5: dnuL/nuL -7.83 %
+MISS C3: flat-lp rho 3 5km M0.6 light 3.5: dnuH/nuH -5.79 %
+HIT  C4: flat-lp rho 3 5km M0.6 light 3.5: dTt4 176.0 K
+HIT  C5: flat-lp rho 3 5km M0.6 light 3.5: dF 120.30 (21.33 %)
+MISS C6: flat-lp rho 3 5km M0.6 light 3.5: LP pressure-margin min after light-off 0.0000 vs unlit 0.0000
+MISS C7: flat-lp rho 3 5km M0.6 light 3.5: end LP flow margin 0.4902 vs 0.7187
+MISS C7: flat-lp rho 3 5km M0.6 light 3.5: end LP pressure margin 0.0000 vs 0.0000
+MISS C8: flat-lp rho 3 5km M0.6 light 3.5: end HP flow margin 0.6791 vs 0.8005
+MISS C8: flat-lp rho 3 5km M0.6 light 3.5: end HP pressure margin 0.4777 vs 0.6418
+HIT  C9: flat-lp rho 3 5km M0.6 light 3.5: nuL d(x1.2) -0.03858 vs d(x1) -0.07391
+HIT  C9: flat-lp rho 3 5km M0.6 light 3.5: nuH d(x1.2) -0.02298 vs d(x1) -0.05463
+HIT  C9: flat-lp rho 3 5km M0.6 light 3.5: Tt4 d(x1.2) 74.96262 vs d(x1) 175.96730
+     C10 press/flow from 650 M0.5 light 0.06: unlit at 0.06/0.10 branch Subsonic/Subsonic
+HIT  C10: press/flow from 650 M0.5 light 0.06: held completes (lit at 0.10 branch Choked)
+HIT  C10: press/flow from 650 M0.5 light 0.06: dnuL -0.12028
+MISS C10: press/flow from 650 M0.5 light 0.06: dnuH -0.04051
+HIT  C10: press/flow from 650 M0.5 light 0.06: dTt4 184.5
+HIT  C10: press/flow from 650 M0.5 light 0.06: match F ratio 1.4596 vs 1.3474
+     C10 tilted from 650 M0.5 light 0.06: unlit at 0.06/0.10 branch Subsonic/Subsonic
+HIT  C10: tilted from 650 M0.5 light 0.06: held completes (lit at 0.10 branch Choked)
+HIT  C10: tilted from 650 M0.5 light 0.06: dnuL -0.11640
+MISS C10: tilted from 650 M0.5 light 0.06: dnuH -0.04351
+HIT  C10: tilted from 650 M0.5 light 0.06: dTt4 184.2
+HIT  C10: tilted from 650 M0.5 light 0.06: match F ratio 1.4596 vs 1.3474
+     C10 flat-lp from 700 M0.5 light 0.06: unlit at 0.06/0.10 branch Choked/Choked
+HIT  C10: flat-lp from 700 M0.5 light 0.06: held completes (lit at 0.10 branch Choked)
+HIT  C10: flat-lp from 700 M0.5 light 0.06: dnuL -0.08723
+MISS C10: flat-lp from 700 M0.5 light 0.06: dnuH -0.04735
+HIT  C10: flat-lp from 700 M0.5 light 0.06: dTt4 182.3
+HIT  C10: flat-lp from 700 M0.5 light 0.06: match F ratio 1.4595 vs 1.3474
+HIT  C11: press/flow governed HP speed: dnuH/nuH 0.000 %
+HIT  C11: press/flow governed HP speed: dnuL/nuL -6.70 %
+HIT  C11: tilted governed HP speed: dnuH/nuH 0.000 %
+HIT  C11: tilted governed HP speed: dnuL/nuL -6.22 %
+HIT  C11: flat-lp governed HP speed: dnuH/nuH 0.000 %
+MISS C11: flat-lp governed HP speed: dnuL/nuL -4.73 %
+HIT  C12: press/flow redline, held light 3.50: completes, max Tt4 1480.00, binds after light-off true
+HIT  C12: tilted redline, held light 3.50: completes, max Tt4 1480.00, binds after light-off true
+HIT  C12: flat-lp redline, held light 3.50: completes, max Tt4 1480.00, binds after light-off true
+SCORE: 235 HIT, 125 MISS of 360

@@ -176,7 +176,8 @@ plumbing on the two-shaft solves).
   775 K–past 1000 K (per flight in that spec); the pin's march now walks up from its low end where both ends share a sign.
   (Commit `bbfee58`'s message says "646 K to ~1000 K at every sea-level flight" — that overstates it.)
 * The afterburner's held light-off re-scored on its own grid under rung 104's LP law (rung 104's other seam) — once,
-  since the HP law is off by default.
+  since the HP law is off by default. **DONE 2026-10-21** (`docs/rung102-spec.md` § Part C re-scored; the HP vane at its
+  default).
 
 ## The paths wired after the rung (2026-10-21)
 

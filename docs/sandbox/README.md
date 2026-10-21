@@ -346,8 +346,10 @@ slam flies the engine without an afterburner (the Controls view lights one durin
 
 On **Controls**, the *Afterburner* box at the foot of the panel fits one to the two-shaft engine: not fitted, fitted but
 not lit, or lit at a moment of the run you choose (it takes 0.1 τ to light), with its temperature and the same nozzle
-slider and rule. Here the throttle meters fuel, so a light-off behind a held nozzle gives MORE thrust than unlit — but the
-LP shaft slows by about a third, the burner runs some 170 K hotter and the HP shaft spins past its design speed; opened by
-the rule, no shaft notices. The *Afterburner* chart shows its exit temperature, a row sums it up, and a stop the
+slider and rule. Here the throttle meters fuel, so a light-off behind a held nozzle gives MORE thrust than unlit — but
+both shafts slow (the LP by about a tenth, the HP by about 5 %), the burner runs some 170–200 K hotter and both
+compressors end nearer stall; with the LP turbine's inlet vanes on "Choked" (the old assumption) the LP slows by about a third
+and the HP spins past its design speed instead (`docs/rung102-spec.md` § Part C, re-scored 2026-10-21); opened by the
+rule, no shaft notices. The *Afterburner* chart shows its exit temperature, a row sums it up, and a stop the
 afterburner causes says so. "Holds thrust" is refused while it is lit: lit, more main fuel lowers thrust at that moment
 (`docs/rung102-spec.md`, plan § 34).
