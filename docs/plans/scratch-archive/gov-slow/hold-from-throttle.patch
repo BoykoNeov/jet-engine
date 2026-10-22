@@ -1,0 +1,153 @@
+diff --git a/rust/src/burner_hold.rs b/rust/src/burner_hold.rs
+index 5061fff..27aa576 100644
+--- a/rust/src/burner_hold.rs
++++ b/rust/src/burner_hold.rs
+@@ -151,6 +151,62 @@ pub fn try_hold_root(
+        else { HoldRoot { t: b, q: qb, t_floor } })
+ }
+ 
++/// [`try_hold_root`] searched from `t_start` — the end's own throttle, near which its target sits — instead of up from
++/// the floor (sandbox plan § 43): below the floor every solve fails, and slowly, so the floor is looked for only when
++/// it is needed. Where the loaded engine at `t_start` already passes the target, the start steps down by `GRID` to the
++/// first temperature that does not. Any refusal on the way (no solve at a step, a gap, the range's top) re-runs
++/// [`try_hold_root`] from `lo`, so every refusal is the full search's own. The root is the same crossing, bisected to
++/// `T_TOL` from another bracket; its `t_floor` is NaN (never looked for).
++pub fn try_hold_root_from(
++    q_at: &dyn Fn(f64) -> Result<f64, Abort>, target: f64, t_start: f64, lo: f64, hi: f64,
++) -> Result<HoldRoot, HoldRefusal> {
++    let full = || try_hold_root(q_at, target, lo, hi);
++    if !(lo..=hi).contains(&t_start) {
++        return full();
++    }
++    let mut a = t_start;
++    if let Ok(mut q) = q_at(a) {
++        while q > target {
++            a -= GRID;
++            if a < lo {
++                return full();
++            }
++            match q_at(a) { Ok(x) => q = x, Err(_) => return full() }
++        }
++    }
++    // From a temperature that answers below the target, `try_hold_root` steps up from it at once; from one that does
++    // not (no steady point at the set throttle), it looks for the floor upward from there.
++    match try_hold_root(q_at, target, a, hi) {
++        Ok(r) => Ok(HoldRoot { t_floor: f64::NAN, ..r }),
++        Err(_) => full(),
++    }
++}
++
++/// [`try_metal_cap`] bracketed from above (sandbox plan § 43): from `hi` down by `GRID` to the first temperature whose
++/// metal holds, then bisected as before. Only where a step finds no steady point first (or passes `lo`) is the floor
++/// looked for (`floor`), and the full [`try_metal_cap`] run from it — so its refusal is the full search's own.
++pub fn try_metal_cap_below(
++    excess: &dyn Fn(f64) -> Result<f64, Abort>, floor: &dyn Fn() -> Option<f64>, lo: f64, hi: f64,
++) -> Result<Option<f64>, String> {
++    if excess(hi).map_err(|e| e.0)? <= 0.0 {
++        return Ok(None);
++    }
++    let mut b = hi;
++    loop {
++        let a = b - GRID;
++        if a < lo {
++            break;
++        }
++        match excess(a) {
++            Ok(e) if e <= 0.0 => return try_metal_cap(excess, a, b),
++            Ok(_) => b = a,
++            Err(_) => break,
++        }
++    }
++    let t_floor = floor().ok_or_else(|| "the loaded engine has no steady point to cap the metal at".to_string())?;
++    try_metal_cap(excess, t_floor, hi)
++}
++
+ /// Plain words for a refusal, in the hold's own units.
+ pub fn refusal_words(r: &HoldRefusal, hold: Hold, target: f64) -> String {
+     let (what, unit, scale) = match hold {
+diff --git a/rust/src/sandbox_controls.rs b/rust/src/sandbox_controls.rs
+index d1160c6..b8b2a13 100644
+--- a/rust/src/sandbox_controls.rs
++++ b/rust/src/sandbox_controls.rs
+@@ -1383,7 +1383,7 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
+             let bi = if which == "starting" { b0 } else { b1 };
+             let (target, want) = (ControlsSolver::thrust(bi), table.read(r, bi));
+             let q_at = |t: f64| eq_at(t).map(|(i, _, _)| table.read(r, &i));
+-            let root = bh::try_hold_root(&q_at, want, HOLD_LO, HOLD_HI).map_err(|e| DoesNotRun(format!(
++            let root = bh::try_hold_root_from(&q_at, want, t_set, HOLD_LO, HOLD_HI).map_err(|e| DoesNotRun(format!(
+                 "At the {which} throttle ({t_set:.0} K), the control holding the {} its table gives for the asked thrust: {}",
+                 inf::reading_words(r), inf::refusal_words(&e, r, want))))?;
+             let i = steady(which, root.t)?;
+@@ -1398,7 +1398,7 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
+             "At the {which} throttle ({t_set:.0} K): with the generator off this throttle has no steady point, so it \
+              sets no {} to hold ({})", if s.hold == Hold::Thrust { "thrust" } else { "speed" }, endpoint_words(&e.0))))?.0);
+         let q_at = |t: f64| eq_at(t).map(|(i, _, _)| held(&i));
+-        let root = bh::try_hold_root(&q_at, target, HOLD_LO, HOLD_HI).map_err(|r| DoesNotRun(format!(
++        let root = bh::try_hold_root_from(&q_at, target, t_set, HOLD_LO, HOLD_HI).map_err(|r| DoesNotRun(format!(
+             "At the {which} throttle ({t_set:.0} K), holding {}: {}", if s.hold == Hold::Thrust { "thrust" } else { "HP speed" },
+             bh::refusal_words(&r, s.hold, target))))?;
+         let (mut t, mut capped) = (root.t, false);
+@@ -1406,7 +1406,10 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
+             let excess = |t: f64| eq_at(t).map(|(i, _, _)| {
+                 s.metal_at(&i).map_or(f64::NEG_INFINITY, |m| m.over())
+             });
+-            match bh::try_metal_cap(&excess, root.t_floor, root.t).map_err(|m| DoesNotRun(format!(
++            let ok = |t: f64| eq_at(t).map(|_| 0.0);
++            let floor = || if root.t_floor.is_finite() { Some(root.t_floor) }
++                           else { bh::floor_of(&ok, HOLD_LO, HOLD_HI).map(|(t, _)| t) };
++            match bh::try_metal_cap_below(&excess, &floor, HOLD_LO, root.t).map_err(|m| DoesNotRun(format!(
+                 "At the {which} throttle ({t_set:.0} K): {m}")))? {
+                 Some(tc) => { t = tc; capped = true; }
+                 None => {}
+@@ -1466,7 +1469,7 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
+                 let want = table.try_reading_at(&core.fuel, r, target).map_err(|e| DoesNotRun(format!(
+                     "At the {which} throttle ({t_set:.0} K): {}", e.0)))?;
+                 let q_at = |t: f64| eq_at(t).map(|(i, _, _)| table.read(r, &i));
+-                let root = bh::try_hold_root(&q_at, want, HOLD_LO, HOLD_HI).map_err(|e| DoesNotRun(format!(
++                let root = bh::try_hold_root_from(&q_at, want, t_set, HOLD_LO, HOLD_HI).map_err(|e| DoesNotRun(format!(
+                     "At the {which} throttle ({t_set:.0} K), the control holding the {} its design-flight table gives for \
+                      the asked thrust: {}", inf::reading_words(r), inf::refusal_words(&e, r, want))))?;
+                 let i = steady(which, root.t)?;
+diff --git a/rust/tests/rung94.rs b/rust/tests/rung94.rs
+index bd86e2e..0bb226c 100644
+--- a/rust/tests/rung94.rs
++++ b/rust/tests/rung94.rs
+@@ -117,6 +117,38 @@ fn the_root_finder_refuses_above_its_range_and_the_cap_stops_at_the_limit() {
+     assert!(bh::try_metal_cap(&ex, 1150.0, 1300.0).unwrap_err().contains("over its limit"));
+ }
+ 
++/// Sandbox plan § 43: the searches started at the end's own throttle land where the full ones do without asking below
++/// the floor (where every solve fails, slowly), and refuse exactly as the full ones do.
++#[test]
++fn the_searches_from_the_set_throttle_land_as_the_full_ones_without_asking_below_the_floor() {
++    let below = std::cell::Cell::new(0);
++    let q = |t: f64| -> Result<f64, Abort> {
++        if t < 800.0 { below.set(below.get() + 1); Err(Abort("no".into())) } else { Ok(t / 10.0) }
++    };
++    // From under the root, from over it (stepping down) — neither asks below the floor — and from under the floor.
++    for (start, asks_below) in [(1000.0, false), (1500.0, false), (700.0, true)] {
++        below.set(0);
++        let r = bh::try_hold_root_from(&q, 123.4, start, 600.0, 2000.0).unwrap();
++        assert!((r.t - 1234.0).abs() < 1e-8 && r.t_floor.is_nan(), "from {start}: {r:?}");
++        assert_eq!(below.get() > 0, asks_below, "from {start}");
++    }
++    // Under the floor's least, over the range's top: the full search's own refusals.
++    for target in [50.0, 500.0] {
++        assert_eq!(bh::try_hold_root_from(&q, target, 1000.0, 600.0, 2000.0), bh::try_hold_root(&q, target, 600.0, 2000.0));
++    }
++    // The cap bracketed from above: the same landing, the floor never looked for; none needed; over all the way down to
++    // the floor, the full cap's own refusal from it.
++    let floor_asked = std::cell::Cell::new(false);
++    let floor = || { floor_asked.set(true); Some(800.0) };
++    let ex = |t: f64| -> Result<f64, Abort> { q(t).map(|_| t - 1100.0) };
++    assert!((bh::try_metal_cap_below(&ex, &floor, 600.0, 1300.0).unwrap().unwrap() - 1100.0).abs() < 1e-8);
++    assert!(!floor_asked.get());
++    assert_eq!(bh::try_metal_cap_below(&ex, &floor, 600.0, 1050.0).unwrap(), None);
++    let hot = |t: f64| -> Result<f64, Abort> { q(t).map(|_| t - 700.0) };
++    assert_eq!(bh::try_metal_cap_below(&hot, &floor, 600.0, 1300.0), bh::try_metal_cap(&hot, 800.0, 1300.0));
++    assert!(floor_asked.get());
++}
++
+ // =============================================================================================
+ // SCORED — H1–H4 (anchor § 3), pinned at a subset of the spec's grid
+ // =============================================================================================

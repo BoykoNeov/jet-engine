@@ -2232,3 +2232,9 @@ leftover would take the fuel below what the engine burns.
   scan. **First step shipped:** the view keeps every steady point it asks of its own engine by burner temperature, so
   each is solved once — exact (an equilibrium carries no history; 400 random requests, byte-identical replies,
   1 598 → 883 s). The five slow requests still take ~14 s each on the page (WebAssembly): **still OPEN**.
+  **Not governed runs — held ones:** the same five requests ungoverned take as long (17–28 s before, 7–9 s after,
+  natively); the cost is any Controls run holding thrust or HP speed with the generator on. **The user's choice
+  (2026-10-22):** start each end's search at its own throttle (answers move only within the search's 1e-9 K tolerance;
+  0.3–1.7 s on the page for three of the five), extended to the two cases that still fall back to the floor (the metal
+  cap; no steady point at the set throttle); NOT dropping the low start's retries at the floor (a rule change, measured:
+  2.7–3.8 s). The extension is written, unverified (`docs/plans/scratch-archive/gov-slow/README.md`, its patch).
