@@ -140,6 +140,9 @@ during the move and sags after it (to 92 % at `τ` 1.0).
   `"turbine":"pin"` (rung 104's old choked pin, the only law when rung 95 shipped) today's take 3.9–5.6 s (timed beside
   another run): **most of it is rung 104's default LP-turbine law**, the rest (still ~3–20×) untraced. Not this rung's.
   On the page such a run reads as a hang. Recorded as an open item (`docs/plans/sandbox-plan.md` § 43).
+  **Traced since (2026-10-22):** the hold ends' search for the loaded engine's coldest steady point, where every
+  failing solve now retries from six lower starts under the dearer law; each steady point is now solved once (exact,
+  ~2×), the rest still open there.
 
 ## 5. Why — the model
 

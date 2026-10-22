@@ -2224,3 +2224,11 @@ leftover would take the fuel below what the engine burns.
   `096367d` (timed back to back, the lag off; `docs/rung106-spec.md` § 4). With rung 104's old pin they take 3.9–5.6 s,
   so most of it is rung 104's default LP-turbine law; the rest (~3–20×) untraced — a bisect is the next step. On the page
   such a run reads as a hang.
+  **Traced (2026-10-22, profiled):** the time is the hold ends', not the march's. With the generator on, an end holding
+  thrust or HP speed first finds the coldest burner at which the loaded engine still has a steady point (rung 94's
+  floor: up from 600 K in 50 K steps, then halved to 1e-9 K), and below it every equilibrium fails — slowly: since the
+  low-start repair (`c9a0306`) a failing one retries from six lower starts, each up to 80 Newton passes, and under rung
+  104's law each pass costs ~10× the pin's. ~50 failing solves a request, ~82% of its time; both ends repeated the same
+  scan. **First step shipped:** the view keeps every steady point it asks of its own engine by burner temperature, so
+  each is solved once — exact (an equilibrium carries no history; 400 random requests, byte-identical replies,
+  1 598 → 883 s). The five slow requests still take ~14 s each on the page (WebAssembly): **still OPEN**.

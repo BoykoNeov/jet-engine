@@ -1280,8 +1280,18 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
         c
     };
     let core = make(design);
+    // Every steady point this view asks of its own engine, kept by burner temperature (bit for bit). The hold ends ask
+    // the same ones many times over — both ends scan the same floor, below which every solve fails slowly (plan § 43)
+    // — and an equilibrium carries no history, so a kept answer is the answer: the replies stay byte-identical.
+    let eq_memo = std::cell::RefCell::new(std::collections::BTreeMap::new());
+    let eq_at = |t: f64| -> Result<(Instant2, crate::two_spool_transient::EqExit, usize), crate::gas::Abort> {
+        if let Some(r) = eq_memo.borrow().get(&t.to_bits()) { return Clone::clone(r); }
+        let r = core.fuel.inner.try_equilibrium(&fl, t, None);
+        eq_memo.borrow_mut().insert(t.to_bits(), r.clone());
+        r
+    };
     let steady = |which: &str, tt4: f64| -> Result<Instant2, DoesNotRun> {
-        core.fuel.inner.try_equilibrium(&fl, tt4, None).map(|(i, _, _)| i).map_err(|e| {
+        eq_at(tt4).map(|(i, _, _)| i).map_err(|e| {
             let mut m = e.0;
             if let Some(de) = gen_check.as_ref().filter(|_| !m.contains("rung-92:")) {
                 let st = ShaftOfftakeMatcher::new(de.clone(), fd, MDOT_DESIGN, ml, mh, 0.0);
@@ -1356,10 +1366,10 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
             if s.metal_at(&i).is_none_or(|m| m.over() <= 0.0) {
                 return Ok((i, Some(HoldInfo { set: t_set, target, achieved: target, capped: false })));
             }
-            let ok = |t: f64| core.fuel.inner.try_equilibrium(&fl, t, None).map(|_| 0.0);
+            let ok = |t: f64| eq_at(t).map(|_| 0.0);
             let (floor, _) = bh::floor_of(&ok, HOLD_LO, t_set).ok_or_else(|| DoesNotRun(format!(
                 "At the {which} throttle ({t_set:.0} K): the engine has no steady point below it to cap the metal at.")))?;
-            let excess = |t: f64| core.fuel.inner.try_equilibrium(&fl, t, None).map(|(i, _, _)| {
+            let excess = |t: f64| eq_at(t).map(|(i, _, _)| {
                 s.metal_at(&i).map_or(f64::NEG_INFINITY, |m| m.over())
             });
             let t = bh::try_metal_cap(&excess, floor, t_set).map_err(|m| DoesNotRun(format!(
@@ -1372,7 +1382,7 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
             let r = s.law().reading().expect("a calibrated end infers thrust");
             let bi = if which == "starting" { b0 } else { b1 };
             let (target, want) = (ControlsSolver::thrust(bi), table.read(r, bi));
-            let q_at = |t: f64| core.fuel.inner.try_equilibrium(&fl, t, None).map(|(i, _, _)| table.read(r, &i));
+            let q_at = |t: f64| eq_at(t).map(|(i, _, _)| table.read(r, &i));
             let root = bh::try_hold_root(&q_at, want, HOLD_LO, HOLD_HI).map_err(|e| DoesNotRun(format!(
                 "At the {which} throttle ({t_set:.0} K), the control holding the {} its table gives for the asked thrust: {}",
                 inf::reading_words(r), inf::refusal_words(&e, r, want))))?;
@@ -1387,13 +1397,13 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
         let target = held(&bare.fuel.inner.try_equilibrium(&fl, t_set, None).map_err(|e| DoesNotRun(format!(
             "At the {which} throttle ({t_set:.0} K): with the generator off this throttle has no steady point, so it \
              sets no {} to hold ({})", if s.hold == Hold::Thrust { "thrust" } else { "speed" }, endpoint_words(&e.0))))?.0);
-        let q_at = |t: f64| core.fuel.inner.try_equilibrium(&fl, t, None).map(|(i, _, _)| held(&i));
+        let q_at = |t: f64| eq_at(t).map(|(i, _, _)| held(&i));
         let root = bh::try_hold_root(&q_at, target, HOLD_LO, HOLD_HI).map_err(|r| DoesNotRun(format!(
             "At the {which} throttle ({t_set:.0} K), holding {}: {}", if s.hold == Hold::Thrust { "thrust" } else { "HP speed" },
             bh::refusal_words(&r, s.hold, target))))?;
         let (mut t, mut capped) = (root.t, false);
         if s.hold_cap {
-            let excess = |t: f64| core.fuel.inner.try_equilibrium(&fl, t, None).map(|(i, _, _)| {
+            let excess = |t: f64| eq_at(t).map(|(i, _, _)| {
                 s.metal_at(&i).map_or(f64::NEG_INFINITY, |m| m.over())
             });
             match bh::try_metal_cap(&excess, root.t_floor, root.t).map_err(|m| DoesNotRun(format!(
@@ -1444,7 +1454,7 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
                 // (600 K), and the fan-speed formula cannot be read that far below its rows (the first score refused 19
                 // cells so, `docs/rung101-spec.md`), where the reading alone, read without the sensor, always can.
                 if table.sensed() {
-                    let f_at = |t: f64| core.fuel.inner.try_equilibrium(&fl, t, None)
+                    let f_at = |t: f64| eq_at(t)
                         .and_then(|(i, _, _)| table.try_belief(&core.fuel, r, &i, None));
                     let t = sensed_end_root(&f_at, target, t_set).map_err(|m| DoesNotRun(format!(
                         "At the {which} throttle ({t_set:.0} K), the control holding the thrust its exhaust sensor \
@@ -1455,7 +1465,7 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
                 }
                 let want = table.try_reading_at(&core.fuel, r, target).map_err(|e| DoesNotRun(format!(
                     "At the {which} throttle ({t_set:.0} K): {}", e.0)))?;
-                let q_at = |t: f64| core.fuel.inner.try_equilibrium(&fl, t, None).map(|(i, _, _)| table.read(r, &i));
+                let q_at = |t: f64| eq_at(t).map(|(i, _, _)| table.read(r, &i));
                 let root = bh::try_hold_root(&q_at, want, HOLD_LO, HOLD_HI).map_err(|e| DoesNotRun(format!(
                     "At the {which} throttle ({t_set:.0} K), the control holding the {} its design-flight table gives for \
                      the asked thrust: {}", inf::reading_words(r), inf::refusal_words(&e, r, want))))?;
