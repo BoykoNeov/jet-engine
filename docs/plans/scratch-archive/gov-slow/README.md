@@ -36,3 +36,16 @@ YET VERIFIED: `bh::try_hold_root_from` (start at the set throttle; step down if 
 re-runs the full search) and `bh::try_metal_cap_below` (bracket from the hold root downward; floor only on a failed
 step), wired at the Controls view's three hold searches and its metal cap, plus a rung 94 unit test (passes). Its
 census and page timing were not run.
+
+## Verified and shipped (2026-11-09)
+
+`hold-from-throttle.patch` now holds the SHIPPED version (it is also the commit). Measured on it: B extended = 0.26 /
+0.60 / 1.73 / 12.9 / 1.70 s on the page; census 149 differ, worst 3.9e-8, no run ↔ refusal flip, #227's bracketed
+model message only (the row 2.6e-10 K away — option B's case); natively 191 s for the 400 (beside nothing else).
+The metal-cap request is fixed; the 670 K one is not, and cannot be by any start: timed per end (a temporary
+`eprintln` round each `hold_end`), its starting end is ~9.6 of ~10.6 s, and the step-up's first answering point (920 K)
+is already past the target, so the root lies just above the floor and needs the floor's own bisection. The first
+draft stepped up from 670 K (720, 770, …) — off the full search's grid, so its four failing solves were memo misses
+and the fallback paid them again (8.8 s native vs the unpatched 7.7 s); the shipped step-up walks `lo + k·GRID`
+(7.8 s). An earlier reading of solver counters blamed the march (42 000 HP-wall rescues): wrong — the counters do not
+separate the hold ends from the march; per-end timing does. Potential follow-up: a coarser `T_TOL` (plan § 43).

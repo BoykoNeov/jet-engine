@@ -117,6 +117,48 @@ fn the_root_finder_refuses_above_its_range_and_the_cap_stops_at_the_limit() {
     assert!(bh::try_metal_cap(&ex, 1150.0, 1300.0).unwrap_err().contains("over its limit"));
 }
 
+/// Sandbox plan § 43: the searches started at the end's own throttle land where the full ones do without asking below
+/// the floor (where every solve fails, slowly), and refuse exactly as the full ones do.
+#[test]
+fn the_searches_from_the_set_throttle_land_as_the_full_ones_without_asking_below_the_floor() {
+    let below = std::cell::Cell::new(0);
+    let q = |t: f64| -> Result<f64, Abort> {
+        if t < 800.0 { below.set(below.get() + 1); Err(Abort("no".into())) } else { Ok(t / 10.0) }
+    };
+    // From under the root, from over it (stepping down) — neither asks below the floor — and from under the floor
+    // (stepping up: only the steps under the floor fail, the floor is never bisected).
+    for (start, fails) in [(1000.0, 0), (1500.0, 0), (710.0, 2)] {
+        below.set(0);
+        let r = bh::try_hold_root_from(&q, 123.4, start, 600.0, 2000.0).unwrap();
+        assert!((r.t - 1234.0).abs() < 1e-8 && r.t_floor.is_nan(), "from {start}: {r:?}");
+        assert_eq!(below.get(), fails, "from {start}");
+    }
+    // From under the floor with the first answering step already past the target: the full search's own landing, and
+    // the steps up were on the full search's grid — every temperature asked but the set throttle, the full one asks too.
+    let asked = std::cell::RefCell::new(Vec::new());
+    let qr = |t: f64| { asked.borrow_mut().push(t); q(t) };
+    let from = bh::try_hold_root_from(&qr, 79.0, 710.0, 600.0, 2000.0);
+    let ours = asked.take();
+    assert_eq!(from, bh::try_hold_root(&qr, 79.0, 600.0, 2000.0));
+    let full = asked.take();
+    assert!(ours.iter().all(|t| *t == 710.0 || full.contains(t)), "{ours:?} vs {full:?}");
+    // Under the floor's least, over the range's top: the full search's own refusals.
+    for target in [50.0, 500.0] {
+        assert_eq!(bh::try_hold_root_from(&q, target, 1000.0, 600.0, 2000.0), bh::try_hold_root(&q, target, 600.0, 2000.0));
+    }
+    // The cap bracketed from above: the same landing, the floor never looked for; none needed; over all the way down to
+    // the floor, the full cap's own refusal from it.
+    let floor_asked = std::cell::Cell::new(false);
+    let floor = || { floor_asked.set(true); Some(800.0) };
+    let ex = |t: f64| -> Result<f64, Abort> { q(t).map(|_| t - 1100.0) };
+    assert!((bh::try_metal_cap_below(&ex, &floor, 600.0, 1300.0).unwrap().unwrap() - 1100.0).abs() < 1e-8);
+    assert!(!floor_asked.get());
+    assert_eq!(bh::try_metal_cap_below(&ex, &floor, 600.0, 1050.0).unwrap(), None);
+    let hot = |t: f64| -> Result<f64, Abort> { q(t).map(|_| t - 700.0) };
+    assert_eq!(bh::try_metal_cap_below(&hot, &floor, 600.0, 1300.0), bh::try_metal_cap(&hot, 800.0, 1300.0));
+    assert!(floor_asked.get());
+}
+
 // =============================================================================================
 // SCORED — H1–H4 (anchor § 3), pinned at a subset of the spec's grid
 // =============================================================================================

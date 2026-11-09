@@ -1,15 +1,17 @@
 diff --git a/rust/src/burner_hold.rs b/rust/src/burner_hold.rs
-index 5061fff..27aa576 100644
+index 5061fff..c4bb59b 100644
 --- a/rust/src/burner_hold.rs
 +++ b/rust/src/burner_hold.rs
-@@ -151,6 +151,62 @@ pub fn try_hold_root(
+@@ -151,6 +151,79 @@ pub fn try_hold_root(
         else { HoldRoot { t: b, q: qb, t_floor } })
  }
  
 +/// [`try_hold_root`] searched from `t_start` — the end's own throttle, near which its target sits — instead of up from
 +/// the floor (sandbox plan § 43): below the floor every solve fails, and slowly, so the floor is looked for only when
 +/// it is needed. Where the loaded engine at `t_start` already passes the target, the start steps down by `GRID` to the
-+/// first temperature that does not. Any refusal on the way (no solve at a step, a gap, the range's top) re-runs
++/// first temperature that does not; where it has no steady point there, the start steps up the full search's grid to
++/// the first that does (the full search if that one already passes the target — the root then lies near the floor, and
++/// only the floor's own bisection finds it). Any refusal on the way (no solve at a step, a gap, the range's top) re-runs
 +/// [`try_hold_root`] from `lo`, so every refusal is the full search's own. The root is the same crossing, bisected to
 +/// `T_TOL` from another bracket; its `t_floor` is NaN (never looked for).
 +pub fn try_hold_root_from(
@@ -20,17 +22,32 @@ index 5061fff..27aa576 100644
 +        return full();
 +    }
 +    let mut a = t_start;
-+    if let Ok(mut q) = q_at(a) {
-+        while q > target {
++    match q_at(a) {
++        Ok(mut q) => while q > target {
 +            a -= GRID;
 +            if a < lo {
 +                return full();
 +            }
 +            match q_at(a) { Ok(x) => q = x, Err(_) => return full() }
++        },
++        // No steady point at the set throttle: up the full search's own grid (`lo + k·GRID`, summed as it sums it, so a
++        // fallback re-asks only points already solved) to the first that answers. Where that one is already past the
++        // target, the root may lie between it and the floor (or under the floor), so the full search decides.
++        Err(_) => {
++            a = lo;
++            while a <= t_start {
++                a += GRID;
++            }
++            loop {
++                if a > hi {
++                    return full();
++                }
++                match q_at(a) { Ok(q) if q > target => return full(), Ok(_) => break, Err(_) => {} }
++                a += GRID;
++            }
 +        }
 +    }
-+    // From a temperature that answers below the target, `try_hold_root` steps up from it at once; from one that does
-+    // not (no steady point at the set throttle), it looks for the floor upward from there.
++    // From a temperature that answers below the target, `try_hold_root` steps up from it at once.
 +    match try_hold_root(q_at, target, a, hi) {
 +        Ok(r) => Ok(HoldRoot { t_floor: f64::NAN, ..r }),
 +        Err(_) => full(),
@@ -109,10 +126,10 @@ index d1160c6..b8b2a13 100644
                       the asked thrust: {}", inf::reading_words(r), inf::refusal_words(&e, r, want))))?;
                  let i = steady(which, root.t)?;
 diff --git a/rust/tests/rung94.rs b/rust/tests/rung94.rs
-index bd86e2e..0bb226c 100644
+index bd86e2e..31aa4c4 100644
 --- a/rust/tests/rung94.rs
 +++ b/rust/tests/rung94.rs
-@@ -117,6 +117,38 @@ fn the_root_finder_refuses_above_its_range_and_the_cap_stops_at_the_limit() {
+@@ -117,6 +117,48 @@ fn the_root_finder_refuses_above_its_range_and_the_cap_stops_at_the_limit() {
      assert!(bh::try_metal_cap(&ex, 1150.0, 1300.0).unwrap_err().contains("over its limit"));
  }
  
@@ -124,13 +141,23 @@ index bd86e2e..0bb226c 100644
 +    let q = |t: f64| -> Result<f64, Abort> {
 +        if t < 800.0 { below.set(below.get() + 1); Err(Abort("no".into())) } else { Ok(t / 10.0) }
 +    };
-+    // From under the root, from over it (stepping down) — neither asks below the floor — and from under the floor.
-+    for (start, asks_below) in [(1000.0, false), (1500.0, false), (700.0, true)] {
++    // From under the root, from over it (stepping down) — neither asks below the floor — and from under the floor
++    // (stepping up: only the steps under the floor fail, the floor is never bisected).
++    for (start, fails) in [(1000.0, 0), (1500.0, 0), (710.0, 2)] {
 +        below.set(0);
 +        let r = bh::try_hold_root_from(&q, 123.4, start, 600.0, 2000.0).unwrap();
 +        assert!((r.t - 1234.0).abs() < 1e-8 && r.t_floor.is_nan(), "from {start}: {r:?}");
-+        assert_eq!(below.get() > 0, asks_below, "from {start}");
++        assert_eq!(below.get(), fails, "from {start}");
 +    }
++    // From under the floor with the first answering step already past the target: the full search's own landing, and
++    // the steps up were on the full search's grid — every temperature asked but the set throttle, the full one asks too.
++    let asked = std::cell::RefCell::new(Vec::new());
++    let qr = |t: f64| { asked.borrow_mut().push(t); q(t) };
++    let from = bh::try_hold_root_from(&qr, 79.0, 710.0, 600.0, 2000.0);
++    let ours = asked.take();
++    assert_eq!(from, bh::try_hold_root(&qr, 79.0, 600.0, 2000.0));
++    let full = asked.take();
++    assert!(ours.iter().all(|t| *t == 710.0 || full.contains(t)), "{ours:?} vs {full:?}");
 +    // Under the floor's least, over the range's top: the full search's own refusals.
 +    for target in [50.0, 500.0] {
 +        assert_eq!(bh::try_hold_root_from(&q, target, 1000.0, 600.0, 2000.0), bh::try_hold_root(&q, target, 600.0, 2000.0));

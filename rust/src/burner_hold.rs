@@ -151,6 +151,79 @@ pub fn try_hold_root(
        else { HoldRoot { t: b, q: qb, t_floor } })
 }
 
+/// [`try_hold_root`] searched from `t_start` — the end's own throttle, near which its target sits — instead of up from
+/// the floor (sandbox plan § 43): below the floor every solve fails, and slowly, so the floor is looked for only when
+/// it is needed. Where the loaded engine at `t_start` already passes the target, the start steps down by `GRID` to the
+/// first temperature that does not; where it has no steady point there, the start steps up the full search's grid to
+/// the first that does (the full search if that one already passes the target — the root then lies near the floor, and
+/// only the floor's own bisection finds it). Any refusal on the way (no solve at a step, a gap, the range's top) re-runs
+/// [`try_hold_root`] from `lo`, so every refusal is the full search's own. The root is the same crossing, bisected to
+/// `T_TOL` from another bracket; its `t_floor` is NaN (never looked for).
+pub fn try_hold_root_from(
+    q_at: &dyn Fn(f64) -> Result<f64, Abort>, target: f64, t_start: f64, lo: f64, hi: f64,
+) -> Result<HoldRoot, HoldRefusal> {
+    let full = || try_hold_root(q_at, target, lo, hi);
+    if !(lo..=hi).contains(&t_start) {
+        return full();
+    }
+    let mut a = t_start;
+    match q_at(a) {
+        Ok(mut q) => while q > target {
+            a -= GRID;
+            if a < lo {
+                return full();
+            }
+            match q_at(a) { Ok(x) => q = x, Err(_) => return full() }
+        },
+        // No steady point at the set throttle: up the full search's own grid (`lo + k·GRID`, summed as it sums it, so a
+        // fallback re-asks only points already solved) to the first that answers. Where that one is already past the
+        // target, the root may lie between it and the floor (or under the floor), so the full search decides.
+        Err(_) => {
+            a = lo;
+            while a <= t_start {
+                a += GRID;
+            }
+            loop {
+                if a > hi {
+                    return full();
+                }
+                match q_at(a) { Ok(q) if q > target => return full(), Ok(_) => break, Err(_) => {} }
+                a += GRID;
+            }
+        }
+    }
+    // From a temperature that answers below the target, `try_hold_root` steps up from it at once.
+    match try_hold_root(q_at, target, a, hi) {
+        Ok(r) => Ok(HoldRoot { t_floor: f64::NAN, ..r }),
+        Err(_) => full(),
+    }
+}
+
+/// [`try_metal_cap`] bracketed from above (sandbox plan § 43): from `hi` down by `GRID` to the first temperature whose
+/// metal holds, then bisected as before. Only where a step finds no steady point first (or passes `lo`) is the floor
+/// looked for (`floor`), and the full [`try_metal_cap`] run from it — so its refusal is the full search's own.
+pub fn try_metal_cap_below(
+    excess: &dyn Fn(f64) -> Result<f64, Abort>, floor: &dyn Fn() -> Option<f64>, lo: f64, hi: f64,
+) -> Result<Option<f64>, String> {
+    if excess(hi).map_err(|e| e.0)? <= 0.0 {
+        return Ok(None);
+    }
+    let mut b = hi;
+    loop {
+        let a = b - GRID;
+        if a < lo {
+            break;
+        }
+        match excess(a) {
+            Ok(e) if e <= 0.0 => return try_metal_cap(excess, a, b),
+            Ok(_) => b = a,
+            Err(_) => break,
+        }
+    }
+    let t_floor = floor().ok_or_else(|| "the loaded engine has no steady point to cap the metal at".to_string())?;
+    try_metal_cap(excess, t_floor, hi)
+}
+
 /// Plain words for a refusal, in the hold's own units.
 pub fn refusal_words(r: &HoldRefusal, hold: Hold, target: f64) -> String {
     let (what, unit, scale) = match hold {

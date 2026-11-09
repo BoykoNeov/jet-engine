@@ -142,7 +142,9 @@ during the move and sags after it (to 92 % at `τ` 1.0).
   On the page such a run reads as a hang. Recorded as an open item (`docs/plans/sandbox-plan.md` § 43).
   **Traced since (2026-10-22):** the hold ends' search for the loaded engine's coldest steady point, where every
   failing solve now retries from six lower starts under the dearer law; each steady point is now solved once (exact,
-  ~2×), the rest still open there.
+  ~2×), the rest still open there. **Since (2026-11-09):** each end's search starts at its own throttle — four of the
+  five take 0.3–1.7 s on the page; the fifth (~13 s) has its target just above the loaded floor, where only the floor's
+  own bisection finds it (§ 43; a coarser tolerance is that section's potential follow-up).
 
 ## 5. Why — the model
 

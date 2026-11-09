@@ -2238,3 +2238,22 @@ leftover would take the fuel below what the engine burns.
   0.3–1.7 s on the page for three of the five), extended to the two cases that still fall back to the floor (the metal
   cap; no steady point at the set throttle); NOT dropping the low start's retries at the floor (a rule change, measured:
   2.7–3.8 s). The extension is written, unverified (`docs/plans/scratch-archive/gov-slow/README.md`, its patch).
+  **Shipped (2026-11-09):** `bh::try_hold_root_from` / `try_metal_cap_below` at the Controls view's three hold searches
+  and its metal cap. Page: four of the five slow requests 0.3–1.7 s (were ~13 s); the fifth still ~13 s. Census (400
+  requests, seed 31, against the memo's replies): 264 ran on both, no run ↔ refusal flip; 149 replies differ, worst
+  relative change 3.9e-8 (the roots move within 1e-9 K, the march amplifies it); natively 883 → 191 s. One refusal
+  (#227) keeps its words but its bracketed model message changes: a design-flight table row 2.6e-10 K away sits where
+  the solve fails two ways — the same case option B showed. So only the hold searches' OWN refusals are identical, not
+  every refusal downstream of a moved root. **Why the fifth stays slow** (timed per end): its starting end takes ~9.6 of
+  ~10.6 s natively. The loaded engine has no steady point at its set throttle (670 K), and the first that answers
+  (920 K) is already past the target — the root lies just above the floor, so only the floor's own bisection (to
+  1e-9 K, half its probes failing slowly) can find it; no start can skip that. The step-up walks the full search's own
+  50 K grid, so that fallback re-asks only solved points (a first draft stepping from 670 K wasted four failing solves:
+  8.8 s against the unpatched 7.7 s; aligned, 7.8 s).
+  **POTENTIAL FOLLOW-UP (user, 2026-11-09): a coarser hold tolerance.** The searches halve to `T_TOL` = 1e-9 K — a
+  numerical choice, far below anything physical (the user: "about 1 kelvin" would do). At the floor, 50 K → 1e-9 K is
+  ~36 halvings, half failing slowly; → 0.01 K is ~12, → 1 K ~6. It is a RULE-side change, not a start: every held run's
+  answer moves by up to the tolerance (at 1 K a held thrust visibly misses its target in the 3rd–4th digit; the march
+  amplifies), a target within the tolerance of the floor can flip between running and refused, and tests pinning held
+  runs move. Next step agreed: MEASURE first, at 0.01 K and 1 K — the fifth request's time, the 400-request census,
+  which tests move — and bring the numbers to the user before changing anything.

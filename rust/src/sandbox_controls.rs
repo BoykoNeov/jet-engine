@@ -1383,7 +1383,7 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
             let bi = if which == "starting" { b0 } else { b1 };
             let (target, want) = (ControlsSolver::thrust(bi), table.read(r, bi));
             let q_at = |t: f64| eq_at(t).map(|(i, _, _)| table.read(r, &i));
-            let root = bh::try_hold_root(&q_at, want, HOLD_LO, HOLD_HI).map_err(|e| DoesNotRun(format!(
+            let root = bh::try_hold_root_from(&q_at, want, t_set, HOLD_LO, HOLD_HI).map_err(|e| DoesNotRun(format!(
                 "At the {which} throttle ({t_set:.0} K), the control holding the {} its table gives for the asked thrust: {}",
                 inf::reading_words(r), inf::refusal_words(&e, r, want))))?;
             let i = steady(which, root.t)?;
@@ -1398,7 +1398,7 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
             "At the {which} throttle ({t_set:.0} K): with the generator off this throttle has no steady point, so it \
              sets no {} to hold ({})", if s.hold == Hold::Thrust { "thrust" } else { "speed" }, endpoint_words(&e.0))))?.0);
         let q_at = |t: f64| eq_at(t).map(|(i, _, _)| held(&i));
-        let root = bh::try_hold_root(&q_at, target, HOLD_LO, HOLD_HI).map_err(|r| DoesNotRun(format!(
+        let root = bh::try_hold_root_from(&q_at, target, t_set, HOLD_LO, HOLD_HI).map_err(|r| DoesNotRun(format!(
             "At the {which} throttle ({t_set:.0} K), holding {}: {}", if s.hold == Hold::Thrust { "thrust" } else { "HP speed" },
             bh::refusal_words(&r, s.hold, target))))?;
         let (mut t, mut capped) = (root.t, false);
@@ -1406,7 +1406,10 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
             let excess = |t: f64| eq_at(t).map(|(i, _, _)| {
                 s.metal_at(&i).map_or(f64::NEG_INFINITY, |m| m.over())
             });
-            match bh::try_metal_cap(&excess, root.t_floor, root.t).map_err(|m| DoesNotRun(format!(
+            let ok = |t: f64| eq_at(t).map(|_| 0.0);
+            let floor = || if root.t_floor.is_finite() { Some(root.t_floor) }
+                           else { bh::floor_of(&ok, HOLD_LO, HOLD_HI).map(|(t, _)| t) };
+            match bh::try_metal_cap_below(&excess, &floor, HOLD_LO, root.t).map_err(|m| DoesNotRun(format!(
                 "At the {which} throttle ({t_set:.0} K): {m}")))? {
                 Some(tc) => { t = tc; capped = true; }
                 None => {}
@@ -1466,7 +1469,7 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
                 let want = table.try_reading_at(&core.fuel, r, target).map_err(|e| DoesNotRun(format!(
                     "At the {which} throttle ({t_set:.0} K): {}", e.0)))?;
                 let q_at = |t: f64| eq_at(t).map(|(i, _, _)| table.read(r, &i));
-                let root = bh::try_hold_root(&q_at, want, HOLD_LO, HOLD_HI).map_err(|e| DoesNotRun(format!(
+                let root = bh::try_hold_root_from(&q_at, want, t_set, HOLD_LO, HOLD_HI).map_err(|e| DoesNotRun(format!(
                     "At the {which} throttle ({t_set:.0} K), the control holding the {} its design-flight table gives for \
                      the asked thrust: {}", inf::reading_words(r), inf::refusal_words(&e, r, want))))?;
                 let i = steady(which, root.t)?;
