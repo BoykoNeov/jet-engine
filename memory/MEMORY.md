@@ -32,7 +32,8 @@ new slices and step links go THERE, not here.
 - [Rung 34 low-speed wall](rung34-low-speed-wall-repair.md) — 2026-10-21: read the last same-shaped repair before offering scope; a probe's PANIC is not the page's crash; a copied search keeps the copied wall
 - [Rung 105 flight wiring](rung105-flight-wiring.md) — 2026-10-21: re-run on the base commit before saying where a failure came from; check a refusal at the entry, before a scan re-words it
 - [Rung 102 re-scored](rung102-rescore.md) — 2026-10-21: when a rung changes a DEFAULT, grep the page prose for the old numbers; check a page sentence on the page's own default request
-- [Slow held runs speed-up](slow-held-runs-speedup.md) — 2026-11-09 SHIPPED; FOLLOW-UP: coarser hold tolerance, measure first; time phases, not counters; a fast path must probe its fallback's own points
+- [Slow held runs speed-up](slow-held-runs-speedup.md) — 2026-11-09 SHIPPED; NEXT: hold tolerance 0.01 K everywhere (user's choice); time phases, not counters; read failing tests' numbers before loosening
+- [Needless precision](needless-precision.md) — user 2026-11-09: set tolerances by physical meaning, not tightness; floor = the smallest effect the model shows
 - [Back-pressure repair](back-pressure-repair.md) — 2026-10-16: a census logger in a threaded test process must write each record in ONE call; red-check by stashing src only
 - [Sandbox altitude](sandbox-altitude.md) — a step-checked limit holds only at its flight; a ×2 similarity cannot see a re-capture; empty-vs-empty cmp says IDENTICAL
 - [Sandbox Mach](sandbox-mach.md) — "refused at every throttle" written from ONE throttle tried there; an archived probe source was a copy of another (equal output sizes)

@@ -2257,3 +2257,12 @@ leftover would take the fuel below what the engine burns.
   amplifies), a target within the tolerance of the floor can flip between running and refused, and tests pinning held
   runs move. Next step agreed: MEASURE first, at 0.01 K and 1 K — the fifth request's time, the 400-request census,
   which tests move — and bring the numbers to the user before changing anything.
+  **MEASURED (2026-11-09; `scratch-archive/hold-tol/README.md`).** The slowest request on the page: 13.3 s today,
+  6.9 s at 0.01 K, 4.8 s at 1 K; the whole gain is the floor search (only it coarse: 6.8 s, runs byte-identical).
+  Census of 400: no run ↔ refused flip at either; at 0.01 K held quantities move ≤ 2e-5 of target (`Tt4` ≤ 0.003 K),
+  at 1 K ≤ 0.23 % (0.39 K). At 1 K rungs 99–101's inferred-thrust misses read EXACTLY 0 — the search resolves less
+  than the effect they show — so 1 K is out. **DECIDED (user, 2026-11-09): 0.01 K for all three searches (`T_TOL`),
+  in a later session** — "not about speed, about the spirit of needless precision". TO DO: set `T_TOL` = 0.01; move
+  the 8 tests the README lists to bars of the search tolerance (the root-finder unit tests, the "meets its target"
+  checks, rungs 95/96's settle bars); re-capture `print_burner_hold_table` (`-- panel … --write`); rebuild the page;
+  gate. Ask then whether the metal cap's relative 1e-9 (`try_metal_cap*`) goes the same way, by the same argument.

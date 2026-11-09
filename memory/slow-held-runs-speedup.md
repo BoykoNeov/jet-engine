@@ -1,6 +1,6 @@
 ---
 name: slow-held-runs-speedup
-description: "Sandbox plan § 43 — slow generator hold runs: memo (2278f6d, 2026-10-22) + hold searches started at their own throttle (shipped 2026-11-09); one request stays ~13 s; POTENTIAL FOLLOW-UP: coarser hold tolerance (user: ~1 K would do), measure first"
+description: "Sandbox plan § 43 — slow generator hold runs: memo (2278f6d, 2026-10-22) + hold searches started at their own throttle (shipped 2026-11-09); one request stays ~13 s; FOLLOW-UP DECIDED: T_TOL 0.01 K everywhere, next session (1 K hides rungs 99-101 misses)"
 metadata:
   node_type: memory
   type: project
@@ -15,11 +15,12 @@ grid) and the metal cap brackets from above (`bh::try_metal_cap_below`). Four of
 above the loaded engine's floor, so only the floor's 1e-9 K bisection finds it. Record: plan § 43 and
 `docs/plans/scratch-archive/gov-slow/README.md`.
 
-**POTENTIAL FOLLOW-UP (user agreed 2026-11-09): a coarser hold tolerance `T_TOL`** (now 1e-9 K; the user: "about 1
-kelvin" is physically enough). Fewer halvings at the floor (36 → ~12 at 0.01 K, ~6 at 1 K). It is a RULE-side change:
-held answers move by up to the tolerance, near-floor targets can flip running ↔ refused, tests move. Agreed next step:
-MEASURE at 0.01 K and 1 K (the fifth request's time, the 400 census, which tests move) and bring the numbers before
-changing anything.
+**FOLLOW-UP DECIDED (user, 2026-11-09): `T_TOL` 1e-9 K -> 0.01 K for all three hold searches, IN A LATER SESSION.**
+Measured (plan § 43, `docs/plans/scratch-archive/hold-tol/README.md`): slowest page request 13.3 -> 6.9 s; no run <->
+refusal flip; held quantities move <= 2e-5. 1 K was ruled out: rungs 99-101's inferred-thrust misses read EXACTLY 0.
+The user chose 0.01 K everywhere over "floor search only" (same speed, runs byte-identical) on principle, not speed:
+[[needless-precision]]. The to-do (8 tests' bars, one golden, page, gate; then ASK about the metal cap's relative
+1e-9) is in the plan.
 
 **Process lessons:**
 - I described the slowness as "governed runs" from where it was found; timing the same requests ungoverned showed
@@ -39,3 +40,7 @@ changing anything.
 - `cmd start` cannot take this repo's spaced path: from Bash (cwd = repo root) pass RELATIVE paths (`--manifest-path
   rust/Cargo.toml`, `node docs/...`). Related: [[windows-tooling-file-hazards]], [[low-start-repair]],
   [[rung106-governor-lag]].
+- 2026-11-09: a 1 K tolerance looked harmless in the census (0.23 %) but zeroed rungs 99-101's measured misses; the
+  failing TESTS showed it, the census did not. **How to apply:** before loosening a tolerance, find the smallest
+  effect the model is built to show and keep the tolerance below it; read each failing test's printed numbers
+  (an exact 0 is a sign the effect was wiped out), and don't count failures as "strict bars" in bulk.
