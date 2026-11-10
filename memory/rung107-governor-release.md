@@ -18,7 +18,7 @@ fuel through first; the release adds little. Scored 38 HIT / 10 MISS / 12 VACUOU
    governed thrust sags") hit 16/16, and the anchor's reason was the RELEASE paying back the stored cut. The panel's own
    numbers hinted otherwise (the sag barely moved from release 0.1 to 1.0, and the engine was at 78 % of the step at the
    move's end against 33 % instant). A probe varying attack and release SEPARATELY (at a fine step: the fast pairs blow
-   up at the coarse one) showed the attack alone carries ~90 %. That refuted the seam's own premise. Gate the
+   up at the coarse one) showed an instant release keeps ~90 % of the sag (the edges do not add, so not a share). That refuted the seam's own premise. Gate the
    decomposition when the headline rests on it.
 2. **A comparison holds only on the configuration it was run on.** "The no-lag governor never sags" was measured on the
    direct thrust hold; my own "other laws" table showed the instant governor sagging 5–13 % under HP speed / read thrust.

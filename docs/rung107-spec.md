@@ -28,7 +28,9 @@ slow sensor refused (two lags).
 > (the drawdown after the move), deeper the slower the release, but only a little: the release adds 0.4 points at
 > 0.4 τ and 1.1 at 1.6 τ to what an instant release already sags. On the open ramp, and with the instant schedule, the
 > thrust never falls. **The seam's premise — "the release edge decides the sag" — is refuted at the page's attacks.**
-> Each edge alone makes a sag (attack alone 3.7 %, release alone up to 3.0 %), but they do not add.
+> Each edge alone makes a sag (attack alone 3.7 %, release alone up to 3.0 %), but they do not add. **What the slow
+> release costs is TIME, not sag depth:** the thrust reaches 95 % of its step at 1.17, 1.56, 2.33 τ for a release of
+> 0.2, 0.4, 0.8 τ, and not within the 2.5 τ run at 1.6.
 >
 > **Scope: the direct thrust hold only.** Under the HP-speed holds and the read thrust (pressure ratio, fan speed) the
 > governor with the INSTANT schedule already sags 5–13 % (rung 95's own overshoot), and the lag can sag less than that
@@ -76,7 +78,7 @@ at the page's attack it rides on top of the first.
 * **The refusals** in words: the knobs' floors, the speed laws past rung 106's edges, the two-lag combinations (rung
   106's lag, the slow sensor), the floor asking for a cut at the start (the governor-off route keeps showing it).
 * **The sag's decomposition** (added after scoring, the headline rests on it; step 0.005): both edges instant ⇒ no sag;
-  an instant attack with a 1.6 τ release sags; a 0.2 τ attack with an instant release sags more than 0.02 and carries
+  an instant attack with a 1.6 τ release sags; a 0.2 τ attack with an instant release sags more than 0.02 and keeps
   more than 85 % of the 0.2 / 0.4 run's sag.
 * **Dropped:** the anchor's governed lean-hold gate. The hold never fired in the admitted region — 0 of 1 344 runs in
   § 0 G3′, 0 of the crash map's 270 admitted runs — so a test of it had nothing to hold (it was vacuous, 0 of 126
@@ -115,7 +117,8 @@ the open ramp.**
 * **The sag's two edges** (`sagcause.txt`, the thrust hold, step 0.005, flow/press; flat-LP the same shape): both lags
   0.005 — no sag; attack 0.005 with release 0.1 / 0.4 / 1.6 — 0.5 / 1.5 / 3.0 %; attack 0.2 with release 0.005 / 0.4 /
   1.6 — 3.7 / 4.1 / 4.8 %. Against the attack at release 0.4: 0.02 → 1.5 %, 0.05 → 1.9 %, **0.1 → 4.9 %**, 0.2 →
-  4.1 %, 0.4 → 2.9 % — NOT monotone; the page's floor (0.2) sits just past the worst. The engine's thrust at the move's
+  4.1 %, 0.4 → 2.9 % — NOT monotone: the highest of the five tried is at 0.1, 0.2 is lower (the peak itself not
+  located). The engine's thrust at the move's
   end climbs steadily with the attack (0.33 instant, 0.67 at 0.1, 0.78 at 0.2, 0.86 at 0.4): a slower attack lets more
   through, but a slow-enough one also cuts less deep (the cut at 0.4 is 60 % of 0.2's), so less is left to sag.
 * **H3 with a longer settle** (4 τ, off protocol): the release's cost (1.6 − 0.2) is LARGER governed (2.69 τ) than open
