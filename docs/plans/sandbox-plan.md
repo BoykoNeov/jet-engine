@@ -2275,3 +2275,5 @@ leftover would take the fuel below what the engine burns.
   `print_mach_axis`, `print_unchoked_formula`, `print_airflow_source`), each by one unit in the last printed digit
   (a percentage point's hundredth). Those rungs' misses all still show at their size. Their specs quote some of these
   figures as build-time records (e.g. rung 99's 0.18 % at Mach 1.4, now 0.19 in one column); left as records.
+  **The metal cap: LEAVE IT (user, 2026-11-10).** `CAP_TOL_REL` stays at relative 1e-9 — no measured cost, nothing
+  would move; not to be re-raised.

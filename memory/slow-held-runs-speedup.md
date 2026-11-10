@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 2d66d455-34c9-471a-a004-8e54d538a7ae
-  modified: 2026-11-10T07:43:30.077Z
+  modified: 2026-11-10T08:10:19.203Z
 ---
 
 **State (2026-11-09): SHIPPED.** The exact memo (`2278f6d`) plus the user's option "B, extended": each Controls hold
@@ -16,7 +16,7 @@ above the loaded engine's floor, so only the floor's 1e-9 K bisection finds it. 
 `docs/plans/scratch-archive/gov-slow/README.md`.
 
 **FOLLOW-UP SHIPPED 2026-11-10** (plan § 43 "DONE"): `T_TOL` = 0.01 K; metal cap kept at relative 1e-9 as
-`CAP_TOL_REL`, PENDING the user's answer on whether it goes the same way. Lesson: a golden test that stops at its first
+`CAP_TOL_REL` — user 2026-11-10: "leave it" (no cost, nothing moves; don't re-raise). Lesson: a golden test that stops at its first
 differing panel under-counts what moves — the measurement said 1 table, re-capturing all said 5. **How to apply:**
 census a golden change by re-capturing EVERY panel and reading `git diff --stat`, not from the failing test's message.
 
