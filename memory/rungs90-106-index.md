@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 24769f1e-166a-49a8-9795-5af4eefb98aa
-  modified: 2026-11-10T07:43:57.652Z
+  modified: 2026-11-10T08:26:53.403Z
 ---
 
 Moved out of `MEMORY.md` on 2026-11-10, when the index reached 19.6 KB. Append new rungs and decisions here.
@@ -43,3 +43,4 @@ Moved out of `MEMORY.md` on 2026-11-10, when the index reached 19.6 KB. Append n
 - [104](rung104-decisions.md) A45 never choked: 3-setting flow-law knob, ON everywhere, one rung, Python oracles keep their unmoved keys, sort every failing test
 - [105](rung105-decisions.md) HP vane A4 never choked at a normal reaction: reaction knob (0.3) on both engines, DEFAULT OFF after cost re-ask; rung 33 double-root bug recorded
 - [106](rung106-decisions.md) governor beside rung 47's temperature-limiter lag only; all holds; 52/88 and the lagged sensor later
+- [107](rung107-decisions.md) governor beside rung 52's release AS BUILT (schedule + floor lagged, redline/metal instant); all holds
