@@ -45,7 +45,8 @@ fn a_thrust_hold_meets_the_unloaded_engines_thrust_at_both_ends() {
         for (end, set) in [("start", d.from), ("end", d.to)] {
             let (e, b) = (r.get(end).unwrap(), bare.get(end).unwrap());
             assert_eq!(f(e, "hold_set"), set);
-            assert!((f(e, "thrust") / f(b, "thrust") - 1.0).abs() < 1e-9, "{gen:?} {end}: {} vs {}", f(e, "thrust"), f(b, "thrust"));
+            // Met to the search's 0.01 K (`T_TOL`, sandbox plan § 43): a held quantity moves <= ~2e-5 over that.
+            assert!((f(e, "thrust") / f(b, "thrust") - 1.0).abs() < 1e-4, "{gen:?} {end}: {} vs {}", f(e, "thrust"), f(b, "thrust"));
             assert!((f(e, "hold_target") - f(b, "thrust")).abs() < 1e-9 * f(b, "thrust"));
             assert!(f(e, "Tt4") > set, "{gen:?} {end}: the burner runs hotter to carry the load");
             println!("{gen:?} {end}: Tt4 {set} -> {:.2} K; phi_LP {:.4} (unloaded {:.4}), phi_HP {:.4} ({:.4})", f(e, "Tt4"),

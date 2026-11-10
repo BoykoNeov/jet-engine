@@ -66,7 +66,8 @@ fn every_hold_meets_its_target() {
                         (lp(0.05), Hold::HpSpeed, 1500.0)] {
         let p = hold(so, flat(), flat(), t0, h);
         let got = bh::held(&p.point, h);
-        assert!((got / p.target - 1.0).abs() < 1e-9, "{so:?} {h:?} {t0}: {got} vs {}", p.target);
+        // Met to the search's 0.01 K (`bh::T_TOL`, sandbox plan § 43): a held quantity moves <= ~2e-5 over that.
+        assert!((got / p.target - 1.0).abs() < 1e-4, "{so:?} {h:?} {t0}: {got} vs {}", p.target);
         let bare = bh::held(&matcher(None, flat(), flat()).match_point(&flight(), t0), h);
         assert!(p.target.to_bits() == bare.to_bits(), "the target is the unloaded engine's at the set throttle");
     }
@@ -109,7 +110,7 @@ fn the_root_finder_refuses_above_its_range_and_the_cap_stops_at_the_limit() {
     assert_eq!(bh::try_hold_root(&q, 500.0, 600.0, 2000.0), Err(HoldRefusal::AboveRange { t_top: 2000.0, q_top: 200.0 }));
     assert!(matches!(bh::try_hold_root(&q, 50.0, 600.0, 2000.0), Err(HoldRefusal::BelowFloor { .. })));
     let r = bh::try_hold_root(&q, 123.4, 600.0, 2000.0).unwrap();
-    assert!((r.t - 1234.0).abs() < 1e-8 && (r.t_floor - 800.0).abs() < 1e-8);
+    assert!((r.t - 1234.0).abs() <= bh::T_TOL && (r.t_floor - 800.0).abs() <= bh::T_TOL, "{r:?}");
     // The cap: excess = T − 1100 crosses at 1100 K inside [900, 1300]; none needed below; refused when over at the floor.
     let ex = |t: f64| -> Result<f64, Abort> { Ok(t - 1100.0) };
     assert!((bh::try_metal_cap(&ex, 900.0, 1300.0).unwrap().unwrap() - 1100.0).abs() < 1e-8);
@@ -130,7 +131,7 @@ fn the_searches_from_the_set_throttle_land_as_the_full_ones_without_asking_below
     for (start, fails) in [(1000.0, 0), (1500.0, 0), (710.0, 2)] {
         below.set(0);
         let r = bh::try_hold_root_from(&q, 123.4, start, 600.0, 2000.0).unwrap();
-        assert!((r.t - 1234.0).abs() < 1e-8 && r.t_floor.is_nan(), "from {start}: {r:?}");
+        assert!((r.t - 1234.0).abs() <= bh::T_TOL && r.t_floor.is_nan(), "from {start}: {r:?}");
         assert_eq!(below.get(), fails, "from {start}");
     }
     // From under the floor with the first answering step already past the target: the full search's own landing, and

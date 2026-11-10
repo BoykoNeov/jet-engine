@@ -55,8 +55,12 @@ impl Hold {
 
 /// The grid the search's low end steps up on, K.
 pub const GRID: f64 = 50.0;
-/// The search's tolerance on `T`, K.
-pub const T_TOL: f64 = 1e-9;
+/// The search's tolerance on `T`, K — the floor search, the hold roots and rung 101's sensed end (sandbox plan § 43).
+/// 0.01 K, not a numerical 1e-9: held quantities move ≤ 2e-5 of their target, finer than the smallest effect the
+/// model shows (rungs 99–101's inferred-thrust misses, a fraction of a kelvin of `Tt4`, vanish at 1 K).
+pub const T_TOL: f64 = 0.01;
+/// The metal cap's tolerance on `T`, relative (kept apart from [`T_TOL`]; § 43).
+pub const CAP_TOL_REL: f64 = 1e-9;
 /// How many halvings a bisection may take.
 pub const MAX_HALVINGS: usize = 200;
 
@@ -314,7 +318,7 @@ pub fn try_metal_cap(excess: &dyn Fn(f64) -> Result<f64, Abort>, lo: f64, hi: f6
     }
     let (mut a, mut b) = (lo, hi);
     for _ in 0..MAX_HALVINGS {
-        if b - a <= T_TOL * b {
+        if b - a <= CAP_TOL_REL * b {
             break;
         }
         let mid = 0.5 * (a + b);

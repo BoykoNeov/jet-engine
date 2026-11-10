@@ -99,8 +99,11 @@ fn the_inferred_run_settles_on_its_end_and_holds_its_reading() {
             let l = o.points.last().unwrap();
             // Holding the fan speed pins the LP shaft at once and leaves the HP shaft to creep to its end on its own,
             // slowly (the spec's § 4: ~3e-6 short after 8 τ on flat-LP) — so its bar is looser than rung 95's 1e-6.
-            let bar = if s.thrust_by == ThrustBy::N1 { 1e-5 } else { 1e-6 };
-            assert!((l.nu_lp - sv.end.nu_lp).abs() < bar && (l.nu_hp - sv.end.nu_hp).abs() < bar, "{s:?}");
+            // A loaded end is the hold search's root, landed within its 0.01 K (`bh::T_TOL`, sandbox plan § 43), so it
+            // too sits up to ~1e-6 off where the march settles.
+            let bar = if s.thrust_by == ThrustBy::N1 || s.generator != GeneratorMode::Off { 1e-5 } else { 1e-6 };
+            let (dl, dh) = (l.nu_lp - sv.end.nu_lp, l.nu_hp - sv.end.nu_hp);
+            assert!(dl.abs() < bar && dh.abs() < bar, "{dl:e} {dh:e}: {s:?}");
             let g = sv.governor.as_ref().unwrap();
             for (p, m) in o.points.iter().zip(&o.marks) {
                 assert_eq!((m.clamp, m.leg), (Clamp::Root, Leg::None));

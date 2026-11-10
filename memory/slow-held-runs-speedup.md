@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 2d66d455-34c9-471a-a004-8e54d538a7ae
-  modified: 2026-11-09T00:00:00.000Z
+  modified: 2026-11-10T07:43:30.077Z
 ---
 
 **State (2026-11-09): SHIPPED.** The exact memo (`2278f6d`) plus the user's option "B, extended": each Controls hold
@@ -14,6 +14,11 @@ grid) and the metal cap brackets from above (`bh::try_metal_cap_below`). Four of
 (were ~13 s); census of 400: no run ↔ refusal flip, worst 3.9e-8 relative. The fifth stays ~13 s: its target lies just
 above the loaded engine's floor, so only the floor's 1e-9 K bisection finds it. Record: plan § 43 and
 `docs/plans/scratch-archive/gov-slow/README.md`.
+
+**FOLLOW-UP SHIPPED 2026-11-10** (plan § 43 "DONE"): `T_TOL` = 0.01 K; metal cap kept at relative 1e-9 as
+`CAP_TOL_REL`, PENDING the user's answer on whether it goes the same way. Lesson: a golden test that stops at its first
+differing panel under-counts what moves — the measurement said 1 table, re-capturing all said 5. **How to apply:**
+census a golden change by re-capturing EVERY panel and reading `git diff --stat`, not from the failing test's message.
 
 **FOLLOW-UP DECIDED (user, 2026-11-09): `T_TOL` 1e-9 K -> 0.01 K for all three hold searches, IN A LATER SESSION.**
 Measured (plan § 43, `docs/plans/scratch-archive/hold-tol/README.md`): slowest page request 13.3 -> 6.9 s; no run <->

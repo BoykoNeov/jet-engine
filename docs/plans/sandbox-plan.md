@@ -2266,3 +2266,12 @@ leftover would take the fuel below what the engine burns.
   the 8 tests the README lists to bars of the search tolerance (the root-finder unit tests, the "meets its target"
   checks, rungs 95/96's settle bars); re-capture `print_burner_hold_table` (`-- panel … --write`); rebuild the page;
   gate. Ask then whether the metal cap's relative 1e-9 (`try_metal_cap*`) goes the same way, by the same argument.
+  **DONE (2026-11-10).** `T_TOL` = 0.01 K (floor, hold roots, rung 101's sensed end); the metal cap keeps its relative
+  1e-9 as its own `CAP_TOL_REL` until asked. Bars moved to the search's tolerance: the toy root-finder checks to
+  `T_TOL`; "meets its target" (rung 94, `sandbox_hold`, the browser check) to 1e-4 relative (miss ≤ ~2e-5); rungs
+  95/96's settle bars 1e-6 → 1e-5 ONLY on loaded runs (measured misses: thrust 2.1e-6, speed 1.0e-6; unloaded runs do
+  not move and keep 1e-6). **Correction to the measurement above:** `cli_golden` stops at the first differing panel,
+  so it showed one; re-capturing all of them moved FIVE — the hold table and rungs 98–101's (`print_corrected_tables`,
+  `print_mach_axis`, `print_unchoked_formula`, `print_airflow_source`), each by one unit in the last printed digit
+  (a percentage point's hundredth). Those rungs' misses all still show at their size. Their specs quote some of these
+  figures as build-time records (e.g. rung 99's 0.18 % at Mach 1.4, now 0.19 in one column); left as records.

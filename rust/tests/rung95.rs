@@ -65,9 +65,12 @@ fn the_governed_run_settles_on_the_end_and_holds_its_demand() {
             let (sv, o) = controls(&s).unwrap();
             assert_eq!(o.points.len(), s.expected_points());
             let l = o.points.last().unwrap();
-            assert!((l.nu_lp - sv.end.nu_lp).abs() < 1e-6 && (l.nu_hp - sv.end.nu_hp).abs() < 1e-6, "{s:?}");
+            // A loaded end is the hold search's root, landed within its 0.01 K (`bh::T_TOL`, sandbox plan § 43): the
+            // march settles on the exact demand, so it sits up to ~2e-6 (thrust) / ~6e-7 (speed) off that root.
+            let bar = if s.generator == GeneratorMode::Off { 1e-6 } else { 1e-5 };
             let fe = gv::thrust(&sv.end);
-            assert!(((thrust_of(&sv, l) - fe) / fe).abs() < 1e-6, "{s:?}");
+            let (dl, dh, df) = (l.nu_lp - sv.end.nu_lp, l.nu_hp - sv.end.nu_hp, (thrust_of(&sv, l) - fe) / fe);
+            assert!(dl.abs() < bar && dh.abs() < bar && df.abs() < bar, "{dl:e} {dh:e} {df:e}: {s:?}");
             // the hold identity, on the root with no leg cutting
             let g = sv.governor.as_ref().unwrap();
             for (p, m) in o.points.iter().zip(&o.marks) {

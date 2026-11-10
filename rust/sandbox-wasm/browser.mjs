@@ -509,7 +509,8 @@ try {
   const hr = await ev(`(() => { const r = window.sandbox.last; return [r.start.Tt4, r.start.hold_set, r.end.Tt4, r.end.hold_set,
       Math.abs(r.start.thrust / r.start.hold_target - 1), document.getElementById('ctl-hold-note').hidden,
       [...document.getElementById('ctl-table').tBodies[0].rows].some(t => /→/.test(t.cells[1].textContent))]; })()`);
-  check('holding_thrust_runs_the_ends_hotter_and_meets_the_unloaded_thrust', hOn && hr[0] > hr[1] && hr[2] > hr[3] && hr[4] < 1e-9
+  // (meets it to the search's 0.01 K: a held quantity moves <= ~2e-5 over that -- sandbox plan § 43)
+  check('holding_thrust_runs_the_ends_hotter_and_meets_the_unloaded_thrust', hOn && hr[0] > hr[1] && hr[2] > hr[3] && hr[4] < 1e-4
         && hr[5] === false && hr[6], JSON.stringify([hOn, hr]));
   if (process.env.SANDBOX_SHOTS) await shot('controls-hold');
   await ev(`window.sandbox.controls({generator: 'off', hold: 'tt4'}).then(r => r.run)`);
