@@ -38,8 +38,8 @@ for at s = 0 (rung 106's hot-start principle); the governor-off route keeps show
 rough 1–3e-4, scattered); refused in words beside the governor; switching governor / release moves an out-of-range knob
 to the limit with a note (rung 106's pattern); typed values meet the refusal. Governor off: rung 52's one-step floor.
 
-**BUILD STATUS (session paused by the user's "wrap up", 2026-11-10) — UNCOMMITTED in the working tree, on purpose**
-(the template changed but the built page is not rebuilt, and the full gate has not run, so not on `main`):
+**BUILD STATUS (session paused by the user's "wrap up", 2026-11-10) — committed as WIP `9adfea2` (the user: "always
+commit"). The built page is NOT rebuilt (its gate fails until `build.ps1`), and the full gate has NOT run:**
 - Anchor COMMITTED + pushed (7b15c6b). Built since: `rust/src/governor_release.rs` (the frozen device), `lib.rs` entry,
   `governor_lag.rs` (`Demand::try_fuel` → `pub(crate)`, nothing else), `sandbox_controls.rs` (`Route::GovernorRelease`,
   `release_lag`/`gov_rel_der`/`gov_rel_step`, march/replay/stop/holders/route string, the old refusal LIFTED; new

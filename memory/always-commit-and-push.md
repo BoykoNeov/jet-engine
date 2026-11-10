@@ -20,6 +20,11 @@ chore. **A dirty tree inherited from a previous session is covered too:** if it
 is green and coherent, commit and push it, and say so in one line; do not open
 with "shall I commit this?".
 
+**Unfinished work at a pause is committed too (2026-11-10, user: "always commit, commit now").** When the user says
+"wrap up" mid-rung, do NOT hold back half-built code because the gate has not run or the page is not rebuilt. Commit it
+as a `wip(...)` commit whose message says plainly what is NOT done (and which gate it will fail), and push. Holding it
+in the working tree "on purpose" was the miss.
+
 **How to apply:** After a coherent unit of work passes its checks, stage
 everything, write a descriptive commit, and push to origin main. Still respect
 the [[session-end-routine]] (also refresh memory + docs at session end) and
