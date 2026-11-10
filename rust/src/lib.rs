@@ -160,6 +160,7 @@ pub mod full_split;
 pub mod gas;
 pub mod governor;
 pub mod governor_lag;
+pub mod governor_release;
 pub mod inferred_thrust;
 pub mod unchoked_lp;
 pub mod lagged_bleed;

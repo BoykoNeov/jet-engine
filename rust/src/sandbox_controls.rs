@@ -40,6 +40,7 @@ use crate::sandbox_cooling::{LIFE_MAX, LIFE_MIN, TECH_KEYS, YEAR_MAX, YEAR_MIN};
 use crate::burner_hold::{self as bh, Hold};
 use crate::governor::{self as gv, GovCall, GovMark, Governor, Law, Leg};
 use crate::governor_lag::{self as gl, ClipLag};
+use crate::governor_release as gr;
 use crate::inferred_thrust as inf;
 use crate::corrected_tables::{Carry, TableAt};
 use crate::mach_axis::{self as ma, SpeedCorr, Tables};
@@ -84,6 +85,14 @@ pub const GOV_LAG_TAU_N_MIN: f64 = 0.1;
 pub const GOV_LAG_TAU_LP_MIN: f64 = 0.15;
 pub const GOV_LAG_GAIN_MAX: f64 = 10.0;
 pub const GOV_LAG_GAIN_MAX_LP: f64 = 7.0;
+/// Rung 107 (the user's choice, "limit and nudge"): beside the governor the realistic release's attack must be at least
+/// 0.2 and its release at least 0.1 spool time constants. The step check (`docs/plans/scratch-archive/rung107/edge.rs`:
+/// attack 0.04–0.5 × release 0.02–0.8, every speed law at its `GOV_LAG_*` edge, three cases × three flights): every cell
+/// inside these floors is under 1e−4 in flow coefficient against a step four times finer; a faster attack is rough at
+/// every release (to 3.2e−4), a release of 0.02–0.04 at every attack (to 3.3e−4) — scattered cells, not a threshold.
+/// Rung 52's own route, governor off, keeps its one step.
+pub const GOV_REL_ATT_MIN: f64 = 0.2;
+pub const GOV_REL_REL_MIN: f64 = 0.1;
 
 /// RUNG 102's defaults on this view: the afterburner's temperature (Fly it's), and the light-off at the ramp's end of
 /// the page's opening run (full throttle reached — where a pilot lights it).
@@ -1059,30 +1068,38 @@ pub fn controls_precheck(s: &ControlsSettings) -> Result<(), DoesNotRun> {
                  (five march steps): measured, a faster lag beside a fast governor moves the flow coefficients by up to \
                  0.0002 against a finer step.")));
         }
-        // Rung 106 (the user's "limit each law"): beside the lag, each speed law's own clean edge (`GOV_LAG_*`).
+        // Rung 107 (the user's "limit and nudge"): beside the governor the release's attack and release times have their
+        // own floors (the step check, `GOV_REL_*`).
+        if s.release_on && !(s.tau_att >= GOV_REL_ATT_MIN - 1e-12 && s.tau_rel >= GOV_REL_REL_MIN - 1e-12) {
+            return Err(DoesNotRun(format!(
+                "Beside the governor the realistic release's attack time must be at least {GOV_REL_ATT_MIN} and its \
+                 release time at least {GOV_REL_REL_MIN} spool time constants: measured, faster ones there give numbers \
+                 that depend on the step by up to 0.0003 in flow coefficient. (Compare a run without the governor at the \
+                 same times: a slower attack cuts later and protects less.)")));
+        }
+        // Rung 106 (the user's "limit each law"): beside the lag, each speed law's own clean edge (`GOV_LAG_*`) — and
+        // rung 107's, beside the release (the same edges, measured again: `docs/plans/scratch-archive/rung107/edge.rs`).
         let fan = s.hold == Hold::Thrust && s.thrust_by == ThrustBy::N1;
-        if s.gov_lag_on && s.redline_on && (s.hold == Hold::HpSpeed || fan) {
+        let lagged = (s.gov_lag_on && s.redline_on) || s.release_on;
+        if lagged && (s.hold == Hold::HpSpeed || fan) {
             let (shaft, tau_edge, gain_edge) = match fan {
                 true => ("fan-speed", GOV_LAG_TAU_LP_MIN, GOV_LAG_GAIN_MAX_LP),
                 false => ("speed", GOV_LAG_TAU_N_MIN, GOV_LAG_GAIN_MAX),
             };
             let (rate_min, gain_max) = (tau_edge / s.density_ratio().min(1.0), gain_edge / s.density_ratio().max(1.0));
+            let beside = if s.release_on { "the realistic release" } else { "the temperature limiter's lag" };
             if s.speed_law == SpeedLaw::Rate && !(s.gov_tau >= rate_min - 1e-12) {
                 return Err(DoesNotRun(format!(
-                    "Beside the temperature limiter's lag the {shaft} governor's time constant must be at least {} spool \
+                    "Beside {beside} the {shaft} governor's time constant must be at least {} spool \
                      time constants{}: measured, a faster one there gives numbers that depend on the step by up to 0.0005 \
                      in flow coefficient.", tau_text(rate_min), thin_words(s, ""))));
             }
             if s.speed_law == SpeedLaw::Prop && !(s.gov_gain > 0.0 && s.gov_gain <= gain_max + 1e-12) {
                 return Err(DoesNotRun(format!(
-                    "Beside the temperature limiter's lag the {shaft} governor's gain must be above 0 and at most {}{}: \
+                    "Beside {beside} the {shaft} governor's gain must be above 0 and at most {}{}: \
                      measured, a larger one there gives numbers that depend on the step by up to 0.0006 in flow \
                      coefficient.", gain_text(gain_max), dense_words(s))));
             }
-        }
-        if s.release_on {
-            return no("The governor runs with the instant limiters only: the realistic release carries its cut as a \
-                       state on its own march, and a governor on that march is a different model. Switch the release off.");
         }
         if s.valve_slow() {
             return no("The governor runs with the instant valve only: a slow valve is a state on its own march, and a \
@@ -1544,6 +1561,11 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
     };
     // Rung 106: the governor beside the temperature limiter's lag — not beside a lagged exhaust sensor too (two lags at
     // once, the user's "another session"), and not from a start the limiter would never have let the engine settle at.
+    // Rung 107: the realistic release beside the governor — not beside the slow exhaust sensor either.
+    if s.govern && s.release_on && governor.as_ref().is_some_and(|g| g.lag.is_some()) {
+        return Err(DoesNotRun("The governor runs beside the realistic release, or beside the slow exhaust sensor, but not \
+                               both: two lags at once is a different model, not built yet. Switch one of them off.".into()));
+    }
     if s.govern && s.gov_lag_on {
         if governor.as_ref().is_some_and(|g| g.lag.is_some()) {
             return Err(DoesNotRun("The governor runs beside the temperature limiter's lag, or beside the slow exhaust \
@@ -1562,6 +1584,20 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
     // Rung 106 (the user's, after the crash map): the same rule for the governor's REQUEST — where another limit (the
     // metal cap) holds the start below what the governor asks, a request already above the redline would charge the slow
     // cut from nothing. A failed first evaluation is left for the march to report.
+    // Rung 107 (the user's): the realistic release beside the governor from a start its floor would never have let the
+    // engine settle at — the lagged legs' target, off the governor's request at the start, is already above zero.
+    if sv.release_lag().is_some() {
+        if let Ok(d) = sv.gov_rel_der(sv.start.nu_lp, sv.start.nu_hp, 0.0, 0.0) {
+            if d.required > 0.0 {
+                return Err(DoesNotRun(format!(
+                    "From the first moment the governor asks for more fuel than the {} allows (the engine starts {}): a \
+                     working limiter would never have let it settle there, and the realistic release's cut would build up \
+                     from nothing. Lower the floor, or start where the governor's request is within it.",
+                    if s.floor_on { "stall floor" } else { "acceleration schedule" },
+                    if s.floor_on { "below the floor" } else { "above the schedule" })));
+            }
+        }
+    }
     if sv.clip_lag().is_some() {
         if let Ok(d) = sv.gov_lag_der(sv.start.nu_lp, sv.start.nu_hp, 0.0, 0.0) {
             if d.required > 0.0 {
@@ -1710,6 +1746,10 @@ impl ControlsSolver {
                 // Rung 106: beside the temperature limiter's lag, the clip a third state off the governor's demand.
                 Some(clip) => gl::march(&self.core.fuel, &self.flight, gl::Demand::Governor(g), clip, &self.lag_limiters(),
                                         metal, nu0, self.settings.s_end(), DS),
+                // Rung 107: beside the realistic release, rung 52's lag a third state off the governor's demand.
+                None if self.release_lag().is_some() =>
+                    gr::march(&self.core.fuel, &self.flight, gl::Demand::Governor(g), &self.limiters(), metal, nu0,
+                              self.settings.s_end(), DS),
                 None => gv::march(&self.core.fuel, &self.flight, g, &self.limiters(), metal, nu0, self.settings.s_end(), DS),
             }
         } else {
@@ -1772,6 +1812,31 @@ impl ControlsSolver {
             .map_err(|f| gov_failure(f, a, b, s))
     }
 
+    /// Rung 107: the realistic release's lag, when the governed run carries it.
+    pub fn release_lag(&self) -> Option<AsymmetricLag> {
+        let s = &self.settings;
+        (self.governor.is_some() && s.release_on).then(|| AsymmetricLag::new(s.tau_att, s.tau_rel))
+    }
+
+    /// Rung 107: one derivative evaluation of the governed march with the release's lag `g` — the model's own
+    /// [`gr::try_der`], its failure in this view's terms.
+    pub fn gov_rel_der(&self, a: f64, b: f64, g: f64, s: f64) -> Result<gr::ReleaseDer, Failure> {
+        let gov = self.governor.as_ref().expect("the governed route has its governor");
+        let over = |i: &Instant2| self.metal_over(i);
+        let metal: Option<&dyn Fn(&Instant2) -> f64> = if self.settings.metal_leg() { Some(&over) } else { None };
+        gr::try_der(&self.core.fuel, &self.flight, gl::Demand::Governor(gov), &self.limiters(), metal, a, b, g, s)
+            .map_err(|f| gov_failure(f, a, b, s))
+    }
+
+    /// Rung 107: the rest of one three-state step — the model's own [`gr::try_rk_step`].
+    pub fn gov_rel_step(&self, a: f64, b: f64, g: f64, s: f64, k1: (f64, f64, f64)) -> Result<(f64, f64, f64), Failure> {
+        let gov = self.governor.as_ref().expect("the governed route has its governor");
+        let over = |i: &Instant2| self.metal_over(i);
+        let metal: Option<&dyn Fn(&Instant2) -> f64> = if self.settings.metal_leg() { Some(&over) } else { None };
+        gr::try_rk_step(&self.core.fuel, &self.flight, gl::Demand::Governor(gov), &self.limiters(), metal, a, b, g, s, DS, k1)
+            .map_err(|f| gov_failure(f, a, b, s))
+    }
+
     /// Rung 101: the rest of one three-state governed RK4 step — the model's own [`gv::try_rk_step_sensed`].
     pub fn gov_step_sensed(&self, a: f64, b: f64, m: f64, s: f64, k1: (f64, f64, f64)) -> Result<(f64, f64, f64), Failure> {
         let g = self.governor.as_ref().expect("the governed route has its governor");
@@ -1795,7 +1860,13 @@ impl ControlsSolver {
         let s = &self.settings;
         // Rung 95: the governed march first; the prechecks refuse it beside every lagged route.
         if s.govern {
-            return if self.clip_lag().is_some() { Route::GovernorLag } else { Route::Governor };
+            return if self.clip_lag().is_some() {
+                Route::GovernorLag
+            } else if self.release_lag().is_some() {
+                Route::GovernorRelease
+            } else {
+                Route::Governor
+            };
         }
         // A slow valve's machine dispatches to rung 65's march first (its fuel table); the prechecks
         // refuse it beside either fuel-side lag.
@@ -1836,6 +1907,8 @@ pub enum Route {
     Governor,
     /// Rung 106's governed march beside the temperature limiter's lag — its clip IS recorded.
     GovernorLag,
+    /// Rung 107's governed march beside the realistic release — its lag IS recorded.
+    GovernorRelease,
 }
 
 /// A failed governed evaluation in this view's terms.
@@ -2089,6 +2162,12 @@ pub fn replay_step(sv: &ControlsSolver, p: &FuelPoint) -> Option<Result<(f64, f6
             };
             sv.gov_lag_der(a, b, g, s).and_then(|d| sv.gov_lag_step(a, b, g, s, (d.da, d.db, d.dg)))
         }
+        Route::GovernorRelease => {
+            let PointExtra::Asym { g, .. } = p.extra else {
+                unreachable!("the governed release's route records its lag");
+            };
+            sv.gov_rel_der(a, b, g, s).and_then(|d| sv.gov_rel_step(a, b, g, s, (d.da, d.db, d.dg)))
+        }
         Route::Plain => (|| {
             let (k1a, k1b) = der_plain(sv, a, b, sched(s), s)?;
             let mfm = sched(s + ds / 2.0);
@@ -2155,6 +2234,7 @@ fn stop_at(sv: &ControlsSolver, last: Option<&FuelPoint>) -> Stop {
             Route::GovLag => None,
             Route::Governor => sv.gov_der_at(a, b, 0.0, sv.sensor_lag().map(|l| l.t0)).err(),
             Route::GovernorLag => sv.gov_lag_der(a, b, 0.0, 0.0).err(),
+            Route::GovernorRelease => sv.gov_rel_der(a, b, 0.0, 0.0).err(),
             Route::Plain => der_plain(sv, a, b, sched(0.0), 0.0).err(),
             Route::Release => der_release(sv, a, b, 0.0, 0.0).err(),
             // The march starts the valve at its command (rung 65's equilibrium start), solved before
@@ -2175,6 +2255,7 @@ fn stop_at(sv: &ControlsSolver, last: Option<&FuelPoint>) -> Stop {
                 Route::ValveLag => der_valve_lag(sv, a, b, g, s).err(),
                 Route::Governor => sv.gov_der_at(a, b, s, sv.sensor_lag().map(|_| g)).err(),
                 Route::GovernorLag => sv.gov_lag_der(a, b, g, s).err(),
+                Route::GovernorRelease => sv.gov_rel_der(a, b, g, s).err(),
                 _ => der_plain(sv, a, b, sched(s), s).err(),
             }.or_else(|| Some(Failure { message: "the march stopped, but re-running its last step does not fail".into(),
                                         call: Call::AtApplied, mf: f64::NAN, nu_lp: f64::NAN, nu_hp: f64::NAN,
@@ -2578,6 +2659,7 @@ impl ControlsSolver {
             Route::ValveLag => &[Holder::Redline, Holder::Accel, Holder::Floor],
             Route::Governor => &[Holder::Redline, Holder::Accel, Holder::Floor],
             Route::GovernorLag => &[Holder::Accel, Holder::Floor],
+            Route::GovernorRelease => &[Holder::Redline],
         };
         let holder = if p.mf == p.mf_sched {
             Holder::None
@@ -2661,7 +2743,7 @@ pub fn controls_json(sv: &ControlsSolver, o: &ControlsOutcome) -> Json {
         "expected_points" => Json::Int(o.settings.expected_points() as i64),
         "route" => match sv.route() { Route::Plain => "plain", Route::GovLag => "gov_lag", Route::Release => "release",
                                       Route::ValveLag => "valve_lag", Route::Governor => "governor",
-                                      Route::GovernorLag => "governor_lag" },
+                                      Route::GovernorLag => "governor_lag", Route::GovernorRelease => "governor_release" },
         "settled_lp" => num_or_null(settled_lp), "settled_hp" => num_or_null(settled_hp),
         "stopped" => Json::Int(o.stop.is_some() as i64),
         "stop" => match &o.stop {
@@ -2925,6 +3007,13 @@ pub fn check_requests() -> Vec<String> {
         ControlsSettings { govern: true, hold: Hold::HpSpeed, redline_on: true, gov_lag_on: true, gov_lag: 0.1, accel_on: true, ..d },
         ControlsSettings { govern: true, hold: Hold::Thrust, redline_on: true, gov_lag_on: true, gov_lag: 0.05, ..d }, // refused
         ControlsSettings { govern: true, hold: Hold::Thrust, redline_on: true, gov_lag_on: true, from: 1500.0, to: 1000.0, ..d }, // refused
+        // rung 107: the governor beside the realistic release (thrust on the schedule, HP gain on the floor), and refused at
+        // the page's own attack (0.02) and from a start below the floor (flat-LP)
+        ControlsSettings { govern: true, hold: Hold::Thrust, accel_on: true, release_on: true, tau_att: 0.2, ..d },
+        ControlsSettings { govern: true, hold: Hold::HpSpeed, speed_law: SpeedLaw::Prop, gov_gain: 10.0, floor_on: true,
+                           release_on: true, tau_att: 0.2, tau_rel: 0.4, shape: 1, ..d },
+        ControlsSettings { govern: true, hold: Hold::Thrust, accel_on: true, release_on: true, ..d },              // refused
+        ControlsSettings { govern: true, hold: Hold::Thrust, floor_on: true, release_on: true, tau_att: 0.2, shape: 3, ..d }, // refused
         // rung 96: thrust read from the pressure ratio (beside the limiters; calibrated on the clean engine with the
         // generator) and the fan speed by each law (on a slowdown), and refused beside the cap
         ControlsSettings { govern: true, hold: Hold::Thrust, thrust_by: ThrustBy::Epr, redline_on: true, accel_on: true, ..d },

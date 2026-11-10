@@ -54,7 +54,7 @@ pub enum Demand<'a> {
 
 impl Demand<'_> {
     /// The demanded fuel at a state and where it sits (the ramp is always on its "root").
-    fn try_fuel(&self, ft: &FuelTransientCore, flight: &FlightCondition, a: f64, b: f64, s: f64)
+    pub(crate) fn try_fuel(&self, ft: &FuelTransientCore, flight: &FlightCondition, a: f64, b: f64, s: f64)
                 -> Result<(f64, Clamp), Abort> {
         match self {
             Demand::Governor(g) => gv::try_governor_fuel(ft, flight, g, a, b, s),

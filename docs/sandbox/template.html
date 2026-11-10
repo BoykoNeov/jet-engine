@@ -599,10 +599,11 @@ footer p { max-width: 90ch; }
       <label class="swrow"><input type="checkbox" id="ctl-release_on"> Realistic release <small>rung 52</small></label>
       <div class="swbox" id="ctl-release-box">
         <div class="knob"><label for="ctl-tau_att">Cutting in <small>τ</small></label><input type="number" id="ctl-tau_att" step="0.01">
-          <input type="range" id="ctl-tau_att-r" min="0.02" max="0.2" step="0.01" aria-label="Attack time slider"></div>
+          <input type="range" id="ctl-tau_att-r" min="0.02" max="0.5" step="0.01" aria-label="Attack time slider"></div>
         <div class="knob"><label for="ctl-tau_rel">Letting go <small>τ</small></label><input type="number" id="ctl-tau_rel" step="0.01">
           <input type="range" id="ctl-tau_rel-r" min="0.02" max="1" step="0.01" aria-label="Release time slider">
-          <div class="derived">The schedule's and the floor's cut follows its target quickly going in and slowly letting go, as a real limiter does.</div></div></div>
+          <div class="derived">The schedule's and the floor's cut follows its target quickly going in and slowly letting go, as a real limiter does.</div></div>
+        <p class="note" id="ctl-relnudge" hidden></p></div>
     </fieldset>
     <fieldset id="ctl-lever-set" hidden>
       <legend>Airflow levers</legend>
@@ -1596,6 +1597,7 @@ function showSettings() {
     $("ctl-bsched-box").hidden = C.bleed_mode !== "schedule"; $("ctl-valve-box").hidden = C.bleed_mode !== "valve";
     $("ctl-redline-box").hidden = C.redline_on !== 1; $("ctl-gov_lag-box").hidden = C.gov_lag_on !== 1;
     if (!(C.govern && C.redline_on && C.gov_lag_on)) $("ctl-lagnudge").hidden = true;   // rung 106's note goes with the lag
+    if (!(C.govern && C.release_on)) $("ctl-relnudge").hidden = true;   // rung 107's goes with the release
     $("ctl-accel-box").hidden = C.accel_on !== 1; $("ctl-floor-box").hidden = C.floor_on !== 1;
     $("ctl-release-box").hidden = C.release_on !== 1; $("ctl-ref-row").hidden = !stators(C);
     $("ctl-stator-box").hidden = !stators(C); $("ctl-bleed-box").hidden = !bleeds(C);
@@ -2165,6 +2167,30 @@ function govLagNudge() {
     note.hidden = false;
   } else note.hidden = true;
 }
+// Rung 107: beside the governor the realistic release's cutting-in time must be at least 0.2 τ and its letting-go time
+// at least 0.1 τ, and each speed governor keeps rung 106's edge (the step check; the model refuses past them). When the
+// switches come to need it, move the knobs there and say so -- a value typed in afterwards meets the refusal.
+const REL_EDGE = { att: 0.2, rel: 0.1 };
+function relNudge() {
+  const note = $("ctl-relnudge");
+  if (!(C.govern && C.release_on)) { note.hidden = true; return; }
+  const moved = [];
+  if (C.tau_att < REL_EDGE.att) { C.tau_att = REL_EDGE.att; moved.push(`its cutting-in time to ${REL_EDGE.att} τ`); }
+  if (C.tau_rel < REL_EDGE.rel) { C.tau_rel = REL_EDGE.rel; moved.push(`its letting-go time to ${REL_EDGE.rel} τ`); }
+  const fan = C.hold === "thrust" && C.thrust_by === "n1";
+  if (C.hold === "speed" || fan) {
+    const e = LAG_EDGE[fan ? "fan" : "hp"], rho = (crun && crun.density_ratio) || 1;
+    const tauMin = Math.ceil(e.tau / Math.min(1, rho) * 1000) / 1000, gainMax = Math.floor(e.gain / Math.max(1, rho) * 10) / 10;
+    const who = fan ? "fan-speed" : "speed";
+    if (C.speed_law === "rate" && C.gov_tau < tauMin) { C.gov_tau = tauMin; moved.push(`the ${who} governor's time constant to ${tauMin} τ`); }
+    else if (C.speed_law === "prop" && C.gov_gain > gainMax) { C.gov_gain = gainMax; moved.push(`the ${who} governor's gain to ${gainMax}`); }
+  }
+  if (!moved.length) { note.hidden = true; return; }
+  note.textContent = `Beside the governor the release is worked out too roughly when faster: moved ${moved.join(", ")}. `
+    + `To compare with the governor off, use the same times there: a slower cut comes in later and protects less.`;
+  note.hidden = false;
+}
+function nudges() { govLagNudge(); relNudge(); }
 // Rung 95: what the governor held, and how long it sat at an edge of what the engine can burn.
 function govFor(r) {
   if (!r.governor) return "off: the fuel ramps between the ends";
@@ -3266,7 +3292,7 @@ function wire() {
   for (const k of CTL_SW) $("ctl-" + k).addEventListener("change", () => {
     C[k] = $("ctl-" + k).checked ? 1 : 0;
     if (k === "redline_on" && !C.redline_on) C.gov_lag_on = 0;   // the lag belongs to the limiter
-    if (["gov_lag_on", "govern", "redline_on"].includes(k)) govLagNudge();
+    if (["gov_lag_on", "govern", "redline_on", "release_on"].includes(k)) nudges();
     showSettings(); scheduleCtl();
   });
   hpWire("ctl", () => C, () => scheduleCtl());
@@ -3288,12 +3314,12 @@ function wire() {
   $("mode-controls").addEventListener("click", enterControls);
   // Rung 93's metal readout on the slam.
   for (const t of TECH) cclick("ctl-mtech-" + t, () => { C.metal_tech = t; });
-  for (const h of ["tt4", "thrust", "speed"]) cclick("ctl-hold-" + h, () => { C.hold = h; if (h === "tt4") C.hold_cap = 0; govLagNudge(); });
+  for (const h of ["tt4", "thrust", "speed"]) cclick("ctl-hold-" + h, () => { C.hold = h; if (h === "tt4") C.hold_cap = 0; nudges(); });
   // Rung 95: the speed governor's law.
-  cclick("ctl-slaw-rate", () => { C.speed_law = "rate"; govLagNudge(); });
-  cclick("ctl-slaw-prop", () => { C.speed_law = "prop"; govLagNudge(); });
+  cclick("ctl-slaw-rate", () => { C.speed_law = "rate"; nudges(); });
+  cclick("ctl-slaw-prop", () => { C.speed_law = "prop"; nudges(); });
   // Rung 96: where a governed thrust is read from (the metal cap is not built beside an inferred thrust).
-  for (const k of ["true", "epr", "n1"]) cclick("ctl-by-" + k, () => { C.thrust_by = k; if (k !== "true") C.hold_cap = 0; govLagNudge(); });
+  for (const k of ["true", "epr", "n1"]) cclick("ctl-by-" + k, () => { C.thrust_by = k; if (k !== "true") C.hold_cap = 0; nudges(); });
   // Rung 98: where the control's tables are made.
   for (const a of ["design", "flight"]) cclick("ctl-tat-" + a, () => { C.table_at = a; });
   // Rung 99: how a design-flight table is corrected for flight speed.
