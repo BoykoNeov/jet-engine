@@ -1,0 +1,64 @@
+sched         flow/press att 0.02 rel  0.1: page 126 proto 126 pts, 0 differ
+sched         flow/press att 0.02 rel  0.8: page 126 proto 126 pts, 0 differ
+sched         flow/press att  0.1 rel  0.1: page 126 proto 126 pts, 0 differ
+sched         flow/press att  0.2 rel 0.05: page 126 proto 126 pts, 0 differ
+sched         press/flow att 0.02 rel  0.1: page 126 proto 126 pts, 0 differ
+sched         press/flow att 0.02 rel  0.8: page 126 proto 126 pts, 0 differ
+sched         press/flow att  0.1 rel  0.1: page 126 proto 126 pts, 0 differ
+sched         press/flow att  0.2 rel 0.05: page 126 proto 126 pts, 0 differ
+sched         tilted     att 0.02 rel  0.1: page 126 proto 126 pts, 0 differ
+sched         tilted     att 0.02 rel  0.8: page 126 proto 126 pts, 0 differ
+sched         tilted     att  0.1 rel  0.1: page 126 proto 126 pts, 0 differ
+sched         tilted     att  0.2 rel 0.05: page 126 proto 126 pts, 0 differ
+sched         flat-lp    att 0.02 rel  0.1: page 126 proto 126 pts, 0 differ
+sched         flat-lp    att 0.02 rel  0.8: page 126 proto 126 pts, 0 differ
+sched         flat-lp    att  0.1 rel  0.1: page 126 proto 126 pts, 0 differ
+sched         flat-lp    att  0.2 rel 0.05: page 126 proto 126 pts, 0 differ
+floor         flow/press att 0.02 rel  0.1: page 126 proto 126 pts, 0 differ
+floor         flow/press att 0.02 rel  0.8: page 126 proto 126 pts, 0 differ
+floor         flow/press att  0.1 rel  0.1: page 126 proto 126 pts, 0 differ
+floor         flow/press att  0.2 rel 0.05: page 126 proto 126 pts, 0 differ
+floor         press/flow att 0.02 rel  0.1: page 126 proto 126 pts, 0 differ
+floor         press/flow att 0.02 rel  0.8: page 126 proto 126 pts, 0 differ
+floor         press/flow att  0.1 rel  0.1: page 126 proto 126 pts, 0 differ
+floor         press/flow att  0.2 rel 0.05: page 126 proto 126 pts, 0 differ
+floor         tilted     att 0.02 rel  0.1: page 126 proto 126 pts, 0 differ
+floor         tilted     att 0.02 rel  0.8: page 126 proto 126 pts, 0 differ
+floor         tilted     att  0.1 rel  0.1: page 126 proto 126 pts, 0 differ
+floor         tilted     att  0.2 rel 0.05: page 126 proto 126 pts, 0 differ
+floor         flat-lp    att 0.02 rel  0.1: page 51 proto 51 pts, 0 differ (proto STOP rk s=1.000: rung-49 phi floor 0.7500 on the LP spool is UNREACHABLE at nu=(0.7331,0.7254) -- no fuel this side of flame-out restores it. Lower the floor (it must sit below the running-line phi).)
+floor         flat-lp    att 0.02 rel  0.8: page 51 proto 51 pts, 0 differ (proto STOP rk s=1.000: rung-49 phi floor 0.7500 on the LP spool is UNREACHABLE at nu=(0.7331,0.7254) -- no fuel this side of flame-out restores it. Lower the floor (it must sit below the running-line phi).)
+floor         flat-lp    att  0.1 rel  0.1: page 117 proto 117 pts, 0 differ (proto STOP rk s=2.320: rung-49 phi floor 0.7500 on the LP spool is UNREACHABLE at nu=(0.7325,0.7247) -- no fuel this side of flame-out restores it. Lower the floor (it must sit below the running-line phi).)
+floor         flat-lp    att  0.2 rel 0.05: page 126 proto 126 pts, 0 differ
+both+redline  flow/press att 0.02 rel  0.1: page 126 proto 126 pts, 0 differ
+both+redline  flow/press att 0.02 rel  0.8: page 126 proto 126 pts, 0 differ
+both+redline  flow/press att  0.1 rel  0.1: page 126 proto 126 pts, 0 differ
+both+redline  flow/press att  0.2 rel 0.05: page 126 proto 126 pts, 0 differ
+both+redline  press/flow att 0.02 rel  0.1: page 126 proto 126 pts, 0 differ
+both+redline  press/flow att 0.02 rel  0.8: page 126 proto 126 pts, 0 differ
+both+redline  press/flow att  0.1 rel  0.1: page 126 proto 126 pts, 0 differ
+both+redline  press/flow att  0.2 rel 0.05: page 126 proto 126 pts, 0 differ
+both+redline  tilted     att 0.02 rel  0.1: page 126 proto 126 pts, 0 differ
+both+redline  tilted     att 0.02 rel  0.8: page 126 proto 126 pts, 0 differ
+both+redline  tilted     att  0.1 rel  0.1: page 126 proto 126 pts, 0 differ
+both+redline  tilted     att  0.2 rel 0.05: page 126 proto 126 pts, 0 differ
+both+redline  flat-lp    att 0.02 rel  0.1: page 51 proto 51 pts, 0 differ (proto STOP rk s=1.000: rung-49 phi floor 0.7500 on the LP spool is UNREACHABLE at nu=(0.7331,0.7254) -- no fuel this side of flame-out restores it. Lower the floor (it must sit below the running-line phi).)
+both+redline  flat-lp    att 0.02 rel  0.8: page 51 proto 51 pts, 0 differ (proto STOP rk s=1.000: rung-49 phi floor 0.7500 on the LP spool is UNREACHABLE at nu=(0.7331,0.7254) -- no fuel this side of flame-out restores it. Lower the floor (it must sit below the running-line phi).)
+both+redline  flat-lp    att  0.1 rel  0.1: page 117 proto 117 pts, 0 differ (proto STOP rk s=2.320: rung-49 phi floor 0.7500 on the LP spool is UNREACHABLE at nu=(0.7325,0.7247) -- no fuel this side of flame-out restores it. Lower the floor (it must sit below the running-line phi).)
+both+redline  flat-lp    att  0.2 rel 0.05: page 126 proto 126 pts, 0 differ
+floor decel   flow/press att 0.02 rel  0.1: page 126 proto 126 pts, 0 differ
+floor decel   flow/press att 0.02 rel  0.8: page 126 proto 126 pts, 0 differ
+floor decel   flow/press att  0.1 rel  0.1: page 126 proto 126 pts, 0 differ
+floor decel   flow/press att  0.2 rel 0.05: page 126 proto 126 pts, 0 differ
+floor decel   press/flow att 0.02 rel  0.1: page 126 proto 126 pts, 0 differ
+floor decel   press/flow att 0.02 rel  0.8: page 126 proto 126 pts, 0 differ
+floor decel   press/flow att  0.1 rel  0.1: page 126 proto 126 pts, 0 differ
+floor decel   press/flow att  0.2 rel 0.05: page 126 proto 126 pts, 0 differ
+floor decel   tilted     att 0.02 rel  0.1: page 126 proto 126 pts, 0 differ
+floor decel   tilted     att 0.02 rel  0.8: page 126 proto 126 pts, 0 differ
+floor decel   tilted     att  0.1 rel  0.1: page 126 proto 126 pts, 0 differ
+floor decel   tilted     att  0.2 rel 0.05: page 126 proto 126 pts, 0 differ
+floor decel   flat-lp    att 0.02 rel  0.1: page 126 proto 126 pts, 0 differ
+floor decel   flat-lp    att 0.02 rel  0.8: page 126 proto 126 pts, 0 differ
+floor decel   flat-lp    att  0.1 rel  0.1: page 126 proto 126 pts, 0 differ
+floor decel   flat-lp    att  0.2 rel 0.05: page 126 proto 126 pts, 0 differ

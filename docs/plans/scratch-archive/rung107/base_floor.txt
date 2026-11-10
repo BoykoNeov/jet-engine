@@ -1,0 +1,21 @@
+floor design (density 1.00) thrust      : rung95 instant 1.15e-4 (126 pts); lagged 0.1/0.4:1.9e-5 0.2/0.4:1.0e-5 0.4/0.4:5.5e-6
+floor design (density 1.00) EPR         : rung95 instant 2.52e-5 (126 pts); lagged 0.1/0.4:2.4e-5 0.2/0.4:1.7e-5 0.4/0.4:9.0e-6
+floor design (density 1.00) HP rate .1  : rung95 instant 1.36e-4 (126 pts); lagged 0.1/0.4:1.7e-5 0.2/0.4:7.5e-6 0.4/0.4:8.1e-6
+floor design (density 1.00) HP prop 10  : rung95 instant 3.36e-4 (126 pts); lagged 0.1/0.4:2.2e-5 0.2/0.4:1.1e-5 0.4/0.4:1.2e-5
+floor design (density 1.00) N1 rate .15 : rung95 instant 2.49e-4 (126 pts); lagged 0.1/0.4:6.3e-5 0.2/0.4:3.1e-5 0.4/0.4:1.6e-5
+floor design (density 1.00) N1 prop 7   : rung95 instant 1.07e-4 (126 pts); lagged 0.1/0.4:3.3e-5 0.2/0.4:1.8e-5 0.4/0.4:9.4e-6
+floor thin (density 0.45) thrust      : rung95 instant 3.55e-5 (126 pts); lagged 0.1/0.4:2.4e-5 0.2/0.4:6.0e-6 0.4/0.4:1.9e-6
+floor thin (density 0.45) EPR         : rung95 instant 1.17e-4 (126 pts); lagged 0.1/0.4:5.7e-5 0.2/0.4:3.9e-5 0.4/0.4:4.3e-5
+floor thin (density 0.45) HP rate .1  : rung95 instant 3.63e-5 (126 pts); lagged 0.1/0.4:3.1e-5 0.2/0.4:1.7e-5 0.4/0.4:2.4e-5
+floor thin (density 0.45) HP prop 10  : rung95 instant 4.36e-5 (126 pts); lagged 0.1/0.4:4.6e-5 0.2/0.4:3.8e-5 0.4/0.4:6.2e-5
+floor thin (density 0.45) N1 rate .15 : rung95 instant 3.34e-5 (126 pts); lagged 0.1/0.4:3.3e-5 0.2/0.4:3.5e-5 0.4/0.4:1.3e-5
+floor thin (density 0.45) N1 prop 7   : rung95 instant 8.40e-5 (126 pts); lagged 0.1/0.4:7.2e-5 0.2/0.4:1.9e-5 0.4/0.4:3.3e-5
+floor dense (density 1.31) thrust      : rung95 instant 4.67e-4 (126 pts); lagged 0.1/0.4:6.4e-5 0.2/0.4:3.2e-5 0.4/0.4:1.6e-5
+floor dense (density 1.31) EPR         : rung95 instant 5.64e-4 (126 pts); lagged 0.1/0.4:1.3e-4 0.2/0.4:6.6e-5 0.4/0.4:3.4e-5
+floor dense (density 1.31) HP rate .1  : rung95 instant 6.21e-6 (126 pts); lagged 0.1/0.4:9.6e-6 0.2/0.4:4.9e-6 0.4/0.4:5.1e-6
+floor dense (density 1.31) HP prop 10  : rung95 instant 3.60e-4 (126 pts); lagged 0.1/0.4:5.0e-5 0.2/0.4:2.6e-5 0.4/0.4:1.8e-5
+floor dense (density 1.31) N1 rate .15 : rung95 instant 5.39e-5 (126 pts); lagged 0.1/0.4:6.0e-5 0.2/0.4:3.2e-5 0.4/0.4:1.8e-5
+floor dense (density 1.31) N1 prop 7   : rung95 instant 1.30e-4 (126 pts); lagged 0.1/0.4:3.4e-5 0.2/0.4:1.7e-5 0.4/0.4:8.8e-6
+floor design OPEN (rung 52, governor off): 0.02/0.1:3.2e-5 0.02/0.8:3.2e-5 0.1/0.4:5.5e-6
+floor thin OPEN (rung 52, governor off): 0.02/0.1:4.3e-10 0.02/0.8:4.3e-10 0.1/0.4:4.3e-10
+floor dense OPEN (rung 52, governor off): 0.02/0.1:4.8e-5 0.02/0.8:4.8e-5 0.1/0.4:1.7e-5

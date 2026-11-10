@@ -1,0 +1,21 @@
+sched design (density 1.00) thrust      : rung95 instant 3.28e-5 (126 pts); lagged 0.1/0.4:4.2e-5 0.2/0.4:2.1e-5 0.4/0.4:1.1e-5
+sched design (density 1.00) EPR         : rung95 instant 5.92e-5 (126 pts); lagged 0.1/0.4:6.8e-5 0.2/0.4:3.4e-5 0.4/0.4:1.7e-5
+sched design (density 1.00) HP rate .1  : rung95 instant 2.35e-5 (126 pts); lagged 0.1/0.4:5.4e-5 0.2/0.4:1.0e-5 0.4/0.4:4.9e-6
+sched design (density 1.00) HP prop 10  : rung95 instant 2.33e-5 (126 pts); lagged 0.1/0.4:8.9e-5 0.2/0.4:7.6e-6 0.4/0.4:4.2e-6
+sched design (density 1.00) N1 rate .15 : rung95 instant 2.17e-5 (126 pts); lagged 0.1/0.4:2.1e-5 0.2/0.4:9.6e-6 0.4/0.4:4.7e-6
+sched design (density 1.00) N1 prop 7   : rung95 instant 2.97e-5 (126 pts); lagged 0.1/0.4:2.8e-5 0.2/0.4:1.3e-5 0.4/0.4:6.5e-6
+sched thin (density 0.45) thrust      : rung95 instant 9.07e-6 (126 pts); lagged 0.1/0.4:4.3e-5 0.2/0.4:3.8e-5 0.4/0.4:1.1e-5
+sched thin (density 0.45) EPR         : rung95 instant 1.32e-5 (126 pts); lagged 0.1/0.4:6.1e-5 0.2/0.4:3.0e-5 0.4/0.4:3.2e-5
+sched thin (density 0.45) HP rate .1  : rung95 instant 3.70e-5 (126 pts); lagged 0.1/0.4:1.4e-4 0.2/0.4:7.5e-5 0.4/0.4:3.8e-5
+sched thin (density 0.45) HP prop 10  : rung95 instant 6.03e-6 (126 pts); lagged 0.1/0.4:1.2e-4 0.2/0.4:3.1e-5 0.4/0.4:1.9e-5
+sched thin (density 0.45) N1 rate .15 : rung95 instant 9.98e-6 (126 pts); lagged 0.1/0.4:4.6e-5 0.2/0.4:2.2e-5 0.4/0.4:1.0e-5
+sched thin (density 0.45) N1 prop 7   : rung95 instant 1.35e-5 (126 pts); lagged 0.1/0.4:6.0e-5 0.2/0.4:2.8e-5 0.4/0.4:1.9e-5
+sched dense (density 1.31) thrust      : rung95 instant 6.39e-5 (126 pts); lagged 0.1/0.4:2.5e-5 0.2/0.4:1.4e-5 0.4/0.4:7.5e-6
+sched dense (density 1.31) EPR         : rung95 instant 2.95e-5 (126 pts); lagged 0.1/0.4:5.7e-5 0.2/0.4:2.9e-5 0.4/0.4:1.5e-5
+sched dense (density 1.31) HP rate .1  : rung95 instant 1.03e-4 (126 pts); lagged 0.1/0.4:5.5e-5 0.2/0.4:2.7e-5 0.4/0.4:1.4e-5
+sched dense (density 1.31) HP prop 10  : rung95 instant 4.81e-5 (126 pts); lagged 0.1/0.4:4.8e-5 0.2/0.4:3.3e-5 0.4/0.4:2.7e-5
+sched dense (density 1.31) N1 rate .15 : rung95 instant 2.14e-5 (126 pts); lagged 0.1/0.4:1.1e-5 0.2/0.4:4.1e-6 0.4/0.4:6.2e-6
+sched dense (density 1.31) N1 prop 7   : rung95 instant 3.87e-6 (126 pts); lagged 0.1/0.4:5.5e-6 0.2/0.4:6.5e-6 0.4/0.4:1.8e-6
+sched design OPEN (rung 52, governor off): 0.02/0.1:6.9e-5 0.02/0.8:6.9e-5 0.1/0.4:1.4e-5
+sched thin OPEN (rung 52, governor off): 0.02/0.1:1.1e-4 0.02/0.8:1.1e-4 0.1/0.4:2.2e-5
+sched dense OPEN (rung 52, governor off): 0.02/0.1:6.3e-5 0.02/0.8:8.7e-5 0.1/0.4:1.8e-5
