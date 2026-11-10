@@ -23,3 +23,11 @@ script printed REACHABILITY, step-check gaps or the ledger's miss only (anchor `
 - `edge16.rs` → `edge16_*.txt` — the same past the slider: attack 0.2 / 0.4 × release 1.0 / 1.6.
 - `ledger.rs` → `ledger.txt` — D1's per-phase miss on recorded points, the schedule (four maps) and the floor (three),
   at steps 0.02 and 0.01 — the measurement the gate's bars were frozen from.
+- `score.rs` → `score.txt` — the SCORING on the shipped code (anchor § 3): H1–H6 cell by cell with the vacuity rules
+  written in its header before the first run, then the reported quantities (crossing times, D1's let-through and
+  withheld fuel, floor + schedule + redline, the other laws at release 0.4, the floor cells with the governor OFF, a
+  longer settle, cost).
+- `crash.rs` → `crash.txt` — the crash map: 1 000 random governed requests with the release on (seed 13), through
+  `sandbox::call`, each admitted run re-read through the library to count releases and re-attacks.
+- `sagcause.rs` → `sagcause.txt` — off protocol: which edge of the lag makes the sag (attack and release varied
+  separately, steps 0.02 and 0.005) — the decomposition the headline rests on.

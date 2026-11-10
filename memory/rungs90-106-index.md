@@ -1,6 +1,6 @@
 ---
 name: rungs90-106-index
-description: "Index of rungs 90-106 (loads, metal, governor, unchoke, tables, speed axis, below choke, airflow, afterburner, LP/HP turbine laws, governor beside the slow limiter): one process lesson per rung + the user's scope decisions per rung. Append new rungs of this family HERE, not in MEMORY.md (moved out 2026-11-10 at 19.6 KB)"
+description: "Index of rungs 90-106 (loads, metal, governor, unchoke, tables, speed axis, below choke, airflow, afterburner, LP/HP turbine laws, governor beside the slow limiter, the governor beside the realistic release): one process lesson per rung + the user's scope decisions per rung. Append new rungs of this family HERE, not in MEMORY.md (moved out 2026-11-10 at 19.6 KB)"
 metadata:
   node_type: memory
   type: project
@@ -28,6 +28,7 @@ Moved out of `MEMORY.md` on 2026-11-10, when the index reached 19.6 KB. Append n
 - [104](rung104-turbine-law.md) math-equal is not bit-equal where readings sit on kinks; re-ask a decision once its cost is measured
 - [105](rung105-hp-vane.md) re-ask scope before freezing; read the dear law once; classify a refusal at its source
 - [106](rung106-governor-lag.md) re-run a comparison claim on the same configurations; all-HIT ⇒ look past the grid
+- [107](rung107-governor-release.md) a HIT can rest on the wrong mechanism: split a two-edge device's edges; scope a comparison to the hold it ran on
 
 ## The user's decisions, per rung
 - [93/94](rung93-94-decisions.md) user 2026-10-16: two rungs, both framings, hold thrust or HP speed

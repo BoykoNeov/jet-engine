@@ -1,0 +1,69 @@
+  219    (releases per admitted run: 0)
+   51    (releases per admitted run: 1)
+  194  [governor_release] ran to the end
+   20  [governor_release] ran to the end (lean edge)
+   17  [governor_release] ran to the end (rich edge)
+   32  [governor_release] ran, stopped early
+    7  [governor_release] ran, stopped early (lean edge)
+    1  refused: At the final throttle (1150 K), holding HP speed: The HP shaft speed a
+    1  refused: At the final throttle (1350 K), holding HP speed: The HP shaft speed a
+    1  refused: At the final throttle (620 K): the engine has no steady operating poin
+    1  refused: At the final throttle (630 K), holding thrust: The thrust asked for (5
+    1  refused: At the final throttle (650 K): the engine has no steady operating poin
+    1  refused: At the final throttle (660 K), holding HP speed: The HP shaft speed as
+    1  refused: At the final throttle (680 K): the engine has no steady operating poin
+    1  refused: At the final throttle (700 K), the control holding the fan (LP shaft) 
+    1  refused: At the final throttle (730 K): the engine has no steady operating poin
+    1  refused: At the final throttle (760 K): the engine has no steady operating poin
+    1  refused: At the final throttle (770 K), holding thrust: The thrust asked for (9
+    1  refused: At the final throttle (800 K), holding HP speed: The HP shaft speed as
+    1  refused: At the final throttle (830 K): the engine has no steady operating poin
+    1  refused: At the final throttle (890 K), holding thrust: The thrust asked for (1
+    1  refused: At the final throttle (900 K), holding thrust: The thrust asked for (1
+    1  refused: At the final throttle (900 K): the engine has no steady operating poin
+    1  refused: At the starting throttle (1000 K): the engine has no steady operating 
+    1  refused: At the starting throttle (1010 K), holding HP speed: The HP shaft spee
+    1  refused: At the starting throttle (1110 K), holding HP speed: The HP shaft spee
+    1  refused: At the starting throttle (1180 K), holding HP speed: The HP shaft spee
+    1  refused: At the starting throttle (1210 K): the engine has no steady operating 
+    1  refused: At the starting throttle (1220 K): the engine has no steady operating 
+    1  refused: At the starting throttle (1250 K): the engine has no steady operating 
+    1  refused: At the starting throttle (620 K), holding thrust: The thrust asked for
+    1  refused: At the starting throttle (640 K): the engine has no steady operating p
+    2  refused: At the starting throttle (650 K), holding thrust: The thrust asked for
+    1  refused: At the starting throttle (660 K), holding HP speed: The HP shaft speed
+    1  refused: At the starting throttle (670 K), holding HP speed: The HP shaft speed
+    1  refused: At the starting throttle (680 K): the engine has no steady operating p
+    1  refused: At the starting throttle (700 K), holding thrust: The thrust asked for
+    2  refused: At the starting throttle (730 K), holding HP speed: The HP shaft speed
+    1  refused: At the starting throttle (740 K), holding thrust: The thrust asked for
+    1  refused: At the starting throttle (750 K), the control holding the fan (LP shaf
+    1  refused: At the starting throttle (750 K): the engine has no steady operating p
+    1  refused: At the starting throttle (760 K), holding thrust: The thrust asked for
+    1  refused: At the starting throttle (760 K): the engine has no steady operating p
+    1  refused: At the starting throttle (810 K), holding HP speed: The HP shaft speed
+    1  refused: At the starting throttle (810 K): the engine has no steady operating p
+    1  refused: At the starting throttle (840 K): the engine has no steady operating p
+    1  refused: At the starting throttle (850 K), the control holding the pressure rat
+    2  refused: At the starting throttle (900 K): the engine has no steady operating p
+    1  refused: At the starting throttle (940 K), holding HP speed: The HP shaft speed
+    1  refused: At the starting throttle (940 K), holding thrust: The thrust asked for
+  333  refused: Beside the governor the realistic release's attack time must be at lea
+   30  refused: Beside the realistic release the fan-speed governor's gain must be abo
+    2  refused: Beside the realistic release the fan-speed governor's time constant mu
+   75  refused: Beside the realistic release the speed governor's gain must be above 0
+    6  refused: Beside the realistic release the speed governor's time constant must b
+    1  refused: From the first moment the governor asks for more fuel than the acceler
+   36  refused: From the first moment the governor asks for more fuel than the stall f
+   21  refused: The acceleration schedule is read off this engine's own steady running
+    2  refused: The control's table, calibrated on the engine with the generator off: 
+   10  refused: The metal cap is not built beside a control that infers thrust: a capp
+   61  refused: The metal cap stops a burner that floats to hold thrust or speed. With
+  107  refused: With no turbine cooling the metal allows only about 990 K (1985 metals
+stop kinds: {"floor_unreachable": 39}
+0 panics; total 185.8 s, median 0.000 s, slowest 6.31 / 3.31 / 3.23 s
+slow 6.31 s: {"op":"controls","controls":{"govern":1,"hold":"thrust","speed_law":"rate","gov_tau":0.9,"gov_gain":45,"generator":"hp","generator_power":0.04,"hold_cap":1,"metal_on":1,"cool_vane":0.14,"cool_blade":0.03,"shape":"press/flow","lever":"both","bleed_mode":"valve","redline_on":0,"redline":1510,"release_on":1,"tau_att":0.32,"tau_rel":0.52,"thrust_by":"true","accel_on":1,"floor_on":0,"from":1200,"to":610,"ramp":0.18,"rho":2}}
+slow 3.31 s: {"op":"controls","controls":{"govern":1,"hold":"thrust","speed_law":"rate","gov_tau":0.3,"gov_gain":29,"generator":"hp","generator_power":0.065,"hold_cap":0,"metal_on":0,"cool_vane":0.01,"cool_blade":0.02,"shape":"flat-lp","lever":"both","bleed_mode":"valve","redline_on":1,"redline":1430,"release_on":1,"tau_att":0.22,"tau_rel":0.54,"thrust_by":"n1","accel_on":1,"floor_on":0,"from":910,"to":700,"ramp":1.2,"rho":0.9}}
+slow 3.23 s: {"op":"controls","controls":{"govern":1,"hold":"speed","speed_law":"rate","gov_tau":0.23,"gov_gain":38,"generator":"lp","generator_power":0.095,"hold_cap":0,"metal_on":0,"cool_vane":0.13,"cool_blade":0.09,"shape":"flow/press","lever":"both","bleed_mode":"schedule","redline_on":1,"redline":1570,"release_on":1,"tau_att":0.48,"tau_rel":0.9,"thrust_by":"n1","accel_on":0,"floor_on":1,"from":730,"to":860,"ramp":0.5,"rho":1.1}}
+slow 3.02 s: {"op":"controls","controls":{"govern":1,"hold":"speed","speed_law":"rate","gov_tau":0.97,"gov_gain":29,"generator":"hp","generator_power":0.05,"hold_cap":0,"metal_on":0,"cool_vane":0.09,"cool_blade":0.13,"shape":"press/flow","lever":"none","bleed_mode":"valve","redline_on":1,"redline":1530,"release_on":1,"tau_att":0.26,"tau_rel":0.92,"thrust_by":"n1","accel_on":1,"floor_on":1,"from":690,"to":1510,"ramp":0.54,"rho":0.6000000000000001}}
+slow 3.01 s: {"op":"controls","controls":{"govern":1,"hold":"thrust","speed_law":"rate","gov_tau":0.89,"gov_gain":49,"generator":"hp","generator_power":0.055,"hold_cap":0,"metal_on":0,"cool_vane":0,"cool_blade":0,"shape":"tilted","lever":"none","bleed_mode":"valve","redline_on":0,"redline":1580,"release_on":1,"tau_att":0.32,"tau_rel":0.86,"thrust_by":"true","accel_on":1,"floor_on":1,"from":600,"to":1440,"ramp":1.68,"rho":1.7000000000000002}}

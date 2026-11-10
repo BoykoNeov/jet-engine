@@ -38,20 +38,6 @@ for at s = 0 (rung 106's hot-start principle); the governor-off route keeps show
 rough 1–3e-4, scattered); refused in words beside the governor; switching governor / release moves an out-of-range knob
 to the limit with a note (rung 106's pattern); typed values meet the refusal. Governor off: rung 52's one-step floor.
 
-**BUILD STATUS (session paused by the user's "wrap up", 2026-11-10) — committed as WIP `9adfea2` (the user: "always
-commit"). The built page is NOT rebuilt (its gate fails until `build.ps1`), and the full gate has NOT run:**
-- Anchor COMMITTED + pushed (7b15c6b). Built since: `rust/src/governor_release.rs` (the frozen device), `lib.rs` entry,
-  `governor_lag.rs` (`Demand::try_fuel` → `pub(crate)`, nothing else), `sandbox_controls.rs` (`Route::GovernorRelease`,
-  `release_lag`/`gov_rel_der`/`gov_rel_step`, march/replay/stop/holders/route string, the old refusal LIFTED; new
-  refusals: attack < 0.2 / release < 0.1 (`GOV_REL_*`), speed laws past rung 106's edges, beside the exhaust sensor,
-  the floor asked for at s = 0; 4 check requests), `tests/sandbox_controls.rs` (route arm), `docs/sandbox/template.html`
-  (attack slider max 0.2 → 0.5, `ctl-relnudge` note, `relNudge()` + `nudges()`).
-- `rust/tests/rung107.rs`: 8 construction gates ALL PASS (`--test rung107`): open ramp ≡ rung 52 (64 runs), pre-
-  engagement ≡ rung 95, pinned trigger, ledger (worst 9.5e-4 schedule / 5.4e-3 floor — = ledger.txt), τ→0 (order ~0.96),
-  re-run, refusals. ⚠ `the_governed_lean_hold_holds_at_the_wall` is VACUOUS (0 holds of 126) — find a holding case or drop it.
-- NEXT: score H1–H6 (a `score.rs` in the probe crate on the SHIPPED `gr::march`; archive it), pin in rung107.rs; crash
-  map 1 000 (rung 106's crash.rs); panel `print_governor_release_table` + golden + cli_golden/claude_md_reference;
-  browser check for the nudge in `rust/sandbox-wasm/browser.mjs`; `build.ps1`; spec, CLAUDE.md row (≤350 B) + scope/
-  families lines, sandbox-plan, sandbox README (line ~147 governor paragraph); process-lesson memory; gate; commit+push.
-- `W:\temp\claude\rung107-probe` (56 MB) KEPT: the scoring step needs the crate; its scripts/outputs are already archived
-  in `docs/plans/scratch-archive/rung107/`. Delete it when the rung ships.
+**SHIPPED 2026-11-10** (this session): scored 38 HIT / 10 MISS / 12 VACUOUS; headline the slow CUT's sag (thrust hold
+only); lean-hold gate dropped (0 holds); crash map clean; panel, browser check, spec, CLAUDE.md row, README, sandbox
+plan § 44 done. Process lessons: [[rung107-governor-release]]. Scratch crate deleted after the gate.

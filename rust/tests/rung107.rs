@@ -235,24 +235,136 @@ fn the_page_refuses_in_words() {
     assert!(build(&ControlsSettings { govern: false, ..flat }).is_ok());
 }
 
+// (The governed lean hold — rung 106's minimum-fuel stop on this path — never held in the admitted region: 0 of 1 344
+// runs in anchor § 0 G3′ and 0 of the crash map's 270 admitted runs. A test of it here had nothing to hold, so it is not
+// shipped; spec § 2 says so.)
+
+// =============================================================================================
+// SCORED (anchor § 3 — the scoring is `docs/plans/scratch-archive/rung107/score.rs`; pinned at a subset)
+// =============================================================================================
+
+/// The thrust share `(F − F_start)/(F_end − F_start)` at each point.
+fn shares(sv: &ControlsSolver, p: &[FuelPoint]) -> Vec<f64> {
+    let (f0, f1) = (gv::thrust(&sv.start), gv::thrust(&sv.end));
+    p.iter().map(|x| (gv::thrust(&sv.reread(x).unwrap().base) - f0) / (f1 - f0)).collect()
+}
+/// The largest fall of the thrust share below its running maximum, from the move's end (by INDEX) on.
+fn drawdown(s: &ControlsSettings, fr: &[f64]) -> f64 {
+    let k0 = (s.ramp / DS).round_ties_even() as usize;
+    let (mut hi, mut dd) = (f64::NEG_INFINITY, 0.0f64);
+    for &v in &fr[k0..] {
+        hi = hi.max(v);
+        dd = dd.max(hi - v);
+    }
+    dd
+}
+fn instant(sv: &ControlsSolver) -> Vec<FuelPoint> {
+    gv::march(&sv.core.fuel, &sv.flight, sv.governor.as_ref().unwrap(), &sv.limiters(), None,
+              (sv.start.nu_lp, sv.start.nu_hp), sv.settings.s_end(), DS).0
+}
+
 #[test]
-fn the_governed_lean_hold_holds_at_the_wall() {
-    // The minimum-fuel stop on the governed path: wherever it holds, the fuel runs and a hair leaner does not.
-    let s = rel_on(ControlsSettings { hold: Hold::Thrust, floor_on: true, from: 1400.0, to: 900.0, tau_rel: 1.6, ..d() });
-    let sv = build(&ControlsSettings { release_on: false, ..s }).unwrap();
-    let ft = &sv.core.fuel;
-    let lim = FuelLimiters { lag: Some(AsymmetricLag::new(0.2, 1.6)), ..sv.limiters() };
-    let (pts, marks) = gr::march(ft, &sv.flight, Demand::Governor(sv.governor.as_ref().unwrap()), &lim, None,
-                                 (sv.start.nu_lp, sv.start.nu_hp), s.s_end(), DS);
-    eprintln!("lean holds: {} of {} points, {} points", marks.iter().filter(|m| m.leg == Leg::MinFuel).count(), marks.len(),
-              pts.len());
-    for (p, m) in pts.iter().zip(&marks) {
-        if m.leg == Leg::MinFuel {
-            assert!(ft.try_instant_fuel(&sv.flight, p.nu_lp, p.nu_hp, p.mf).is_ok());
-            assert!(ft.try_instant_fuel(&sv.flight, p.nu_lp, p.nu_hp, p.mf * (1.0 - 1e-9)).is_err(), "at s={}", p.s);
+fn h6_the_governed_thrust_sags_beside_the_slow_release_and_neither_comparison_does() {
+    // H6 (16 of 16 HIT), the thrust hold only: drawdown after the move > 0.002 governed; open and instant never fall that
+    // far. The redline is OFF — no temperature-limiter lag (rung 106's) is needed. The anchor's REASON (the release pays
+    // back the stored cut) is corrected by the next test: at the page's attack it is mostly the attack's let-through.
+    for shape in [0, FLAT_LP] {
+        let s = rel_on(ControlsSettings { shape, hold: Hold::Thrust, accel_on: true, ..d() });
+        let sv = build(&ControlsSettings { release_on: false, ..s }).unwrap();
+        let inst = drawdown(&s, &shares(&sv, &instant(&sv)));
+        assert!(inst <= 0.002, "shape {shape}: instant {inst}");
+        let mut last = 0.0;
+        for tr in [0.2, 1.6] {
+            let gov = drawdown(&s, &shares(&sv, &direct(&s, 0.2, tr, false, DS)));
+            let open = drawdown(&s, &shares(&sv, &direct(&s, 0.2, tr, true, DS)));
+            assert!(gov > 0.002 && open <= 0.002, "shape {shape} tau_rel {tr}: governed {gov}, open {open}");
+            assert!(gov > last, "the sag deepens with the release time");
+            last = gov;
         }
     }
 }
 
-#[allow(dead_code)]
-fn thrust_of(sv: &ControlsSolver, p: &FuelPoint) -> f64 { gv::thrust(&sv.reread(p).unwrap().base) }
+#[test]
+fn the_sag_is_mostly_the_attacks_let_through_and_the_release_alone_also_makes_one() {
+    // Reported off protocol (`scratch-archive/rung107/sagcause.txt`), pinned because the headline rests on it. Step 0.005
+    // (the fast lags are rough at 0.02). Each edge ALONE sags; the two do not add.
+    let s = rel_on(ControlsSettings { hold: Hold::Thrust, accel_on: true, ..d() });
+    let sv = build(&ControlsSettings { release_on: false, ..s }).unwrap();
+    let ds = 0.005;
+    let sag = |ta: f64, tr: f64| {
+        let p = direct(&s, ta, tr, false, ds);
+        let fr = shares(&sv, &p);
+        let k0 = (s.ramp / ds).round_ties_even() as usize;
+        let (mut hi, mut dd) = (f64::NEG_INFINITY, 0.0f64);
+        for &v in &fr[k0..] {
+            hi = hi.max(v);
+            dd = dd.max(hi - v);
+        }
+        dd
+    };
+    let (attack_only, release_only, both) = (sag(0.2, 0.005), sag(0.005, 1.6), sag(0.2, 0.4));
+    eprintln!("attack alone {attack_only:.4}, release alone {release_only:.4}, both {both:.4}");
+    assert!(sag(0.005, 0.005) <= 0.002, "both edges instant: rung 95's");
+    assert!(release_only > 0.002, "the release alone sags");
+    assert!(attack_only > 0.02 && attack_only > 0.85 * both && attack_only < both, "the attack carries most of it");
+}
+
+#[test]
+fn h1_the_governor_cuts_deeper_and_earlier_and_the_deepest_cut_reads_the_release() {
+    // H1 (8 of 8 HIT); and the anchor's "max g is τ_rel-free" is NOT exact: the deepest cut sits at the crossing, whose
+    // step's inner stages already read τ_rel (a hair, ~1e-3 relative).
+    let s = rel_on(ControlsSettings { hold: Hold::Thrust, accel_on: true, ..d() });
+    let max_g = |p: &[FuelPoint]| p.iter().map(|x| lag(x).0).fold(0.0, f64::max);
+    let first = |p: &[FuelPoint]| p.iter().position(|x| lag(x).1 > 0.0).unwrap();
+    let (g, o) = (direct(&s, 0.2, 0.4, false, DS), direct(&s, 0.2, 0.4, true, DS));
+    assert!(max_g(&g) > 2.0 * max_g(&o), "{} vs {}", max_g(&g), max_g(&o));
+    assert!(first(&g) < first(&o));
+    let g16 = direct(&s, 0.2, 1.6, false, DS);
+    assert_ne!(max_g(&g).to_bits(), max_g(&g16).to_bits());
+    assert!((max_g(&g16) / max_g(&g) - 1.0).abs() < 1e-2);
+}
+
+#[test]
+fn h4_h5_on_the_floor_both_spools_minima_come_before_the_release() {
+    // H4 (6 of 6 HIT): the LP minimum is τ_rel-free, below the floor, while the floor cuts, before the first crossing.
+    // H5 (6 of 6 MISS): the HP minimum ALSO comes before the crossing governed, so it is τ_rel-free too — and with the
+    // governor OFF at the same attack it comes AFTER the crossing and rises with τ_rel (rung 52 § 4): the governor's.
+    for shape in 0..3 {
+        let s = rel_on(ControlsSettings { shape, hold: Hold::Thrust, floor_on: true, ..d() });
+        let argmin = |p: &[FuelPoint], f: fn(&FuelPoint) -> f64| {
+            (0..p.len()).min_by(|&i, &j| f(&p[i]).total_cmp(&f(&p[j]))).unwrap()
+        };
+        let gov: Vec<Vec<FuelPoint>> = [0.2, 1.6].iter().map(|&tr| direct(&s, 0.2, tr, false, DS)).collect();
+        for r in &gov {
+            let k = crossing(r).unwrap();
+            let (il, ih) = (argmin(r, |x| x.phi_lp), argmin(r, |x| x.phi_hp));
+            assert!(il < k && ih < k, "shape {shape}: LP min {il}, HP min {ih}, crossing {k}");
+            assert!(r[il].phi_lp < 0.75 && lag(&r[il]).1 > 0.0);
+        }
+        assert_eq!(gov[0][argmin(&gov[0], |x| x.phi_lp)].phi_lp.to_bits(), gov[1][argmin(&gov[1], |x| x.phi_lp)].phi_lp.to_bits());
+        assert_eq!(gov[0][argmin(&gov[0], |x| x.phi_hp)].phi_hp.to_bits(), gov[1][argmin(&gov[1], |x| x.phi_hp)].phi_hp.to_bits());
+        let open: Vec<Vec<FuelPoint>> = [0.2, 1.6].iter().map(|&tr| direct(&s, 0.2, tr, true, DS)).collect();
+        let (h0, h1) = (argmin(&open[0], |x| x.phi_hp), argmin(&open[1], |x| x.phi_hp));
+        assert!(h0 > crossing(&open[0]).unwrap() && h1 > crossing(&open[1]).unwrap(), "shape {shape}");
+        assert!(open[1][h1].phi_hp > open[0][h0].phi_hp, "shape {shape}: open, a slower release debits the HP less");
+    }
+}
+
+#[test]
+fn h2_the_fastest_release_beats_the_instant_schedule_and_a_slower_one_does_not() {
+    // H2 vs instant: 8 HIT, 4 MISS (every MISS at τ_rel 0.2 — the attack's let-through arrives first), 4 VACUOUS (τ_rel 1.6
+    // never reaches 95 % in the slam's 2.5).
+    let t95 = |p: &[FuelPoint], fr: &[f64]| {
+        let k = fr.iter().position(|&x| x >= 0.95)?;
+        let (s0, s1, a, b) = (p[k - 1].s, p[k].s, fr[k - 1], fr[k]);
+        Some(s0 + (s1 - s0) * (0.95 - a) / (b - a))
+    };
+    let s = rel_on(ControlsSettings { hold: Hold::Thrust, accel_on: true, ..d() });
+    let sv = build(&ControlsSettings { release_on: false, ..s }).unwrap();
+    let i = instant(&sv);
+    let xi = t95(&i, &shares(&sv, &i)).unwrap();
+    let x = |tr: f64| { let p = direct(&s, 0.2, tr, false, DS); t95(&p, &shares(&sv, &p)) };
+    assert!(x(0.2).unwrap() < xi);
+    assert!(x(0.4).unwrap() > xi && x(0.8).unwrap() > x(0.4).unwrap());
+    assert!(x(1.6).is_none());
+}

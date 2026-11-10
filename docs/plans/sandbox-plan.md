@@ -2277,3 +2277,24 @@ leftover would take the fuel below what the engine burns.
   figures as build-time records (e.g. rung 99's 0.18 % at Mach 1.4, now 0.19 in one column); left as records.
   **The metal cap: LEAVE IT (user, 2026-11-10).** `CAP_TOL_REL` stays at relative 1e-9 — no measured cost, nothing
   would move; not to be re-raised.
+
+## 44. The governor beside the realistic release — rung 107 (2026-11-10) — not a slice
+
+Rung 107 (`docs/rung107-spec.md`) lifts rung 95/106's refusal of *Govern during the move* beside *Realistic release*
+(rung 52) on the Controls view (`route: "governor_release"`): the schedule's and the floor's cut becomes a state
+measured off the governor's fuel, fast in and slow out; the redline and the metal cap stay instant on top. The top strip
+marks the lag's cut as before.
+* **The user's choices:** rung 52 as built; every hold; a run whose governor already asks for more than the schedule or
+  the floor allows at the start REFUSED in words (the governor-off route keeps showing it); beside rung 106's lag, the
+  slow valve or the slow exhaust sensor refused (two lags).
+* **The knobs' floors beside the governor:** cutting in ≥ 0.2 τ, letting go ≥ 0.1 τ (the step check, measured at three
+  flights; rung 52's open route keeps one step), each speed law at rung 106's edge. Switching the governor or the
+  release on (or the hold, law or reading with both on) moves an out-of-range knob to its floor and says so under the
+  release (`ctl-relnudge`, the user's "limit and nudge"), with a word that a governor-off comparison should use the same
+  times. The cutting-in slider now reaches 0.5 τ.
+* **What moves:** nothing that ran before (the combination was refused); the browser check
+  `the_release_beside_the_governor_nudges_the_attack_and_runs_the_governed_release_route` is new.
+* **What the page shows (holding thrust):** the thrust climbs, then sags after the move — mostly because the slow
+  cutting-in lets fuel through first (spec § 4); on the plain ramp or the instant limiter it never falls.
+* **Cost:** ~0.2–0.3 s natively, at or under rung 95's governed run; crash map 1 000 requests, 0 panics, slowest 6.3 s
+  natively.

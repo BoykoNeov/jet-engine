@@ -565,6 +565,18 @@ try {
               r.holder.includes('lag')]; })()`);
   check('the_lag_beside_the_governor_nudges_the_gain_and_runs_the_lagged_route', lOn && lr[0] === 'governor_lag' && lr[1] === 10
         && lr[2] === '10' && lr[3] === false && lr[4] && lr[5], JSON.stringify([lOn, lr]));
+  // Rung 107: govern thrust with the acceleration schedule at the page's default attack (0.02), then tick the realistic
+  // release -- the page moves the attack to its floor beside the governor (0.2) and says so, and the run takes the
+  // governed-release route with the lag holding the fuel somewhere.
+  await ev(`window.sandbox.controls({hold: 'thrust', speed_law: 'rate', gov_gain: 20, redline_on: 0, gov_lag_on: 0, accel_on: 1, release_on: 0, tau_att: 0.02, tau_rel: 0.1}).then(r => r.run)`);
+  await ev(`(() => { const e = document.getElementById('ctl-release_on'); e.checked = true; e.dispatchEvent(new Event('change', {bubbles: true})); })()`);
+  const relOn = await waitFor(`window.sandbox.ctlState === 'done' && window.sandbox.last.controls && window.sandbox.last.controls.release_on === 1`, 60000);
+  const relR = await ev(`(() => { const r = window.sandbox.last, n = document.getElementById('ctl-relnudge');
+      return [r.route, r.controls.tau_att, document.getElementById('ctl-tau_att').value, n.hidden, /cutting-in time to 0.2/.test(n.textContent),
+              r.holder.includes('lag')]; })()`);
+  check('the_release_beside_the_governor_nudges_the_attack_and_runs_the_governed_release_route', relOn && relR[0] === 'governor_release'
+        && relR[1] === 0.2 && relR[2] === '0.2' && relR[3] === false && relR[4] && relR[5], JSON.stringify([relOn, relR]));
+  await ev(`window.sandbox.controls({accel_on: 0, release_on: 0, tau_att: 0.02, tau_rel: 0.1}).then(r => r.run)`);
   await ev(`window.sandbox.controls({govern: 0, hold: 'tt4', thrust_by: 'true', speed_law: 'rate', gov_gain: 20, redline_on: 0, gov_lag_on: 0}).then(r => r.run)`);
   await ev(`document.getElementById('ctlq-Tt4').click()`);
   await ev(`window.sandbox.controls({lever: 'none', floor_on: 0, floor_phi: 0.75, floor_ref: 'phi', bleed_mode: 'schedule',

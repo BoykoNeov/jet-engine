@@ -151,7 +151,16 @@ plain ramp and stores a cut that it pays back after the move — the governed th
 fan speed: 0.15 or 7 — faster settings are worked out too roughly there; switching the lag on moves a knob past its edge
 to it, and says so); and a run that starts above the limiter's temperature is refused (a working limiter would
 not let the engine settle there), as is one whose governor already asks for more than the limiter allows at the start; where the leftover cut would take the fuel below what the engine burns, it is held
-at that edge and marked as the minimum-fuel stop.
+at that edge and marked as the minimum-fuel stop. Since rung 107 (2026-11-10) the governor also runs beside the
+**realistic release** (rung 52: the acceleration schedule's and the stall floor's cut comes in fast and lets go slowly;
+the temperature limiter stays instant on top): the cut is measured off what the governor asks, so it cuts more than
+twice as deep as on the plain ramp. Holding thrust, the slow cutting-in lets fuel through first, the engine runs ahead
+and the thrust then sags, a slower letting-go deepening the sag a little; on the plain ramp or with the instant limiter
+it never falls (under the other holds the governor sags without any lag). Beside the governor the cutting-in time must
+be at least 0.2 τ and the letting-go time at least 0.1 τ, each speed governor keeps rung 106's edge (switching the
+governor or the release on moves a knob past its edge to it, and says so), and a run whose governor already asks for
+more fuel than the schedule or the floor allows at the start is refused, as is the release beside rung 106's lag, the
+slow valve or the slow exhaust sensor (two lags at once).
 
 **Flight (plan § 27, 2026-10-16):** the *Flight* fieldset's altitude and "warmer than a standard day" (linked to the
 air temperature and pressure, as on *Fly it*) also fly this engine, and since plan § 29 (2026-10-18) so does the

@@ -1,0 +1,161 @@
+reread check: 0 of 126 points differ in Tt4 (applied != demand at 123 points)
+-- the schedule cells (thrust law, margin 0.25, attack 0.2)
+flow/press: points [126, 126, 126, 126, 126, 126, 126, 126, 126]
+  H1 max g gov 9.521792e-3 open 4.058415e-3 (ratio 2.346) HIT | tau_rel-free bit for bit: false (gov ["9.520284833e-3", "9.521791977e-3", "9.522545549e-3", "9.522922335e-3"]) | first req>0 gov Some(3) (s=0.06) open Some(7) (s=0.14) HIT
+  H2 95% gov by tau_rel ["1.1697", "1.5607", "2.3331", "NaN"] (crossings at s ["0.58", "0.58", "0.58", "0.58"]) instant 1.2576 open ["1.7511", "2.0138", "NaN", "NaN"] -> rising VACUOUS
+  H2 tau_rel 0.2: gov 1.1697 vs instant 1.2576 MISS
+  H2 tau_rel 0.4: gov 1.5607 vs instant 1.2576 HIT
+  H2 tau_rel 0.8: gov 2.3331 vs instant 1.2576 HIT
+  H2 tau_rel 1.6: gov NaN vs instant 1.2576 VACUOUS
+  H3 release cost (1.6 - 0.2): gov NaN open NaN VACUOUS
+  H6 tau_rel 0.2: drawdown gov 0.03903 HIT | open 0.00000 no sag | instant 0.00000 no sag
+  H6 tau_rel 0.4: drawdown gov 0.04087 HIT | open 0.00000 no sag | instant 0.00000 no sag
+  H6 tau_rel 0.8: drawdown gov 0.04378 HIT | open 0.00000 no sag | instant 0.00000 no sag
+  H6 tau_rel 1.6: drawdown gov 0.04757 HIT | open 0.00000 no sag | instant 0.00000 no sag
+  reported tau_rel 0.2: crossing gov s=0.58 open s=0.64 | let through 1.9008e-3 (tau_att g_c 1.9041e-3) withheld 1.9019e-3 (D1 -tau_rel dg = 1.9036e-3); g_c 9.5203e-3 g_end 2.077e-6 | releases 1 re-attacks 0
+  reported tau_rel 0.4: crossing gov s=0.58 open s=0.64 | let through 1.9008e-3 (tau_att g_c 1.9044e-3) withheld 3.7473e-3 (D1 -tau_rel dg = 3.7486e-3); g_c 9.5218e-3 g_end 1.502e-4 | releases 1 re-attacks 0
+  reported tau_rel 0.8: crossing gov s=0.58 open s=0.64 | let through 1.9008e-3 (tau_att g_c 1.9045e-3) withheld 6.6088e-3 (D1 -tau_rel dg = 6.6099e-3); g_c 9.5225e-3 g_end 1.260e-3 | releases 1 re-attacks 0
+  reported tau_rel 1.6: crossing gov s=0.58 open s=0.64 | let through 1.9008e-3 (tau_att g_c 1.9046e-3) withheld 9.4519e-3 (D1 -tau_rel dg = 9.4532e-3); g_c 9.5229e-3 g_end 3.615e-3 | releases 1 re-attacks 0
+press/flow: points [126, 126, 126, 126, 126, 126, 126, 126, 126]
+  H1 max g gov 9.563881e-3 open 3.990495e-3 (ratio 2.397) HIT | tau_rel-free bit for bit: false (gov ["9.563880504e-3", "9.563880504e-3", "9.565578846e-3", "9.567423871e-3"]) | first req>0 gov Some(3) (s=0.06) open Some(6) (s=0.12) HIT
+  H2 95% gov by tau_rel ["1.1373", "1.5240", "2.2879", "NaN"] (crossings at s ["0.58", "0.58", "0.58", "0.58"]) instant 1.2347 open ["1.7248", "1.9789", "NaN", "NaN"] -> rising VACUOUS
+  H2 tau_rel 0.2: gov 1.1373 vs instant 1.2347 MISS
+  H2 tau_rel 0.4: gov 1.5240 vs instant 1.2347 HIT
+  H2 tau_rel 0.8: gov 2.2879 vs instant 1.2347 HIT
+  H2 tau_rel 1.6: gov NaN vs instant 1.2347 VACUOUS
+  H3 release cost (1.6 - 0.2): gov NaN open NaN VACUOUS
+  H6 tau_rel 0.2: drawdown gov 0.03785 HIT | open 0.00000 no sag | instant 0.00000 no sag
+  H6 tau_rel 0.4: drawdown gov 0.04011 HIT | open 0.00000 no sag | instant 0.00000 no sag
+  H6 tau_rel 0.8: drawdown gov 0.04351 HIT | open 0.00000 no sag | instant 0.00000 no sag
+  H6 tau_rel 1.6: drawdown gov 0.04787 HIT | open 0.00000 no sag | instant 0.00000 no sag
+  reported tau_rel 0.2: crossing gov s=0.58 open s=0.62 | let through 1.9144e-3 (tau_att g_c 1.9109e-3) withheld 1.9088e-3 (D1 -tau_rel dg = 1.9106e-3); g_c 9.5547e-3 g_end 1.799e-6 | releases 1 re-attacks 0
+  reported tau_rel 0.4: crossing gov s=0.58 open s=0.62 | let through 1.9144e-3 (tau_att g_c 1.9124e-3) withheld 3.7682e-3 (D1 -tau_rel dg = 3.7691e-3); g_c 9.5619e-3 g_end 1.392e-4 | releases 1 re-attacks 0
+  reported tau_rel 0.8: crossing gov s=0.58 open s=0.62 | let through 1.9144e-3 (tau_att g_c 1.9131e-3) withheld 6.6824e-3 (D1 -tau_rel dg = 6.6837e-3); g_c 9.5656e-3 g_end 1.211e-3 | releases 1 re-attacks 0
+  reported tau_rel 1.6: crossing gov s=0.58 open s=0.62 | let through 1.9144e-3 (tau_att g_c 1.9135e-3) withheld 9.6301e-3 (D1 -tau_rel dg = 9.6315e-3); g_c 9.5674e-3 g_end 3.548e-3 | releases 1 re-attacks 0
+tilted: points [126, 126, 126, 126, 126, 126, 126, 126, 126]
+  H1 max g gov 9.606142e-3 open 4.044801e-3 (ratio 2.375) HIT | tau_rel-free bit for bit: false (gov ["9.604045953e-3", "9.606141680e-3", "9.608328930e-3", "9.609426857e-3"]) | first req>0 gov Some(3) (s=0.06) open Some(7) (s=0.14) HIT
+  H2 95% gov by tau_rel ["1.1519", "1.5424", "2.3138", "NaN"] (crossings at s ["0.58", "0.58", "0.58", "0.58"]) instant 1.2498 open ["1.7378", "1.9977", "NaN", "NaN"] -> rising VACUOUS
+  H2 tau_rel 0.2: gov 1.1519 vs instant 1.2498 MISS
+  H2 tau_rel 0.4: gov 1.5424 vs instant 1.2498 HIT
+  H2 tau_rel 0.8: gov 2.3138 vs instant 1.2498 HIT
+  H2 tau_rel 1.6: gov NaN vs instant 1.2498 VACUOUS
+  H3 release cost (1.6 - 0.2): gov NaN open NaN VACUOUS
+  H6 tau_rel 0.2: drawdown gov 0.03907 HIT | open 0.00000 no sag | instant 0.00000 no sag
+  H6 tau_rel 0.4: drawdown gov 0.04128 HIT | open 0.00000 no sag | instant 0.00000 no sag
+  H6 tau_rel 0.8: drawdown gov 0.04469 HIT | open 0.00000 no sag | instant 0.00000 no sag
+  H6 tau_rel 1.6: drawdown gov 0.04905 HIT | open 0.00000 no sag | instant 0.00000 no sag
+  reported tau_rel 0.2: crossing gov s=0.58 open s=0.64 | let through 1.9226e-3 (tau_att g_c 1.9204e-3) withheld 1.9183e-3 (D1 -tau_rel dg = 1.9200e-3); g_c 9.6018e-3 g_end 1.926e-6 | releases 1 re-attacks 0
+  reported tau_rel 0.4: crossing gov s=0.58 open s=0.64 | let through 1.9226e-3 (tau_att g_c 1.9212e-3) withheld 3.7832e-3 (D1 -tau_rel dg = 3.7844e-3); g_c 9.6061e-3 g_end 1.451e-4 | releases 1 re-attacks 0
+  reported tau_rel 0.8: crossing gov s=0.58 open s=0.64 | let through 1.9226e-3 (tau_att g_c 1.9217e-3) withheld 6.6902e-3 (D1 -tau_rel dg = 6.6913e-3); g_c 9.6083e-3 g_end 1.244e-3 | releases 1 re-attacks 0
+  reported tau_rel 1.6: crossing gov s=0.58 open s=0.64 | let through 1.9226e-3 (tau_att g_c 1.9219e-3) withheld 9.5926e-3 (D1 -tau_rel dg = 9.5940e-3); g_c 9.6094e-3 g_end 3.613e-3 | releases 1 re-attacks 0
+flat-lp: points [126, 126, 126, 126, 126, 126, 126, 126, 126]
+  H1 max g gov 9.366013e-3 open 3.921293e-3 (ratio 2.389) HIT | tau_rel-free bit for bit: false (gov ["9.366012573e-3", "9.366012573e-3", "9.367759771e-3", "9.369522831e-3"]) | first req>0 gov Some(3) (s=0.06) open Some(7) (s=0.14) HIT
+  H2 95% gov by tau_rel ["1.1366", "1.5142", "2.2576", "NaN"] (crossings at s ["0.58", "0.58", "0.58", "0.58"]) instant 1.2264 open ["1.6558", "1.9282", "NaN", "NaN"] -> rising VACUOUS
+  H2 tau_rel 0.2: gov 1.1366 vs instant 1.2264 MISS
+  H2 tau_rel 0.4: gov 1.5142 vs instant 1.2264 HIT
+  H2 tau_rel 0.8: gov 2.2576 vs instant 1.2264 HIT
+  H2 tau_rel 1.6: gov NaN vs instant 1.2264 VACUOUS
+  H3 release cost (1.6 - 0.2): gov NaN open NaN VACUOUS
+  H6 tau_rel 0.2: drawdown gov 0.03302 HIT | open 0.00000 no sag | instant 0.00000 no sag
+  H6 tau_rel 0.4: drawdown gov 0.03472 HIT | open 0.00000 no sag | instant 0.00000 no sag
+  H6 tau_rel 0.8: drawdown gov 0.03716 HIT | open 0.00000 no sag | instant 0.00000 no sag
+  H6 tau_rel 1.6: drawdown gov 0.04032 HIT | open 0.00000 no sag | instant 0.00000 no sag
+  reported tau_rel 0.2: crossing gov s=0.58 open s=0.64 | let through 1.8746e-3 (tau_att g_c 1.8715e-3) withheld 1.8695e-3 (D1 -tau_rel dg = 1.8711e-3); g_c 9.3574e-3 g_end 1.885e-6 | releases 1 re-attacks 0
+  reported tau_rel 0.4: crossing gov s=0.58 open s=0.64 | let through 1.8746e-3 (tau_att g_c 1.8729e-3) withheld 3.6873e-3 (D1 -tau_rel dg = 3.6882e-3); g_c 9.3643e-3 g_end 1.437e-4 | releases 1 re-attacks 0
+  reported tau_rel 0.8: crossing gov s=0.58 open s=0.64 | let through 1.8746e-3 (tau_att g_c 1.8736e-3) withheld 6.5058e-3 (D1 -tau_rel dg = 6.5071e-3); g_c 9.3678e-3 g_end 1.234e-3 | releases 1 re-attacks 0
+  reported tau_rel 1.6: crossing gov s=0.58 open s=0.64 | let through 1.8746e-3 (tau_att g_c 1.8739e-3) withheld 9.2768e-3 (D1 -tau_rel dg = 9.2780e-3); g_c 9.3695e-3 g_end 3.571e-3 | releases 1 re-attacks 0
+== H1 max clip deeper governed: 4 HIT, 0 MISS, 0 VACUOUS
+== H1 cut asked earlier governed: 4 HIT, 0 MISS, 0 VACUOUS
+== H2 95% time rises with tau_rel: 0 HIT, 0 MISS, 4 VACUOUS
+== H2 later than instant: 8 HIT, 4 MISS, 4 VACUOUS
+== H3 release cost smaller governed: 0 HIT, 0 MISS, 4 VACUOUS
+== H6 governed sags (> 0.002): 16 HIT, 0 MISS, 0 VACUOUS
+== H6 comparison: open does not sag: 16 HIT, 0 MISS, 0 VACUOUS
+== H6 comparison: instant does not sag: 4 HIT, 0 MISS, 0 VACUOUS
+-- the floor cells (thrust law, LP floor, flow/press, press/flow, tilted)
+flow/press tau_att 0.2: H4 LP min identical true, before the crossing true -> HIT | H5 HP min ["0.844713", "0.844713", "0.844713", "0.844713"] -> MISS
+    tau_rel 0.2: LP min 0.721729211 at 8 (s=0.16, req 4.171e-3) HP min 0.844712849 at 15 (s=0.30) crossing Some(18) | lean holds in release 0 | releases 1 re-attacks 0
+    tau_rel 0.4: LP min 0.721729211 at 8 (s=0.16, req 4.171e-3) HP min 0.844712849 at 15 (s=0.30) crossing Some(18) | lean holds in release 0 | releases 1 re-attacks 0
+    tau_rel 0.8: LP min 0.721729211 at 8 (s=0.16, req 4.171e-3) HP min 0.844712849 at 15 (s=0.30) crossing Some(18) | lean holds in release 0 | releases 1 re-attacks 0
+    tau_rel 1.6: LP min 0.721729211 at 8 (s=0.16, req 4.171e-3) HP min 0.844712849 at 15 (s=0.30) crossing Some(18) | lean holds in release 0 | releases 1 re-attacks 0
+flow/press tau_att 0.4: H4 LP min identical true, before the crossing true -> HIT | H5 HP min ["0.839505", "0.839505", "0.839505", "0.839505"] -> MISS
+    tau_rel 0.2: LP min 0.718477892 at 9 (s=0.18, req 4.296e-3) HP min 0.839504894 at 13 (s=0.26) crossing Some(18) | lean holds in release 0 | releases 1 re-attacks 0
+    tau_rel 0.4: LP min 0.718477892 at 9 (s=0.18, req 4.296e-3) HP min 0.839504894 at 13 (s=0.26) crossing Some(18) | lean holds in release 0 | releases 1 re-attacks 0
+    tau_rel 0.8: LP min 0.718477892 at 9 (s=0.18, req 4.296e-3) HP min 0.839504894 at 13 (s=0.26) crossing Some(18) | lean holds in release 0 | releases 1 re-attacks 0
+    tau_rel 1.6: LP min 0.718477892 at 9 (s=0.18, req 4.296e-3) HP min 0.839504894 at 13 (s=0.26) crossing Some(18) | lean holds in release 0 | releases 1 re-attacks 0
+press/flow tau_att 0.2: H4 LP min identical true, before the crossing true -> HIT | H5 HP min ["0.814128", "0.814128", "0.814128", "0.814128"] -> MISS
+    tau_rel 0.2: LP min 0.727629105 at 9 (s=0.18, req 3.099e-3) HP min 0.814128208 at 14 (s=0.28) crossing Some(16) | lean holds in release 0 | releases 1 re-attacks 0
+    tau_rel 0.4: LP min 0.727629105 at 9 (s=0.18, req 3.099e-3) HP min 0.814128208 at 14 (s=0.28) crossing Some(16) | lean holds in release 0 | releases 1 re-attacks 0
+    tau_rel 0.8: LP min 0.727629105 at 9 (s=0.18, req 3.099e-3) HP min 0.814128208 at 14 (s=0.28) crossing Some(16) | lean holds in release 0 | releases 1 re-attacks 0
+    tau_rel 1.6: LP min 0.727629105 at 9 (s=0.18, req 3.099e-3) HP min 0.814128208 at 14 (s=0.28) crossing Some(16) | lean holds in release 0 | releases 1 re-attacks 0
+press/flow tau_att 0.4: H4 LP min identical true, before the crossing true -> HIT | H5 HP min ["0.809799", "0.809799", "0.809799", "0.809799"] -> MISS
+    tau_rel 0.2: LP min 0.725081181 at 9 (s=0.18, req 2.970e-3) HP min 0.809799198 at 13 (s=0.26) crossing Some(17) | lean holds in release 0 | releases 1 re-attacks 0
+    tau_rel 0.4: LP min 0.725081181 at 9 (s=0.18, req 2.970e-3) HP min 0.809799198 at 13 (s=0.26) crossing Some(17) | lean holds in release 0 | releases 1 re-attacks 0
+    tau_rel 0.8: LP min 0.725081181 at 9 (s=0.18, req 2.970e-3) HP min 0.809799198 at 13 (s=0.26) crossing Some(17) | lean holds in release 0 | releases 1 re-attacks 0
+    tau_rel 1.6: LP min 0.725081181 at 9 (s=0.18, req 2.970e-3) HP min 0.809799198 at 13 (s=0.26) crossing Some(17) | lean holds in release 0 | releases 1 re-attacks 0
+tilted tau_att 0.2: H4 LP min identical true, before the crossing true -> HIT | H5 HP min ["0.828578", "0.828578", "0.828578", "0.828578"] -> MISS
+    tau_rel 0.2: LP min 0.720259509 at 8 (s=0.16, req 3.914e-3) HP min 0.828578460 at 14 (s=0.28) crossing Some(18) | lean holds in release 0 | releases 1 re-attacks 0
+    tau_rel 0.4: LP min 0.720259509 at 8 (s=0.16, req 3.914e-3) HP min 0.828578460 at 14 (s=0.28) crossing Some(18) | lean holds in release 0 | releases 1 re-attacks 0
+    tau_rel 0.8: LP min 0.720259509 at 8 (s=0.16, req 3.914e-3) HP min 0.828578460 at 14 (s=0.28) crossing Some(18) | lean holds in release 0 | releases 1 re-attacks 0
+    tau_rel 1.6: LP min 0.720259509 at 8 (s=0.16, req 3.914e-3) HP min 0.828578460 at 14 (s=0.28) crossing Some(18) | lean holds in release 0 | releases 1 re-attacks 0
+tilted tau_att 0.4: H4 LP min identical true, before the crossing true -> HIT | H5 HP min ["0.822859", "0.822859", "0.822859", "0.822859"] -> MISS
+    tau_rel 0.2: LP min 0.716807738 at 9 (s=0.18, req 4.054e-3) HP min 0.822858801 at 13 (s=0.26) crossing Some(18) | lean holds in release 0 | releases 1 re-attacks 0
+    tau_rel 0.4: LP min 0.716807738 at 9 (s=0.18, req 4.054e-3) HP min 0.822858801 at 13 (s=0.26) crossing Some(18) | lean holds in release 0 | releases 1 re-attacks 0
+    tau_rel 0.8: LP min 0.716807738 at 9 (s=0.18, req 4.054e-3) HP min 0.822858801 at 13 (s=0.26) crossing Some(18) | lean holds in release 0 | releases 1 re-attacks 0
+    tau_rel 1.6: LP min 0.716807738 at 9 (s=0.18, req 4.054e-3) HP min 0.822858801 at 13 (s=0.26) crossing Some(18) | lean holds in release 0 | releases 1 re-attacks 0
+== H4 the LP minimum is tau_rel-free and before the crossing: 6 HIT, 0 MISS, 0 VACUOUS
+== H5 the HP minimum rises with tau_rel: 0 HIT, 6 MISS, 0 VACUOUS
+   (H4's precondition 'the solvable-ceiling fallback never sets the release fuel' is NOT recorded, so NOT checked)
+-- reported: floor + schedule + redline (attack 0.2)
+flow/press: instant 95% 1.6290 dd 0.00000
+    0.2: pts 126 maxg 1.419e-2 95% 1.5364 dd 0.00266 LPmin 0.722591 HPmin 0.857192 rel 1 reatt 0 redline 29 lean 0
+    0.4: pts 126 maxg 1.419e-2 95% 2.0844 dd 0.00623 LPmin 0.722591 HPmin 0.857192 rel 1 reatt 0 redline 25 lean 0
+    0.8: pts 126 maxg 1.420e-2 95% NaN dd 0.01130 LPmin 0.722591 HPmin 0.857192 rel 1 reatt 0 redline 25 lean 0
+    1.6: pts 126 maxg 1.420e-2 95% NaN dd 0.01719 LPmin 0.722591 HPmin 0.857192 rel 1 reatt 0 redline 25 lean 0
+press/flow: instant 95% 1.6027 dd 0.00000
+    0.2: pts 126 maxg 1.449e-2 95% 1.5210 dd 0.00174 LPmin 0.731550 HPmin 0.836521 rel 1 reatt 0 redline 32 lean 0
+    0.4: pts 126 maxg 1.449e-2 95% 2.0727 dd 0.00598 LPmin 0.731550 HPmin 0.836521 rel 1 reatt 0 redline 26 lean 0
+    0.8: pts 126 maxg 1.449e-2 95% NaN dd 0.01202 LPmin 0.731550 HPmin 0.836521 rel 1 reatt 0 redline 26 lean 0
+    1.6: pts 126 maxg 1.449e-2 95% NaN dd 0.01878 LPmin 0.731550 HPmin 0.836521 rel 1 reatt 0 redline 26 lean 0
+tilted: instant 95% 1.6125 dd 0.00000
+    0.2: pts 126 maxg 1.454e-2 95% 1.5373 dd 0.00536 LPmin 0.721727 HPmin 0.845280 rel 1 reatt 0 redline 31 lean 0
+    0.4: pts 126 maxg 1.454e-2 95% 2.0940 dd 0.01012 LPmin 0.721727 HPmin 0.845280 rel 1 reatt 0 redline 26 lean 0
+    0.8: pts 126 maxg 1.454e-2 95% NaN dd 0.01620 LPmin 0.721727 HPmin 0.845280 rel 1 reatt 0 redline 26 lean 0
+    1.6: pts 126 maxg 1.454e-2 95% NaN dd 0.02293 LPmin 0.721727 HPmin 0.845280 rel 1 reatt 0 redline 26 lean 0
+-- reported: other laws at tau_rel 0.4 (schedule)
+HP rate .1  flow/press: pts 126/126 95% gov 0.4951 inst 1.2422 (crossing s=0.58) later false | dd gov 0.11338 inst 0.10594 sag true | rel 1 reatt 0
+HP rate .1  press/flow: pts 126/126 95% gov 1.3853 inst 1.2211 (crossing s=0.56) later true | dd gov 0.09344 inst 0.07937 sag true | rel 1 reatt 0
+HP rate .1  tilted    : pts 126/126 95% gov 1.3073 inst 1.2358 (crossing s=0.56) later true | dd gov 0.09925 inst 0.08891 sag true | rel 1 reatt 0
+HP rate .1  flat-lp   : pts 126/126 95% gov 0.4892 inst 1.2121 (crossing s=0.58) later false | dd gov 0.08655 inst 0.12629 sag true | rel 1 reatt 0
+HP prop 10  flow/press: pts 126/126 95% gov 1.3962 inst 1.2596 (crossing s=0.60) later true | dd gov 0.09903 inst 0.07112 sag true | rel 1 reatt 0
+HP prop 10  press/flow: pts 126/126 95% gov 1.4793 inst 1.2381 (crossing s=0.58) later true | dd gov 0.08576 inst 0.04926 sag true | rel 1 reatt 0
+HP prop 10  tilted    : pts 126/126 95% gov 1.4321 inst 1.2528 (crossing s=0.58) later true | dd gov 0.08918 inst 0.06010 sag true | rel 1 reatt 0
+HP prop 10  flat-lp   : pts 126/126 95% gov 1.2542 inst 1.2293 (crossing s=0.58) later true | dd gov 0.07469 inst 0.08037 sag true | rel 1 reatt 0
+EPR         flow/press: pts 126/126 95% gov 1.4178 inst 1.2476 (crossing s=0.56) later true | dd gov 0.09639 inst 0.06166 sag true | rel 1 reatt 0
+EPR         press/flow: pts 126/126 95% gov 1.3757 inst 1.2247 (crossing s=0.56) later true | dd gov 0.09965 inst 0.06400 sag true | rel 1 reatt 0
+EPR         tilted    : pts 126/126 95% gov 1.3955 inst 1.2398 (crossing s=0.56) later true | dd gov 0.09993 inst 0.05978 sag true | rel 1 reatt 0
+EPR         flat-lp   : pts 126/126 95% gov 1.3614 inst 1.2158 (crossing s=0.56) later true | dd gov 0.09149 inst 0.05236 sag true | rel 1 reatt 0
+N1 rate .15 flow/press: pts 126/126 95% gov 1.3732 inst 1.2456 (crossing s=0.58) later true | dd gov 0.03937 inst 0.05572 sag true | rel 1 reatt 0
+N1 rate .15 press/flow: pts 126/126 95% gov 1.2277 inst 1.2223 (crossing s=0.58) later true | dd gov 0.04383 inst 0.09554 sag true | rel 1 reatt 0
+N1 rate .15 tilted    : pts 126/126 95% gov 1.2973 inst 1.2384 (crossing s=0.58) later true | dd gov 0.03795 inst 0.07482 sag true | rel 1 reatt 0
+N1 rate .15 flat-lp   : pts 126/126 95% gov 1.9968 inst 1.8948 (crossing s=0.56) later true | dd gov 0.00903 inst 0.00000 sag true | rel 1 reatt 0
+N1 prop 7   flow/press: pts 126/126 95% gov 1.4215 inst 1.2564 (crossing s=0.58) later true | dd gov 0.05717 inst 0.04916 sag true | rel 1 reatt 0
+N1 prop 7   press/flow: pts 126/126 95% gov 1.2988 inst 1.2335 (crossing s=0.58) later true | dd gov 0.05611 inst 0.07673 sag true | rel 1 reatt 0
+N1 prop 7   tilted    : pts 126/126 95% gov 1.3580 inst 1.2491 (crossing s=0.58) later true | dd gov 0.05389 inst 0.06101 sag true | rel 1 reatt 0
+N1 prop 7   flat-lp   : pts 126/126 95% gov 1.8168 inst 1.6247 (crossing s=0.58) later true | dd gov 0.02550 inst 0.00113 sag true | rel 1 reatt 0
+-- reported: the floor cells OPEN (governor off), HP minimum and crossing by tau_rel
+flow/press open tau_att 0.02: 0.2: HP min 0.866411 at 25 crossing Some(19) | 0.4: HP min 0.867712 at 25 crossing Some(19) | 0.8: HP min 0.868437 at 25 crossing Some(19) | 1.6: HP min 0.868820 at 25 crossing Some(19)
+flow/press open tau_att 0.2: 0.2: HP min 0.864088 at 24 crossing Some(20) | 0.4: HP min 0.865216 at 23 crossing Some(20) | 0.8: HP min 0.865703 at 23 crossing Some(20) | 1.6: HP min 0.865958 at 23 crossing Some(20)
+flow/press open tau_att 0.4: 0.2: HP min 0.863551 at 23 crossing Some(20) | 0.4: HP min 0.864015 at 22 crossing Some(20) | 0.8: HP min 0.864253 at 22 crossing Some(20) | 1.6: HP min 0.864356 at 21 crossing Some(20)
+press/flow open tau_att 0.02: 0.2: HP min 0.841089 at 21 crossing Some(14) | 0.4: HP min 0.841557 at 21 crossing Some(14) | 0.8: HP min 0.841841 at 20 crossing Some(14) | 1.6: HP min 0.841992 at 20 crossing Some(14)
+press/flow open tau_att 0.2: 0.2: HP min 0.840819 at 20 crossing Some(16) | 0.4: HP min 0.840958 at 20 crossing Some(16) | 0.8: HP min 0.841042 at 20 crossing Some(16) | 1.6: HP min 0.841088 at 20 crossing Some(16)
+press/flow open tau_att 0.4: 0.2: HP min 0.840730 at 20 crossing Some(16) | 0.4: HP min 0.840808 at 20 crossing Some(16) | 0.8: HP min 0.840855 at 20 crossing Some(16) | 1.6: HP min 0.840880 at 20 crossing Some(16)
+tilted open tau_att 0.02: 0.2: HP min 0.852208 at 25 crossing Some(18) | 0.4: HP min 0.854294 at 25 crossing Some(18) | 0.8: HP min 0.855484 at 25 crossing Some(18) | 1.6: HP min 0.856121 at 25 crossing Some(18)
+tilted open tau_att 0.2: 0.2: HP min 0.851920 at 23 crossing Some(19) | 0.4: HP min 0.852785 at 22 crossing Some(19) | 0.8: HP min 0.853175 at 22 crossing Some(19) | 1.6: HP min 0.853378 at 22 crossing Some(19)
+tilted open tau_att 0.4: 0.2: HP min 0.851264 at 22 crossing Some(19) | 0.4: HP min 0.851650 at 21 crossing Some(19) | 0.8: HP min 0.851817 at 21 crossing Some(19) | 1.6: HP min 0.851903 at 21 crossing Some(19)
+-- reported: settle 4 (off protocol) — 95% times by tau_rel, governed and open
+flow/press: gov ["1.1697", "1.5607", "2.3331", "3.8598"] open ["1.7511", "2.0138", "2.5919", "3.8599"]
+press/flow: gov ["1.1373", "1.5240", "2.2879", "3.8024"] open ["1.7248", "1.9789", "2.5430", "3.8022"]
+tilted: gov ["1.1519", "1.5424", "2.3138", "3.8408"] open ["1.7378", "1.9977", "2.5711", "3.8379"]
+flat-lp: gov ["1.1366", "1.5142", "2.2576", "3.7236"] open ["1.6558", "1.9282", "2.5165", "3.7833"]
+-- cost: governed release 0.335 s, rung 95 instant 0.582 s; scoring took 40 s

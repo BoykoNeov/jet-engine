@@ -1,0 +1,22 @@
+
+THE GOVERNOR BESIDE THE REALISTIC RELEASE (rung 107): rung 95's governor holds thrust along the move and
+rung 52's acceleration-schedule limiter cuts its fuel fast and gives it back slowly - the cut a state,
+measured off the governor's demand. The Controls engine, 1000 -> 1400 K over 0.5 tau, attack 0.2 tau, no
+redline, the perfect gas.
+
+  release (tau)     cut gov   cut open  thrust@0.5       sag   95% thr
+  instant           0.000e0          -      0.3316    0.0000     1.258
+  0.1              9.517e-3   4.058e-3      0.7753    0.0376     0.975
+  0.2              9.520e-3   4.058e-3      0.7753    0.0390     1.170
+  0.4              9.522e-3   4.058e-3      0.7753    0.0409     1.561
+  0.8              9.523e-3   4.058e-3      0.7753    0.0438     2.333
+  1                9.523e-3   4.058e-3      0.7753    0.0449         -
+
+  (cut: the deepest fuel cut the slow limiter held, kg/s, governed and on rung 52's open ramp with the same times;
+  thrust@0.5: the share of the thrust step at the end of the move; sag: the largest fall of that share below its
+  running peak from then on; 95% thr: time to 95% of the step, tau, '-' if not within the run.) Beside a governor the
+  limiter cuts more than twice as deep - the governor asks for more fuel - but the slow ATTACK lets fuel through
+  first: the engine runs ahead (over three quarters of the step by the move's end, against a third with the instant
+  limiter), then the governor pulls it back and the thrust SAGS. A slower release deepens the sag only a little. On
+  the open ramp, and with the instant limiter, the thrust never falls. Holding thrust only: under the other holds the
+  governor sags without any lag. The temperature limiter is off - the sag needs no slow temperature limiter (106).
