@@ -41,3 +41,4 @@ route.
 - `reatt.rs` → `reatt.txt` — the crash map's 12 re-attacking requests: the clip's turns on the two-speed route (from
   its recorded clip and from the applied cut, which agree on all 12), then the applied cut on rung 47's single lag at the
   cut-in time (12 of 12 turn) and at the give-back time (8 of 12): the re-attack is the single lag's own.
+  Input `reatt_reqs.txt` (the `RE-ATTACK` lines of the crash log, prefix stripped), passed as the first argument.

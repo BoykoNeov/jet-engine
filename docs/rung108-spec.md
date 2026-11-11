@@ -106,8 +106,9 @@ quickens (0.02: −0.0009 to −0.0016 of flow coefficient below instant; 0.1: �
   7.3 s natively, 6.7–10.4 s in WebAssembly (`wasmtime.txt`).
 * **Cost** (the user's condition; measured on the page in the browser check, the default slam holding thrust with the
   lag at 0.2): governed two-speed 3.3 s per run against rung 106's 0.6 s (the 0.005 step: four times the points);
-  open 0.20 s against rung 47's 0.16 s. Natively 0.5–3.0 s (`timing.txt`), so the slowest settings take about 9–10 s
-  on the page (estimated, not measured there). Shipped as is (the user, 2026-11-11).
+  open 0.20 s against rung 47's 0.16 s. Natively 0.5–3.0 s (`timing.txt`), and the crash map's five slowest requests
+  take 6.7–10.4 s in WebAssembly through the page's own call path (Node, `wasmtime.txt`; not in the browser itself,
+  under the page's 15 s line). Shipped as is (the user, 2026-11-11).
 
 ## 5. What it does to its neighbours
 
@@ -129,7 +130,7 @@ quickens (0.02: −0.0009 to −0.0016 of flow coefficient below instant; 0.1: �
   and the longer-settle reading is off protocol.
 * The cut-in floor (0.02) and the give-back's floor beside the governor (0.1) are numerical (the step check), not
   hardware times.
-* The governed page run is ~5× slower than rung 106's; the slowest settings are estimated, not measured on the page.
+* The governed page run is ~5× slower than rung 106's; the slowest settings were timed in WebAssembly under Node (6.7–10.4 s), not in the browser.
 
 ## The next seam
 

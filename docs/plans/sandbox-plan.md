@@ -2412,6 +2412,6 @@ tick box *"…cuts fast, gives back slowly"* under *"…that reacts with a lag"*
   cut-in 0.02–0.5, give-back 0.02–1.0): 0 panics; 482 admitted (180 governed, 302 open), 118 stopped early — every stop
   a named kind (91 the floor out of reach, 21 rich, 3 lean, 3 the redline beside the floor), **0 "other" stops, 0
   minimum-fuel holds**; **12 re-attacks, all open, all throttle PULL-BACKS starting above the redline — rung 47's own: its single lag at the
-  cut-in time turns the same once on all 12** (at the give-back time on 8; `scratch-archive/rung108/reatt.txt`). Refused: 45 two lags
+  cut-in time also cuts twice on all 12** (at the give-back time on 8; `scratch-archive/rung108/reatt.txt`). Refused: 45 two lags
   at once, 26 the give-back's floor beside the governor, 73 the speed laws' edges, 57 hot starts (518 refused in all), the rest the earlier
   rungs' refusals. Slowest 7.3 s natively.
