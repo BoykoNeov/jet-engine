@@ -165,7 +165,15 @@ cut: about 0.5 % of the thrust step letting go over 0.1 τ, 1.5 % over 0.4 τ, 3
 each speed governor keeps rung 106's edge (switching the governor or the release on moves a knob past its edge to it,
 and says so), and a run whose governor already asks for
 more fuel than the schedule or the floor allows at the start is refused, as is the release beside rung 106's lag, the
-slow valve or the slow exhaust sensor (two lags at once).
+slow valve or the slow exhaust sensor (two lags at once). Since rung 108 (2026-11-11) the temperature limiter's lag can
+work at **two speeds** — *"…cuts fast, gives back slowly"*, ticked by default once the lag is on: it cuts in at its own
+time (from 0.02 τ, the page's default) and gives the fuel back at the lag knob's time, then labelled *Giving back*;
+untick it for rung 47's single lag. A fast cut ends most of the overshoot (holding thrust, about 60 K over the redline
+at 0.02 τ against about 270 K for the single lag at 0.2 τ; about 24 K without the governor), but it stores a deeper
+cut, so beside the governor the slow give-back is paid in thrust time: the thrust still sags after the move (2–4 % of
+the step) and reaches 95 % at about 2.2 τ for a 0.2 τ give-back — not within the run for 0.4 τ or slower. Without the
+governor it never sags. Beside the governor such a run is always worked out on the 0.005 τ step, so it takes about
+five times as long as rung 106's (about 3 s on the page).
 
 **Flight (plan § 27, 2026-10-16):** the *Flight* fieldset's altitude and "warmer than a standard day" (linked to the
 air temperature and pressure, as on *Fly it*) also fly this engine, and since plan § 29 (2026-10-18) so does the

@@ -147,7 +147,7 @@ fn the_pinned_trigger_and_the_overshoot_before_the_crossing() {
                     _ => k,
                 };
                 assert_eq!(split, want, "the first point a give-back read reaches, {at}");
-                let (kp, tp) = peak(&runs[0]);
+                let (kp, _) = peak(&runs[0]);
                 assert!(kp < k, "{at}: peak at {kp}");
                 let (kp106, tp106) = peak(&r106);
                 assert_eq!(kp, kp106, "{at}: the peak's point");
@@ -293,5 +293,110 @@ fn a_two_speed_cut_never_reaches_the_minimum_fuel_stop_on_the_default_grid() {
     }
 }
 
-#[allow(dead_code)]
 fn thrust_of(sv: &ControlsSolver, p: &FuelPoint) -> f64 { gv::thrust(&sv.reread(p).unwrap().base) }
+
+// ---- The scored claims (anchor § 3), pinned on the flow/press map at the frozen grid's 0.005 step (the full grid's
+// ---- scoring: `docs/rung108-spec.md`, the probe `docs/plans/scratch-archive/rung108/score.rs`).
+
+const FINE: f64 = DS / 4.0;
+fn shares(sv: &ControlsSolver, p: &[FuelPoint]) -> Vec<f64> {
+    let (f0, f1) = (gv::thrust(&sv.start), gv::thrust(&sv.end));
+    p.iter().map(|x| (thrust_of(sv, x) - f0) / (f1 - f0)).collect()
+}
+/// Rung 107's drawdown after the move's end (by index), the frozen sag.
+fn drawdown(s: &ControlsSettings, fr: &[f64]) -> f64 {
+    let k0 = (s.ramp / FINE).round_ties_even() as usize;
+    let (mut hi, mut dd) = (f64::NEG_INFINITY, 0.0f64);
+    for &v in fr.iter().skip(k0) { hi = hi.max(v); dd = dd.max(hi - v); }
+    dd
+}
+/// The frozen settle time: the last upward crossing of 0.95 after which every point stays at or above it.
+fn settle(p: &[FuelPoint], fr: &[f64]) -> Option<f64> {
+    if *fr.last().unwrap() < 0.95 { return None; }
+    Some(match (0..fr.len()).rev().find(|&i| fr[i] < 0.95) {
+        None => p[0].s,
+        Some(i) => p[i].s + (p[i + 1].s - p[i].s) * (0.95 - fr[i]) / (fr[i + 1] - fr[i]),
+    })
+}
+fn instant(sv: &ControlsSolver) -> Vec<FuelPoint> {
+    gv::march(&sv.core.fuel, &sv.flight, sv.governor.as_ref().unwrap(), &sv.limiters(), None,
+              (sv.start.nu_lp, sv.start.nu_hp), sv.settings.s_end(), FINE).0
+}
+fn over(s: &ControlsSettings, p: &[FuelPoint]) -> f64 { peak(p).1 - s.redline }
+
+#[test]
+fn h1_h2_h3_h8_a_fast_cut_shrinks_the_overshoot_stores_more_and_spares_the_lp() {
+    let gs = GOV(ControlsSettings { redline_on: true, ..d() });
+    let os = OPEN(ControlsSettings { redline_on: true, ..d() });
+    let atts = [0.02, 0.05, 0.1, 0.2];
+    let g: Vec<Vec<FuelPoint>> = atts.iter().map(|&a| direct(&gs, a, 0.4, FINE)).collect();
+    let o: Vec<Vec<FuelPoint>> = atts.iter().map(|&a| direct(&os, a, 0.4, FINE)).collect();
+    let (og, oo): (Vec<f64>, Vec<f64>) = (g.iter().map(|p| over(&gs, p)).collect(), o.iter().map(|p| over(&os, p)).collect());
+    // H1 (16 of 16 HIT): the overshoot falls strictly with the cut-in time; 0.02 against 0.1 within [0.2, 0.5]
+    // (measured 0.30 governed, 0.26 open: 58.6 / 194.2 K and 24.3 / 95.2 K here).
+    for ov in [&og, &oo] {
+        assert!(ov.windows(2).all(|w| w[0] < w[1]), "{ov:?}");
+        assert!((0.2..=0.5).contains(&(ov[0] / ov[2])), "{ov:?}");
+    }
+    assert!((og[0] - 58.564).abs() < 0.01 && (oo[0] - 24.338).abs() < 0.01, "{og:?} {oo:?}");
+    // H2 (12 of 12 HIT): the governor overshoots more than the open ramp at every cut-in time (about 2.4x).
+    for i in 0..3 { assert!(og[i] > oo[i], "{i}: {og:?} {oo:?}"); }
+    // H3 (4 of 4 HIT): the faster cut stores more — the cut at the crossing falls as the cut-in time rises.
+    let gc: Vec<f64> = g.iter().map(|p| clip(&p[crossing(p).unwrap()]).0).collect();
+    assert!(gc.windows(2).all(|w| w[0] > w[1]), "{gc:?}");
+    // H8 (16 of 16 HIT): the LP's lowest flow coefficient lies before the first crossing and rises as the cut-in time
+    // falls — but stays BELOW the instant redline's (a lagged cut lets the fuel through there; reported).
+    let sv = build(&gs).unwrap();
+    let li = instant(&sv).iter().map(|x| x.phi_lp).fold(f64::INFINITY, f64::min);
+    let lp: Vec<(usize, f64)> = g[..3].iter().map(|p| p.iter().enumerate().map(|(k, x)| (k, x.phi_lp))
+        .fold((0, f64::INFINITY), |a, b| if b.1 < a.1 { b } else { a })).collect();
+    for (i, p) in g[..3].iter().enumerate() { assert!(lp[i].0 < crossing(p).unwrap(), "{i}"); }
+    assert!(lp[0].1 > lp[1].1 && lp[1].1 > lp[2].1 && lp[0].1 < li, "{lp:?} instant {li}");
+}
+
+#[test]
+fn h4_h5_h6_h7_beside_the_governor_a_fast_cut_still_sags_and_settles_late() {
+    let gs = GOV(ControlsSettings { redline_on: true, ..d() });
+    let os = OPEN(ControlsSettings { redline_on: true, ..d() });
+    let sv = build(&gs).unwrap();
+    let svo = build(&os).unwrap();
+    let rels = [0.2, 0.4, 0.8];
+    let g: Vec<Vec<FuelPoint>> = rels.iter().map(|&r| direct(&gs, 0.02, r, FINE)).collect();
+    let fr: Vec<Vec<f64>> = g.iter().map(|p| shares(&sv, p)).collect();
+    let dd: Vec<f64> = fr.iter().map(|f| drawdown(&gs, f)).collect();
+    // H4 (36 + 12 of 48 HIT): it sags, more with a slower give-back (0.027 / 0.033 / 0.040 here).
+    assert!(dd[0] > 0.002 && dd[0] < dd[1] && dd[1] < dd[2], "{dd:?}");
+    // H5 (8 HIT, 4 MISS): below rung 106's own sag at 0.2 and 0.4, ABOVE it at 0.8 — the named risk: the slow single lag
+    // barely cuts (it lets the engine run ~387 K hot) so it has little to give back; the fast cut stores ~5.5x more.
+    let d106: Vec<f64> = rels.iter().map(|&t| drawdown(&gs, &shares(&sv, &direct(&gs, t, t, FINE)))).collect();
+    assert!(dd[0] < d106[0] && dd[1] < d106[1] && dd[2] > d106[2], "{dd:?} against 106 {d106:?}");
+    // H6 (4 HIT, 8 + 4 VACUOUS): later than instant at 0.2 (2.16 against 1.32); at 0.4 and 0.8 the thrust never reaches
+    // 95 % inside the 2.5 τ run — those cells VACUOUS by the frozen rule.
+    let inst = instant(&sv);
+    let xi = settle(&inst, &shares(&sv, &inst)).unwrap();
+    let x2 = settle(&g[0], &fr[0]).unwrap();
+    assert!(x2 > xi && (x2 - 2.1575).abs() < 1e-3 && (xi - 1.3225).abs() < 1e-3, "{x2} {xi}");
+    for f in &fr[1..] { assert!(f.iter().all(|&v| v < 0.95)); }
+    // H7 (36 of 36 HIT): the open ramp never sags.
+    for &r in &rels {
+        let p = direct(&os, 0.02, r, FINE);
+        assert!(drawdown(&os, &shares(&svo, &p)) <= 0.002, "open {r}");
+    }
+}
+
+#[test]
+fn the_page_starts_the_box_ticked_and_the_model_does_not() {
+    // The user's choice (2026-11-11): on the page the realistic two-speed limiter is what the lag gives by default; the
+    // model's own default stays off, so every earlier request — and every gate and golden built on one — is unchanged.
+    use turbojet::visuals::Json;
+    let d0 = d();
+    assert!(!d0.gov_lag_two && d0.gov_lag_att == DS);
+    let reply = Json::parse(&turbojet::sandbox::call(r#"{"op":"controls_defaults"}"#));
+    let c = reply.get("controls").expect("the defaults");
+    assert!(matches!(c.get("gov_lag_two"), Some(Json::Int(1))), "ticked on the page");
+    assert!(matches!(c.get("gov_lag_att"), Some(Json::Float(x)) if *x == DS));
+    // The page's defaults, sent back, are the model's defaults with only that box ticked: with the lag off it is inert.
+    let s = ControlsSettings::from_json(c).unwrap();
+    assert_eq!(ControlsSettings { gov_lag_two: false, ..s }, d0);
+    assert!(!s.two_speed());
+}

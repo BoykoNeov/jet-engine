@@ -2388,3 +2388,30 @@ true (over keeping the 0.02 spacing and saying the sag reads shallow).
   ticking *Govern* and *Realistic release* now runs the finer step by default (~1.9 s on the page, against 0.35 s when
   the old nudge moved it to 0.2) — the question put before the build had said only a chosen fast cut pays, which missed
   that. Asked: **keep 0.02** (the realistic case is the default), not a return to the 0.2 nudge.
+
+## 46. The two-speed temperature limiter — rung 108 (2026-11-11) — not a slice
+
+Rung 108 (`docs/rung108-spec.md`) gives the temperature limiter's lag (rung 47) two speeds on the Controls view: the
+tick box *"…cuts fast, gives back slowly"* under *"…that reacts with a lag"*, with its own *Cutting in* slider (0.02–0.5
+τ, default 0.02); ticked, the lag knob reads *Giving back*. Governed (`route: "governor_two_speed"`) and open
+(`route: "two_speed"`).
+* **The user's choices:** both routes; every hold; the cut-in floor 0.02 τ; beside the governor ALWAYS the 0.005 τ step
+  (the open route on the page step); the give-back keeps the lag's floors (0.1 τ beside the governor, one step open);
+  the speed laws keep rung 106's edges; **the box starts TICKED on the page** (the defaults reply — the model's own
+  default stays off, so no earlier request, gate or golden moves; asked after a side-agent note: the option the user
+  picked had said the realistic case is the default, and I had built it unticked); the carried-over refusals (a hot
+  start or request beside the governor; rung 52's release, rung 88's slow valve or rung 101's slow sensor beside the lag).
+* **What moves:** nothing that ran before in the model. On the page, ticking *"…that reacts with a lag"* now gives the
+  two-speed limiter (untick the new box for rung 47's / 106's single lag). The browser checks: rung 106's lag check
+  unticks the new box first; `the_two_speed_limiter_beside_the_governor_runs_its_route_on_the_finer_step` is new, and
+  prints the page cost.
+* **Cost (the user's condition, reported before shipping; shipped as is):** on the page, the default slam holding
+  thrust, lag 0.2: governed two-speed 3.3 s against rung 106's 0.6 s; open 0.20 s against 0.16 s. The crash map's five
+  slowest requests in WebAssembly (`scratch-archive/rung108/wasmtime.txt`): 6.7–10.4 s, all governed, under the 15 s line.
+* **Crash map** (`scratch-archive/rung108/crash.txt`, seed 108, 1 000 requests, half governed, the box and the lag on,
+  cut-in 0.02–0.5, give-back 0.02–1.0): 0 panics; 482 admitted (180 governed, 302 open), 118 stopped early — every stop
+  a named kind (91 the floor out of reach, 21 rich, 3 lean, 3 the redline beside the floor), **0 "other" stops, 0
+  minimum-fuel holds**; **12 re-attacks, all open, all throttle PULL-BACKS starting above the redline — rung 47's own: its single lag at the
+  cut-in time turns the same once on all 12** (at the give-back time on 8; `scratch-archive/rung108/reatt.txt`). Refused: 45 two lags
+  at once, 26 the give-back's floor beside the governor, 73 the speed laws' edges, 57 hot starts (518 refused in all), the rest the earlier
+  rungs' refusals. Slowest 7.3 s natively.

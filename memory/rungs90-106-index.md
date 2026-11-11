@@ -29,6 +29,7 @@ Moved out of `MEMORY.md` on 2026-11-10, when the index reached 19.6 KB. Append n
 - [105](rung105-hp-vane.md) re-ask scope before freezing; read the dear law once; classify a refusal at its source
 - [106](rung106-governor-lag.md) re-run a comparison claim on the same configurations; all-HIT ⇒ look past the grid
 - [107](rung107-governor-release.md) a HIT can rest on the wrong mechanism: split a two-edge device's edges; scope a comparison to its hold; ask if a knob floor is numerical
+- [108](rung108-two-speed-limiter.md) re-read a picked option's exact words before asking on it; name a loop's cell in its assertion; log RK4 stages for a pinned-trigger claim
 
 ## The user's decisions, per rung
 - [93/94](rung93-94-decisions.md) user 2026-10-16: two rungs, both framings, hold thrust or HP speed
@@ -46,4 +47,4 @@ Moved out of `MEMORY.md` on 2026-11-10, when the index reached 19.6 KB. Append n
 - [106](rung106-decisions.md) governor beside rung 47's temperature-limiter lag only; all holds; 52/88 and the lagged sensor later
 - [107](rung107-decisions.md) governor beside rung 52's release AS BUILT (schedule + floor lagged, redline/metal instant); all holds
 - [107 fast attack](gov-fast-attack-decisions.md) sandbox § 45: attack floor 0.02 beside the governor (4 substeps), every substep recorded
-- [108](rung108-decisions.md) two-speed temperature limiter: BOTH governed and open, ALL holds, realistic default (fast cut, 0.2 give-back)
+- [108](rung108-decisions.md) two-speed temperature limiter: BOTH governed and open, ALL holds, box TICKED on the page (model default off), shipped at 3.3 s/run governed

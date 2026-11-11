@@ -187,6 +187,8 @@ fn every_controls_knob_and_switch_is_a_setting_and_every_one_has_its_knob() {
         airflow: turbojet::airflow_source::AirflowFrom::Exhaust, exhaust_lag: true, exhaust_tau: 0.5,
         // Rung 102's five likewise (`ab` is a dropdown, text, so neither a number knob nor a switch).
         ab: Some(turbojet::afterburner::AbMode::Lit), tt7: 1900.0, light_at: 1.0, a8_ratio: 1.2, a8_match: true,
+        // Rung 108's two likewise (the page ticks the box itself; the model's default is off).
+        gov_lag_two: true, gov_lag_att: 0.05,
         ..turbojet::sandbox_controls::ControlsSettings::defaults()
     }.to_json();
     let mut knobs: Vec<String> = js_map(&t, "CTL_NUM").into_iter().map(|(_, k)| k).collect();

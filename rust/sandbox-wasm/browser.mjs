@@ -557,7 +557,7 @@ try {
   // Rung 106: govern HP speed by the proportional law at the page's default gain (20) with the temperature limiter on,
   // then tick its lag through its own checkbox -- the page nudges the gain to the lag's edge (10) and says so, the run
   // takes the lagged-governor route, and the lag's cut holds the fuel somewhere.
-  await ev(`window.sandbox.controls({thrust_by: 'true', hold: 'speed', speed_law: 'prop', gov_gain: 20, redline_on: 1, gov_lag_on: 0}).then(r => r.run)`);
+  await ev(`window.sandbox.controls({thrust_by: 'true', hold: 'speed', speed_law: 'prop', gov_gain: 20, redline_on: 1, gov_lag_on: 0, gov_lag_two: 0 /* rung 108's box unticked: the single lag */}).then(r => r.run)`);
   await ev(`(() => { const e = document.getElementById('ctl-gov_lag_on'); e.checked = true; e.dispatchEvent(new Event('change', {bubbles: true})); })()`);
   const lOn = await waitFor(`window.sandbox.ctlState === 'done' && window.sandbox.last.controls && window.sandbox.last.controls.gov_lag_on === 1`, 60000);
   const lr = await ev(`(() => { const r = window.sandbox.last, n = document.getElementById('ctl-lagnudge');
@@ -568,7 +568,7 @@ try {
   // Rung 107 + plan § 45: govern thrust with the acceleration schedule at the page's default attack (0.02), then tick the
   // realistic release -- no knob moves (the cut may be that fast now), and the run takes the governed-release route on
   // the finer step: every point present, 0.005 τ apart, with the lag holding the fuel somewhere.
-  await ev(`window.sandbox.controls({hold: 'thrust', speed_law: 'rate', gov_gain: 20, redline_on: 0, gov_lag_on: 0, accel_on: 1, release_on: 0, tau_att: 0.02, tau_rel: 0.1}).then(r => r.run)`);
+  await ev(`window.sandbox.controls({hold: 'thrust', speed_law: 'rate', gov_gain: 20, redline_on: 0, gov_lag_on: 0, accel_on: 1, release_on: 0, tau_att: 0.02, tau_rel: 0.1, gov_lag_two: 1}).then(r => r.run)`);
   await ev(`(() => { const e = document.getElementById('ctl-release_on'); e.checked = true; e.dispatchEvent(new Event('change', {bubbles: true})); })()`);
   const relOn = await waitFor(`window.sandbox.ctlState === 'done' && window.sandbox.last.controls && window.sandbox.last.controls.release_on === 1`, 60000);
   const relR = await ev(`(() => { const r = window.sandbox.last, n = document.getElementById('ctl-relnudge');
@@ -580,15 +580,16 @@ try {
   if (process.env.SANDBOX_SHOTS) { await ev(`document.getElementById('ctlq-thrust').click()`); await shot('controls-fast-cut');
                                    await ev(`document.getElementById('ctlq-Tt4').click()`); }
   await ev(`window.sandbox.controls({accel_on: 0, release_on: 0, tau_att: 0.02, tau_rel: 0.1}).then(r => r.run)`);
-  // Rung 108: govern thrust with the temperature limiter and its lag (0.2) on, then tick "…cuts fast, gives back slowly"
-  // through its own checkbox -- the cut-in knob appears at 0.02, the lag knob is relabelled as the give-back time, and
-  // the run takes the governed two-speed route on the finer step, every point present, the lag holding the fuel
-  // somewhere. Its cost on the page (the user's condition for shipping) is printed against rung 106's at the same lag.
-  await ev(`window.sandbox.controls({hold: 'thrust', speed_law: 'rate', gov_gain: 20, redline_on: 1, gov_lag_on: 1, gov_lag: 0.2, gov_lag_two: 0, gov_lag_att: 0.02}).then(r => r.run)`);
-  await ev(`(() => { const e = document.getElementById('ctl-gov_lag_two'); e.checked = true; e.dispatchEvent(new Event('change', {bubbles: true})); })()`);
-  const twoOn = await waitFor(`window.sandbox.ctlState === 'done' && window.sandbox.last.controls && window.sandbox.last.controls.gov_lag_two === 1`, 120000);
+  // Rung 108: govern thrust with the temperature limiter on and "…cuts fast, gives back slowly" ticked (the page's
+  // default, the user's choice; restored above), then tick the limiter's lag (0.2) through its own checkbox -- the
+  // new box shows ticked, the cut-in knob appears at 0.02, the lag knob is relabelled as the give-back time, and the run
+  // takes the governed two-speed route on the finer step, every point present, the lag holding the fuel somewhere. Its
+  // cost on the page (the user's condition for shipping) is printed against rung 106's at the same lag.
+  await ev(`window.sandbox.controls({hold: 'thrust', speed_law: 'rate', gov_gain: 20, redline_on: 1, gov_lag_on: 0, gov_lag: 0.2, gov_lag_att: 0.02}).then(r => r.run)`);
+  await ev(`(() => { const e = document.getElementById('ctl-gov_lag_on'); e.checked = true; e.dispatchEvent(new Event('change', {bubbles: true})); })()`);
+  const twoOn = await waitFor(`window.sandbox.ctlState === 'done' && window.sandbox.last.controls && window.sandbox.last.controls.gov_lag_on === 1`, 120000);
   const twoR = await ev(`(() => { const r = window.sandbox.last;
-      return [r.route, r.controls.gov_lag_att, document.getElementById('ctl-gov_lag_att').value,
+      return [r.route, r.controls.gov_lag_att, document.getElementById('ctl-gov_lag_two').checked && document.getElementById('ctl-gov_lag_att').value,
               document.getElementById('ctl-gov_lag_two-box').hidden, /Giving back/.test(document.getElementById('ctl-gov_lag-lbl').textContent),
               r.ds, r.s.length === r.expected_points, Math.abs(r.s[1] - r.s[0] - 0.005) < 1e-12, r.holder.includes('lag')]; })()`);
   check('the_two_speed_limiter_beside_the_governor_runs_its_route_on_the_finer_step', twoOn && twoR[0] === 'governor_two_speed'
@@ -607,7 +608,7 @@ try {
     }
     console.log(`  rung 108 page cost (thrust hold, redline, lag 0.2, cut-in 0.02; two runs each): ${rows.join('; ')}`);
   }
-  await ev(`window.sandbox.controls({govern: 1, gov_lag_two: 0, gov_lag_att: 0.02, gov_lag_on: 0, gov_lag: 0.2, redline_on: 0}).then(r => r.run)`);
+  await ev(`window.sandbox.controls({govern: 1, gov_lag_two: 1, gov_lag_att: 0.02, gov_lag_on: 0, gov_lag: 0.2, redline_on: 0}).then(r => r.run)`);
   await ev(`window.sandbox.controls({govern: 0, hold: 'tt4', thrust_by: 'true', speed_law: 'rate', gov_gain: 20, redline_on: 0, gov_lag_on: 0}).then(r => r.run)`);
   await ev(`document.getElementById('ctlq-Tt4').click()`);
   await ev(`window.sandbox.controls({lever: 'none', floor_on: 0, floor_phi: 0.75, floor_ref: 'phi', bleed_mode: 'schedule',

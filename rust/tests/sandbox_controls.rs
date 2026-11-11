@@ -315,8 +315,8 @@ fn the_stop_rerun_reproduces_the_marchs_own_steps() {
             Route::Plain => routes.0 += 1,
             Route::Release => routes.1 += 1,
             Route::ValveLag => routes.2 += 1,
-            Route::Governor | Route::GovernorLag | Route::GovernorRelease =>
-                unreachable!("no Controls case here is governed (tests/rung95.rs, rung106.rs and rung107.rs re-run those)"),
+            Route::Governor | Route::GovernorLag | Route::GovernorRelease | Route::TwoSpeed | Route::GovernorTwoSpeed =>
+                unreachable!("no Controls case here is governed or two-speed (tests/rung95.rs, rung106–108.rs re-run those)"),
         }
         for w in o.points.windows(2) {
             let (a, b, g) = replay_step(&sv, &w[0]).unwrap().unwrap_or_else(|f| panic!("{name}: {f:?}"));
@@ -583,7 +583,9 @@ fn settings_round_trip_and_the_entry_point_answers() {
                                a8_ratio: 1.35, a8_match: true,
                                // Rung 104's law, off its default likewise.
                                turbine: turbojet::turbine_law::TurbineLaw::TwoRows,
-                               hp_vane: turbojet::hp_vane::HpVane::Rows { reaction: 0.4 } };
+                               hp_vane: turbojet::hp_vane::HpVane::Rows { reaction: 0.4 },
+                               // Rung 108's two, off their defaults likewise.
+                               gov_lag_two: true, gov_lag_att: 0.05 };
     let back = ControlsSettings::from_json(&Json::parse(&s.to_json().dump_compact())).unwrap();
     assert_eq!(back, s);
     // At their defaults they are not written at all (every default reply keeps rung 99's shape), and read back.

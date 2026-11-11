@@ -3287,8 +3287,10 @@ pub fn call_op(op: &str, req: &Json) -> Option<Json> {
                     kv.extend([("ab".into(), Json::from("none")), ("Tt7".into(), Json::Float(AB_TT7)),
                                ("light_at".into(), Json::Float(AB_LIGHT_AT)), ("a8_ratio".into(), Json::Float(1.0)),
                                ("a8_match".into(), Json::Int(0)),
-                               // Rung 108's two, likewise.
-                               ("gov_lag_two".into(), Json::Int(0)), ("gov_lag_att".into(), Json::Float(DS))]);
+                               // Rung 108's two, likewise — the box STARTS TICKED on the page (the user's choice,
+                               // 2026-11-11: the realistic limiter by default once its lag is on). The model's own
+                               // default stays off, so every earlier request, gate and golden is unchanged.
+                               ("gov_lag_two".into(), Json::Int(1)), ("gov_lag_att".into(), Json::Float(DS))]);
                 }
                 j
             },

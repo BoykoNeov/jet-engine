@@ -1,0 +1,5 @@
+10.39 s  ok=1 route=governor_two_speed ds=0.005 pts=633/633 att=0.24 rel=0.3 govern=1 hold=thrust ramp=1.16
+6.68 s  ok=1 route=governor_two_speed ds=0.005 pts=685/685 att=0.24 rel=0.22 govern=1 hold=thrust ramp=1.42
+8.78 s  ok=1 route=governor_two_speed ds=0.005 pts=713/713 att=0.5 rel=0.1 govern=1 hold=thrust ramp=1.56
+9.67 s  ok=1 route=governor_two_speed ds=0.005 pts=561/561 att=0.08 rel=0.54 govern=1 hold=thrust ramp=0.8
+8.88 s  ok=1 route=governor_two_speed ds=0.005 pts=745/745 att=0.12 rel=0.96 govern=1 hold=speed ramp=1.72

@@ -45,3 +45,11 @@ EPR; its own step check never combined them; no lag ⇒ clean). Asked: **RECORD 
 advisor review of § 3 → fix → commit as the frozen anchor → archive the probe (`W:\temp\claude\rung108-probe`, sources +
 sweep/base/timing/open2/ledger .txt) into `docs/plans/scratch-archive/rung108/` → build `two_speed_clip.rs`. Rung 106's
 step-roughness still to be written into the sandbox plan as an open item (it is in anchor G3).
+
+**After the build (2026-11-11):** anchor § 3 frozen (`e14a723`), built, scored 144 HIT / 4 MISS / 12 VACUOUS. The
+pinned-trigger gate restated (open route, coarse step: RK4 stages read the give-back early) — the advisor's call, not
+asked (the scored overshoot moved by 2.8e−5 K). **Cost reported before shipping** (page: governed 3.3 s against rung
+106's 0.6 s; open 0.20 against 0.16 s; worst estimated 9–10 s) — the user: **SHIP AS IS**. Then a side agent caught that
+the box had been built UNTICKED although the picked option said the realistic case is the default — re-asked: **TICKED
+ON THE PAGE** (the defaults reply), the model's own default OFF so no earlier request/gate/golden moves. Next (the
+user's earlier choice): fix rung 106's step roughness (sandbox plan § 43's OPEN item). Lessons: [[rung108-two-speed-limiter]].

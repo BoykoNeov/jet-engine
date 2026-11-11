@@ -1,0 +1,12 @@
+start Tt4 1620 redline 1360 att 0.28 rel 0.34: two-speed turns g 1 proxy 1 | rung 47 at att 1 | at rel 1
+start Tt4 1670 redline 1560 att 0.26 rel 0.70: two-speed turns g 1 proxy 1 | rung 47 at att 1 | at rel 1
+start Tt4 1786 redline 1350 att 0.32 rel 0.56: two-speed turns g 1 proxy 1 | rung 47 at att 1 | at rel 1
+start Tt4 1684 redline 1330 att 0.08 rel 0.20: two-speed turns g 1 proxy 1 | rung 47 at att 1 | at rel 0
+start Tt4 1630 redline 1420 att 0.22 rel 0.64: two-speed turns g 1 proxy 1 | rung 47 at att 1 | at rel 1
+start Tt4 1896 redline 1250 att 0.12 rel 0.32: two-speed turns g 1 proxy 1 | rung 47 at att 1 | at rel 1
+start Tt4 1330 redline 1210 att 0.42 rel 0.56: two-speed turns g 1 proxy 1 | rung 47 at att 1 | at rel 0
+start Tt4 1879 redline 1400 att 0.28 rel 0.40: two-speed turns g 1 proxy 1 | rung 47 at att 1 | at rel 0
+start Tt4 1560 redline 1290 att 0.44 rel 0.38: two-speed turns g 1 proxy 1 | rung 47 at att 1 | at rel 1
+start Tt4 1483 redline 1290 att 0.38 rel 0.16: two-speed turns g 1 proxy 1 | rung 47 at att 1 | at rel 1
+start Tt4 1610 redline 1280 att 0.48 rel 0.96: two-speed turns g 1 proxy 1 | rung 47 at att 1 | at rel 0
+start Tt4 1560 redline 1250 att 0.18 rel 0.94: two-speed turns g 1 proxy 1 | rung 47 at att 1 | at rel 1
