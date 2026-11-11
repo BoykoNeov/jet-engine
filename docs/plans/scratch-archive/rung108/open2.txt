@@ -1,0 +1,75 @@
+NOTE floor design map3 0.02 0.02 len=37 att=1 min=0
+NOTE floor design map3 0.02 0.05 len=37 att=1 min=0
+NOTE floor design map3 0.02 0.1 len=37 att=1 min=0
+NOTE floor design map3 0.02 0.2 len=37 att=1 min=0
+NOTE floor design map3 0.02 0.8 len=37 att=1 min=0
+NOTE floor design map3 0.03 0.02 len=37 att=1 min=0
+NOTE floor design map3 0.03 0.05 len=37 att=1 min=0
+NOTE floor design map3 0.03 0.1 len=37 att=1 min=0
+NOTE floor design map3 0.03 0.2 len=37 att=1 min=0
+NOTE floor design map3 0.03 0.8 len=37 att=1 min=0
+NOTE floor design map3 0.05 0.02 len=37 att=1 min=0
+NOTE floor design map3 0.05 0.05 len=37 att=1 min=0
+NOTE floor design map3 0.05 0.1 len=37 att=1 min=0
+NOTE floor design map3 0.05 0.2 len=37 att=1 min=0
+NOTE floor design map3 0.05 0.8 len=37 att=1 min=0
+NOTE floor design map3 0.1 0.02 len=37 att=1 min=0
+NOTE floor design map3 0.1 0.05 len=37 att=1 min=0
+NOTE floor design map3 0.1 0.1 len=37 att=1 min=0
+NOTE floor design map3 0.1 0.2 len=37 att=1 min=0
+NOTE floor design map3 0.1 0.8 len=37 att=1 min=0
+NOTE floor design map3 0.2 0.02 len=37 att=1 min=0
+NOTE floor design map3 0.2 0.05 len=37 att=1 min=0
+NOTE floor design map3 0.2 0.1 len=37 att=1 min=0
+NOTE floor design map3 0.2 0.2 len=37 att=1 min=0
+NOTE floor design map3 0.2 0.8 len=37 att=1 min=0
+NOTE floor dense map3 0.02 0.02 len=24 att=1 min=0
+NOTE floor dense map3 0.02 0.05 len=24 att=1 min=0
+NOTE floor dense map3 0.02 0.1 len=24 att=1 min=0
+NOTE floor dense map3 0.02 0.2 len=24 att=1 min=0
+NOTE floor dense map3 0.02 0.8 len=24 att=1 min=0
+NOTE floor dense map3 0.03 0.02 len=24 att=1 min=0
+NOTE floor dense map3 0.03 0.05 len=24 att=1 min=0
+NOTE floor dense map3 0.03 0.1 len=24 att=1 min=0
+NOTE floor dense map3 0.03 0.2 len=24 att=1 min=0
+NOTE floor dense map3 0.03 0.8 len=24 att=1 min=0
+NOTE floor dense map3 0.05 0.02 len=24 att=1 min=0
+NOTE floor dense map3 0.05 0.05 len=24 att=1 min=0
+NOTE floor dense map3 0.05 0.1 len=24 att=1 min=0
+NOTE floor dense map3 0.05 0.2 len=24 att=1 min=0
+NOTE floor dense map3 0.05 0.8 len=24 att=1 min=0
+NOTE floor dense map3 0.1 0.02 len=24 att=1 min=0
+NOTE floor dense map3 0.1 0.05 len=24 att=1 min=0
+NOTE floor dense map3 0.1 0.1 len=24 att=1 min=0
+NOTE floor dense map3 0.1 0.2 len=24 att=1 min=0
+NOTE floor dense map3 0.1 0.8 len=24 att=1 min=0
+NOTE floor dense map3 0.2 0.02 len=24 att=1 min=0
+NOTE floor dense map3 0.2 0.05 len=24 att=1 min=0
+NOTE floor dense map3 0.2 0.1 len=24 att=1 min=0
+NOTE floor dense map3 0.2 0.2 len=24 att=1 min=0
+NOTE floor dense map3 0.2 0.8 len=24 att=1 min=0
+att=0.02 rel=0.02 worst=9.6e-5 (red thin map0 len=126/126 edges=1/1)
+att=0.02 rel=0.05 worst=9.6e-5 (red thin map0 len=126/126 edges=1/1)
+att=0.02 rel=0.1 worst=9.6e-5 (red thin map0 len=126/126 edges=1/1)
+att=0.02 rel=0.2 worst=9.6e-5 (red thin map0 len=126/126 edges=1/1)
+att=0.02 rel=0.8 worst=9.6e-5 (red thin map0 len=126/126 edges=1/1)
+att=0.03 rel=0.02 worst=8.2e-5 (red thin map0 len=126/126 edges=1/1)
+att=0.03 rel=0.05 worst=8.2e-5 (red thin map0 len=126/126 edges=1/1)
+att=0.03 rel=0.1 worst=8.2e-5 (red thin map0 len=126/126 edges=1/1)
+att=0.03 rel=0.2 worst=8.2e-5 (red thin map0 len=126/126 edges=1/1)
+att=0.03 rel=0.8 worst=8.2e-5 (red thin map0 len=126/126 edges=1/1)
+att=0.05 rel=0.02 worst=5.8e-5 (red thin map0 len=126/126 edges=1/1)
+att=0.05 rel=0.05 worst=5.8e-5 (red thin map0 len=126/126 edges=1/1)
+att=0.05 rel=0.1 worst=5.8e-5 (red thin map0 len=126/126 edges=1/1)
+att=0.05 rel=0.2 worst=5.8e-5 (red thin map0 len=126/126 edges=1/1)
+att=0.05 rel=0.8 worst=5.8e-5 (red thin map0 len=126/126 edges=1/1)
+att=0.1 rel=0.02 worst=3.2e-5 (red thin map0 len=126/126 edges=1/1)
+att=0.1 rel=0.05 worst=3.2e-5 (red thin map0 len=126/126 edges=1/1)
+att=0.1 rel=0.1 worst=3.2e-5 (red thin map0 len=126/126 edges=1/1)
+att=0.1 rel=0.2 worst=3.2e-5 (red thin map0 len=126/126 edges=1/1)
+att=0.1 rel=0.8 worst=3.2e-5 (red thin map0 len=126/126 edges=1/1)
+att=0.2 rel=0.02 worst=3.7e-5 (floor dense map0 len=126/126 edges=1/1)
+att=0.2 rel=0.05 worst=3.7e-5 (floor dense map0 len=126/126 edges=1/1)
+att=0.2 rel=0.1 worst=3.7e-5 (floor dense map0 len=126/126 edges=1/1)
+att=0.2 rel=0.2 worst=3.7e-5 (floor dense map0 len=126/126 edges=1/1)
+att=0.2 rel=0.8 worst=3.7e-5 (floor dense map0 len=126/126 edges=1/1)
