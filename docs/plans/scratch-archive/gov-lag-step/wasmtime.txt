@@ -15,3 +15,15 @@ AFTER (2026-11-11, the rebuilt page: the governed lag on the 0.005 step; same re
 8.12 s  ok=1 route=governor_lag ds=0.005 pts=745/745 att=0.12 rel=0.96 govern=1 hold=speed ramp=1.72
 1.60 s  ok=1 route=governor_lag ds=0.005 pts=501/501 att=undefined rel=0.2 govern=1 hold=thrust ramp=undefined
 2.39 s  ok=1 route=governor_lag ds=0.005 pts=501/501 att=undefined rel=0.2 govern=1 hold=thrust ramp=undefined
+
+AFTER, rung 106's own slow requests (the advisor's check): hold-tol/slow_reqs.txt (rung 95's five slowest, HP-shaft generator) as-is, then with the lag on (0.2, single speed) — gen_reqs.txt
+0.21 s  ok=1 route=governor ds=0.02 pts=135/135 att=undefined rel=undefined govern=1 hold=speed ramp=0.68
+0.59 s  ok=1 route=governor ds=0.02 pts=157/157 att=undefined rel=undefined govern=1 hold=thrust ramp=1.12
+1.73 s  ok=1 route=governor ds=0.02 pts=161/161 att=undefined rel=undefined govern=1 hold=thrust ramp=1.2
+6.66 s  ok=1 route=governor ds=0.02 pts=182/182 att=undefined rel=undefined govern=1 hold=thrust ramp=1.62
+1.72 s  ok=1 route=governor ds=0.02 pts=185/185 att=undefined rel=undefined govern=1 hold=speed ramp=1.68
+0.69 s  ok=1 route=governor_lag ds=0.005 pts=537/537 att=undefined rel=0.2 govern=1 hold=speed ramp=0.68
+2.30 s  ok=1 route=governor_lag ds=0.005 pts=625/625 att=undefined rel=0.2 govern=1 hold=thrust ramp=1.12
+6.84 s  ok=1 route=governor_lag ds=0.005 pts=641/641 att=undefined rel=0.2 govern=1 hold=thrust ramp=1.2
+9.14 s  ok=1 route=governor_lag ds=0.005 pts=725/725 att=undefined rel=0.2 govern=1 hold=thrust ramp=1.62
+0.00 s  ok=0 route=undefined ds=undefined pts=-/undefined att=undefined rel=0.2 govern=1 hold=speed ramp=1.68

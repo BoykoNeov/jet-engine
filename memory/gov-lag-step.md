@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 5680c8ab-239f-4159-9ba1-e34491b7f4fc
-  modified: 2026-11-11T19:33:30.598Z
+  modified: 2026-11-11T20:48:05.907Z
 ---
 
 Plan § 47 (2026-11-11, SHIPPED): rung 106's single lag beside the governor now runs on DS/4 (`march_ds`), the user's
@@ -20,7 +20,10 @@ Process lessons:
   restate it against the predecessor's march at the same step, and tell the user in plain words.
 - Model-level tests that march at DS but compare length to `expected_points()` break when the page's step changes —
   count at the march's own step.
-- cmd `start /belownormal` + a manifest path with a space: neither `^ ` nor `\"…\"` survives from Bash; write a `.cmd`
-  file under W:\temp\claude and start that. See [[windows-tooling-file-hazards]].
+- cmd `start /belownormal` + a manifest path with a space: neither `^ ` nor `\"…\"` survives from Bash. Do NOT `start`
+  a `.cmd` file (it runs as `cmd /K` and never exits — two hung windows this session). Use PowerShell, as `build.ps1`'s
+  `Invoke-Low`: `Push-Location "<repo>\rust"; cmd /v:on /c "start /belownormal /b /wait cargo ... & exit !errorlevel!"; Pop-Location`
+  (relative manifest). See [[windows-tooling-file-hazards]].
+- Time a route's cost on ITS OWN slowest requests (here § 43's HP-generator ones), not only a neighbour route's.
 
 Related: [[sandbox-direction]], [[needless-precision]].

@@ -176,7 +176,7 @@ governor it never sags. Beside the governor such a run is always worked out on t
 five times as long as rung 106's did (about 3 s on the page). Since plan § 47 (2026-11-11) rung 106's single lag beside
 the governor runs on that same 0.005 τ step too: at the page's 0.02 τ step, runs beside the stall floor or the schedule
 came out slightly different from a finer step's. It now takes about four times as long (about 1.6 s for the default
-slam, up to ~9 s for the slowest requests tried), and at equal times the two-speed box ticked or unticked gives the same run.
+slam, up to ~9 s for the slowest requests tried, which carry the HP-shaft generator), and at equal times the two-speed box ticked or unticked gives the same run.
 
 **Flight (plan § 27, 2026-10-16):** the *Flight* fieldset's altitude and "warmer than a standard day" (linked to the
 air temperature and pressure, as on *Fly it*) also fly this engine, and since plan § 29 (2026-10-18) so does the

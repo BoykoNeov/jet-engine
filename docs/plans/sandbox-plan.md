@@ -2478,6 +2478,8 @@ march at the same fine step, not against rung 95's page run.
 * **C5:** rung 106's browser check asserts `ds` = 0.005 and every point present.
 * **C6** (`scratch-archive/gov-lag-step/wasmtime.txt`, the page's WebAssembly): the default governed lag slam 0.47 →
   1.60 s, with the floor 0.66 → 2.39 s; rung 108's five slowest crash-map requests on the single lag 1.7–2.8 → 6.0–9.4 s.
-  Under the 15 s line; reported to the user.
+  Added after shipping (the advisor's check): § 43's slow HP-generator requests (`hold-tol/slow_reqs.txt`) with the lag
+  on at 0.2 — 0.7 / 2.3 / 6.8 / 9.1 s (lag off 0.2–6.7 s; the fifth refused with the lag on). Under the 15 s line;
+  reported to the user. The crash map was not re-run at the new step.
 * **What a page user sees:** with *Govern* and the limiter's lag ticked (the two-speed box unticked), the run is drawn
   every 0.005 τ and takes ~4× as long; beside the floor or the schedule its curves no longer depend on the step.
