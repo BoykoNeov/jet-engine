@@ -39,3 +39,7 @@ Related: [[rung107-decisions]].
 - I wrote "every bar met" into a pushed commit before checking B3's stopped-run half (the crash map never counted
   fast-cut stops); the advisor caught it, and a census then found 21. **How to apply:** before writing "every bar met",
   re-read each bar's wording and name the evidence for each clause.
+- **Default kept at 0.02 (user, 2026-11-11, asked AFTER shipping):** my cost question said "only runs where a user picks
+  a fast cut get slower", but 0.02 was already the page's default, so every governed-release run pays (~1.9 s vs 0.35 s).
+  A side-agent note caught it. **How to apply:** when a cost applies "only to option X", check whether X is the
+  DEFAULT before saying who pays.

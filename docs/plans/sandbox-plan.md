@@ -2377,3 +2377,7 @@ true (over keeping the 0.02 spacing and saying the sag reads shallow).
   schedule, 0.02 cut) 1.9 s on the page, against 0.35 s at 0.2.
 * **What a page user sees:** ticking *Govern* and *Realistic release* keeps the 0.02 cut; holding thrust on the schedule
   the thrust sags ~0.5 % of its step letting go over 0.1 τ, 1.5 % over 0.4 τ, 3 % over 1.6 τ (4.1 % at a 0.2 cut).
+* **The default (the user, 2026-11-11, asked after shipping on a side-agent note):** the page's cut default is 0.02, so
+  ticking *Govern* and *Realistic release* now runs the finer step by default (~1.9 s on the page, against 0.35 s when
+  the old nudge moved it to 0.2) — the question put before the build had said only a chosen fast cut pays, which missed
+  that. Asked: **keep 0.02** (the realistic case is the default), not a return to the 0.2 nudge.
