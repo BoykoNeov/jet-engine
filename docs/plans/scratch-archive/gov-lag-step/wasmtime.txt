@@ -6,3 +6,12 @@ BEFORE (2026-11-11, the page's wasm at c2429c2; reqs.txt: rung 108's five slowes
 2.31 s  ok=1 route=governor_lag ds=0.02 pts=187/187 att=0.12 rel=0.96 govern=1 hold=speed ramp=1.72
 0.47 s  ok=1 route=governor_lag ds=0.02 pts=126/126 att=undefined rel=0.2 govern=1 hold=thrust ramp=undefined
 0.66 s  ok=1 route=governor_lag ds=0.02 pts=126/126 att=undefined rel=0.2 govern=1 hold=thrust ramp=undefined
+
+AFTER (2026-11-11, the rebuilt page: the governed lag on the 0.005 step; same requests)
+9.38 s  ok=1 route=governor_lag ds=0.005 pts=633/633 att=0.24 rel=0.3 govern=1 hold=thrust ramp=1.16
+5.97 s  ok=1 route=governor_lag ds=0.005 pts=685/685 att=0.24 rel=0.22 govern=1 hold=thrust ramp=1.42
+8.18 s  ok=1 route=governor_lag ds=0.005 pts=713/713 att=0.5 rel=0.1 govern=1 hold=thrust ramp=1.56
+8.97 s  ok=1 route=governor_lag ds=0.005 pts=561/561 att=0.08 rel=0.54 govern=1 hold=thrust ramp=0.8
+8.12 s  ok=1 route=governor_lag ds=0.005 pts=745/745 att=0.12 rel=0.96 govern=1 hold=speed ramp=1.72
+1.60 s  ok=1 route=governor_lag ds=0.005 pts=501/501 att=undefined rel=0.2 govern=1 hold=thrust ramp=undefined
+2.39 s  ok=1 route=governor_lag ds=0.005 pts=501/501 att=undefined rel=0.2 govern=1 hold=thrust ramp=undefined

@@ -173,6 +173,11 @@ the lag lets through on the way up it withholds on the way down, and a governor,
 * Inherited: rung 95's (the governor reads thrust directly unless rung 96's reading is chosen; stateless laws; the
   clamps are the closure's walls; a straight-line demand), rung 47's (a first-order lag on the clip AMOUNT, the
   limiter-loop lag, not the valve), invented maps, the perfect gas.
+* **The page's step (found by rung 108's probe; repaired 2026-11-11, `docs/plans/sandbox-plan.md` § 47).** § 4's step
+  check never combined the lag with the stall floor or the schedule: at the page's 0.02 step those runs were rough (to
+  8.4e−4 in a flow coefficient; the limiter alone was clean). The page now runs this route on 0.005 (rung 108's rule),
+  every lag 0.1–1.0 clean beside the floor and the schedule. §§ 3–4's numbers are build-time records at 0.02, not
+  re-taken. The lag's floor and the speed laws' edges are kept as measured.
 
 ## The next seam
 

@@ -135,5 +135,6 @@ quickens (0.02: −0.0009 to −0.0016 of flow coefficient below instant; 0.1: �
 ## The next seam
 
 **Rung 106's own roughness at the page step** (anchor § 0 G3, sandbox plan § 43's OPEN item): the shipped single lag
-beside the governor with the floor or the schedule is rough at one step (to 6.2e−4) — the user's choice is to fix it
-next. Then **the governor beside rung 88's slow valve** (still refused).
+beside the governor with the floor or the schedule is rough at one step (to 6.2e−4) — **DONE (2026-11-11, sandbox plan
+§ 47): the governed single lag now runs on the same 0.005 step, so at equal times this rung's governed route IS rung
+106's page route, bit for bit.** Next: **the governor beside rung 88's slow valve** (still refused).

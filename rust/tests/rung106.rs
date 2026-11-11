@@ -25,6 +25,9 @@ fn clip(p: &FuelPoint) -> (f64, f64) {
     match p.extra { PointExtra::Asym { g, required } => (g, required), _ => panic!("the clip's route records its clip") }
 }
 fn bits(p: &FuelPoint) -> [u64; 4] { [p.nu_lp, p.nu_hp, p.mf, p.tt4].map(f64::to_bits) }
+/// How many points a march of `s` at the step `ds` records to the end (plan § 47: the page's own count,
+/// `expected_points`, is at the governed lag's finer step; the model-level checks below march at `DS`).
+fn points_at(s: &ControlsSettings, ds: f64) -> usize { (s.s_end() / ds).round_ties_even() as usize + 1 }
 /// The governed lagged march called directly (any lag, any step) on the machine the page builds for `s`.
 fn direct(s: &ControlsSettings, tau: f64, ds: f64) -> Vec<FuelPoint> {
     let sv = build(&ControlsSettings { gov_lag_on: false, ..*s }).unwrap();
@@ -59,28 +62,46 @@ fn the_open_ramp_as_the_demand_is_rung47s_march_bit_for_bit() {
     }
 }
 
+/// Rung 95's governed march (the instant redline) on the machine the page builds for `s`, at the step `ds`.
+fn rung95(s: &ControlsSettings, ds: f64) -> Vec<FuelPoint> {
+    let sv = build(&ControlsSettings { gov_lag_on: false, ..*s }).unwrap();
+    gv::march(&sv.core.fuel, &sv.flight, sv.governor.as_ref().unwrap(), &sv.limiters(), None,
+              (sv.start.nu_lp, sv.start.nu_hp), s.s_end(), ds).0
+}
+
 #[test]
 fn off_is_the_earlier_run_and_before_the_clip_engages_it_is_rung95s() {
+    // Plan § 47: the page runs the governed lag on the finer step (DS/4), rung 95's page route on DS — so the reduction
+    // is to rung 95's march at the lag's own step; and that march at DS is rung 95's page run (the "off" half).
     for shape in [FLOW_PRESS, FLAT_LP] {
         for hold in [Hold::Thrust, Hold::HpSpeed] {
             let s = gl_on(ControlsSettings { shape, hold, ..d() });
             let (sv, o) = controls(&s).unwrap();
             assert_eq!(sv.route(), Route::GovernorLag);
-            let (_, r95) = controls(&ControlsSettings { gov_lag_on: false, ..s }).unwrap();
+            assert_eq!(s.march_ds(), DS / 4.0);
+            assert_eq!(o.points.len(), s.expected_points());
+            let r95 = rung95(&s, s.march_ds());
             let first = o.points.iter().position(|p| clip(p).0 != 0.0).expect("the clip engages");
             assert!(first > 0);
-            for (a, b) in o.points[..first].iter().zip(&r95.points) {
+            for (a, b) in o.points[..first].iter().zip(&r95) {
                 assert_eq!(bits(a), bits(b), "{hold:?} shape {shape} at s={}", a.s);
+            }
+            let (_, p95) = controls(&ControlsSettings { gov_lag_on: false, ..s }).unwrap();
+            assert_eq!(ControlsSettings { gov_lag_on: false, ..s }.march_ds(), DS, "lag off: the page step");
+            let r95 = rung95(&s, DS);
+            assert_eq!(p95.points.len(), r95.len());
+            for (a, b) in p95.points.iter().zip(&r95) {
+                assert_eq!(bits(a), bits(b), "rung 95's page run {hold:?} shape {shape} at s={}", a.s);
             }
         }
     }
     // A redline above the governed peak: the clip never engages and the whole run is rung 95's (whose redline never cuts).
     let s = gl_on(ControlsSettings { hold: Hold::Thrust, redline: 2500.0, ..d() });
     let (_, o) = controls(&s).unwrap();
-    let (_, r95) = controls(&ControlsSettings { gov_lag_on: false, ..s }).unwrap();
-    assert_eq!(o.points.len(), r95.points.len());
+    let r95 = rung95(&s, s.march_ds());
+    assert_eq!(o.points.len(), r95.len());
     assert!(o.points.iter().all(|p| clip(p) == (0.0, 0.0)));
-    for (a, b) in o.points.iter().zip(&r95.points) {
+    for (a, b) in o.points.iter().zip(&r95) {
         assert_eq!(bits(a), bits(b));
     }
     // The burner-temperature hold below the redline never engages either.
@@ -128,7 +149,7 @@ fn the_clips_ledger_balances_to_the_frozen_bar() {
             // the march itself: the page's floor (0.1) would refuse the anchor's 0.05
             let s = gl_on(ControlsSettings { shape, hold: Hold::Thrust, ..d() });
             let pts = direct(&s, tau, DS);
-            assert_eq!(pts.len(), s.expected_points());
+            assert_eq!(pts.len(), points_at(&s, DS));
             let (miss, scale) = ledger(&pts, tau);
             eprintln!("shape {shape} tau {tau}: ledger miss {miss:e} of tau*max g {scale:e} ({:.1e})", miss / scale);
             assert!(miss <= 2e-2 * scale, "shape {shape} tau {tau}: {miss:e} > 2e-2 * {scale:e}");
@@ -154,7 +175,7 @@ fn the_lean_hold_holds_at_the_wall_and_the_page_refuses_its_hot_start() {
     let ft = &sv.core.fuel;
     let (pts, marks) = gl::march(ft, &sv.flight, Demand::Governor(g), ClipLag { tt4_max: s.redline, tau: 0.2 },
                                  &sv.lag_limiters(), None, (sv.start.nu_lp, sv.start.nu_hp), s.s_end(), DS);
-    assert_eq!(pts.len(), s.expected_points(), "it runs to the end");
+    assert_eq!(pts.len(), points_at(&s, DS), "it runs to the end");
     let held: Vec<usize> = marks.iter().enumerate().filter(|(_, m)| m.leg == Leg::MinFuel).map(|(k, _)| k).collect();
     assert!(!held.is_empty(), "the minimum-fuel stop holds somewhere");
     for &k in &held {
@@ -185,7 +206,7 @@ fn the_page_refuses_a_governor_whose_request_starts_above_the_redline() {
     assert!(sv.start.tt4 < s.redline, "not a hot start: {}", sv.start.tt4);
     // Called directly, the march reaches the minimum-fuel stop — the case the refusal keeps off the page.
     let pts = direct(&s, 0.42, DS);
-    assert_eq!(pts.len(), s.expected_points());
+    assert_eq!(pts.len(), points_at(&s, DS));
     assert!(pts.iter().any(|p| p.mf == p.mf_sched && clip(p).0 > 0.0 && p.mf < 0.002), "held at the lean edge");
 }
 
@@ -226,6 +247,8 @@ fn the_step_check_at_the_fastest_lag() {
     // the fastest speed law (TAU_MIN) still 2.0e-4 — so the governed floor is 0.1. A sweep of the lag 0.1–1.0 at three
     // flights then found the fastest speed law ROUGH at scattered lags (up to 5e-4, the governor on the rich wall), and
     // clean from a commanded rate of 0.1 on — the page's floor for it beside the lag (scratch-archive/rung106/floor_probe.rs).
+    // Plan § 47: those were measured at the page step; beside the floor or the schedule that step was rough, so the page
+    // now runs this route at 0.005 and the check below is 0.005 against 0.00125 (the floors and edges unchanged).
     use turbojet::sandbox_controls::{GOV_LAG_MIN, GOV_LAG_TAU_N_MIN, GOV_LAG_TAU_LP_MIN, GOV_LAG_GAIN_MAX, GOV_LAG_GAIN_MAX_LP};
     // (each hold at the page's floor and each speed law at its edge beside the lag; the HP rate also at 0.16, its worst
     // lag at TAU_MIN — the full sweeps at three flights: scratch-archive/rung106/edge.rs)
@@ -237,18 +260,30 @@ fn the_step_check_at_the_fastest_lag() {
                      (ControlsSettings { hold: Hold::Thrust, thrust_by: ThrustBy::N1, gov_tau: GOV_LAG_TAU_LP_MIN, ..d() }, GOV_LAG_MIN),
                      (ControlsSettings { hold: Hold::Thrust, thrust_by: ThrustBy::N1, speed_law: SpeedLaw::Prop,
                                          gov_gain: GOV_LAG_GAIN_MAX_LP, ..d() }, GOV_LAG_MIN),
-                     (ControlsSettings { hold: Hold::BurnerTemp, to: 1600.0, ..d() }, GOV_LAG_MIN)] {
+                     (ControlsSettings { hold: Hold::BurnerTemp, to: 1600.0, ..d() }, GOV_LAG_MIN),
+                     // Plan § 47: the floor and schedule cases that were rough at the page step (dense flight, pressure
+                     // ratio: floor to 8.4e−4 at lag 0.4, schedule 1.4e−4 at 0.2) and the worst at the finer step (floor,
+                     // lag 1.0: 4.69e−5) — `docs/plans/scratch-archive/gov-lag-step/`.
+                     (ControlsSettings { hold: Hold::Thrust, thrust_by: ThrustBy::Epr, floor_on: true, shape: 1, t0: 288.15,
+                                         p0: 101_325.0, m0: 0.3, ..d() }, 0.4),
+                     (ControlsSettings { hold: Hold::Thrust, thrust_by: ThrustBy::Epr, floor_on: true, shape: 1, t0: 288.15,
+                                         p0: 101_325.0, m0: 0.3, ..d() }, 1.0),
+                     (ControlsSettings { hold: Hold::Thrust, thrust_by: ThrustBy::Epr, accel_on: true, t0: 288.15,
+                                         p0: 101_325.0, m0: 0.3, ..d() }, 0.2)] {
         let s = gl_on(ControlsSettings { gov_lag: lag, ..s });
         let sv = build(&s).unwrap();
         let g = sv.governor.as_ref().unwrap();
         let nu0 = (sv.start.nu_lp, sv.start.nu_hp);
         let run = |ds: f64| gl::march(&sv.core.fuel, &sv.flight, Demand::Governor(g), sv.clip_lag().unwrap(), &sv.lag_limiters(),
                                       None, nu0, s.s_end(), ds).0;
-        let (a, b) = (run(DS), run(DS / 4.0));
+        // Plan § 47: the page's step for this route is DS/4; checked against a step four times finer, on EVERY point.
+        assert_eq!(s.march_ds(), DS / 4.0);
+        let (a, b) = (run(s.march_ds()), run(s.march_ds() / 4.0));
         assert_eq!(a.len(), s.expected_points());
+        assert_eq!(a.len(), controls(&s).unwrap().1.points.len(), "the page's own run");
         let dm = a.iter().enumerate().map(|(k, p)| (p.phi_lp - b[4 * k].phi_lp).abs().max((p.phi_hp - b[4 * k].phi_hp).abs()))
             .fold(0.0, f64::max);
-        eprintln!("{:?} {:?} at the lag {lag}: step 0.02 vs 0.005, flow coefficients {dm:e}", g.law, s.hold);
+        eprintln!("{:?} {:?} at the lag {lag}: step 0.005 vs 0.00125, flow coefficients {dm:e}", g.law, s.hold);
         assert!(dm < 1e-4, "{:?}: {dm:e}", g.law);
     }
 }

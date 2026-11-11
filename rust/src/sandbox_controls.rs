@@ -74,7 +74,8 @@ pub const DS: f64 = 0.02;
 /// (`tests/rung106.rs`): the governed march at the page's step against one four times finer moves the flow coefficients
 /// by ~2e−4 at a lag of one step (thrust or HP speed), and at three steps still by 2.0e−4 under the fastest speed law
 /// (`TAU_MIN`) — two fast clocks together; from 0.1, with each speed law at its own edge beside the lag (below), every
-/// hold is under 1e−4. Rung 47's open route keeps its one step.
+/// hold is under 1e−4. Rung 47's open route keeps its one step. (Plan § 47: the governed lag now runs on the finer step,
+/// [`ControlsSettings::march_ds`]; this floor and the speed laws' edges below stay as measured — not re-opened.)
 pub const GOV_LAG_MIN: f64 = 0.1;
 /// Rung 106 (the user's choice, "limit each law", after sweeps of the lag 0.1–1.0 at the design, a thin and a dense
 /// flight): beside the lag every speed law is ROUGH in the step at its rung-95/96 edge — up to 5e−4 (HP rate at
@@ -602,8 +603,12 @@ impl ControlsSettings {
     /// release that cuts in faster than [`GOV_REL_FINE_BELOW`] — there [`GOV_REL_SUBSTEPS`] times finer (plan § 45).
     /// Rung 108: beside the governor the two-speed limiter ALWAYS runs on that finer step (the user's choice; anchor
     /// § 0 G3 — at one step a fast cut is rough, and the floor cases at every cut-in time).
+    /// Plan § 47 (the user's choice): so does rung 106's single lag beside the governor — at one step it was rough beside
+    /// the stall floor or the schedule (to 8.4e−4); at the finer step every lag 0.1–1.0 is under 1e−4
+    /// (`docs/plans/scratch-archive/gov-lag-step/`). One rule for the lag, one or two speeds.
     pub fn march_ds(&self) -> f64 {
-        if (self.govern && self.release_on && self.tau_att < GOV_REL_FINE_BELOW - 1e-12) || (self.govern && self.two_speed())
+        let lagged_clip = self.gov_lag_on && self.redline_on;
+        if self.govern && ((self.release_on && self.tau_att < GOV_REL_FINE_BELOW - 1e-12) || lagged_clip)
         { DS / GOV_REL_SUBSTEPS } else { DS }
     }
 
@@ -1793,8 +1798,9 @@ impl ControlsSolver {
                     tsc::march(&self.core.fuel, &self.flight, gl::Demand::Governor(g), self.two_speed_clip(),
                                &self.lag_limiters(), metal, nu0, self.settings.s_end(), self.settings.march_ds()),
                 // Rung 106: beside the temperature limiter's lag, the clip a third state off the governor's demand.
+                // Plan § 47: on the finer step.
                 Some(clip) => gl::march(&self.core.fuel, &self.flight, gl::Demand::Governor(g), clip, &self.lag_limiters(),
-                                        metal, nu0, self.settings.s_end(), DS),
+                                        metal, nu0, self.settings.s_end(), self.settings.march_ds()),
                 // Rung 107: beside the realistic release, rung 52's lag a third state off the governor's demand.
                 None if self.release_lag().is_some() =>
                     gr::march(&self.core.fuel, &self.flight, gl::Demand::Governor(g), &self.limiters(), metal, nu0,
@@ -1888,13 +1894,13 @@ impl ControlsSolver {
             .map_err(|f| gov_failure(f, a, b, s))
     }
 
-    /// Rung 106: the rest of one three-state step — the model's own [`gl::try_rk_step`].
+    /// Rung 106: the rest of one three-state step — the model's own [`gl::try_rk_step`], at the march's step (plan § 47).
     pub fn gov_lag_step(&self, a: f64, b: f64, g: f64, s: f64, k1: (f64, f64, f64)) -> Result<(f64, f64, f64), Failure> {
         let gov = self.governor.as_ref().expect("the governed route has its governor");
         let over = |i: &Instant2| self.metal_over(i);
         let metal: Option<&dyn Fn(&Instant2) -> f64> = if self.settings.metal_leg() { Some(&over) } else { None };
         gl::try_rk_step(&self.core.fuel, &self.flight, gl::Demand::Governor(gov), self.clip_lag().expect("the clip's route"),
-                        &self.lag_limiters(), metal, a, b, g, s, DS, k1)
+                        &self.lag_limiters(), metal, a, b, g, s, self.settings.march_ds(), k1)
             .map_err(|f| gov_failure(f, a, b, s))
     }
 

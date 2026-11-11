@@ -2284,6 +2284,8 @@ leftover would take the fuel below what the engine burns.
   is clean but one (1.3e−4). Rung 106 § 4's step check never combined the lag with the floor or the schedule.
   (`docs/plans/scratch-archive/rung108/base.txt`; rung 108 anchor § 0 G3.) **The user's choice: fix it AFTER rung 108**
   (likely § 45's finer step on this route too), so rung 108 moves nothing that runs today.
+  **CLOSED by § 47 (2026-11-11):** the governed lag now runs on the 0.005 step — every lag 0.1–1.0 clean beside the floor
+  and the schedule.
 
 ## 44. The governor beside the realistic release — rung 107 (2026-11-10) — not a slice
 
@@ -2456,3 +2458,26 @@ march at the same fine step, not against rung 95's page run.
 * **C4 — rung 108 at equal times IS rung 106's page route**, bit for bit (governed).
 * **C5 — the page:** rung 106's browser check also asserts `ds` = 0.005 and every point present.
 * **C6 — cost, reported before shipping:** the same requests timed on the page after the change; over ~15 s, stop and ask.
+
+**Built (2026-11-11):**
+* **C1:** the gate (`rust\test-all.ps1`): 242 programs, 3 024 passed, 1 failed — `cli_golden`: rung 106's own panel
+  (`print_governor_lag_table`) runs through the Controls view, so it moved with the step: lag 0.1's governed peak
+  1674.1 → 1674.2 K, lag 0.2's lowest thrust share 0.7756 → 0.7755 (the whole panel diffed — two digits). Re-captured
+  (`-- panel print_governor_lag_table --write`) and `cli_golden` re-run alone. No other oracle or golden moved.
+* **The code:** `march_ds()` (the governor with the lag and the limiter on ⇒ `DS / 4`), the rung-106 arm of
+  `march_marked` and `gov_lag_step` read it; doc lines on `GOV_LAG_MIN` and `march_ds`.
+* **C2:** `the_step_check_at_the_fastest_lag` now 0.005 against 0.00125 on every point, with three added cases (dense
+  flight, pressure-ratio reading: the floor at lag 0.4 and 1.0, the schedule at 0.2) — all under 1e−4.
+* **C3:** `every_lagged_governed_step_reruns_bit_for_bit` passes unchanged, now at 0.005 (the replay reads `march_ds`).
+* **C4:** `rung108.rs` `equal_constants_are_rung106s_and_rung47s_march_bit_for_bit` now asserts the governed two-speed
+  page run IS rung 106's page run, bit for bit.
+* **Restated:** `rung106.rs` `off_is_the_earlier_run_and_before_the_clip_engages_it_is_rung95s` — against rung 95's
+  march at the lag's step (and rung 95's page run IS that march at 0.02); three model-level checks there march at 0.02
+  and now count points at 0.02 (`points_at`), not the page's count; `rung108.rs`'s "off" check expects the finer step
+  governed.
+* **C5:** rung 106's browser check asserts `ds` = 0.005 and every point present.
+* **C6** (`scratch-archive/gov-lag-step/wasmtime.txt`, the page's WebAssembly): the default governed lag slam 0.47 →
+  1.60 s, with the floor 0.66 → 2.39 s; rung 108's five slowest crash-map requests on the single lag 1.7–2.8 → 6.0–9.4 s.
+  Under the 15 s line; reported to the user.
+* **What a page user sees:** with *Govern* and the limiter's lag ticked (the two-speed box unticked), the run is drawn
+  every 0.005 τ and takes ~4× as long; beside the floor or the schedule its curves no longer depend on the step.

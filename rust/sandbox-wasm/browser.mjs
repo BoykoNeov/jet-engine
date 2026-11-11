@@ -562,9 +562,10 @@ try {
   const lOn = await waitFor(`window.sandbox.ctlState === 'done' && window.sandbox.last.controls && window.sandbox.last.controls.gov_lag_on === 1`, 60000);
   const lr = await ev(`(() => { const r = window.sandbox.last, n = document.getElementById('ctl-lagnudge');
       return [r.route, r.controls.gov_gain, document.getElementById('ctl-gov_gain').value, n.hidden, /moved to 10/.test(n.textContent),
-              r.holder.includes('lag')]; })()`);
+              r.holder.includes('lag'), r.ds, r.s.length === r.expected_points]; })()`);
+  // plan § 47: the governed lag runs on the finer step, every point recorded
   check('the_lag_beside_the_governor_nudges_the_gain_and_runs_the_lagged_route', lOn && lr[0] === 'governor_lag' && lr[1] === 10
-        && lr[2] === '10' && lr[3] === false && lr[4] && lr[5], JSON.stringify([lOn, lr]));
+        && lr[2] === '10' && lr[3] === false && lr[4] && lr[5] && lr[6] === 0.005 && lr[7], JSON.stringify([lOn, lr]));
   // Rung 107 + plan § 45: govern thrust with the acceleration schedule at the page's default attack (0.02), then tick the
   // realistic release -- no knob moves (the cut may be that fast now), and the run takes the governed-release route on
   // the finer step: every point present, 0.005 τ apart, with the lag holding the fuel somewhere.

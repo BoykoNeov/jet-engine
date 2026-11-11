@@ -74,11 +74,11 @@ fn off_is_every_earlier_run_and_the_tick_box_alone_moves_nothing() {
                 assert_eq!(bits(a), bits(b));
             }
         }
-        // Off: rung 47's / 106's route, as before.
+        // Off: rung 47's / 106's route, as before — rung 106's on the finer step since plan § 47, rung 47's on the page's.
         let lag = ControlsSettings { redline_on: true, gov_lag_on: true, ..mk(d()) };
         let sv = build(&lag).unwrap();
         assert!(matches!(sv.route(), Route::GovLag | Route::GovernorLag));
-        assert_eq!(lag.march_ds(), DS);
+        assert_eq!(lag.march_ds(), if lag.govern { DS / 4.0 } else { DS });
     }
     // The default settings' JSON carries neither new key (every earlier reply byte-for-byte).
     let j = d().to_json().dump_compact();
@@ -102,16 +102,19 @@ fn equal_constants_are_rung106s_and_rung47s_march_bit_for_bit() {
             for (a, b) in o.points.iter().zip(&o47.points) {
                 assert_eq!(bits(a), bits(b), "open shape {shape} tau {tau} at s={}", a.s);
             }
-            // Governed: the page's route (fine step) IS rung 106's march at that step; and at the page step, rung 106's
-            // page route.
+            // Governed: the page's route (fine step) IS rung 106's march at that step; and (plan § 47: rung 106's page
+            // route is on the same step now) IS rung 106's page route, bit for bit; at the page step, too, the two
+            // marches agree.
             let s = two(ControlsSettings { shape, ..GOV(d()) }, tau, tau);
             let (sv, o) = controls(&s).unwrap();
             assert_eq!(sv.route(), Route::GovernorTwoSpeed);
             assert_eq!(s.march_ds(), DS / 4.0);
             assert_eq!(o.points.len(), s.expected_points());
             same(&o.points, &single(&s, tau, DS / 4.0), &format!("governed shape {shape} tau {tau}"));
-            let (_, o106) = controls(&ControlsSettings { gov_lag_two: false, ..s }).unwrap();
-            same(&direct(&s, tau, tau, DS), &o106.points, &format!("governed page step shape {shape} tau {tau}"));
+            let (sv106, o106) = controls(&ControlsSettings { gov_lag_two: false, ..s }).unwrap();
+            assert_eq!(sv106.route(), Route::GovernorLag);
+            same(&o.points, &o106.points, &format!("governed page route shape {shape} tau {tau}"));
+            same(&direct(&s, tau, tau, DS), &single(&s, tau, DS), &format!("governed page step shape {shape} tau {tau}"));
         }
     }
 }
