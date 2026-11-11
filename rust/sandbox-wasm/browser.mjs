@@ -580,6 +580,34 @@ try {
   if (process.env.SANDBOX_SHOTS) { await ev(`document.getElementById('ctlq-thrust').click()`); await shot('controls-fast-cut');
                                    await ev(`document.getElementById('ctlq-Tt4').click()`); }
   await ev(`window.sandbox.controls({accel_on: 0, release_on: 0, tau_att: 0.02, tau_rel: 0.1}).then(r => r.run)`);
+  // Rung 108: govern thrust with the temperature limiter and its lag (0.2) on, then tick "…cuts fast, gives back slowly"
+  // through its own checkbox -- the cut-in knob appears at 0.02, the lag knob is relabelled as the give-back time, and
+  // the run takes the governed two-speed route on the finer step, every point present, the lag holding the fuel
+  // somewhere. Its cost on the page (the user's condition for shipping) is printed against rung 106's at the same lag.
+  await ev(`window.sandbox.controls({hold: 'thrust', speed_law: 'rate', gov_gain: 20, redline_on: 1, gov_lag_on: 1, gov_lag: 0.2, gov_lag_two: 0, gov_lag_att: 0.02}).then(r => r.run)`);
+  await ev(`(() => { const e = document.getElementById('ctl-gov_lag_two'); e.checked = true; e.dispatchEvent(new Event('change', {bubbles: true})); })()`);
+  const twoOn = await waitFor(`window.sandbox.ctlState === 'done' && window.sandbox.last.controls && window.sandbox.last.controls.gov_lag_two === 1`, 120000);
+  const twoR = await ev(`(() => { const r = window.sandbox.last;
+      return [r.route, r.controls.gov_lag_att, document.getElementById('ctl-gov_lag_att').value,
+              document.getElementById('ctl-gov_lag_two-box').hidden, /Giving back/.test(document.getElementById('ctl-gov_lag-lbl').textContent),
+              r.ds, r.s.length === r.expected_points, Math.abs(r.s[1] - r.s[0] - 0.005) < 1e-12, r.holder.includes('lag')]; })()`);
+  check('the_two_speed_limiter_beside_the_governor_runs_its_route_on_the_finer_step', twoOn && twoR[0] === 'governor_two_speed'
+        && twoR[1] == null /* written to a reply only off its default */ && twoR[2] === '0.02' && twoR[3] === false && twoR[4] && twoR[5] === 0.005 && twoR[6] && twoR[7]
+        && twoR[8], JSON.stringify([twoOn, twoR]));
+  if (process.env.SANDBOX_SHOTS) await shot('controls-two-speed');
+  {
+    const timed = o => ev(`(async () => { const t = performance.now(); const r = await window.sandbox.controls(${o});
+        return [r.run, Math.round(performance.now() - t)]; })()`);
+    const rows = [];
+    for (const [name, o] of [['governed 106', `{gov_lag_two: 0}`], ['governed two-speed', `{gov_lag_two: 1}`],
+                             ['open 47', `{govern: 0, gov_lag_two: 0}`], ['open two-speed', `{govern: 0, gov_lag_two: 1}`]]) {
+      const ms = [];
+      for (let i = 0; i < 2; i++) ms.push((await timed(o))[1]);
+      rows.push(`${name} ${ms.join('/')} ms`);
+    }
+    console.log(`  rung 108 page cost (thrust hold, redline, lag 0.2, cut-in 0.02; two runs each): ${rows.join('; ')}`);
+  }
+  await ev(`window.sandbox.controls({govern: 1, gov_lag_two: 0, gov_lag_att: 0.02, gov_lag_on: 0, gov_lag: 0.2, redline_on: 0}).then(r => r.run)`);
   await ev(`window.sandbox.controls({govern: 0, hold: 'tt4', thrust_by: 'true', speed_law: 'rate', gov_gain: 20, redline_on: 0, gov_lag_on: 0}).then(r => r.run)`);
   await ev(`document.getElementById('ctlq-Tt4').click()`);
   await ev(`window.sandbox.controls({lever: 'none', floor_on: 0, floor_phi: 0.75, floor_ref: 'phi', bleed_mode: 'schedule',

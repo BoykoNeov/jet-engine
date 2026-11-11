@@ -1,0 +1,230 @@
+reread check: 0 of 501 points differ in Tt4; move ends at index 100
+==== flow/press
+  H1 gov: overshoot K by tau_att ["58.564", "122.959", "194.154", "271.802"] at points [100, 67, 78, 92] -> falls HIT | ratio 0.3016 HIT
+  H1 open: overshoot K by tau_att ["24.338", "55.584", "95.249", "137.441"] at points [77, 96, 100, 100] -> falls HIT | ratio 0.2555 HIT
+  reported: instant overshoot 0.0000 K at point 105
+  H2 tau_att 0.02: governed 58.564 K open 24.338 K HIT
+  H2 tau_att 0.05: governed 122.959 K open 55.584 K HIT
+  H2 tau_att 0.1: governed 194.154 K open 95.249 K HIT
+  H3 g_c by tau_att ["1.63113e-2", "1.36755e-2", "1.08570e-2", "7.76462e-3"] (crossing s ["0.520", "0.545", "0.575", "0.625"]) -> HIT
+  H8 tau_att 0.02: LP min 0.717100 at s=0.140, crossing s=0.520 -> before HIT | relief vs instant -0.000900
+  H8 tau_att 0.05: LP min 0.716496 at s=0.150, crossing s=0.545 -> before HIT | relief vs instant -0.001504
+  H8 tau_att 0.1: LP min 0.715945 at s=0.155, crossing s=0.575 -> before HIT | relief vs instant -0.002055
+  H8 LP min by tau_att ["0.717100", "0.716496", "0.715945"] -> rises as tau_att falls HIT (instant 0.718000; 0.2: 0.715383)
+  H4 (0.02, 0.2): drawdown 0.02698 HIT | g_end/g_c 0.0183
+  H4 (0.02, 0.4): drawdown 0.03261 HIT | g_end/g_c 0.2353
+  H4 (0.02, 0.8): drawdown 0.03959 HIT | g_end/g_c 0.5048
+  H4 tau_att 0.02: drawdown rises with tau_rel HIT
+  H7 open (0.02, 0.2): drawdown 0.00000 HIT
+  H7 open (0.02, 0.4): drawdown 0.00000 HIT
+  H7 open (0.02, 0.8): drawdown 0.00000 HIT
+  H4 (0.05, 0.2): drawdown 0.03960 HIT | g_end/g_c 0.0092
+  H4 (0.05, 0.4): drawdown 0.04353 HIT | g_end/g_c 0.1851
+  H4 (0.05, 0.8): drawdown 0.04867 HIT | g_end/g_c 0.4690
+  H4 tau_att 0.05: drawdown rises with tau_rel HIT
+  H7 open (0.05, 0.2): drawdown 0.00000 HIT
+  H7 open (0.05, 0.4): drawdown 0.00000 HIT
+  H7 open (0.05, 0.8): drawdown 0.00000 HIT
+  H4 (0.1, 0.2): drawdown 0.04979 HIT | g_end/g_c 0.0042
+  H4 (0.1, 0.4): drawdown 0.05219 HIT | g_end/g_c 0.1124
+  H4 (0.1, 0.8): drawdown 0.05555 HIT | g_end/g_c 0.4156
+  H4 tau_att 0.1: drawdown rises with tau_rel HIT
+  H7 open (0.1, 0.2): drawdown 0.00000 HIT
+  H7 open (0.1, 0.4): drawdown 0.00000 HIT
+  H7 open (0.1, 0.8): drawdown 0.00000 HIT
+  H5 tau 0.2: (0.02, 0.2) 0.02698 vs 106 0.05362 HIT | overshoot 106 271.802 K
+  H5 tau 0.4: (0.02, 0.4) 0.03261 vs 106 0.04704 HIT | overshoot 106 340.162 K
+  H5 tau 0.8: (0.02, 0.8) 0.03959 vs 106 0.03357 MISS | overshoot 106 387.499 K
+  H6 (0.02, 0.2): settle 2.1575 (first reach 2.1575; crossing s=0.520) vs instant 1.3225 (first 1.3225) HIT
+  H6 (0.02, 0.4): settle NaN (first reach NaN; crossing s=0.520) vs instant 1.3225 (first 1.3225) VACUOUS
+  H6 (0.02, 0.8): settle NaN (first reach NaN; crossing s=0.520) vs instant 1.3225 (first 1.3225) VACUOUS
+  H6 settle rises with tau_rel VACUOUS
+  reported gov (0.02, 0.2): g_c 1.63111e-2 at s=0.520 | let through 3.2619e-4 (tau_att g_c 3.2622e-4) | withheld 3.2026e-3 (tau_rel (g_c - g_end) 3.2027e-3)
+  reported gov (0.02, 0.4): g_c 1.63113e-2 at s=0.520 | let through 3.2619e-4 (tau_att g_c 3.2623e-4) | withheld 4.9891e-3 (tau_rel (g_c - g_end) 4.9891e-3)
+  reported gov (0.02, 0.8): g_c 1.63113e-2 at s=0.520 | let through 3.2619e-4 (tau_att g_c 3.2623e-4) | withheld 6.4612e-3 (tau_rel (g_c - g_end) 6.4613e-3)
+  reported open (0.02, 0.2): g_c 3.84612e-3 at s=0.530 | let through 7.6932e-5 (tau_att g_c 7.6922e-5) | withheld 7.6878e-4 (tau_rel (g_c - g_end) 7.6879e-4)
+  reported open (0.02, 0.4): g_c 3.84632e-3 at s=0.530 | let through 7.6932e-5 (tau_att g_c 7.6926e-5) | withheld 1.5036e-3 (tau_rel (g_c - g_end) 1.5036e-3)
+  reported open (0.02, 0.8): g_c 3.84642e-3 at s=0.530 | let through 7.6932e-5 (tau_att g_c 7.6928e-5) | withheld 2.6139e-3 (tau_rel (g_c - g_end) 2.6139e-3)
+  (23 s so far)
+==== press/flow
+  H1 gov: overshoot K by tau_att ["62.647", "129.994", "203.285", "281.702"] at points [97, 64, 74, 86] -> falls HIT | ratio 0.3082 HIT
+  H1 open: overshoot K by tau_att ["24.838", "56.640", "97.328", "141.108"] at points [76, 95, 100, 100] -> falls HIT | ratio 0.2552 HIT
+  reported: instant overshoot 0.0000 K at point 47
+  H2 tau_att 0.02: governed 62.647 K open 24.838 K HIT
+  H2 tau_att 0.05: governed 129.994 K open 56.640 K HIT
+  H2 tau_att 0.1: governed 203.285 K open 97.328 K HIT
+  H3 g_c by tau_att ["1.72466e-2", "1.43632e-2", "1.13068e-2", "8.03391e-3"] (crossing s ["0.520", "0.545", "0.575", "0.620"]) -> HIT
+  H8 tau_att 0.02: LP min 0.726839 at s=0.140, crossing s=0.520 -> before HIT | relief vs instant -0.001581
+  H8 tau_att 0.05: LP min 0.725812 at s=0.150, crossing s=0.545 -> before HIT | relief vs instant -0.002607
+  H8 tau_att 0.1: LP min 0.724822 at s=0.160, crossing s=0.575 -> before HIT | relief vs instant -0.003598
+  H8 LP min by tau_att ["0.726839", "0.725812", "0.724822"] -> rises as tau_att falls HIT (instant 0.728420; 0.2: 0.723854)
+  H4 (0.02, 0.2): drawdown 0.02024 HIT | g_end/g_c 0.0223
+  H4 (0.02, 0.4): drawdown 0.02710 HIT | g_end/g_c 0.2519
+  H4 (0.02, 0.8): drawdown 0.03514 HIT | g_end/g_c 0.5195
+  H4 tau_att 0.02: drawdown rises with tau_rel HIT
+  H7 open (0.02, 0.2): drawdown 0.00000 HIT
+  H7 open (0.02, 0.4): drawdown 0.00000 HIT
+  H7 open (0.02, 0.8): drawdown 0.00000 HIT
+  H4 (0.05, 0.2): drawdown 0.04299 HIT | g_end/g_c 0.0105
+  H4 (0.05, 0.4): drawdown 0.04777 HIT | g_end/g_c 0.1998
+  H4 (0.05, 0.8): drawdown 0.05375 HIT | g_end/g_c 0.4820
+  H4 tau_att 0.05: drawdown rises with tau_rel HIT
+  H7 open (0.05, 0.2): drawdown 0.00000 HIT
+  H7 open (0.05, 0.4): drawdown 0.00000 HIT
+  H7 open (0.05, 0.8): drawdown 0.00000 HIT
+  H4 (0.1, 0.2): drawdown 0.05206 HIT | g_end/g_c 0.0045
+  H4 (0.1, 0.4): drawdown 0.05495 HIT | g_end/g_c 0.1220
+  H4 (0.1, 0.8): drawdown 0.05885 HIT | g_end/g_c 0.4267
+  H4 tau_att 0.1: drawdown rises with tau_rel HIT
+  H7 open (0.1, 0.2): drawdown 0.00000 HIT
+  H7 open (0.1, 0.4): drawdown 0.00000 HIT
+  H7 open (0.1, 0.8): drawdown 0.00000 HIT
+  H5 tau 0.2: (0.02, 0.2) 0.02024 vs 106 0.05492 HIT | overshoot 106 281.702 K
+  H5 tau 0.4: (0.02, 0.4) 0.02710 vs 106 0.04785 HIT | overshoot 106 350.255 K
+  H5 tau 0.8: (0.02, 0.8) 0.03514 vs 106 0.03404 MISS | overshoot 106 398.710 K
+  H6 (0.02, 0.2): settle 2.2051 (first reach 2.2051; crossing s=0.520) vs instant 1.3304 (first 1.3304) HIT
+  H6 (0.02, 0.4): settle NaN (first reach NaN; crossing s=0.520) vs instant 1.3304 (first 1.3304) VACUOUS
+  H6 (0.02, 0.8): settle NaN (first reach NaN; crossing s=0.520) vs instant 1.3304 (first 1.3304) VACUOUS
+  H6 settle rises with tau_rel VACUOUS
+  reported gov (0.02, 0.2): g_c 1.72465e-2 at s=0.520 | let through 3.4452e-4 (tau_att g_c 3.4493e-4) | withheld 3.3723e-3 (tau_rel (g_c - g_end) 3.3724e-3)
+  reported gov (0.02, 0.4): g_c 1.72466e-2 at s=0.520 | let through 3.4452e-4 (tau_att g_c 3.4493e-4) | withheld 5.1606e-3 (tau_rel (g_c - g_end) 5.1606e-3)
+  reported gov (0.02, 0.8): g_c 1.72466e-2 at s=0.520 | let through 3.4452e-4 (tau_att g_c 3.4493e-4) | withheld 6.6289e-3 (tau_rel (g_c - g_end) 6.6290e-3)
+  reported open (0.02, 0.2): g_c 3.91501e-3 at s=0.530 | let through 7.8334e-5 (tau_att g_c 7.8300e-5) | withheld 7.8253e-4 (tau_rel (g_c - g_end) 7.8254e-4)
+  reported open (0.02, 0.4): g_c 3.91521e-3 at s=0.530 | let through 7.8334e-5 (tau_att g_c 7.8304e-5) | withheld 1.5297e-3 (tau_rel (g_c - g_end) 1.5297e-3)
+  reported open (0.02, 0.8): g_c 3.91531e-3 at s=0.530 | let through 7.8334e-5 (tau_att g_c 7.8306e-5) | withheld 2.6550e-3 (tau_rel (g_c - g_end) 2.6550e-3)
+  (45 s so far)
+==== tilted
+  H1 gov: overshoot K by tau_att ["62.127", "129.105", "201.208", "277.898"] at points [98, 63, 73, 85] -> falls HIT | ratio 0.3088 HIT
+  H1 open: overshoot K by tau_att ["24.790", "56.453", "96.973", "140.643"] at points [76, 94, 100, 100] -> falls HIT | ratio 0.2556 HIT
+  reported: instant overshoot 0.0000 K at point 130
+  H2 tau_att 0.02: governed 62.127 K open 24.790 K HIT
+  H2 tau_att 0.05: governed 129.105 K open 56.453 K HIT
+  H2 tau_att 0.1: governed 201.208 K open 96.973 K HIT
+  H3 g_c by tau_att ["1.72032e-2", "1.42715e-2", "1.12148e-2", "7.95647e-3"] (crossing s ["0.520", "0.540", "0.575", "0.620"]) -> HIT
+  H8 tau_att 0.02: LP min 0.716950 at s=0.135, crossing s=0.520 -> before HIT | relief vs instant -0.001397
+  H8 tau_att 0.05: LP min 0.715984 at s=0.145, crossing s=0.540 -> before HIT | relief vs instant -0.002363
+  H8 tau_att 0.1: LP min 0.715055 at s=0.155, crossing s=0.575 -> before HIT | relief vs instant -0.003292
+  H8 LP min by tau_att ["0.716950", "0.715984", "0.715055"] -> rises as tau_att falls HIT (instant 0.718347; 0.2: 0.714173)
+  H4 (0.02, 0.2): drawdown 0.02302 HIT | g_end/g_c 0.0220
+  H4 (0.02, 0.4): drawdown 0.03001 HIT | g_end/g_c 0.2505
+  H4 (0.02, 0.8): drawdown 0.03814 HIT | g_end/g_c 0.5183
+  H4 tau_att 0.02: drawdown rises with tau_rel HIT
+  H7 open (0.02, 0.2): drawdown 0.00000 HIT
+  H7 open (0.02, 0.4): drawdown 0.00000 HIT
+  H7 open (0.02, 0.8): drawdown 0.00000 HIT
+  H4 (0.05, 0.2): drawdown 0.04285 HIT | g_end/g_c 0.0103
+  H4 (0.05, 0.4): drawdown 0.04769 HIT | g_end/g_c 0.1978
+  H4 (0.05, 0.8): drawdown 0.05370 HIT | g_end/g_c 0.4802
+  H4 tau_att 0.05: drawdown rises with tau_rel HIT
+  H7 open (0.05, 0.2): drawdown 0.00000 HIT
+  H7 open (0.05, 0.4): drawdown 0.00000 HIT
+  H7 open (0.05, 0.8): drawdown 0.00000 HIT
+  H4 (0.1, 0.2): drawdown 0.05164 HIT | g_end/g_c 0.0045
+  H4 (0.1, 0.4): drawdown 0.05456 HIT | g_end/g_c 0.1202
+  H4 (0.1, 0.8): drawdown 0.05848 HIT | g_end/g_c 0.4247
+  H4 tau_att 0.1: drawdown rises with tau_rel HIT
+  H7 open (0.1, 0.2): drawdown 0.00000 HIT
+  H7 open (0.1, 0.4): drawdown 0.00000 HIT
+  H7 open (0.1, 0.8): drawdown 0.00000 HIT
+  H5 tau 0.2: (0.02, 0.2) 0.02302 vs 106 0.05434 HIT | overshoot 106 277.898 K
+  H5 tau 0.4: (0.02, 0.4) 0.03001 vs 106 0.04731 HIT | overshoot 106 344.746 K
+  H5 tau 0.8: (0.02, 0.8) 0.03814 vs 106 0.03366 MISS | overshoot 106 392.201 K
+  H6 (0.02, 0.2): settle 2.2028 (first reach 2.2028; crossing s=0.520) vs instant 1.3275 (first 1.3275) HIT
+  H6 (0.02, 0.4): settle NaN (first reach NaN; crossing s=0.520) vs instant 1.3275 (first 1.3275) VACUOUS
+  H6 (0.02, 0.8): settle NaN (first reach NaN; crossing s=0.520) vs instant 1.3275 (first 1.3275) VACUOUS
+  H6 settle rises with tau_rel VACUOUS
+  reported gov (0.02, 0.2): g_c 1.72031e-2 at s=0.520 | let through 3.4374e-4 (tau_att g_c 3.4406e-4) | withheld 3.3648e-3 (tau_rel (g_c - g_end) 3.3649e-3)
+  reported gov (0.02, 0.4): g_c 1.72032e-2 at s=0.520 | let through 3.4374e-4 (tau_att g_c 3.4406e-4) | withheld 5.1575e-3 (tau_rel (g_c - g_end) 5.1576e-3)
+  reported gov (0.02, 0.8): g_c 1.72033e-2 at s=0.520 | let through 3.4374e-4 (tau_att g_c 3.4407e-4) | withheld 6.6287e-3 (tau_rel (g_c - g_end) 6.6288e-3)
+  reported open (0.02, 0.2): g_c 3.92154e-3 at s=0.530 | let through 7.8445e-5 (tau_att g_c 7.8431e-5) | withheld 7.8384e-4 (tau_rel (g_c - g_end) 7.8385e-4)
+  reported open (0.02, 0.4): g_c 3.92176e-3 at s=0.530 | let through 7.8445e-5 (tau_att g_c 7.8435e-5) | withheld 1.5324e-3 (tau_rel (g_c - g_end) 1.5324e-3)
+  reported open (0.02, 0.8): g_c 3.92187e-3 at s=0.530 | let through 7.8445e-5 (tau_att g_c 7.8437e-5) | withheld 2.6598e-3 (tau_rel (g_c - g_end) 2.6598e-3)
+  (67 s so far)
+==== flat-lp
+  H1 gov: overshoot K by tau_att ["60.131", "124.148", "193.018", "264.777"] at points [100, 63, 72, 82] -> falls HIT | ratio 0.3115 HIT
+  H1 open: overshoot K by tau_att ["24.047", "54.675", "93.426", "134.589"] at points [77, 95, 100, 100] -> falls HIT | ratio 0.2574 HIT
+  reported: instant overshoot 0.0000 K at point 97
+  H2 tau_att 0.02: governed 60.131 K open 24.047 K HIT
+  H2 tau_att 0.05: governed 124.148 K open 54.675 K HIT
+  H2 tau_att 0.1: governed 193.018 K open 93.426 K HIT
+  H3 g_c by tau_att ["1.66161e-2", "1.37177e-2", "1.06953e-2", "7.48039e-3"] (crossing s ["0.520", "0.540", "0.570", "0.610"]) -> HIT
+  H8 tau_att 0.02: LP min 0.667536 at s=0.135, crossing s=0.520 -> before HIT | relief vs instant -0.000980
+  H8 tau_att 0.05: LP min 0.666826 at s=0.145, crossing s=0.540 -> before HIT | relief vs instant -0.001689
+  H8 tau_att 0.1: LP min 0.666188 at s=0.155, crossing s=0.570 -> before HIT | relief vs instant -0.002328
+  H8 LP min by tau_att ["0.667536", "0.666826", "0.666188"] -> rises as tau_att falls HIT (instant 0.668515; 0.2: 0.665565)
+  H4 (0.02, 0.2): drawdown 0.02467 HIT | g_end/g_c 0.0158
+  H4 (0.02, 0.4): drawdown 0.02970 HIT | g_end/g_c 0.2446
+  H4 (0.02, 0.8): drawdown 0.03582 HIT | g_end/g_c 0.5209
+  H4 tau_att 0.02: drawdown rises with tau_rel HIT
+  H7 open (0.02, 0.2): drawdown 0.00000 HIT
+  H7 open (0.02, 0.4): drawdown 0.00000 HIT
+  H7 open (0.02, 0.8): drawdown 0.00000 HIT
+  H4 (0.05, 0.2): drawdown 0.03499 HIT | g_end/g_c 0.0073
+  H4 (0.05, 0.4): drawdown 0.03844 HIT | g_end/g_c 0.1868
+  H4 (0.05, 0.8): drawdown 0.04288 HIT | g_end/g_c 0.4811
+  H4 tau_att 0.05: drawdown rises with tau_rel HIT
+  H7 open (0.05, 0.2): drawdown 0.00000 HIT
+  H7 open (0.05, 0.4): drawdown 0.00000 HIT
+  H7 open (0.05, 0.8): drawdown 0.00000 HIT
+  H4 (0.1, 0.2): drawdown 0.04212 HIT | g_end/g_c 0.0031
+  H4 (0.1, 0.4): drawdown 0.04419 HIT | g_end/g_c 0.1051
+  H4 (0.1, 0.8): drawdown 0.04704 HIT | g_end/g_c 0.4212
+  H4 tau_att 0.1: drawdown rises with tau_rel HIT
+  H7 open (0.1, 0.2): drawdown 0.00000 HIT
+  H7 open (0.1, 0.4): drawdown 0.00000 HIT
+  H7 open (0.1, 0.8): drawdown 0.00000 HIT
+  H5 tau 0.2: (0.02, 0.2) 0.02467 vs 106 0.04316 HIT | overshoot 106 264.777 K
+  H5 tau 0.4: (0.02, 0.4) 0.02970 vs 106 0.03622 HIT | overshoot 106 324.439 K
+  H5 tau 0.8: (0.02, 0.8) 0.03582 vs 106 0.02497 MISS | overshoot 106 365.769 K
+  H6 (0.02, 0.2): settle 2.1174 (first reach 2.1174; crossing s=0.520) vs instant 1.2257 (first 1.2257) HIT
+  H6 (0.02, 0.4): settle NaN (first reach NaN; crossing s=0.520) vs instant 1.2257 (first 1.2257) VACUOUS
+  H6 (0.02, 0.8): settle NaN (first reach NaN; crossing s=0.520) vs instant 1.2257 (first 1.2257) VACUOUS
+  H6 settle rises with tau_rel VACUOUS
+  reported gov (0.02, 0.2): g_c 1.66157e-2 at s=0.520 | let through 3.3239e-4 (tau_att g_c 3.3231e-4) | withheld 3.2705e-3 (tau_rel (g_c - g_end) 3.2706e-3)
+  reported gov (0.02, 0.4): g_c 1.66161e-2 at s=0.520 | let through 3.3239e-4 (tau_att g_c 3.3232e-4) | withheld 5.0206e-3 (tau_rel (g_c - g_end) 5.0207e-3)
+  reported gov (0.02, 0.8): g_c 1.66163e-2 at s=0.520 | let through 3.3239e-4 (tau_att g_c 3.3233e-4) | withheld 6.3683e-3 (tau_rel (g_c - g_end) 6.3684e-3)
+  reported open (0.02, 0.2): g_c 3.71221e-3 at s=0.525 | let through 7.4187e-5 (tau_att g_c 7.4244e-5) | withheld 7.4211e-4 (tau_rel (g_c - g_end) 7.4212e-4)
+  reported open (0.02, 0.4): g_c 3.71222e-3 at s=0.525 | let through 7.4187e-5 (tau_att g_c 7.4244e-5) | withheld 1.4551e-3 (tau_rel (g_c - g_end) 1.4551e-3)
+  reported open (0.02, 0.8): g_c 3.71223e-3 at s=0.525 | let through 7.4187e-5 (tau_att g_c 7.4245e-5) | withheld 2.5471e-3 (tau_rel (g_c - g_end) 2.5472e-3)
+  (92 s so far)
+== H1 overshoot falls with tau_att (gov): 4 HIT, 0 MISS, 0 VACUOUS
+== H1 overshoot falls with tau_att (open): 4 HIT, 0 MISS, 0 VACUOUS
+== H1 ratio 0.02/0.1 in [0.2,0.5] (gov): 4 HIT, 0 MISS, 0 VACUOUS
+== H1 ratio 0.02/0.1 in [0.2,0.5] (open): 4 HIT, 0 MISS, 0 VACUOUS
+== H2 governed overshoot > open: 12 HIT, 0 MISS, 0 VACUOUS
+== H3 g_c falls as tau_att rises: 4 HIT, 0 MISS, 0 VACUOUS
+== H4 governed sags (> 0.002): 36 HIT, 0 MISS, 0 VACUOUS
+== H4 sag rises with tau_rel: 12 HIT, 0 MISS, 0 VACUOUS
+== H5 fast cut sags less than 106: 8 HIT, 4 MISS, 0 VACUOUS
+== H6 settle later than instant: 4 HIT, 0 MISS, 8 VACUOUS
+== H6 settle later with tau_rel: 0 HIT, 0 MISS, 4 VACUOUS
+== H7 open never sags: 36 HIT, 0 MISS, 0 VACUOUS
+== H8 LP min before the crossing: 12 HIT, 0 MISS, 0 VACUOUS
+== H8 LP min rises as tau_att falls: 4 HIT, 0 MISS, 0 VACUOUS
+-- reported: other laws at (0.02, 0.4): overshoot, H4 drawdown, H5 against 106 at 0.4
+HP rate .1  flow/press: pts 501/501/501 overshoot 82.751 K (106 at 0.4 441.078, instant 0.000) | drawdown 0.03440 sags true | vs 106 0.16718 less true | engaged true
+HP rate .1  press/flow: pts 501/501/501 overshoot 79.075 K (106 at 0.4 422.619, instant 0.000) | drawdown 0.02809 sags true | vs 106 0.13736 less true | engaged true
+HP rate .1  tilted    : pts 501/501/501 overshoot 81.050 K (106 at 0.4 433.092, instant 0.000) | drawdown 0.02988 sags true | vs 106 0.14836 less true | engaged true
+HP rate .1  flat-lp   : pts 501/501/501 overshoot 82.554 K (106 at 0.4 435.724, instant 0.000) | drawdown 0.02757 sags true | vs 106 0.13883 less true | engaged true
+HP prop 10  flow/press: pts 501/501/501 overshoot 95.747 K (106 at 0.4 492.005, instant 0.000) | drawdown 0.02657 sags true | vs 106 0.13390 less true | engaged true
+HP prop 10  press/flow: pts 501/501/501 overshoot 94.090 K (106 at 0.4 482.554, instant 0.000) | drawdown 0.02373 sags true | vs 106 0.11572 less true | engaged true
+HP prop 10  tilted    : pts 501/501/501 overshoot 94.575 K (106 at 0.4 488.729, instant 0.000) | drawdown 0.02312 sags true | vs 106 0.12114 less true | engaged true
+HP prop 10  flat-lp   : pts 501/501/501 overshoot 94.697 K (106 at 0.4 485.056, instant 0.000) | drawdown 0.01949 sags true | vs 106 0.10234 less true | engaged true
+EPR         flow/press: pts 501/501/501 overshoot 82.880 K (106 at 0.4 368.765, instant 0.000) | drawdown 0.04691 sags true | vs 106 0.11725 less true | engaged true
+EPR         press/flow: pts 501/501/501 overshoot 92.435 K (106 at 0.4 383.988, instant 0.000) | drawdown 0.04870 sags true | vs 106 0.12091 less true | engaged true
+EPR         tilted    : pts 501/501/501 overshoot 92.153 K (106 at 0.4 377.865, instant 0.000) | drawdown 0.05023 sags true | vs 106 0.11893 less true | engaged true
+EPR         flat-lp   : pts 501/501/501 overshoot 87.204 K (106 at 0.4 359.352, instant 0.000) | drawdown 0.04272 sags true | vs 106 0.10460 less true | engaged true
+N1 rate .15 flow/press: pts 501/501/501 overshoot 64.445 K (106 at 0.4 344.512, instant 0.000) | drawdown 0.01102 sags true | vs 106 0.07510 less true | engaged true
+N1 rate .15 press/flow: pts 501/501/501 overshoot 74.178 K (106 at 0.4 385.697, instant 0.000) | drawdown 0.00981 sags true | vs 106 0.09916 less true | engaged true
+N1 rate .15 tilted    : pts 501/501/501 overshoot 69.086 K (106 at 0.4 365.699, instant 0.000) | drawdown 0.00728 sags true | vs 106 0.08214 less true | engaged true
+N1 rate .15 flat-lp   : pts 501/501/501 overshoot 42.818 K (106 at 0.4 212.216, instant 0.000) | drawdown 0.00502 sags true | vs 106 0.00634 less true | engaged true
+N1 prop 7   flow/press: pts 501/501/501 overshoot 71.429 K (106 at 0.4 399.210, instant 0.000) | drawdown 0.01566 sags true | vs 106 0.08526 less true | engaged true
+N1 prop 7   press/flow: pts 501/501/501 overshoot 77.193 K (106 at 0.4 436.454, instant 0.000) | drawdown 0.01521 sags true | vs 106 0.09689 less true | engaged true
+N1 prop 7   tilted    : pts 501/501/501 overshoot 74.723 K (106 at 0.4 418.308, instant 0.000) | drawdown 0.01384 sags true | vs 106 0.08696 less true | engaged true
+N1 prop 7   flat-lp   : pts 501/501/501 overshoot 51.726 K (106 at 0.4 292.501, instant 0.000) | drawdown 0.01597 sags true | vs 106 0.02695 less true | engaged true
+-- reported: the burner-temperature hold to 1600 K (crossing the redline), (0.02, 0.4) and 106 at 0.4
+flow/press: pts 501/501/501 overshoot 24.352 K (106 106.303, instant 0.000) | drawdown 0.00000 (106 0.00000) | crossing None | end Tt4 1480.14
+press/flow: pts 501/501/501 overshoot 24.305 K (106 106.276, instant 0.000) | drawdown 0.00000 (106 0.00000) | crossing None | end Tt4 1480.14
+tilted    : pts 501/501/501 overshoot 24.322 K (106 106.282, instant 0.000) | drawdown 0.00000 (106 0.00000) | crossing None | end Tt4 1480.14
+flat-lp   : pts 501/501/501 overshoot 24.305 K (106 106.279, instant 0.000) | drawdown 0.00000 (106 0.00000) | crossing None | end Tt4 1480.11
+-- scoring took 179 s

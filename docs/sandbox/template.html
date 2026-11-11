@@ -571,8 +571,14 @@ footer p { max-width: 90ch; }
           <input type="range" id="ctl-redline-r" min="1200" max="1800" step="5" aria-label="Redline slider"></div>
         <label class="swrow"><input type="checkbox" id="ctl-gov_lag_on"> …that reacts with a lag <small>rung 47</small></label>
         <div class="swbox" id="ctl-gov_lag-box">
-          <div class="knob"><label for="ctl-gov_lag">Its lag <small>τ</small></label><input type="number" id="ctl-gov_lag" step="0.01">
+          <div class="knob"><label for="ctl-gov_lag" id="ctl-gov_lag-lbl">Its lag <small>τ</small></label><input type="number" id="ctl-gov_lag" step="0.01">
             <input type="range" id="ctl-gov_lag-r" min="0.02" max="1" step="0.01" aria-label="Limiter lag slider"></div>
+          <label class="swrow"><input type="checkbox" id="ctl-gov_lag_two"> …cuts fast, gives back slowly <small>rung 108</small></label>
+          <div class="swbox" id="ctl-gov_lag_two-box">
+            <div class="knob"><label for="ctl-gov_lag_att">Cutting in <small>τ</small></label><input type="number" id="ctl-gov_lag_att" step="0.01">
+              <input type="range" id="ctl-gov_lag_att-r" min="0.02" max="0.5" step="0.01" aria-label="Limiter cut-in time slider">
+              <div class="derived">The limiter cuts the fuel at this speed when the engine runs hot, and gives it back at the lag
+                above, as a real limiter does. Beside the governor the run is worked out in steps four times finer.</div></div></div>
           <p class="note" id="ctl-lagnudge" hidden></p></div>
       </div>
       <label class="swrow"><input type="checkbox" id="ctl-accel_on"> Acceleration schedule <small>rung 48</small></label>
@@ -1463,10 +1469,10 @@ const CTL_NUM = { "ctl-rho": "rho", "ctl-from": "from", "ctl-to": "to", "ctl-ram
                   "ctl-cool_vane": "cool_vane", "ctl-cool_blade": "cool_blade",
                   "ctl-generator_power": "generator_power", "ctl-generator_share": "generator_share",
                   "ctl-metal_year": "metal_year", "ctl-gov_tau": "gov_tau", "ctl-gov_gain": "gov_gain",
-                  "ctl-exhaust_tau": "exhaust_tau",
+                  "ctl-exhaust_tau": "exhaust_tau", "ctl-gov_lag_att": "gov_lag_att",
                   "ctl-Tt7": "Tt7", "ctl-light_at": "light_at", "ctl-a8": "a8_ratio" };
 const CTL_SW = ["redline_on", "gov_lag_on", "accel_on", "floor_on", "release_on", "metal_on", "hold_cap", "govern", "table_clean",
-                "corr_p", "corr_t", "exhaust_lag", "a8_match"];
+                "corr_p", "corr_t", "exhaust_lag", "a8_match", "gov_lag_two"];
 // Rung 98: the run reads a table -- rung 96's inferred thrust, rung 48's schedule, or rung 95's proportional speed law.
 const ctlTables = c => (c.govern === 1 && c.hold === "thrust" && c.thrust_by !== "true") || c.accel_on === 1
   || (c.govern === 1 && c.hold === "speed" && c.speed_law === "prop");
@@ -1596,6 +1602,9 @@ function showSettings() {
     $("ctl-gpower-box").hidden = C.generator_by !== "power"; $("ctl-gshare-box").hidden = C.generator_by !== "share";
     $("ctl-bsched-box").hidden = C.bleed_mode !== "schedule"; $("ctl-valve-box").hidden = C.bleed_mode !== "valve";
     $("ctl-redline-box").hidden = C.redline_on !== 1; $("ctl-gov_lag-box").hidden = C.gov_lag_on !== 1;
+    // Rung 108: ticked, the lag knob is the give-back time and the cut-in time gets its own.
+    $("ctl-gov_lag_two-box").hidden = C.gov_lag_two !== 1;
+    $("ctl-gov_lag-lbl").innerHTML = C.gov_lag_two === 1 ? "Giving back <small>τ</small>" : "Its lag <small>τ</small>";
     if (!(C.govern && C.redline_on && C.gov_lag_on)) $("ctl-lagnudge").hidden = true;   // rung 106's note goes with the lag
     if (!(C.govern && C.release_on)) $("ctl-relnudge").hidden = true;   // rung 107's goes with the release
     $("ctl-accel-box").hidden = C.accel_on !== 1; $("ctl-floor-box").hidden = C.floor_on !== 1;

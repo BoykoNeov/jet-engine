@@ -3286,7 +3286,9 @@ pub fn call_op(op: &str, req: &Json) -> Option<Json> {
                 if let Json::Obj(kv) = &mut j {
                     kv.extend([("ab".into(), Json::from("none")), ("Tt7".into(), Json::Float(AB_TT7)),
                                ("light_at".into(), Json::Float(AB_LIGHT_AT)), ("a8_ratio".into(), Json::Float(1.0)),
-                               ("a8_match".into(), Json::Int(0))]);
+                               ("a8_match".into(), Json::Int(0)),
+                               // Rung 108's two, likewise.
+                               ("gov_lag_two".into(), Json::Int(0)), ("gov_lag_att".into(), Json::Float(DS))]);
                 }
                 j
             },

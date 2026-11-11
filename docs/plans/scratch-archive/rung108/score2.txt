@@ -1,0 +1,36 @@
+==== flow/press
+  settle 2: instant settle 1.3225
+    tau_rel 0.2: two-speed dd 0.02698 settle 2.1575 (first 2.1575) max share 0.9904 end share 0.9904 | 106 dd 0.05362 g_c 7.7644e-3 crossing s=0.625 g_end/g_c 0.002 max share 0.9996 | two-speed g_c 1.6311e-2 g_end/g_c 0.018
+    tau_rel 0.4: two-speed dd 0.03261 settle NaN (first NaN) max share 0.8794 end share 0.8794 | 106 dd 0.04704 g_c 5.0032e-3 crossing s=0.680 g_end/g_c 0.030 max share 0.9950 | two-speed g_c 1.6311e-2 g_end/g_c 0.235
+    tau_rel 0.8: two-speed dd 0.03959 settle NaN (first NaN) max share 0.7490 end share 0.7490 | 106 dd 0.03357 g_c 2.9495e-3 crossing s=0.730 g_end/g_c 0.145 max share 0.9861 | two-speed g_c 1.6311e-2 g_end/g_c 0.505
+  settle 4: instant settle 1.3225
+    tau_rel 0.2: two-speed dd 0.02698 settle 2.1575 (first 2.1575) max share 1.0000 end share 1.0000 | 106 dd 0.05362 g_c 7.7644e-3 crossing s=0.625 g_end/g_c 0.000 max share 1.0000 | two-speed g_c 1.6311e-2 g_end/g_c 0.000
+    tau_rel 0.4: two-speed dd 0.03261 settle 3.0195 (first 3.0195) max share 0.9987 end share 0.9987 | 106 dd 0.04704 g_c 5.0032e-3 crossing s=0.680 g_end/g_c 0.000 max share 1.0000 | two-speed g_c 1.6311e-2 g_end/g_c 0.002
+    tau_rel 0.8: two-speed dd 0.03959 settle NaN (first NaN) max share 0.9329 end share 0.9329 | 106 dd 0.03357 g_c 2.9495e-3 crossing s=0.730 g_end/g_c 0.012 max share 0.9989 | two-speed g_c 1.6311e-2 g_end/g_c 0.128
+==== press/flow
+  settle 2: instant settle 1.3304
+    tau_rel 0.2: two-speed dd 0.02024 settle 2.2051 (first 2.2051) max share 0.9878 end share 0.9878 | 106 dd 0.05492 g_c 8.0338e-3 crossing s=0.620 g_end/g_c 0.002 max share 0.9996 | two-speed g_c 1.7247e-2 g_end/g_c 0.022
+    tau_rel 0.4: two-speed dd 0.02710 settle NaN (first NaN) max share 0.8666 end share 0.8666 | 106 dd 0.04785 g_c 5.1544e-3 crossing s=0.675 g_end/g_c 0.030 max share 0.9950 | two-speed g_c 1.7247e-2 g_end/g_c 0.252
+    tau_rel 0.8: two-speed dd 0.03514 settle NaN (first NaN) max share 0.7344 end share 0.7344 | 106 dd 0.03404 g_c 3.0307e-3 crossing s=0.725 g_end/g_c 0.143 max share 0.9861 | two-speed g_c 1.7247e-2 g_end/g_c 0.520
+  settle 4: instant settle 1.3304
+    tau_rel 0.2: two-speed dd 0.02024 settle 2.2051 (first 2.2051) max share 1.0000 end share 1.0000 | 106 dd 0.05492 g_c 8.0338e-3 crossing s=0.620 g_end/g_c 0.000 max share 1.0000 | two-speed g_c 1.7247e-2 g_end/g_c 0.000
+    tau_rel 0.4: two-speed dd 0.02710 settle 3.1165 (first 3.1165) max share 0.9984 end share 0.9984 | 106 dd 0.04785 g_c 5.1544e-3 crossing s=0.675 g_end/g_c 0.000 max share 1.0000 | two-speed g_c 1.7247e-2 g_end/g_c 0.003
+    tau_rel 0.8: two-speed dd 0.03514 settle NaN (first NaN) max share 0.9177 end share 0.9177 | 106 dd 0.03404 g_c 3.0307e-3 crossing s=0.725 g_end/g_c 0.012 max share 0.9989 | two-speed g_c 1.7247e-2 g_end/g_c 0.152
+==== tilted
+  settle 2: instant settle 1.3275
+    tau_rel 0.2: two-speed dd 0.02302 settle 2.2028 (first 2.2028) max share 0.9879 end share 0.9879 | 106 dd 0.05434 g_c 7.9564e-3 crossing s=0.620 g_end/g_c 0.002 max share 0.9996 | two-speed g_c 1.7203e-2 g_end/g_c 0.022
+    tau_rel 0.4: two-speed dd 0.03001 settle NaN (first NaN) max share 0.8670 end share 0.8670 | 106 dd 0.04731 g_c 5.0994e-3 crossing s=0.675 g_end/g_c 0.030 max share 0.9950 | two-speed g_c 1.7203e-2 g_end/g_c 0.250
+    tau_rel 0.8: two-speed dd 0.03814 settle NaN (first NaN) max share 0.7345 end share 0.7345 | 106 dd 0.03366 g_c 2.9967e-3 crossing s=0.725 g_end/g_c 0.143 max share 0.9861 | two-speed g_c 1.7203e-2 g_end/g_c 0.518
+  settle 4: instant settle 1.3275
+    tau_rel 0.2: two-speed dd 0.02302 settle 2.2028 (first 2.2028) max share 1.0000 end share 1.0000 | 106 dd 0.05434 g_c 7.9564e-3 crossing s=0.620 g_end/g_c 0.000 max share 1.0000 | two-speed g_c 1.7203e-2 g_end/g_c 0.000
+    tau_rel 0.4: two-speed dd 0.03001 settle 3.1112 (first 3.1112) max share 0.9984 end share 0.9984 | 106 dd 0.04731 g_c 5.0994e-3 crossing s=0.675 g_end/g_c 0.000 max share 1.0000 | two-speed g_c 1.7203e-2 g_end/g_c 0.003
+    tau_rel 0.8: two-speed dd 0.03814 settle NaN (first NaN) max share 0.9186 end share 0.9186 | 106 dd 0.03366 g_c 2.9967e-3 crossing s=0.725 g_end/g_c 0.012 max share 0.9989 | two-speed g_c 1.7203e-2 g_end/g_c 0.150
+==== flat-lp
+  settle 2: instant settle 1.2257
+    tau_rel 0.2: two-speed dd 0.02467 settle 2.1174 (first 2.1174) max share 0.9921 end share 0.9921 | 106 dd 0.04316 g_c 7.4799e-3 crossing s=0.610 g_end/g_c 0.001 max share 0.9997 | two-speed g_c 1.6616e-2 g_end/g_c 0.016
+    tau_rel 0.4: two-speed dd 0.02970 settle NaN (first NaN) max share 0.8810 end share 0.8810 | 106 dd 0.03622 g_c 4.7092e-3 crossing s=0.650 g_end/g_c 0.025 max share 0.9964 | two-speed g_c 1.6616e-2 g_end/g_c 0.245
+    tau_rel 0.8: two-speed dd 0.03582 settle NaN (first NaN) max share 0.7539 end share 0.7539 | 106 dd 0.02497 g_c 2.7205e-3 crossing s=0.690 g_end/g_c 0.131 max share 0.9891 | two-speed g_c 1.6616e-2 g_end/g_c 0.521
+  settle 4: instant settle 1.2257
+    tau_rel 0.2: two-speed dd 0.02467 settle 2.1174 (first 2.1174) max share 1.0000 end share 1.0000 | 106 dd 0.04316 g_c 7.4799e-3 crossing s=0.610 g_end/g_c 0.000 max share 1.0000 | two-speed g_c 1.6616e-2 g_end/g_c 0.000
+    tau_rel 0.4: two-speed dd 0.02970 settle 3.0339 (first 3.0339) max share 0.9987 end share 0.9987 | 106 dd 0.03622 g_c 4.7092e-3 crossing s=0.650 g_end/g_c 0.000 max share 1.0000 | two-speed g_c 1.6616e-2 g_end/g_c 0.003
+    tau_rel 0.8: two-speed dd 0.03582 settle NaN (first NaN) max share 0.9253 end share 0.9253 | 106 dd 0.02497 g_c 2.7205e-3 crossing s=0.690 g_end/g_c 0.011 max share 0.9991 | two-speed g_c 1.6616e-2 g_end/g_c 0.151
