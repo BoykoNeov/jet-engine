@@ -2293,7 +2293,8 @@ marks the lag's cut as before.
   release (`ctl-relnudge`, the user's "limit and nudge"), with a word that a governor-off comparison should use the same
   times. The cutting-in slider now reaches 0.5 τ.
 * **What moves:** nothing that ran before (the combination was refused); the browser check
-  `the_release_beside_the_governor_nudges_the_attack_and_runs_the_governed_release_route` is new.
+  `the_release_beside_the_governor_nudges_the_attack_and_runs_the_governed_release_route` is new (§ 45 replaced it:
+  the attack is no longer moved).
 * **What the page shows (holding thrust):** the thrust climbs, then sags after the move — mostly because the slow
   cutting-in lets fuel through first (spec § 4); on the plain ramp or the instant limiter it never falls. The 0.2 τ
   cutting-in floor is the step check's, not hardware's: at a fast cut (fine step) the sag is about a third as deep and
@@ -2355,3 +2356,19 @@ true (over keeping the 0.02 spacing and saying the sag reads shallow).
 * **B5 — cost, reported to the user before shipping.** Rung 107's crash map rerun with the attack over the whole slider
   (0.02–0.5): 0 panics, and the slowest request through `sandbox::call` natively, and on the page. If the page's
   slowest is over ~15 s, stop and ask.
+
+**Built (2026-11-11) — every bar met:**
+* **B1:** the gate (below); no oracle, golden or earlier test moved. Rung 107's refusal test now admits a 0.02 cut and
+  refuses 0.01 by the one-step rule; its release-floor words lost the attack.
+* **B2:** 1 323 runs (the 63 settings × 7 attacks × 3 releases), every one to the end, worst 4.4e−5 (both + redline, the
+  design flight, HP rate 0.1, attack 0.02, release 0.1). `tests/gov_fast_attack.rs` keeps a slice (attacks 0.02 / 0.19).
+* **B3:** every fine step re-runs bit for bit (`tests/gov_fast_attack.rs`, two laws, schedule and floor). The crash map's
+  60 stops all read the floor out of reach — none "the re-run does not fail" — though the script did not count how many
+  of them were fast cuts.
+* **B4:** the browser check `a_fast_cut_beside_the_governor_moves_no_knob_and_runs_the_governed_release_route_on_the_finer_step`.
+* **B5** (`scratch-archive/gov-fast-attack/crash.txt`, `wasmtime.txt`): 1 000 requests, 0 panics, 421 admitted (270
+  before: the fast cuts), 0 re-attacks, 0 minimum-fuel holds. Slowest admitted 5.75 s natively, **11.2 s on the page**
+  (a 0.02 cut, a 1.74 τ ramp; under the 15 s line, reported to the user). The page's default governed release (thrust,
+  schedule, 0.02 cut) 1.9 s on the page, against 0.35 s at 0.2.
+* **What a page user sees:** ticking *Govern* and *Realistic release* keeps the 0.02 cut; holding thrust on the schedule
+  the thrust sags ~0.5 % of its step letting go over 0.1 τ, 1.5 % over 0.4 τ, 3 % over 1.6 τ (4.1 % at a 0.2 cut).

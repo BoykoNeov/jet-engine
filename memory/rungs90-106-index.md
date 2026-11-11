@@ -45,3 +45,4 @@ Moved out of `MEMORY.md` on 2026-11-10, when the index reached 19.6 KB. Append n
 - [105](rung105-decisions.md) HP vane A4 never choked at a normal reaction: reaction knob (0.3) on both engines, DEFAULT OFF after cost re-ask; rung 33 double-root bug recorded
 - [106](rung106-decisions.md) governor beside rung 47's temperature-limiter lag only; all holds; 52/88 and the lagged sensor later
 - [107](rung107-decisions.md) governor beside rung 52's release AS BUILT (schedule + floor lagged, redline/metal instant); all holds
+- [107 fast attack](gov-fast-attack-decisions.md) sandbox § 45: attack floor 0.02 beside the governor (4 substeps), every substep recorded

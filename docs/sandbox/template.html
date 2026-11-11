@@ -2051,7 +2051,7 @@ async function runCtl() {
   for (const id of ["ctl-out", "ctl-card"]) $(id).classList.remove("stale");
   $("status").textContent = crun.stopped
     ? `The run stopped early: ${crun.s.length} of ${crun.expected_points} points (why: below the chart).`
-    : `Ran to the end: ${crun.s.length} points, every ${CTL_DS} τ.`;
+    : `Ran to the end: ${crun.s.length} points, every ${crun.ds || CTL_DS} τ.`;
   drawCtl();
   window.sandbox.last = crun; window.sandbox.state = "ran"; window.sandbox.trap = null; window.sandbox.ctlState = "done";
 }
@@ -2126,7 +2126,7 @@ function drawCtl() {
     g += `<path class="${cls}" d="${pathOf(pts.map((pt, i) => (r.choked[i] ? pt : null)), X, Y)}"/>`;
   }
   // Who holds the fuel: a strip above the plot, one cell per point.
-  const w = Math.max(1, X(CTL_DS) - X(0));
+  const w = Math.max(1, X(r.ds || CTL_DS) - X(0));   // plan § 45: a fast cut beside the governor runs finer
   r.holder.forEach((h, i) => { if (h !== "none") g += `<rect class="hold-${h}" x="${X(r.s[i]).toFixed(1)}" y="${T - 10}" width="${w.toFixed(1)}" height="6"/>`; });
   if (r.governor) r.governor.forEach((c, i) => { if (c !== "root") g += `<rect class="clamp-${c}" x="${X(r.s[i]).toFixed(1)}" y="${T - 18}" width="${w.toFixed(1)}" height="6"/>`; });
   $("ctl-clamp-legend").hidden = !r.governor;
@@ -2167,15 +2167,15 @@ function govLagNudge() {
     note.hidden = false;
   } else note.hidden = true;
 }
-// Rung 107: beside the governor the realistic release's cutting-in time must be at least 0.2 τ and its letting-go time
-// at least 0.1 τ, and each speed governor keeps rung 106's edge (the step check; the model refuses past them). When the
-// switches come to need it, move the knobs there and say so -- a value typed in afterwards meets the refusal.
-const REL_EDGE = { att: 0.2, rel: 0.1 };
+// Rung 107: beside the governor the realistic release's letting-go time must be at least 0.1 τ, and each speed governor
+// keeps rung 106's edge (the step check; the model refuses past them). When the switches come to need it, move the knobs
+// there and say so -- a value typed in afterwards meets the refusal. Plan § 45: the cutting-in time's floor is the page's
+// own (the slider's 0.02) -- faster than 0.2 τ the model steps four times finer, so no cut is moved.
+const REL_EDGE = { rel: 0.1 };
 function relNudge() {
   const note = $("ctl-relnudge");
   if (!(C.govern && C.release_on)) { note.hidden = true; return; }
   const moved = [];
-  if (C.tau_att < REL_EDGE.att) { C.tau_att = REL_EDGE.att; moved.push(`its cutting-in time to ${REL_EDGE.att} τ`); }
   if (C.tau_rel < REL_EDGE.rel) { C.tau_rel = REL_EDGE.rel; moved.push(`its letting-go time to ${REL_EDGE.rel} τ`); }
   const fan = C.hold === "thrust" && C.thrust_by === "n1";
   if (C.hold === "speed" || fan) {
@@ -2186,19 +2186,15 @@ function relNudge() {
     else if (C.speed_law === "prop" && C.gov_gain > gainMax) { C.gov_gain = gainMax; moved.push(`the ${who} governor's gain to ${gainMax}`); }
   }
   if (!moved.length) { note.hidden = true; return; }
-  // Rung 107 § 4: the 0.2 cutting-in floor is the step check's, not hardware's -- most of the sag that follows is its.
-  const attMoved = moved.some(m => m.startsWith("its cutting-in"));
   note.textContent = `Beside the governor the release is worked out too roughly when faster: moved ${moved.join(", ")}. `
-    + (attMoved ? `A real limiter cuts in faster, and most of the thrust sag that follows comes from this slow cut: `
-      + `worked out at a finer step, a 0.02 τ cut sags about a third as much, and then the letting-go time sets the sag. ` : ``)
-    + `To compare with the governor off, use the same times there: a slower cut comes in later and protects less.`;
+    + `To compare with the governor off, use the same times there.`;
   note.hidden = false;
 }
 function nudges() { govLagNudge(); relNudge(); }
 // Rung 95: what the governor held, and how long it sat at an edge of what the engine can burn.
 function govFor(r) {
   if (!r.governor) return "off: the fuel ramps between the ends";
-  const n = k => fmt(r.governor.filter(c => c === k).length * CTL_DS, 2);
+  const n = k => fmt(r.governor.filter(c => c === k).length * (r.ds || CTL_DS), 2);
   const what = { tt4: "the burner temperature", speed: "HP speed",
                  thrust: { epr: "thrust, read from the pressure ratio", n1: "thrust, read from the fan speed" }[r.reading] || "thrust" }[r.controls.hold];
   return `holds ${what}; at the rich edge ${n("rich")} τ, at the lean edge ${n("lean")} τ`;
@@ -2206,7 +2202,7 @@ function govFor(r) {
 function heldFor(r) {
   const n = {}; for (const h of r.holder) if (h !== "none") n[h] = (n[h] || 0) + 1;
   const e = Object.entries(n).sort((a, b) => b[1] - a[1]);
-  return e.length ? e.map(([h, k]) => `${HOLD_WORDS[h]} ${fmt(k * CTL_DS, 2)} τ`).join(", ") : "none held it";
+  return e.length ? e.map(([h, k]) => `${HOLD_WORDS[h]} ${fmt(k * (r.ds || CTL_DS), 2)} τ`).join(", ") : "none held it";
 }
 function to90(r, k, f = 0.9) {
   const d = r.end[k] - r.start[k]; if (Math.abs(d) < 1e-9) return NaN;

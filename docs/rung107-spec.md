@@ -164,13 +164,17 @@ the open ramp.**
   calling the march. **They are numerical, not hardware times — and the headline's mechanism sits AT the attack
   floor.** A real limiter cuts in faster; there the sag is about a third as deep and the release's (headline, § 5).
   At the coarse step the fast attack is also off: 0.02 τ sags 1.18 % at step 0.02 against 1.51 % at 0.005.
+  **CORRECTED (sandbox plan § 45, 2026-11-11): that gap is the READING grid, not the integration** — at step 0.005
+  read on every fourth point (the 0.02 grid) the sag is 1.18 % too; part of a fast cut's dip is shorter than 0.02. The
+  fine-step numbers above are CONFIRMED at steps 16 and 32 times finer. **Plan § 45 lowered the page's attack floor to
+  0.02 τ**: faster than 0.2 τ the march steps at 0.005 τ and records every step.
 * The scored grid is the thrust hold; the other laws are reported at one release time.
 * H2's rise and H3 are unscored at the frozen settle; the longer-settle reading is off protocol.
 
 ## The next seam
 
-**A finer step beside the governor, so the page admits a FAST attack** — the attack floor (0.2 τ) is the step
-check's, and it decides which sag a page user sees (the cut's at the floor, the release's at a realistic attack).
+~~**A finer step beside the governor, so the page admits a FAST attack**~~ — **BUILT by sandbox plan § 45**
+(2026-11-11: the floor 0.02 τ, a step four times finer under 0.2 τ, every step recorded).
 **The two-speed temperature limiter beside the governor** — rung 52's asymmetric lag on the REDLINE (106 lagged it with
 one time constant; 107 left it instant): does a fast attack on the temperature limiter end rung 106's overshoot while a
 slow release keeps its sag? And **the governor beside rung 88's slow valve** (still refused).

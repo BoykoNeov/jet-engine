@@ -72,7 +72,8 @@ fn every_refusal_is_words() {
             "the speed governor's gain must be above 0 and at most 10");
     refused(&ControlsSettings { redline_on: true, gov_lag_on: true, hold: Hold::Thrust, thrust_by: turbojet::sandbox_controls::ThrustBy::N1, ..d },
             "the fan-speed governor's time constant must be at least 0.15");
-    refused(&ControlsSettings { accel_on: true, release_on: true, ..d }, "realistic release");
+    // Plan § 45: the page's default cut (0.02) now runs beside the governor; a letting-go time under 0.1 still does not.
+    refused(&ControlsSettings { accel_on: true, release_on: true, tau_rel: 0.06, ..d }, "realistic release's release time");
     refused(&ControlsSettings { lever: LeverChoice::Bleed, bleed_mode: BleedMode::Valve, valve_lag_on: true, ..d },
             "instant valve");
     refused(&ControlsSettings { hold: Hold::HpSpeed, gov_tau: 0.03, ..d }, "time constant");

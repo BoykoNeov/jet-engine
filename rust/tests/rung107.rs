@@ -209,9 +209,11 @@ fn the_page_refuses_in_words() {
         assert!(e.0.contains(words), "{}", e.0);
     };
     let s = rel_on(ControlsSettings { hold: Hold::Thrust, accel_on: true, ..d() });
-    // The knobs' floors beside the governor (the step check) — the governor off keeps rung 52's one step.
-    refused(ControlsSettings { tau_att: 0.1, ..s }, "attack time must be at least 0.2");
-    refused(ControlsSettings { tau_rel: 0.06, ..s }, "release time at least 0.1");
+    // The knobs' floors beside the governor (the step check) — the governor off keeps rung 52's one step. Plan § 45: the
+    // attack's floor is one page step (a faster-than-0.2 cut runs on a finer step, `tests/gov_fast_attack.rs`).
+    assert!(build(&ControlsSettings { tau_att: 0.02, ..s }).is_ok());
+    refused(ControlsSettings { tau_att: 0.01, ..s }, "at least one march step");
+    refused(ControlsSettings { tau_rel: 0.06, ..s }, "release time must be at least 0.1");
     assert!(build(&ControlsSettings { govern: false, tau_att: 0.02, tau_rel: 0.02, ..s }).is_ok());
     // Each speed law past rung 106's edges.
     refused(ControlsSettings { hold: Hold::HpSpeed, speed_law: SpeedLaw::Prop, gov_gain: 20.0, ..s },

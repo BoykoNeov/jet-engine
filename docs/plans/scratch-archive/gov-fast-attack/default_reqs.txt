@@ -1,0 +1,2 @@
+{"op":"controls","controls":{"govern":1,"hold":"thrust","accel_on":1,"release_on":1,"tau_att":0.02,"tau_rel":0.1}}
+{"op":"controls","controls":{"govern":1,"hold":"thrust","accel_on":1,"release_on":1,"tau_att":0.2,"tau_rel":0.1}}

@@ -1,0 +1,7 @@
+11.15 s  ok=1 route=governor_release ds=0.005 pts=749/749 att=0.02 rel=0.1 ramp=1.74
+8.59 s  ok=1 route=governor_release ds=0.005 pts=565/565 att=0.16 rel=0.42 ramp=0.8200000000000001
+7.49 s  ok=1 route=governor_release ds=0.005 pts=705/705 att=0.1 rel=0.28 ramp=1.52
+9.21 s  ok=0 route=undefined ds=undefined pts=-/undefined att=0.32 rel=0.52 ramp=0.18
+5.72 s  ok=0 route=undefined ds=undefined pts=-/undefined att=0.32 rel=0.86 ramp=1.68
+1.92 s  ok=1 route=governor_release ds=0.005 pts=501/501 att=0.02 rel=0.1 ramp=undefined
+0.35 s  ok=1 route=governor_release ds=0.02 pts=126/126 att=0.2 rel=0.1 ramp=undefined
