@@ -2300,3 +2300,58 @@ marks the lag's cut as before.
   the letting-go time's, so the moved-knob note says so (added 2026-11-10 after a side-agent note).
 * **Cost:** ~0.2–0.3 s natively, at or under rung 95's governed run; crash map 1 000 requests, 0 panics, slowest 6.3 s
   natively.
+
+## 45. A fast cut beside the governor — rung 107's first seam (2026-11-11) — a page and solver change, not a rung
+
+Rung 107 refused a cutting-in time under 0.2 τ beside the governor: at the page's step (0.02) faster cuts were worked
+out too roughly (`GOV_REL_ATT_MIN`). A real limiter cuts in faster, and rung 107 § 4 found the sag a page user sees then
+belongs to the letting-go time, not to the slow cut. This section lets the page run fast cuts on a finer step.
+**Frozen before any code** (this text is committed first); the measurements it rests on are
+`docs/plans/scratch-archive/gov-fast-attack/` (`sweep.rs`, `sag.rs`, `timing.rs` and their outputs).
+
+**Measured first (probe, through the shipped `governor_release::march`):**
+* *How fine.* Each of rung 107's seven speed laws at rung 106's edges × schedule / floor / both + redline × the design,
+  thin and dense flights (63 settings) × attack {0.005, 0.01, 0.02, 0.05, 0.1} × release {0.1, 0.4, 0.8}; the step
+  `0.02/k` against `0.02/(4k)`, the largest gap in either flow coefficient on the 0.02 grid. Clean (every one < 1e−4)
+  at k = 2 for attacks 0.05 and 0.1 (worst 8.0e−5, 4.1e−5), k = 4 for 0.02 and 0.01 (4.4e−5, 7.6e−5), k = 8 for 0.005
+  (2.3e−5). At k = 1 every attack under 0.2 is rough somewhere (to 3.8e−2 at 0.005). Every k ≥ 2 run ran to the end;
+  the probe's k = 1 march equals the view's own, bit for bit, in all 63 settings.
+* *What the page shows.* The thrust sag (drawdown after the move, the default thrust-hold slam with the schedule,
+  flow/press and flat-LP) is step-converged at k = 4 for every attack 0.005–0.2, and rung 107 § 4's fine-step numbers
+  (0 / 0.5 / 1.5 / 3.0 % at attack 0.005) are CONFIRMED at k = 16 and 32. But a fast cut's sag has a dip shorter than
+  0.02: read on the 0.02 grid it is ~20 % shallow (attack 0.02, release 0.4: 1.18 % on the grid, 1.51 % on every
+  point). **So rung 107's concession "at the coarse step the fast attack is also off" was mostly the READING grid**
+  (at k = 4 read on the 0.02 grid it is still 1.18 %), not the integration.
+* *Cost* (natively, one thread; rung 107's crash-map requests, seed 13, attack and release lifted to the old floors so
+  461 are admitted): the march is linear in k; the slowest march 1.5 s at k = 1 → 3.1 / 6.0 / 13.5 s at k = 2 / 4 / 8.
+  The ends' solve does not change (up to 1.8 s).
+
+**The user's choices (2026-11-11):** the cutting-in floor beside the governor **0.02 τ** (the page's step, rung 52's
+own route's floor; 0.05 and 0.005 declined); **every small step recorded and shown**, so the chart and the sag are
+true (over keeping the 0.02 spacing and saying the sag reads shallow).
+
+**What changes:**
+* **The step.** On the governed release route with a cutting-in time under 0.2 τ, the march takes steps of 0.005 τ
+  (`DS/4`), recording every one: one rule for the whole range 0.02 ≤ attack < 0.2 (k = 2 would do from 0.05; four
+  throughout keeps one boundary, at the same slowest cost). At 0.2 and above the march is today's, bit for bit. The
+  letting-go floor (0.1 τ) and the speed laws' edges are unchanged.
+* **The model side** (`sandbox_controls.rs`): one step function of the settings (`march_ds`), read by the march, the
+  re-run of a step (`replay_step`), the stop's diagnosis (`last.s + ds`), `expected_points`; the reply carries the
+  run's own `"ds"`. `GOV_REL_ATT_MIN` 0.2 → 0.02, its refusal's words.
+* **The page:** the run's own step replaces `CTL_DS` where a run is read (the "every … τ" line, the top strip's bar
+  width, the governor's held times); the slider-range uses keep the page step. The nudge no longer moves the cutting-in
+  time (the slider already starts at 0.02); its words about the slow cut go.
+
+**Bars (frozen):**
+* **B1 — nothing that runs today moves.** Every oracle, golden and test that does not exercise an attack under 0.2
+  beside the governor is unchanged, by the existing gate.
+* **B2 — the step check** on the shipped route: the 63 settings × attack {0.02, 0.03, 0.05, 0.08, 0.12, 0.16, 0.19} ×
+  release {0.1, 0.4, 1.6}: the shipped run (step 0.005) against one at 0.00125, every gap < 1e−4 in either flow
+  coefficient, on the shipped run's own points. (Archived as a probe; the gate keeps a slice of it.)
+* **B3 — every step re-runs** from its recorded point, bit for bit, at the fine step (two laws, the schedule and the
+  floor); a stopped fine run's diagnosis is its last step's.
+* **B4 — the page.** The browser check: the governor and the release on at the default 0.02 cut, no knob moved, the
+  `governor_release` route, every point present (`s.length === expected_points`), spacing 0.005.
+* **B5 — cost, reported to the user before shipping.** Rung 107's crash map rerun with the attack over the whole slider
+  (0.02–0.5): 0 panics, and the slowest request through `sandbox::call` natively, and on the page. If the page's
+  slowest is over ~15 s, stop and ask.
