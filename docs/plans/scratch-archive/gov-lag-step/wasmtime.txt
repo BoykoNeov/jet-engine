@@ -1,0 +1,8 @@
+BEFORE (2026-11-11, the page's wasm at c2429c2; reqs.txt: rung 108's five slowest crash-map requests with gov_lag_two 0, then the default governed lag slam, then the same with the floor)
+2.80 s  ok=1 route=governor_lag ds=0.02 pts=159/159 att=0.24 rel=0.3 govern=1 hold=thrust ramp=1.16
+1.72 s  ok=1 route=governor_lag ds=0.02 pts=172/172 att=0.24 rel=0.22 govern=1 hold=thrust ramp=1.42
+2.26 s  ok=1 route=governor_lag ds=0.02 pts=179/179 att=0.5 rel=0.1 govern=1 hold=thrust ramp=1.56
+2.49 s  ok=1 route=governor_lag ds=0.02 pts=141/141 att=0.08 rel=0.54 govern=1 hold=thrust ramp=0.8
+2.31 s  ok=1 route=governor_lag ds=0.02 pts=187/187 att=0.12 rel=0.96 govern=1 hold=speed ramp=1.72
+0.47 s  ok=1 route=governor_lag ds=0.02 pts=126/126 att=undefined rel=0.2 govern=1 hold=thrust ramp=undefined
+0.66 s  ok=1 route=governor_lag ds=0.02 pts=126/126 att=undefined rel=0.2 govern=1 hold=thrust ramp=undefined

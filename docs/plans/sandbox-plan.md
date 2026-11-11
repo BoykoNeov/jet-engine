@@ -2415,3 +2415,44 @@ tick box *"…cuts fast, gives back slowly"* under *"…that reacts with a lag"*
   cut-in time also cuts twice on all 12** (at the give-back time on 8; `scratch-archive/rung108/reatt.txt`). Refused: 45 two lags
   at once, 26 the give-back's floor beside the governor, 73 the speed laws' edges, 57 hot starts (518 refused in all), the rest the earlier
   rungs' refusals. Slowest 7.3 s natively.
+
+## 47. Rung 106's lag beside the governor on the finer step (2026-11-11) — a page and solver change, not a rung
+
+§ 43's OPEN item (found by rung 108's probe): the governed single lag (`route: "governor_lag"`) is rough at the page's
+step beside the stall floor or the acceleration schedule. This section moves that route onto § 45's finer step.
+**Frozen before any code** (this text is committed first); the measurements are
+`docs/plans/scratch-archive/gov-lag-step/` (`lib.rs`, `sweep.rs`, `lags.rs`, `wasmtime.mjs` and their outputs), all
+through the SHIPPED `governor_lag::march` called as the view calls it.
+
+**Measured first:**
+* *How rough today* (`sweep.txt`; rung 107/108's 63 governed settings × lag {0.1, 0.2, 0.4, 0.8}; the step `0.02/k`
+  against `0.02/(4k)`, the largest gap in either flow coefficient): at k = 1, 32 of 252 runs over 1e−4 — the floor 29 of
+  84 (worst 8.4e−4, dense flight, pressure-ratio reading, lag 0.4), the schedule 3 of 84, **the limiter alone 0 of 84**.
+  Every run reaches the end at every step.
+* *How fine* (`lags.txt`; the floor and schedule cases, 42 settings × the lag 0.1–1.0 every 0.05 — rung 106 found its
+  roughness at scattered lags, so the whole slider; read on EVERY point of the checked run): **k = 4 (0.005): 798 of 798
+  under 1e−4, worst 4.69e−5** (floor, dense, pressure ratio, lag 1.0); k = 2 (0.01): 5 over (worst 1.24e−4), so not offered.
+* *Cost on the page today* (`wasmtime.txt`, WebAssembly under Node, the page's own call path): the default governed slam
+  with the lag (thrust, 0.2) 0.47 s, with the floor 0.66 s; rung 108's five slowest crash-map requests with its box
+  unticked (the single lag) 1.7–2.8 s. Expected ~4× after.
+
+**The user's choice (2026-11-11):** the finer step on **every** governed lag run (one rule, rung 108's — so ticking the
+two-speed box at equal times gives the SAME run on the page), over the finer step only beside the floor or schedule.
+
+**What changes:** `march_ds()` returns `DS / 4` whenever the governor and the lag are both on (with the limiter); the
+rung-106 arm of the march and `gov_lag_step` read it instead of `DS` (`replay_step`, the stop's diagnosis and
+`expected_points` already do). The page already reads the run's own step (§ 45). The lag's floor (0.1 τ) and the speed
+laws' edges are unchanged.
+
+**What moves, said plainly:** every governed lag run is redrawn on the finer step — by under 1e−4 where it was clean —
+even where the limiter never cuts in. So rung 106's "before the clip engages it is rung 95's" now holds against rung 95's
+march at the same fine step, not against rung 95's page run.
+
+**Bars (frozen):**
+* **C1 — nothing else moves.** Every oracle, golden and test not running the governed lag is unchanged, by the gate.
+* **C2 — the step check:** `tests/rung106.rs`'s step check moves to 0.005 against 0.00125 on every point, and gains the
+  floor and schedule cases that were rough (the worst two above); every gap < 1e−4.
+* **C3 — every step re-runs** bit for bit at the fine step (rung 106's existing replay test, now at 0.005).
+* **C4 — rung 108 at equal times IS rung 106's page route**, bit for bit (governed).
+* **C5 — the page:** rung 106's browser check also asserts `ds` = 0.005 and every point present.
+* **C6 — cost, reported before shipping:** the same requests timed on the page after the change; over ~15 s, stop and ask.
