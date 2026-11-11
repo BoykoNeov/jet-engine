@@ -2277,6 +2277,13 @@ leftover would take the fuel below what the engine burns.
   figures as build-time records (e.g. rung 99's 0.18 % at Mach 1.4, now 0.19 in one column); left as records.
   **The metal cap: LEAVE IT (user, 2026-11-10).** `CAP_TOL_REL` stays at relative 1e-9 — no measured cost, nothing
   would move; not to be re-raised.
+* **OPEN — found by rung 108's probe (2026-11-11), not caused there: the shipped governed lag is rough at the page's
+  step beside the stall floor or the acceleration schedule.** The single lag (0.1 / 0.2 τ) on rung 107's 63 governed
+  settings at one step, against a step four times finer: up to 6.2e−4 in a flow coefficient (floor, dense flight,
+  pressure-ratio reading), over the 1e−4 bar; the lag alone is clean, and rung 95's instant route on the same settings
+  is clean but one (1.3e−4). Rung 106 § 4's step check never combined the lag with the floor or the schedule.
+  (`docs/plans/scratch-archive/rung108/base.txt`; rung 108 anchor § 0 G3.) **The user's choice: fix it AFTER rung 108**
+  (likely § 45's finer step on this route too), so rung 108 moves nothing that runs today.
 
 ## 44. The governor beside the realistic release — rung 107 (2026-11-10) — not a slice
 

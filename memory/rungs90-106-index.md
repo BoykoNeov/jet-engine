@@ -46,3 +46,4 @@ Moved out of `MEMORY.md` on 2026-11-10, when the index reached 19.6 KB. Append n
 - [106](rung106-decisions.md) governor beside rung 47's temperature-limiter lag only; all holds; 52/88 and the lagged sensor later
 - [107](rung107-decisions.md) governor beside rung 52's release AS BUILT (schedule + floor lagged, redline/metal instant); all holds
 - [107 fast attack](gov-fast-attack-decisions.md) sandbox § 45: attack floor 0.02 beside the governor (4 substeps), every substep recorded
+- [108](rung108-decisions.md) two-speed temperature limiter: BOTH governed and open, ALL holds, realistic default (fast cut, 0.2 give-back)

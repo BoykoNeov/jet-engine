@@ -117,6 +117,15 @@ Controls routes beside it; `governor_lag.rs` untouched.
   1480` exactly while `e = r − g > 0`, an attack phase; one attack per run (G2) ⇒ the peak `Tt4` lies before the first
   crossing and is identical across `τ_rel`, bit for bit, on § 3's cells. Its only failure is this gate's: an inner RK
   stage of the crossing step reading `τ_rel` before the recorded crossing (rung 107 lesson 4) — then it is investigated.
+* **Amendment, 2026-11-11 (after the build; § 3 untouched) — the two gates above, as measured.** Governed (0.005 step):
+  both hold as written on every § 3 cell. Open (0.02 step): an inner RK4 stage reads `τ_rel` before the recorded
+  crossing in TWO places, so the bit-for-bit claim holds only up to the SPLIT (the first point where `τ_rel` 0.1 and 0.8
+  differ), pinned per cell: (a) the crossing step at `τ_att` = 0.02, every shape (split = k − 1; rung 107 lesson 4); (b) a
+  NEW case, the ENGAGEMENT step, shape 0 at `τ_att` ≤ 0.05 (split at s = 0.30, twelve steps early: a mid-step stage puts
+  `g` ~4× above a target just leaving zero). Elsewhere the split is the crossing. Before the split, rung 47's at `τ_att`
+  bit for bit; from it to the crossing within 5e−4 relative (measured 2.2e−4); the peak at the same point and within
+  1e−3 K of rung 47's (measured 1.6e−4 K of 24 K; spread over `τ_rel` 2.8e−5 K). The law is kept (per-evaluation, rungs
+  52/107); the gate states what the march does. Probe: `scratch-archive/rung108/diag2.rs`.
 * **Both constants → 0 ⇒ rung 95 with the instant redline** (governed): the gap shrinks with `τ`, reported with its order.
 * **The ledger (D1)** per phase, G5's cells: **bars frozen — governed (0.005) `≤ 5e−3 · τ · g_c` per phase; open (0.02)
   `≤ 3e−2 · τ · g_c` per phase** (exceeded means investigate, not relax).

@@ -1,0 +1,31 @@
+open: first recorded crossing at point 27 s=0.5400
+  k3 s=0.2900 g=1.1916629364620152e-6 r=2.887906728026024e-7 (g-r)/r=3.126389972700242e0
+  k4 s=0.5200 g=3.907746622413393e-3 r=3.8846647266511103e-3 (g-r)/r=5.941798684433908e-3
+  k2 s=0.5300 g=3.8627499718838342e-3 r=3.8112948682693312e-3 (g-r)/r=1.3500688189436314e-2
+  k3 s=0.5300 g=3.8337514589971413e-3 r=3.8131867468735627e-3 (g-r)/r=5.393051399971354e-3
+  k4 s=0.5400 g=3.834784026933876e-3 r=3.73881726028593e-3 (g-r)/r=2.5667680436622025e-2
+  k1 s=0.5400 g=3.838847756929536e-3 r=3.7391332428189546e-3 (g-r)/r=2.6667815141940724e-2
+open shape 0 att 0.02: crossing point 27 (s=0.54); first departure Some((15, 0.3)); worst rel gap before it 1.575550254767064e-4
+    rel 0.1 vs 0.8 first split Some(15); peak point (rel 0.1/0.4/0.8) [19, 19, 19]; overshoot K [24.321964342803312, 24.32194012786772, 24.321936092044552]; spread 2.825075875989569e-5 K; rung 47 at att: point 19 overshoot 2.4322093489048257e1 K
+open shape 0 att 0.05: crossing point 29 (s=0.58); first departure Some((15, 0.3)); worst rel gap before it 5.61491316368123e-7
+    rel 0.1 vs 0.8 first split Some(15); peak point (rel 0.1/0.4/0.8) [24, 24, 24]; overshoot K [55.58878159653091, 55.58877319454518, 55.58877179421461]; spread 9.802316299101221e-6 K; rung 47 at att: point 24 overshoot 5.558879279917937e1 K
+open shape 0 att 0.1: crossing point 31 (s=0.62); first departure None; worst rel gap before it 0e0
+    rel 0.1 vs 0.8 first split Some(31); peak point (rel 0.1/0.4/0.8) [25, 25, 25]; overshoot K [95.26489047587825, 95.26489047587825, 95.26489047587825]; spread 0e0 K; rung 47 at att: point 25 overshoot 9.526489047587825e1 K
+open shape 1 att 0.02: crossing point 27 (s=0.54); first departure Some((26, 0.5200000000000001)); worst rel gap before it 1.6017972879728737e-4
+    rel 0.1 vs 0.8 first split Some(26); peak point (rel 0.1/0.4/0.8) [19, 19, 19]; overshoot K [24.819110367090616, 24.819110367090616, 24.819110367090616]; spread 0e0 K; rung 47 at att: point 19 overshoot 2.4819110367090616e1 K
+open shape 1 att 0.05: crossing point 29 (s=0.58); first departure None; worst rel gap before it 0e0
+    rel 0.1 vs 0.8 first split Some(29); peak point (rel 0.1/0.4/0.8) [24, 24, 24]; overshoot K [56.63047611763636, 56.63047611763636, 56.63047611763636]; spread 0e0 K; rung 47 at att: point 24 overshoot 5.663047611763636e1 K
+open shape 1 att 0.1: crossing point 31 (s=0.62); first departure None; worst rel gap before it 0e0
+    rel 0.1 vs 0.8 first split Some(31); peak point (rel 0.1/0.4/0.8) [25, 25, 25]; overshoot K [97.32623159692048, 97.32623159692048, 97.32623159692048]; spread 0e0 K; rung 47 at att: point 25 overshoot 9.732623159692048e1 K
+open shape 2 att 0.02: crossing point 27 (s=0.54); first departure Some((26, 0.5200000000000001)); worst rel gap before it 1.710367853632175e-4
+    rel 0.1 vs 0.8 first split Some(26); peak point (rel 0.1/0.4/0.8) [19, 19, 19]; overshoot K [24.770565198630493, 24.770565198630493, 24.770565198630493]; spread 0e0 K; rung 47 at att: point 19 overshoot 2.4770565198630493e1 K
+open shape 2 att 0.05: crossing point 29 (s=0.58); first departure None; worst rel gap before it 0e0
+    rel 0.1 vs 0.8 first split Some(29); peak point (rel 0.1/0.4/0.8) [24, 24, 24]; overshoot K [56.43806763932275, 56.43806763932275, 56.43806763932275]; spread 0e0 K; rung 47 at att: point 24 overshoot 5.643806763932275e1 K
+open shape 2 att 0.1: crossing point 31 (s=0.62); first departure None; worst rel gap before it 0e0
+    rel 0.1 vs 0.8 first split Some(31); peak point (rel 0.1/0.4/0.8) [25, 25, 25]; overshoot K [96.96909441071239, 96.96909441071239, 96.96909441071239]; spread 0e0 K; rung 47 at att: point 25 overshoot 9.696909441071239e1 K
+open shape 3 att 0.02: crossing point 27 (s=0.54); first departure Some((26, 0.5200000000000001)); worst rel gap before it 2.2418432071642414e-4
+    rel 0.1 vs 0.8 first split Some(26); peak point (rel 0.1/0.4/0.8) [19, 19, 19]; overshoot K [24.03080992927289, 24.03080992927289, 24.03080992927289]; spread 0e0 K; rung 47 at att: point 19 overshoot 2.403080992927289e1 K
+open shape 3 att 0.05: crossing point 28 (s=0.56); first departure None; worst rel gap before it 0e0
+    rel 0.1 vs 0.8 first split Some(28); peak point (rel 0.1/0.4/0.8) [24, 24, 24]; overshoot K [54.675804538690045, 54.675804538690045, 54.675804538690045]; spread 0e0 K; rung 47 at att: point 24 overshoot 5.4675804538690045e1 K
+open shape 3 att 0.1: crossing point 31 (s=0.62); first departure None; worst rel gap before it 0e0
+    rel 0.1 vs 0.8 first split Some(31); peak point (rel 0.1/0.4/0.8) [25, 25, 25]; overshoot K [93.43762599296792, 93.43762599296792, 93.43762599296792]; spread 0e0 K; rung 47 at att: point 25 overshoot 9.343762599296792e1 K

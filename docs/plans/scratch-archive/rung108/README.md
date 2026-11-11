@@ -16,3 +16,13 @@ time, a stall margin or a cut size (anchor `docs/plans/rung108-anchor-two-speed-
 - `open2.rs` → `open2.txt` — G2/G3: 900 open runs (3 cases × 3 flights × 4 maps × 5 × 5 constants): stops (`NOTE` lines —
   the flat-LP floor runs only) and the worst one-step gap per constant pair.
 - `ledger.rs` → `ledger.txt` — G5: the ledger's relative miss per phase (attack, release), at the run's step and half it.
+
+**After the build and the freeze (2026-11-11)** — two diagnostics for the pinned-trigger gate (anchor § 2's amendment);
+they print overshoots, which is allowed only now, the § 3 predictions being frozen. Both drive the SHIPPED
+`two_speed_clip` module, not the prototype.
+- `diag.rs` → `diag.txt` — governed, shape 0, (0.02, 0.1), step 0.005: every RK4 stage with `g > 0` and `r ≤ g` before
+  the first recorded crossing. None earlier than the crossing step's own k4 (it lands on the crossing point).
+- `diag2.rs` → `diag2.txt` — open, step 0.02: (1) the same stage log on shape 0 at (0.02, 0.1) — the ENGAGEMENT step's k3
+  at s = 0.29 and the crossing step's k4 at s = 0.52 read `τ_rel` early; (2) per cell (4 shapes × cut-in 0.02/0.05/0.1),
+  the first departure from rung 47 at the cut-in time, the split across give-back 0.1/0.8, the peak's point, the
+  overshoot across give-back 0.1/0.4/0.8, and rung 47's.

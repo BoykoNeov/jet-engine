@@ -40,6 +40,7 @@ use crate::sandbox_cooling::{LIFE_MAX, LIFE_MIN, TECH_KEYS, YEAR_MAX, YEAR_MIN};
 use crate::burner_hold::{self as bh, Hold};
 use crate::governor::{self as gv, GovCall, GovMark, Governor, Law, Leg};
 use crate::governor_lag::{self as gl, ClipLag};
+use crate::two_speed_clip::{self as tsc, TwoSpeedClip};
 use crate::governor_release as gr;
 use crate::inferred_thrust as inf;
 use crate::corrected_tables::{Carry, TableAt};
@@ -227,6 +228,10 @@ pub struct ControlsSettings {
     /// Rung 47: that limiter's response lag, τ.
     pub gov_lag_on: bool,
     pub gov_lag: f64,
+    /// Rung 108: that lag at two speeds — "cuts fast, gives back slowly": the cut-in time `gov_lag_att`, the give-back
+    /// time `gov_lag` (the lag's own knob). Read only with the lag and the limiter on.
+    pub gov_lag_two: bool,
+    pub gov_lag_att: f64,
     /// Rung 48: the acceleration schedule's margin above the steady fuel-per-pressure line.
     pub accel_on: bool,
     pub accel_margin: f64,
@@ -453,7 +458,7 @@ impl ControlsSettings {
         let fd = BladeSettings::defaults().flight();
         ControlsSettings {
             shape: 0, rho: 1.0, from: 1000.0, to: 1400.0, ramp: 0.5, settle: 2.0,
-            redline_on: false, redline: 1480.0, gov_lag_on: false, gov_lag: 0.2,
+            redline_on: false, redline: 1480.0, gov_lag_on: false, gov_lag: 0.2, gov_lag_two: false, gov_lag_att: DS,
             accel_on: false, accel_margin: 0.25,
             floor_on: false, floor_spool: Spool::Lp, floor_phi: 0.75, floor_ref: FloorRef::Phi,
             release_on: false, tau_att: 0.02, tau_rel: 0.10,
@@ -595,9 +600,15 @@ impl ControlsSettings {
 
     /// The march's step, recorded at every point: the page's [`DS`], except beside the governor with a realistic
     /// release that cuts in faster than [`GOV_REL_FINE_BELOW`] — there [`GOV_REL_SUBSTEPS`] times finer (plan § 45).
+    /// Rung 108: beside the governor the two-speed limiter ALWAYS runs on that finer step (the user's choice; anchor
+    /// § 0 G3 — at one step a fast cut is rough, and the floor cases at every cut-in time).
     pub fn march_ds(&self) -> f64 {
-        if self.govern && self.release_on && self.tau_att < GOV_REL_FINE_BELOW - 1e-12 { DS / GOV_REL_SUBSTEPS } else { DS }
+        if (self.govern && self.release_on && self.tau_att < GOV_REL_FINE_BELOW - 1e-12) || (self.govern && self.two_speed())
+        { DS / GOV_REL_SUBSTEPS } else { DS }
     }
+
+    /// Rung 108: does this run's temperature limiter lag at two speeds? Only with the limiter and its lag on.
+    pub fn two_speed(&self) -> bool { self.gov_lag_two && self.gov_lag_on && self.redline_on }
 
     pub fn to_json(&self) -> Json {
         let b = |x: bool| Json::Int(x as i64);
@@ -650,6 +661,9 @@ impl ControlsSettings {
             if self.light_at != AB_LIGHT_AT { kv.push(("light_at".into(), Json::Float(self.light_at))); }
             if self.a8_ratio != 1.0 { kv.push(("a8_ratio".into(), Json::Float(self.a8_ratio))); }
             if self.a8_match { kv.push(("a8_match".into(), b(true))); }
+            // Rung 108's two, likewise (every earlier reply unchanged).
+            if self.gov_lag_two { kv.push(("gov_lag_two".into(), b(true))); }
+            if self.gov_lag_att != DS { kv.push(("gov_lag_att".into(), Json::Float(self.gov_lag_att))); }
         }
         // Rung 104's law, likewise; and rung 105's.
         self.turbine.push_json(&mut j);
@@ -710,7 +724,7 @@ impl ControlsSettings {
         }
         for (k, into) in [("rho", &mut s.rho), ("from", &mut s.from), ("to", &mut s.to), ("ramp", &mut s.ramp),
                           ("settle", &mut s.settle), ("redline", &mut s.redline), ("gov_lag", &mut s.gov_lag),
-                          ("accel_margin", &mut s.accel_margin), ("floor_phi", &mut s.floor_phi),
+                          ("gov_lag_att", &mut s.gov_lag_att), ("accel_margin", &mut s.accel_margin), ("floor_phi", &mut s.floor_phi),
                           ("tau_att", &mut s.tau_att), ("tau_rel", &mut s.tau_rel), ("v_max", &mut s.v_max),
                           ("v_n_lo", &mut s.v_n_lo), ("b_max", &mut s.b_max), ("b_n_lo", &mut s.b_n_lo),
                           ("valve_phi", &mut s.valve_phi), ("valve_tau", &mut s.valve_tau),
@@ -748,6 +762,7 @@ impl ControlsSettings {
                 .ok_or_else(|| format!("unknown generator setting {t:?} (\"share\" or \"power\")"))?;
         }
         for (k, into) in [("redline_on", &mut s.redline_on), ("gov_lag_on", &mut s.gov_lag_on),
+                          ("gov_lag_two", &mut s.gov_lag_two),
                           ("accel_on", &mut s.accel_on), ("floor_on", &mut s.floor_on),
                           ("release_on", &mut s.release_on), ("metal_on", &mut s.metal_on), ("hold_cap", &mut s.hold_cap),
                           ("govern", &mut s.govern), ("table_clean", &mut s.table_clean),
@@ -916,7 +931,8 @@ fn dense_words(s: &ControlsSettings) -> String {
 pub fn controls_precheck(s: &ControlsSettings) -> Result<(), DoesNotRun> {
     let no = |m: &str| Err(DoesNotRun(m.to_string()));
     let named = [("rho", s.rho), ("from", s.from), ("to", s.to), ("ramp", s.ramp), ("settle", s.settle),
-                 ("redline", s.redline), ("gov_lag", s.gov_lag), ("accel_margin", s.accel_margin),
+                 ("redline", s.redline), ("gov_lag", s.gov_lag), ("gov_lag_att", s.gov_lag_att),
+                 ("accel_margin", s.accel_margin),
                  ("floor_phi", s.floor_phi), ("tau_att", s.tau_att), ("tau_rel", s.tau_rel), ("v_max", s.v_max),
                  ("v_n_lo", s.v_n_lo), ("b_max", s.b_max), ("b_n_lo", s.b_n_lo), ("valve_phi", s.valve_phi),
                  ("valve_tau", s.valve_tau), ("valve_tau_close", s.valve_tau_close),
@@ -1059,6 +1075,14 @@ pub fn controls_precheck(s: &ControlsSettings) -> Result<(), DoesNotRun> {
             "The temperature limiter's lag must be at least one march step ({DS} spool time constants); switch the \
              lag off for an instant limiter.")));
     }
+    // Rung 108: the two-speed limiter's cut-in time, at least one march step on both routes (anchor § 0 G3: the open
+    // route is clean at one step from 0.02; beside the governor the run steps four times finer). Its give-back time is
+    // the lag's own knob, with that knob's floors.
+    if s.two_speed() && !(s.gov_lag_att >= DS - 1e-12) {
+        return Err(DoesNotRun(format!(
+            "The temperature limiter's cut-in time must be at least one march step ({DS} spool time constants): \
+             measured, a faster cut than that is worked out too coarsely at this step.")));
+    }
     if s.release_on && !(s.accel_on || s.floor_on) {
         return no("The realistic release lags the cut of the acceleration schedule or the stall floor, so switch \
                    one of them on.");
@@ -1078,10 +1102,16 @@ pub fn controls_precheck(s: &ControlsSettings) -> Result<(), DoesNotRun> {
     // lifted the temperature limiter's lag (its own march, `governor_lag`); the release and the slow valve stay refused.
     if s.govern {
         if s.gov_lag_on && s.redline_on && !(s.gov_lag >= GOV_LAG_MIN - 1e-12) {
-            return Err(DoesNotRun(format!(
-                "Beside the governor the temperature limiter's lag must be at least {GOV_LAG_MIN} spool time constants \
-                 (five march steps): measured, a faster lag beside a fast governor moves the flow coefficients by up to \
-                 0.0002 against a finer step.")));
+            return Err(DoesNotRun(match s.two_speed() {
+                // Rung 108: the give-back time keeps the lag's floor (clean on the finer step, anchor § 0).
+                true => format!(
+                    "Beside the governor the temperature limiter's give-back time must be at least {GOV_LAG_MIN} spool \
+                     time constants, as its single lag's: a faster give-back there was not measured."),
+                false => format!(
+                    "Beside the governor the temperature limiter's lag must be at least {GOV_LAG_MIN} spool time constants \
+                     (five march steps): measured, a faster lag beside a fast governor moves the flow coefficients by up to \
+                     0.0002 against a finer step."),
+            }));
         }
         // Rung 107 (the user's "limit and nudge"): beside the governor the release time has its own floor (the step
         // check, `GOV_REL_REL_MIN`). The attack's is one page step (plan § 45: under 0.2 the march steps finer), which
@@ -1758,6 +1788,10 @@ impl ControlsSolver {
             let over = |i: &Instant2| self.metal_over(i);
             let metal: Option<&dyn Fn(&Instant2) -> f64> = if self.settings.metal_leg() { Some(&over) } else { None };
             match self.clip_lag() {
+                // Rung 108: the clip at two speeds, on the finer step.
+                Some(_) if self.settings.two_speed() =>
+                    tsc::march(&self.core.fuel, &self.flight, gl::Demand::Governor(g), self.two_speed_clip(),
+                               &self.lag_limiters(), metal, nu0, self.settings.s_end(), self.settings.march_ds()),
                 // Rung 106: beside the temperature limiter's lag, the clip a third state off the governor's demand.
                 Some(clip) => gl::march(&self.core.fuel, &self.flight, gl::Demand::Governor(g), clip, &self.lag_limiters(),
                                         metal, nu0, self.settings.s_end(), DS),
@@ -1767,6 +1801,11 @@ impl ControlsSolver {
                               self.settings.s_end(), self.settings.march_ds()),
                 None => gv::march(&self.core.fuel, &self.flight, g, &self.limiters(), metal, nu0, self.settings.s_end(), DS),
             }
+        } else if self.settings.two_speed() {
+            // Rung 108: the open ramp as the two-speed clip's demand; the holders read from residuals, as rung 47's.
+            let sched = self.settings.schedule(self.mf_lo, self.mf_hi);
+            (tsc::march(&self.core.fuel, &self.flight, gl::Demand::Ramp(&sched), self.two_speed_clip(),
+                        &self.lag_limiters(), None, nu0, self.settings.s_end(), self.settings.march_ds()).0, Vec::new())
         } else {
             let sched = self.settings.schedule(self.mf_lo, self.mf_hi);
             (self.core.fuel.integrate_fuel(&self.flight, sched, nu0, self.settings.s_end(), DS, &self.limiters()),
@@ -1801,6 +1840,38 @@ impl ControlsSolver {
     pub fn clip_lag(&self) -> Option<ClipLag> {
         let s = &self.settings;
         (self.governor.is_some() && s.redline_on && s.gov_lag_on).then_some(ClipLag { tt4_max: s.redline, tau: s.gov_lag })
+    }
+
+    /// Rung 108: the clip at two speeds — the cut-in time and the lag's own knob as the give-back time.
+    pub fn two_speed_clip(&self) -> TwoSpeedClip {
+        let s = &self.settings;
+        TwoSpeedClip { tt4_max: s.redline, lag: AsymmetricLag::new(s.gov_lag_att, s.gov_lag) }
+    }
+
+    /// Rung 108: one derivative evaluation of the two-speed march at the clip `g` (governed or open) — the model's own
+    /// [`tsc::try_der`], its failure in this view's terms.
+    pub fn two_speed_der(&self, a: f64, b: f64, g: f64, s: f64) -> Result<gl::LagDer, Failure> {
+        let sched = self.settings.schedule(self.mf_lo, self.mf_hi);
+        let over = |i: &Instant2| self.metal_over(i);
+        let (dem, metal): (gl::Demand<'_>, Option<&dyn Fn(&Instant2) -> f64>) = match &self.governor {
+            Some(gov) => (gl::Demand::Governor(gov), if self.settings.metal_leg() { Some(&over) } else { None }),
+            None => (gl::Demand::Ramp(&sched), None),
+        };
+        tsc::try_der(&self.core.fuel, &self.flight, dem, self.two_speed_clip(), &self.lag_limiters(), metal, a, b, g, s)
+            .map_err(|f| gov_failure(f, a, b, s))
+    }
+
+    /// Rung 108: the rest of one three-state step — the model's own [`tsc::try_rk_step`], at the march's step.
+    pub fn two_speed_step(&self, a: f64, b: f64, g: f64, s: f64, k1: (f64, f64, f64)) -> Result<(f64, f64, f64), Failure> {
+        let sched = self.settings.schedule(self.mf_lo, self.mf_hi);
+        let over = |i: &Instant2| self.metal_over(i);
+        let (dem, metal): (gl::Demand<'_>, Option<&dyn Fn(&Instant2) -> f64>) = match &self.governor {
+            Some(gov) => (gl::Demand::Governor(gov), if self.settings.metal_leg() { Some(&over) } else { None }),
+            None => (gl::Demand::Ramp(&sched), None),
+        };
+        tsc::try_rk_step(&self.core.fuel, &self.flight, dem, self.two_speed_clip(), &self.lag_limiters(), metal, a, b, g,
+                         s, self.settings.march_ds(), k1)
+            .map_err(|f| gov_failure(f, a, b, s))
     }
 
     /// Rung 106: the instant legs beside the clip — the redline rides in the clip, not as an instant leg.
@@ -1876,7 +1947,9 @@ impl ControlsSolver {
         let s = &self.settings;
         // Rung 95: the governed march first; the prechecks refuse it beside every lagged route.
         if s.govern {
-            return if self.clip_lag().is_some() {
+            return if self.clip_lag().is_some() && s.two_speed() {
+                Route::GovernorTwoSpeed
+            } else if self.clip_lag().is_some() {
                 Route::GovernorLag
             } else if self.release_lag().is_some() {
                 Route::GovernorRelease
@@ -1887,7 +1960,8 @@ impl ControlsSolver {
         // A slow valve's machine dispatches to rung 65's march first (its fuel table); the prechecks
         // refuse it beside either fuel-side lag.
         if s.valve_slow() { Route::ValveLag }
-        else if s.release_on { Route::Release } else if s.redline_on && s.gov_lag_on { Route::GovLag } else { Route::Plain }
+        else if s.release_on { Route::Release } else if s.two_speed() { Route::TwoSpeed }
+        else if s.redline_on && s.gov_lag_on { Route::GovLag } else { Route::Plain }
     }
 
     /// The instant at a recorded point, re-read: the closure at the point's speeds and APPLIED fuel —
@@ -1925,6 +1999,10 @@ pub enum Route {
     GovernorLag,
     /// Rung 107's governed march beside the realistic release — its lag IS recorded.
     GovernorRelease,
+    /// Rung 108's two-speed clip off the open ramp — its clip IS recorded.
+    TwoSpeed,
+    /// Rung 108's two-speed clip off the governor, on the finer step — its clip IS recorded.
+    GovernorTwoSpeed,
 }
 
 /// A failed governed evaluation in this view's terms.
@@ -2184,6 +2262,12 @@ pub fn replay_step(sv: &ControlsSolver, p: &FuelPoint) -> Option<Result<(f64, f6
             };
             sv.gov_rel_der(a, b, g, s).and_then(|d| sv.gov_rel_step(a, b, g, s, (d.da, d.db, d.dg)))
         }
+        Route::TwoSpeed | Route::GovernorTwoSpeed => {
+            let PointExtra::Asym { g, .. } = p.extra else {
+                unreachable!("the two-speed clip's route records its clip");
+            };
+            sv.two_speed_der(a, b, g, s).and_then(|d| sv.two_speed_step(a, b, g, s, (d.da, d.db, d.dg)))
+        }
         Route::Plain => (|| {
             let (k1a, k1b) = der_plain(sv, a, b, sched(s), s)?;
             let mfm = sched(s + ds / 2.0);
@@ -2251,6 +2335,7 @@ fn stop_at(sv: &ControlsSolver, last: Option<&FuelPoint>) -> Stop {
             Route::Governor => sv.gov_der_at(a, b, 0.0, sv.sensor_lag().map(|l| l.t0)).err(),
             Route::GovernorLag => sv.gov_lag_der(a, b, 0.0, 0.0).err(),
             Route::GovernorRelease => sv.gov_rel_der(a, b, 0.0, 0.0).err(),
+            Route::TwoSpeed | Route::GovernorTwoSpeed => sv.two_speed_der(a, b, 0.0, 0.0).err(),
             Route::Plain => der_plain(sv, a, b, sched(0.0), 0.0).err(),
             Route::Release => der_release(sv, a, b, 0.0, 0.0).err(),
             // The march starts the valve at its command (rung 65's equilibrium start), solved before
@@ -2272,6 +2357,7 @@ fn stop_at(sv: &ControlsSolver, last: Option<&FuelPoint>) -> Stop {
                 Route::Governor => sv.gov_der_at(a, b, s, sv.sensor_lag().map(|_| g)).err(),
                 Route::GovernorLag => sv.gov_lag_der(a, b, g, s).err(),
                 Route::GovernorRelease => sv.gov_rel_der(a, b, g, s).err(),
+                Route::TwoSpeed | Route::GovernorTwoSpeed => sv.two_speed_der(a, b, g, s).err(),
                 _ => der_plain(sv, a, b, sched(s), s).err(),
             }.or_else(|| Some(Failure { message: "the march stopped, but re-running its last step does not fail".into(),
                                         call: Call::AtApplied, mf: f64::NAN, nu_lp: f64::NAN, nu_hp: f64::NAN,
@@ -2676,6 +2762,7 @@ impl ControlsSolver {
             Route::Governor => &[Holder::Redline, Holder::Accel, Holder::Floor],
             Route::GovernorLag => &[Holder::Accel, Holder::Floor],
             Route::GovernorRelease => &[Holder::Redline],
+            Route::TwoSpeed | Route::GovernorTwoSpeed => &[Holder::Accel, Holder::Floor],
         };
         let holder = if p.mf == p.mf_sched {
             Holder::None
@@ -2760,7 +2847,8 @@ pub fn controls_json(sv: &ControlsSolver, o: &ControlsOutcome) -> Json {
         "ds" => o.settings.march_ds(),
         "route" => match sv.route() { Route::Plain => "plain", Route::GovLag => "gov_lag", Route::Release => "release",
                                       Route::ValveLag => "valve_lag", Route::Governor => "governor",
-                                      Route::GovernorLag => "governor_lag", Route::GovernorRelease => "governor_release" },
+                                      Route::GovernorLag => "governor_lag", Route::GovernorRelease => "governor_release",
+                                      Route::TwoSpeed => "two_speed", Route::GovernorTwoSpeed => "governor_two_speed" },
         "settled_lp" => num_or_null(settled_lp), "settled_hp" => num_or_null(settled_hp),
         "stopped" => Json::Int(o.stop.is_some() as i64),
         "stop" => match &o.stop {
