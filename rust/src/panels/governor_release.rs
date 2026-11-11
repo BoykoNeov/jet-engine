@@ -68,4 +68,6 @@ const NARRATIVE: &[&str] = &[
     "  limiter), then the governor pulls it back and the thrust SAGS. A slower release deepens the sag only a little. On",
     "  the open ramp, and with the instant limiter, the thrust never falls. Holding thrust only: under the other holds the",
     "  governor sags without any lag. The temperature limiter is off - the sag needs no slow temperature limiter (106).",
+    "  The 0.2 tau attack is the page's floor, set by the step size, not by hardware: a real limiter cuts in faster, and",
+    "  there (worked out at a finer step) the sag is about a third as deep and grows with the release (spec 107, sec. 5).",
 ];

@@ -28,6 +28,11 @@ slow sensor refused (two lags).
 > (the drawdown after the move), deeper the slower the release, but only a little: the release adds 0.4 points at
 > 0.4 τ and 1.1 at 1.6 τ to what an instant release already sags. On the open ramp, and with the instant schedule, the
 > thrust never falls. **The seam's premise — "the release edge decides the sag" — is refuted at the page's attacks.**
+> **But the page's attack is its FLOOR, and the floor is NUMERICAL** (the step check, § Concessions), not a hardware
+> time: a real limiter cuts in faster. At a fast attack the premise STANDS — worked out at the fine step (0.005), an
+> attack of 0.005 τ sags 0 / 0.5 / 1.5 / 3.0 % for a release of 0.005 / 0.1 / 0.4 / 1.6 τ, rising steadily with the
+> release, and an attack of 0.02 τ (release 0.4) sags 1.5 % against 4.1 % at 0.2 — about a third. So the sag a page
+> user sees is mostly the floor's; the verdict on rung 106 is BOUNDED, not a correction.
 > Each edge alone makes a sag (attack alone 3.7 %, release alone up to 3.0 %), but they do not add. **What the slow
 > release costs is TIME, not sag depth:** the thrust reaches 95 % of its step at 1.17, 1.56, 2.33 τ for a release of
 > 0.2, 0.4, 0.8 τ, and not within the 2.5 τ run at 1.6.
@@ -142,7 +147,9 @@ the open ramp.**
 ## 5. What it does to its neighbours
 
 * **Rung 106** — its sag is CONFIRMED to need no slow temperature limiter: any stored cut beside a thrust governor sags.
-  Its seam's premise (the RELEASE decides the sag) is REFUTED at the page's attacks: the slow ATTACK carries most of it.
+  Its seam's premise (the RELEASE decides the sag) is BOUNDED: refuted at the page's attack floor (0.2 τ), where the
+  slow ATTACK carries most of the sag; confirmed at a fast attack (0.005 τ, fine step), where the sag rises steadily
+  with the release (0 → 3.0 %). The floor is numerical, so a realistic fast-cutting limiter is the confirming case.
 * **Rung 52** — "cannot debit the spool it watches" SURVIVES the governor (H4), on the structural argument (a minimum
   below the floor lies in an attack phase). Its rate verdict (a slower release debits the other spool less) is BOUNDED
   to the open ramp: governed, the HP minimum moves before the release.
@@ -154,12 +161,16 @@ the open ramp.**
 * H4's third precondition — that the solvable-ceiling fallback never sets the applied fuel during the release — is not
   recorded by the march, so it was NOT checked; the lean-hold half was (0 holds).
 * The knobs' floors (attack 0.2, release 0.1) come from a step check at three flights; past the slider (1.6) only by
-  calling the march.
+  calling the march. **They are numerical, not hardware times — and the headline's mechanism sits AT the attack
+  floor.** A real limiter cuts in faster; there the sag is about a third as deep and the release's (headline, § 5).
+  At the coarse step the fast attack is also off: 0.02 τ sags 1.18 % at step 0.02 against 1.51 % at 0.005.
 * The scored grid is the thrust hold; the other laws are reported at one release time.
 * H2's rise and H3 are unscored at the frozen settle; the longer-settle reading is off protocol.
 
 ## The next seam
 
+**A finer step beside the governor, so the page admits a FAST attack** — the attack floor (0.2 τ) is the step
+check's, and it decides which sag a page user sees (the cut's at the floor, the release's at a realistic attack).
 **The two-speed temperature limiter beside the governor** — rung 52's asymmetric lag on the REDLINE (106 lagged it with
 one time constant; 107 left it instant): does a fast attack on the temperature limiter end rung 106's overshoot while a
 slow release keeps its sag? And **the governor beside rung 88's slow valve** (still refused).

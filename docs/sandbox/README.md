@@ -156,7 +156,9 @@ at that edge and marked as the minimum-fuel stop. Since rung 107 (2026-11-10) th
 the temperature limiter stays instant on top): the cut is measured off what the governor asks, so it cuts more than
 twice as deep as on the plain ramp. Holding thrust, the slow cutting-in lets fuel through first, the engine runs ahead
 and the thrust then sags, a slower letting-go deepening the sag a little; on the plain ramp or with the instant limiter
-it never falls (under the other holds the governor sags without any lag). Beside the governor the cutting-in time must
+it never falls (under the other holds the governor sags without any lag). That cutting-in time is the page's floor,
+set by its time step, not by hardware: a real limiter cuts in faster, and there (worked out at a finer step) the sag is
+about a third as deep and grows with the letting-go time instead. The note that moves the knob says so. Beside the governor the cutting-in time must
 be at least 0.2 τ and the letting-go time at least 0.1 τ, each speed governor keeps rung 106's edge (switching the
 governor or the release on moves a knob past its edge to it, and says so), and a run whose governor already asks for
 more fuel than the schedule or the floor allows at the start is refused, as is the release beside rung 106's lag, the

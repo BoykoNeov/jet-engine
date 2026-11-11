@@ -1,11 +1,11 @@
 ---
 name: rung107-governor-release
-description: "Rung 107 (2026-11-10), the governor beside rung 52's realistic release — process lessons: a frozen mechanism can HIT for the wrong reason (H6 sagged 16/16, but the sag was the slow ATTACK's, not the release's — found only by varying the two edges SEPARATELY); a 'no-lag runs never sag' comparison held only on the hold it was run on (the side agent caught the scope); write a missing vacuity rule BEFORE the first run; check a 'τ-free by construction' premise numerically"
+description: "Rung 107 (2026-11-10), the governor beside rung 52's realistic release — process lessons: a frozen mechanism can HIT for the wrong reason (H6 sagged 16/16, but the sag was the slow ATTACK's, not the release's — found only by varying the two edges SEPARATELY); a 'no-lag runs never sag' comparison held only on the hold it was run on (the side agent caught the scope); write a missing vacuity rule BEFORE the first run; check a 'τ-free by construction' premise numerically; a mechanism measured AT a numerical knob floor is the floor's (CORRECTS→BOUNDS 106, after shipping)"
 metadata:
   node_type: memory
   type: project
   originSessionId: cd77f469-59bb-4cab-8601-250d168d18ba
-  modified: 2026-11-10T18:38:10.725Z
+  modified: 2026-11-10T20:20:55.205Z
 ---
 
 Rung 107 shipped the governor beside rung 52's fast-attack / slow-release lag (spec `docs/rung107-spec.md`, anchor
@@ -29,5 +29,10 @@ fuel through first; the release adds little. Scored 38 HIT / 10 MISS / 12 VACUOU
 4. **Check a "τ-free by construction" premise numerically.** The anchor said the deepest cut cannot depend on the
    release time (the pinned trigger). It does, by ≤ 4e-4: the deepest point sits AT the crossing, whose step already
    read τ_rel in its inner stages. Printing the four values bit for bit caught it.
+6. **When a headline's mechanism sits AT a knob's floor, ask whether that floor is physical or numerical — before
+   naming the cause.** The "slow CUT makes the sag" verdict was measured at the page's 0.2 τ attack, which is the step
+   check's floor, not hardware. My own fine-step probe (sagcause) already showed a fast attack sags a third as much and
+   rises with the release — i.e. rung 106's premise HOLDS there. A side agent flagged it after shipping; the row went
+   from "CORRECTS 106's seam" to "BOUNDS", and the page's moved-knob note now says so (follow-up commit, same day).
 5. **A gate with nothing to hold is dropped, and the spec says why.** The governed lean-hold test held 0 of 126 points;
    0 holds in 1 344 + 270 admitted runs — dropped, recorded in spec § 2.

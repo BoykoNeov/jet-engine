@@ -2186,7 +2186,11 @@ function relNudge() {
     else if (C.speed_law === "prop" && C.gov_gain > gainMax) { C.gov_gain = gainMax; moved.push(`the ${who} governor's gain to ${gainMax}`); }
   }
   if (!moved.length) { note.hidden = true; return; }
+  // Rung 107 § 4: the 0.2 cutting-in floor is the step check's, not hardware's -- most of the sag that follows is its.
+  const attMoved = moved.some(m => m.startsWith("its cutting-in"));
   note.textContent = `Beside the governor the release is worked out too roughly when faster: moved ${moved.join(", ")}. `
+    + (attMoved ? `A real limiter cuts in faster, and most of the thrust sag that follows comes from this slow cut: `
+      + `worked out at a finer step, a 0.02 τ cut sags about a third as much, and then the letting-go time sets the sag. ` : ``)
     + `To compare with the governor off, use the same times there: a slower cut comes in later and protects less.`;
   note.hidden = false;
 }

@@ -2295,6 +2295,8 @@ marks the lag's cut as before.
 * **What moves:** nothing that ran before (the combination was refused); the browser check
   `the_release_beside_the_governor_nudges_the_attack_and_runs_the_governed_release_route` is new.
 * **What the page shows (holding thrust):** the thrust climbs, then sags after the move — mostly because the slow
-  cutting-in lets fuel through first (spec § 4); on the plain ramp or the instant limiter it never falls.
+  cutting-in lets fuel through first (spec § 4); on the plain ramp or the instant limiter it never falls. The 0.2 τ
+  cutting-in floor is the step check's, not hardware's: at a fast cut (fine step) the sag is about a third as deep and
+  the letting-go time's, so the moved-knob note says so (added 2026-11-10 after a side-agent note).
 * **Cost:** ~0.2–0.3 s natively, at or under rung 95's governed run; crash map 1 000 requests, 0 panics, slowest 6.3 s
   natively.
