@@ -116,3 +116,21 @@ fn every_point_is_kept_because_a_fast_cuts_sag_is_shorter_than_a_page_step() {
         assert!(all > 1.1 * coarse, "shape {shape}: the coarse reading misses part of it ({all} vs {coarse})");
     }
 }
+
+#[test]
+fn a_stopped_fast_cut_run_is_diagnosed_by_rerunning_its_last_fine_step() {
+    // B3's second half: rung 107's crash map (seed 13) request #470 — a 0.1 cut (the fine step) on the stall floor that
+    // stops after 136 of 425 points, the floor out of reach (`scratch-archive/gov-fast-attack/stops.txt`: 21 fast-cut
+    // stops of 151 fast-cut runs, every one diagnosed with a failure at its last point's `s`).
+    use turbojet::visuals::Json;
+    const REQ: &str = r#"{"govern":1,"hold":"thrust","speed_law":"rate","gov_tau":0.91,"gov_gain":29,"generator":"hp","generator_power":0.065,"hold_cap":0,"metal_on":0,"cool_vane":0.07,"cool_blade":0.07,"shape":"flat-lp","lever":"both","bleed_mode":"valve","redline_on":1,"redline":1790,"release_on":1,"tau_att":0.1,"tau_rel":0.96,"thrust_by":"epr","accel_on":0,"floor_on":1,"from":1510,"to":740,"ramp":0.12,"rho":1.6}"#;
+    let s = ControlsSettings::from_json(&Json::parse(REQ)).unwrap();
+    assert_eq!(s.march_ds(), 0.005);
+    let (sv, o) = controls(&s).unwrap();
+    assert_eq!(sv.route(), Route::GovernorRelease);
+    assert_eq!((o.points.len(), s.expected_points()), (136, 425));
+    let st = stop_reason(&sv, &o.points).expect("it stopped");
+    assert_eq!(st.s_last, o.points.last().unwrap().s);
+    let f = st.failure.expect("the re-run of its last fine step fails");
+    assert!(f.message.contains("UNREACHABLE"), "{}", f.message);
+}

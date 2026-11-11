@@ -5,14 +5,14 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 39da515b-68ff-4167-9dfa-7ad4aff5d040
-  modified: 2026-11-11T09:24:56.226Z
+  modified: 2026-11-11T10:31:34.569Z
 ---
 
 Rung 107's first named seam, chosen by the user 2026-11-11 ("go with your recommendation"). Not a rung: a page/solver
 change, sandbox plan § 45.
 
-Measured before asking (`W:\temp\claude\gov-fast-attack`, probe `sweep.rs`/`sag.rs`/`timing.rs`; archived under
-`docs/plans/scratch-archive/gov-fast-attack/`): substeps needed for every law × 3 cases × 3 flights under 1e-4 against a
+Measured before asking (probes `sweep.rs`/`sag.rs`/`timing.rs`, archived with their outputs in
+`docs/plans/scratch-archive/gov-fast-attack/`; the scratch crate was deleted): substeps needed for every law × 3 cases × 3 flights under 1e-4 against a
 4× finer step — attack 0.1/0.05 → 2, 0.02/0.01 → 4, 0.005 → 8. Slowest march natively 1.5 s at k=1 → ~3 / 6 / 13.5 s.
 Rung 107's fine-step sag numbers CONFIRMED to k=32. A fast attack's sag has a sub-0.02 dip: read on the 0.02 grid it is
 ~20 % shallow (1.18 vs 1.51 %) — rung 107's concession "the fast attack is off at the coarse step" was mostly the
@@ -36,3 +36,6 @@ Related: [[rung107-decisions]].
   silently ran at 0.02. **How to apply:** a struct-update helper must not set the field a caller varies — vary it
   OUTSIDE (`ControlsSettings { tau_att: X, ..fast(base) }`).
 - I typed `python` in a Bash heredoc (the Store stub — hangs; already in [[windows-tooling-file-hazards]]). Use awk.
+- I wrote "every bar met" into a pushed commit before checking B3's stopped-run half (the crash map never counted
+  fast-cut stops); the advisor caught it, and a census then found 21. **How to apply:** before writing "every bar met",
+  re-read each bar's wording and name the evidence for each clause.

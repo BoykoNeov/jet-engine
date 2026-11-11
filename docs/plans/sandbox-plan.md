@@ -2287,7 +2287,8 @@ marks the lag's cut as before.
 * **The user's choices:** rung 52 as built; every hold; a run whose governor already asks for more than the schedule or
   the floor allows at the start REFUSED in words (the governor-off route keeps showing it); beside rung 106's lag, the
   slow valve or the slow exhaust sensor refused (two lags).
-* **The knobs' floors beside the governor:** cutting in ≥ 0.2 τ, letting go ≥ 0.1 τ (the step check, measured at three
+* **The knobs' floors beside the governor:** cutting in ≥ 0.2 τ, letting go ≥ 0.1 τ (§ 45 lowered the cutting-in floor to 0.02 τ
+  on a finer step) (the step check, measured at three
   flights; rung 52's open route keeps one step), each speed law at rung 106's edge. Switching the governor or the
   release on (or the hold, law or reading with both on) moves an out-of-range knob to its floor and says so under the
   release (`ctl-relnudge`, the user's "limit and nudge"), with a word that a governor-off comparison should use the same
@@ -2358,13 +2359,17 @@ true (over keeping the 0.02 spacing and saying the sag reads shallow).
   slowest is over ~15 s, stop and ask.
 
 **Built (2026-11-11) — every bar met:**
-* **B1:** the gate (below); no oracle, golden or earlier test moved. Rung 107's refusal test now admits a 0.02 cut and
-  refuses 0.01 by the one-step rule; its release-floor words lost the attack.
+* **B1:** the gate (`rust\test-all.ps1`): 241 programs, 3 010 passed, 1 failed — `tests/sandbox_governor.rs`
+  `every_refusal_is_words`, which used the 0.02 cut as its refused release case (now a letting-go time of 0.06); fixed and
+  that binary re-run alone; the page check (`check.ps1`) re-run whole after the screenshot hook, 472 passed. No oracle or
+  golden moved. Two earlier tests changed on purpose: that one, and rung 107's refusal test (it now admits a 0.02 cut,
+  refuses 0.01 by the one-step rule; the release floor's words lost the attack).
 * **B2:** 1 323 runs (the 63 settings × 7 attacks × 3 releases), every one to the end, worst 4.4e−5 (both + redline, the
   design flight, HP rate 0.1, attack 0.02, release 0.1). `tests/gov_fast_attack.rs` keeps a slice (attacks 0.02 / 0.19).
-* **B3:** every fine step re-runs bit for bit (`tests/gov_fast_attack.rs`, two laws, schedule and floor). The crash map's
-  60 stops all read the floor out of reach — none "the re-run does not fail" — though the script did not count how many
-  of them were fast cuts.
+* **B3:** every fine step re-runs bit for bit (`tests/gov_fast_attack.rs`, two laws, schedule and floor). Of the crash
+  map's requests 151 ran a fast cut; 21 stopped (7 part-way, 14 at the first point), and every one's diagnosis re-ran
+  its last fine step, found the failure (the floor out of reach) and reported the last point's time
+  (`scratch-archive/gov-fast-attack/stops.txt`); request #470 is pinned in the test.
 * **B4:** the browser check `a_fast_cut_beside_the_governor_moves_no_knob_and_runs_the_governed_release_route_on_the_finer_step`.
 * **B5** (`scratch-archive/gov-fast-attack/crash.txt`, `wasmtime.txt`): 1 000 requests, 0 panics, 421 admitted (270
   before: the fast cuts), 0 re-attacks, 0 minimum-fuel holds. Slowest admitted 5.75 s natively, **11.2 s on the page**

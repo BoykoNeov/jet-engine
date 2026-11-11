@@ -28,7 +28,7 @@ slow sensor refused (two lags).
 > (the drawdown after the move), deeper the slower the release, but only a little: the release adds 0.4 points at
 > 0.4 τ and 1.1 at 1.6 τ to what an instant release already sags. On the open ramp, and with the instant schedule, the
 > thrust never falls. **The seam's premise — "the release edge decides the sag" — is refuted at the page's attacks.**
-> **But the page's attack is its FLOOR, and the floor is NUMERICAL** (the step check, § Concessions), not a hardware
+> **But the page's attack is its FLOOR** (until sandbox plan § 45 lowered it to 0.02 τ, 2026-11-11), **and the floor is NUMERICAL** (the step check, § Concessions), not a hardware
 > time: a real limiter cuts in faster. At a fast attack the premise STANDS — worked out at the fine step (0.005), an
 > attack of 0.005 τ sags 0 / 0.5 / 1.5 / 3.0 % for a release of 0.005 / 0.1 / 0.4 / 1.6 τ, rising steadily with the
 > release, and an attack of 0.02 τ (release 0.4) sags 1.5 % against 4.1 % at 0.2 — about a third. So the sag a page
@@ -149,7 +149,8 @@ the open ramp.**
 * **Rung 106** — its sag is CONFIRMED to need no slow temperature limiter: any stored cut beside a thrust governor sags.
   Its seam's premise (the RELEASE decides the sag) is BOUNDED: refuted at the page's attack floor (0.2 τ), where the
   slow ATTACK carries most of the sag; confirmed at a fast attack (0.005 τ, fine step), where the sag rises steadily
-  with the release (0 → 3.0 %). The floor is numerical, so a realistic fast-cutting limiter is the confirming case.
+  with the release (0 → 3.0 %). The floor is numerical, so a realistic fast-cutting limiter is the confirming case —
+  on the page since sandbox plan § 45 (the floor 0.02 τ, on a finer step).
 * **Rung 52** — "cannot debit the spool it watches" SURVIVES the governor (H4), on the structural argument (a minimum
   below the floor lies in an attack phase). Its rate verdict (a slower release debits the other spool less) is BOUNDED
   to the open ramp: governed, the HP minimum moves before the release.

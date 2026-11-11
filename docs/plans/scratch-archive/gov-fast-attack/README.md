@@ -23,3 +23,6 @@ the 0.02 grid).
 - `wasmtime.mjs` → `wasmtime.txt` — the slowest requests (`slow_reqs.txt`) and the page's default governed release
   (`default_reqs.txt`) in WebAssembly (Node's V8, the page's call path): slowest admitted 11.2 s; the default at a
   0.02 cut 1.9 s against 0.35 s at 0.2.
+- `stops.rs` → `stops.txt` — B3's second half (added after review): of the crash map's requests, 151 ran a fast cut and
+  21 stopped (7 part-way, 14 at the first point); every stop's diagnosis re-ran its last fine step, found the failure
+  and reported the last point's time. #470 is pinned in `rust/tests/gov_fast_attack.rs`.
