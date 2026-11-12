@@ -38,6 +38,8 @@ new slices and step links go THERE, not here.
 - [Back-pressure repair](back-pressure-repair.md) — 2026-10-16: a census logger in a threaded test process must write each record in ONE call; red-check by stashing src only
 - [Sandbox altitude](sandbox-altitude.md) — a step-checked limit holds only at its flight; a ×2 similarity cannot see a re-capture; empty-vs-empty cmp says IDENTICAL
 - [Roadmap + standing engine](roadmap-and-standing-engine.md) — 2026-11-12: `docs/plans/roadmap.md` is the entry point (A1–A8 ready, B1–B5 the user's choice — ask); a refusal can be another rung's control flow, so add a twin
+- [Try-this menu (A1)](try-this-menu-a1.md) — 2026-11-12 SHIPPED: a chained page action must await each run landing (settled()); measure an entry's run against its pin before writing its text
+- [Plain notes (A4)](plain-notes-a4.md) — 2026-11-12, 10 families in docs/notes/: my first number check could not fail (substring over all specs); read the WHOLE rung table for later corrections
 - [Sandbox Mach](sandbox-mach.md) — "refused at every throttle" written from ONE throttle tried there; an archived probe source was a copy of another (equal output sizes)
 - [Schedule-check census](schedule-check-census.md) — census a fix's reach by RUNNING, not by the seam's stated scope (it said 63; it was 49–73)
 - [Schedule-check flip](schedule-check-flip.md) — a total over a run compares only at equal run length (rung 65 § 3 did not)
