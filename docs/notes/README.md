@@ -14,7 +14,7 @@ note is a bug.
 | 31–33 running the engine you built | [31-33-off-design.md](31-33-off-design.md) | written 2026-11-12 |
 | 34–37 one shaft in time | [34-37-one-shaft-in-time.md](34-37-one-shaft-in-time.md) | written 2026-11-12 |
 | 38–45 two shafts | — | to write |
-| 46–52 fuel limiters | — | to write next |
+| 46–52 fuel limiters | [46-52-fuel-limiters.md](46-52-fuel-limiters.md) | written 2026-11-12 |
 | 53–56 and 61 airflow levers | — | to write |
 | 57–63 schedules | — | to write |
 | 64–68 valve and cascades | — | to write |
