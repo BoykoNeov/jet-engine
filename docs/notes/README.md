@@ -21,7 +21,7 @@ note is a bug.
 | 69–84 control-loop structure | — | to write, last, one short page |
 | 85 blade speeds | — | to write |
 | 86–89 levers together | — | to write |
-| 90–94 loads | — | to write |
+| 90–94 loads | [90-94-loads.md](90-94-loads.md) | written 2026-11-12 |
 | 95–101 governors and inferred thrust | — | to write |
 | 102 afterburner | — | to write |
 | 103–105 below choke | — | to write |

@@ -207,7 +207,7 @@ and keep it short — one page for the whole family is enough.
 sentence uses a name from the code as if it were a word.
 
 **Progress.** Started 2026-11-12: `docs/notes/README.md` is the index (which families are written).
-Written: 31–33, 34–37, 46–52. Next: 90–108 (90–94, 95–101, 102, 103–105, 106–108). Practice that worked: before writing a family, grep
+Written: 31–33, 34–37, 46–52, 90–94. Next: 95–101, 102, 103–105, 106–108. Practice that worked: before writing a family, grep
 `CLAUDE.md`'s rung table and the later specs for "rung N" beside CORRECTS / REFUTES / BOUNDS / INVERTS, so
 the corrected story is told; grep `docs/sandbox/template.html` for where the page shows each rung; label every
 spec number with the case it belongs to (a spec's case is rarely the page's); before committing, scan the file
