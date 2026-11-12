@@ -206,6 +206,13 @@ and keep it short — one page for the whole family is enough.
 **Done when** each family file exists, a reader who has not seen the code can follow it, and no
 sentence uses a name from the code as if it were a word.
 
+**Progress.** Started 2026-11-12: `docs/notes/README.md` is the index (which families are written).
+Written: 31–33, 34–37. Next: 46–52, then 90–108. Practice that worked: before writing a family, grep
+`CLAUDE.md`'s rung table and the later specs for "rung N" beside CORRECTS / REFUTES / BOUNDS / INVERTS, so
+the corrected story is told; grep `docs/sandbox/template.html` for where the page shows each rung; label every
+spec number with the case it belongs to (a spec's case is rarely the page's); before committing, scan the file
+for Greek letters and code-style names and check every number appears in its spec.
+
 ### A5. Decide the fate of the charts page
 
 **Why.** Weakness 5. `docs/visuals/turbojet-visuals.html` calls itself a map of 29 rungs.

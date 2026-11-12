@@ -12,6 +12,9 @@ written to learn from. Built up station by station as the cycle is derived. See
 > below (pressure ratio, turbine temperature, the losses, the gas model, flight conditions) is live
 > there, and the engine re-solves as you move it.
 
+> **2026-11-12 — rungs 25–108 in plain language:** this file stops at rung 22. The story carries on in
+> `docs/notes/`, one file per family of rungs (its `README.md` lists which are written).
+
 ## The big picture
 A turbojet is a **Brayton cycle**: squeeze air (compressor), burn fuel in it
 (burner), let it expand through a turbine, and shove what's left out a nozzle
