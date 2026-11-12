@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: feedback
   originSessionId: 8c26fd4b-a96a-48b1-b4d0-d6638ba4a998
-  modified: 2026-10-05T13:06:44.595Z
+  modified: 2026-11-12T18:34:50.120Z
 ---
 
 When work reaches a green, complete state, commit it and push to `main`
@@ -24,6 +24,11 @@ with "shall I commit this?".
 "wrap up" mid-rung, do NOT hold back half-built code because the gate has not run or the page is not rebuilt. Commit it
 as a `wip(...)` commit whose message says plainly what is NOT done (and which gate it will fail), and push. Holding it
 in the working tree "on purpose" was the miss.
+
+**A plan's "stop and ask" is not a commit gate (2026-11-12, user: "always commit").** Roadmap A3 said to ask
+before changing a function rung 41 calls; I did, the gate proved nothing moved, and I held the commit to ask. The
+user's answer was "always commit". Next time: commit and push the green work, and report the stop-and-ask point in
+the summary (what changed, what the gate shows) so the user can object after the fact.
 
 **How to apply:** After a coherent unit of work passes its checks, stage
 everything, write a descriptive commit, and push to origin main. Still respect

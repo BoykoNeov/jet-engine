@@ -39,6 +39,7 @@ new slices and step links go THERE, not here.
 - [Sandbox altitude](sandbox-altitude.md) — a step-checked limit holds only at its flight; a ×2 similarity cannot see a re-capture; empty-vs-empty cmp says IDENTICAL
 - [Roadmap + standing engine](roadmap-and-standing-engine.md) — 2026-11-12: `docs/plans/roadmap.md` is the entry point (A1–A8 ready, B1–B5 the user's choice — ask); a refusal can be another rung's control flow, so add a twin
 - [Try-this menu (A1)](try-this-menu-a1.md) — 2026-11-12 SHIPPED: a chained page action must await each run landing (settled()); measure an entry's run against its pin before writing its text
+- [Standing engine (A3)](standing-engine-a3.md) — 2026-11-12 SHIPPED: a census must set the knob where the request reads it (the slam nests its flight); a limit pair off a grid validates nothing
 - [Plain notes (A4)](plain-notes-a4.md) — 2026-11-12, 10 families in docs/notes/: my first number check could not fail (substring over all specs); read the WHOLE rung table for later corrections
 - [Sandbox Mach](sandbox-mach.md) — "refused at every throttle" written from ONE throttle tried there; an archived probe source was a copy of another (equal output sizes)
 - [Schedule-check census](schedule-check-census.md) — census a fix's reach by RUNNING, not by the seam's stated scope (it said 63; it was 49–73)
