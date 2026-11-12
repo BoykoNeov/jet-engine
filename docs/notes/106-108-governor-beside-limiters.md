@@ -33,6 +33,10 @@ engineers call this **windup**: a correction built up while it could not act, re
 **It also moved rung 47's verdict.** Beside the governor the limiter starts cutting earlier (0.14 τ instead of
 0.30 τ), before the LP compressor's closest approach to stall, so it now buys that compressor a little relief.
 
+**Later.** Rung 108 found the overshoot, and most of the sag, came from the limiter's *slow cut*: a fast cut-in
+takes the overshoot from 272 K to 59 K at the same give-back and halves the sag. But with a slow give-back (0.8 τ)
+the fast cut sags more.
+
 **On the page.** *Controls → Holds thrust, Govern during the move*, then *Turbine temperature limiter* and *…that
 reacts with a lag*.
 

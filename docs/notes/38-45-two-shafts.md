@@ -67,6 +67,9 @@ the ratio of the LP shaft's response time to the HP shaft's.
   strongly, while speeding the LP shaft hurts the HP's. That push-pull lets the two speeds overshoot and swing back
   in a band of the ratio. With a flat LP map it never happens. The swing is created by the map.
 
+**Later.** Rungs 38 and 40 left the exhaust nozzle choked by assumption. Rung 97 let it unchoke on the two-shaft
+engine in time (see the rungs 95–101 note).
+
 ---
 
 ## Rung 41 — The two-shaft stall line
@@ -86,6 +89,13 @@ up. Rung 36 had hoped for such a knob-free anchor and could not find one; this i
 **What it does to rung 36.** Rung 36's verdict (thin at low power) stands; its reason does not. The margin shrinks
 through two comparable causes, not one (see the rungs 34–37 note).
 
+**Later.**
+- **Rung 49 inverted "the LP compressor is the exposed one", for one effect.** When a limiter *lets go* of the fuel
+  during a slam, it is the HP compressor that gets pushed back toward stall: the LP compressor's worst moment comes
+  early, before any letting-go, while the HP's comes later, where letting-go lands.
+- **Rung 55 bounded it.** The single-block compressor's flow coefficient turns out to be its *front stage's*. The
+  readings were of the right thing, 2–4 % generous about it.
+
 ---
 
 ## Rung 42 — Bleeding air between the compressors
@@ -98,8 +108,10 @@ compressor's flow coefficient by **8–12 %** at a fixed throttle, off its runni
 compressor stays on the same line, to within 0.01–0.016 %: the valve only slides it along the line the throttle
 already slides it along. The guess that bleeding would penalise the HP compressor was refuted.
 
-**Later.** Rung 64 made this valve a closed-loop protection; rung 92 found that a bleed is exactly a shaft power
-offtake plus air thrown away, which explains the HP compressor's indifference (see the rungs 90–94 note).
+**Later.** Rung 64 made this valve a closed-loop protection. Rung 90 bounded the "no new freedom for the HP
+compressor": it holds for air taken *between* the compressors; air taken one station later, behind the HP
+compressor, gives the HP compressor a freedom of its own. Rung 92 found that a bleed is exactly a shaft power
+offtake plus air thrown away, which explains the HP compressor's indifference here (see the rungs 90–94 note).
 
 ---
 

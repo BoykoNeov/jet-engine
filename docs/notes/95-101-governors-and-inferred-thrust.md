@@ -39,6 +39,10 @@ the fuel for most of the move, it still gets there about **18 %** sooner.
 (a fixed "gain") is about **1.9×** slower at idle than near full power: the turbine has less power to spare there.
 One that commands a rate of speed-up closes it at the same pace everywhere.
 
+**Later.** Rung 95 found that nothing in the governor itself stores up a correction to pay back later. Rung 106
+bounded that to the governor alone: beside a limiter that reacts with a delay, the pair does store one, and the
+thrust sags after the move (see the rungs 106–108 note).
+
 **On the page.** *Controls → Holds thrust* (or *Holds HP speed*) and *Govern during the move*. *Try this → Ask
 for thrust, not temperature*. In the page's slam (`docs/sandbox/EXPERIMENTS.md`, experiment 16, a 0.1 τ move) the
 thrust reaches 90 % of its change in 0.14 τ instead of 0.86 τ, and the turbine inlet peaks at 2594 K instead of
@@ -148,7 +152,8 @@ is the air swallowed, read off a line the engine has left.
 **What it found.** Two extra tables made at slow flight speeds, where the nozzle unchokes, take the worst miss below
 Mach 0.3 from **16 %** (pressure ratio) and **33 %** (fan speed) to **under 1 %** on both readings.
 
-**On the page.** The ten speeds of rung 99 include the two slow ones (Mach 0.05 and 0.15).
+**On the page.** Rung 99 made its tables at eight flight speeds; rung 100 added the two slow ones (Mach 0.05 and
+0.15), which is why the page offers *tables at ten speeds*.
 
 ---
 

@@ -57,7 +57,7 @@ the HP compressor and blown through them. The model has two streams: **vane air*
 and rejoins before the HP turbine's rotor (so it still does work there), and **blade air**, which cools the
 rotor blades and rejoins after it.
 
-Either way the air comes back *in front of* the LP turbine's entrance, a choked throat (rung 31). That throat
+Either way the air comes back *in front of* the LP turbine's entrance, a throat assumed choked (rung 38; rung 104 later found it never quite chokes). That throat
 must now pass more gas, so the pressure in front of it rises and the HP turbine cannot expand as far. The HP
 compressor loses *more* work than if the air had been thrown away. So:
 - the HP compressor is pushed toward stall at high power, above about **1116 K** for vane air and **795 K** for

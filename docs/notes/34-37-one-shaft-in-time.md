@@ -77,6 +77,10 @@ map shape tried; the sizes depend on the invented map.
 and fuel metered; the fuel-metered line overshoots. Rungs 46–52 (the fuel limiters, on *Controls*) exist to stop
 this overshoot.
 
+**Later.** Rung 46 sharpened "the two limits are coupled": they share a cause but arrive one after the other.
+So a limiter that holds the turbine temperature does *not* relieve the compressor that would stall first (see the
+rungs 46–52 note).
+
 ---
 
 ## Rung 36 — The stall line: the margin is thinnest at low power

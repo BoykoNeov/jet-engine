@@ -24,6 +24,14 @@ The whole family turns out to be about **timing**. During a slam each compressor
 closest to stall, and the two compressors reach theirs at different moments. A limiter can only protect a
 compressor whose worst moment comes *after* the limiter starts cutting fuel.
 
+**How far this reaches.** Three later rungs drew its edges, each from a different side:
+- **Rung 53** bounded the yardstick. Distance from stall measured as flow coefficient stops meaning one thing once a
+  lever (variable stators) can move the stall line itself.
+- **Rung 57** bounded the timing law. It holds for levers that move the engine's running point, like fuel. A lever
+  that moves the stall line instead has no such clock: its effect is the same whenever it acts.
+- **Rung 64** bounded the protection. The most any limiter can protect is set by how much its lever can do at full
+  stretch. The limiter's rule decides only what that protection costs.
+
 ---
 
 ## Rung 46 — The temperature limiter protects the wrong compressor
@@ -83,6 +91,9 @@ the limiter allows only rises.
 - **Rung 106:** "never reaches the low-pressure compressor" was a matter of timing only. When the throttle asks
   for thrust instead of temperature (rung 95's governor), fuel rises earlier, the limiter starts cutting at
   0.14 τ instead of 0.30 τ, which is before the low-pressure worst moment, and it does buy a small relief.
+- **Rung 108:** the redline overshoot belongs to a *slow cut*. Give the limiter a fast cut-in (0.02 τ) and on the
+  open throttle it overshoots by only 24 K. Rung 47's other verdict survives: the LP compressor's worst moment still
+  comes before the limiter acts.
 
 **On the page.** *…that reacts with a lag*, under the temperature limiter, with its delay in τ. *Try this → A limiter
 that reacts slowly*.

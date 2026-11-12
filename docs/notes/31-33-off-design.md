@@ -44,6 +44,8 @@ mixture changing as less fuel is burned.
   stage design. But it also found the consequences of the assumption nearly right: with the nozzle choked, the
   old assumption was within **0.15 %** on this one-shaft engine. The page keeps the old assumption as the
   default and lets you switch (*HP turbine's inlet vanes*, on *Fly it*).
+- Rung 91 bounded the "turbine sits at one fixed point" picture: it needs both throats to pass the same gas.
+  Turbine cooling air that rejoins between them moves the turbine off that point.
 
 **On the page.** *Fly it* freezes the hardware of the engine you designed and lets you move the throttle and the
 flight. Its first point is your design point; move the throttle and the engine moves along its running line.
@@ -78,6 +80,10 @@ map deliberately steep, against about **10⁻²** for the compressor. The compre
 **Honest limit.** The model has no measured compressor map. Its maps are invented, physically reasonable
 shapes, and every claim was checked on three different shapes: the *directions* hold on all of them, the *sizes*
 depend on the shape and are not claimed. Rung 32 also draws no stall line — that is rung 36.
+
+**Later.** Rung 39 found a case where the map does more than relabel the work. On the two-shaft engine, the ratio
+of the two shaft speeds (the *slip*) departs from its design value; on the textbook gas only the map makes it do so.
+On the realistic gas the map is the larger cause (about 3.4× the gas's own), not the only one.
 
 **On the page.** *Fly it → Compressor map shape* picks one of the invented shapes; the map chart shows the
 speed lines and where your engine sits on them.
