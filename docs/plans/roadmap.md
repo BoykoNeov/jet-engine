@@ -207,11 +207,18 @@ and keep it short — one page for the whole family is enough.
 sentence uses a name from the code as if it were a word.
 
 **Progress.** Started 2026-11-12: `docs/notes/README.md` is the index (which families are written).
-Written: 31–33, 34–37, 46–52, 90–94, 95–101, 102, 103–105, 106–108 (every family a sandbox user meets), 38–45. Next: 25–30, 53–68, 85–89, and 69–84 last. Practice that worked: before writing a family, grep
-`CLAUDE.md`'s rung table and the later specs for "rung N" beside CORRECTS / REFUTES / BOUNDS / INVERTS, so
-the corrected story is told; grep `docs/sandbox/template.html` for where the page shows each rung; label every
-spec number with the case it belongs to (a spec's case is rarely the page's); before committing, scan the file
-for Greek letters and code-style names and check every number appears in its spec.
+Written: 31–33, 34–37, 46–52, 90–94, 95–101, 102, 103–105, 106–108 (every family a sandbox user meets), 38–45.
+Next: 25–30, 53–68, 85–89, and 69–84 last. Practice that worked:
+- Before writing a family, read the WHOLE rung table in `CLAUDE.md` for every row that CORRECTS, REFUTES, BOUNDS,
+  INVERTS, EXTENDS, EXPLAINS or DISCHARGES a rung in it, and check each in the later spec's "What it does to its
+  neighbours" section. (The first pass grepped only the rungs it expected and missed eleven links.) The families
+  still to write (53–68 especially) are where most of the bounds on the written ones come from: when writing them,
+  check the written notes already point forward to them.
+- Grep `docs/sandbox/template.html` for where the page shows each rung, and quote its knob and menu names exactly.
+- Label every spec number with the case it belongs to (a spec's case is rarely the page's).
+- Before committing, scan for Greek letters and code-style names, and run `docs/notes/check-numbers.ps1`
+  (expect "misses: 0"). It checks each rung section against its own spec as WHOLE numbers; a first version that
+  searched every spec for any substring could not fail.
 
 ### A5. Decide the fate of the charts page
 

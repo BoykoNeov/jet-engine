@@ -28,3 +28,7 @@ note is a bug.
 | 106–108 governor beside the limiters | [106-108-governor-beside-limiters.md](106-108-governor-beside-limiters.md) | written 2026-11-12 |
 
 Order (roadmap A4): the families a sandbox user meets first — 31–37, 46–52, 90–108 — then the rest.
+
+Before committing a note, run `powershell -NoProfile -File docs
+otes\check-numbers.ps1` (expect "misses: 0"):
+it checks every number in each rung section against that rung's own spec, or a spec the section names.
