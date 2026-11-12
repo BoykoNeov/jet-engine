@@ -29,6 +29,5 @@ note is a bug.
 
 Order (roadmap A4): the families a sandbox user meets first — 31–37, 46–52, 90–108 — then the rest.
 
-Before committing a note, run `powershell -NoProfile -File docs
-otes\check-numbers.ps1` (expect "misses: 0"):
+Before committing a note, run `powershell -NoProfile -File docs\notes\check-numbers.ps1` (expect "misses: 0"):
 it checks every number in each rung section against that rung's own spec, or a spec the section names.
