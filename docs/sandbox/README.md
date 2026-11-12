@@ -264,6 +264,20 @@ hottest burner temperature your cooling allows, which row sets it, and the same 
 below the cooling air's own temperature, a burner temperature that needs more than a quarter of the air in one
 stream.
 
+## Try this — the experiments in the page (roadmap A1, shipped 2026-11-12)
+
+Under the view buttons, a **Try this** menu lists that view's experiments from `EXPERIMENTS.md` (Size the blades
+has none: the guide measured none there). Choosing one returns the view to the page's opening settings (Fly it and
+the burner on the opening design too), runs it, **pins** that run, then sets the experiment's knobs, so every tile
+and table shows the change against the opening. Two or three sentences under the menu say what was set, what to
+look at and why. **Back to the opening settings** returns the view and clears the pin. The texts name directions
+only ("thrust falls"); the page shows the numbers, so the texts cannot go stale when the model moves them.
+
+The experiments are one strict-JSON table in the script (`EXPERIMENTS`): view, title, the knobs to set (the keys
+of that view's settings; Fly it's `slam` holds the slam's knobs), text. A multi-step experiment in the guide is
+several entries, each one change from the pinned opening; a sweep in the guide is one representative point, its
+text saying which slider to move next.
+
 ## How it is built
 
 | Piece | What it is |
@@ -342,7 +356,11 @@ red until the page is rebuilt and committed — the numbers have not changed.
   stopped by a knob move; and the burner — the opening burner against native, the richness sweep, the jet
   sweep's notch, the lean refusal, a model failure in words, a per-pocket point and its sweep stopped by a
   knob move, pin & compare; and Cool the turbine — the opening knob form and sweep against native, pin & compare, the
-  redesigned framing, a refused year, a sweep stopped by a knob move, and the slam's metal readout; and a failure whose message is not ASCII getting its words).
+  redesigned framing, a refused year, a sweep stopped by a knob move, and the slam's metal readout; and a failure whose message is not ASCII getting its words;
+  and Try this — on each view one experiment chosen through the menu moves the way its words say against the
+  pinned opening, and Back to the opening settings brings the opening run back exactly).
+  `tests/sandbox_page.rs` holds the Try this table itself: every key of every experiment is a setting of its view,
+  every experiment runs on the native model, and a sea-level entry sets the atmosphere's own sea level.
   Needs Node ≥ 22 and Chrome. Each page call has a 300 s ceiling, so a page that never answers fails
   the check (and its Chrome is closed) instead of hanging. `SANDBOX_SHOTS=<folder>` also saves light, dark
   and phone screenshots of each view — look at them: a layout bug passes every behaviour check.

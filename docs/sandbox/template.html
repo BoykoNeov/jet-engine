@@ -80,6 +80,9 @@ legend { font-weight: 600; font-size: 12px; text-transform: uppercase; letter-sp
 .toggle.mode { margin: 0 0 6px; }
 .toggle.mode button { font-size: 13px; padding: 5px 6px; font-weight: 600; }
 .frozen { font-size: 12px; color: var(--ink-2); margin: 2px 0 8px; }
+.try { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; align-items: center; margin: 8px 0 4px; }
+.try label { font-size: 13px; font-weight: 600; color: var(--accent-ink); }
+.try-note { color: var(--ink-2); border-left: 3px solid var(--accent); padding: 4px 8px; margin: 0 0 10px; background: var(--glow); }
 .note { font-size: 12px; color: var(--muted); margin: 4px 0 0; }
 .tile .v.text { font-size: 15px; font-weight: 500; }
 .chart .speed { fill: none; stroke: var(--axis); stroke-width: 1; }
@@ -195,6 +198,8 @@ footer p { max-width: 90ch; }
       <button type="button" id="mode-burner" aria-pressed="false">Burner</button>
       <button type="button" id="mode-cooling" aria-pressed="false">Cool the turbine</button></div>
     <p class="note" id="mode-note">Every change redesigns the engine. Press <b>Fly it</b> to freeze this design's hardware and move the throttle instead.</p>
+    <div class="try" id="try-row"><label for="try">Try this</label><select id="try" aria-describedby="try-note"></select></div>
+    <p class="note try-note" id="try-note" hidden></p>
     <fieldset id="fly-set" hidden>
       <legend>Fly it</legend>
       <p class="frozen" id="frozen"></p>
@@ -1506,6 +1511,71 @@ const BN_NUM = { "bn-phi_p": ["phi_p", 1, "lin"], "bn-tau": ["tau", 1e3, "log"],
 const BN_SW = ["super_eq_o", "prompt"];
 const BN_VIEW = ["bn-set", "bn-quench-set", "bn-out", "bn-card", "bn-bell-card", "bn-path-card", "bn-nozzle-card"];
 const clone = o => JSON.parse(JSON.stringify(o));
+// "Try this" (roadmap A1): the experiments of docs/sandbox/EXPERIMENTS.md, one menu per view. Choosing one returns
+// the view to the page's opening settings, runs it, pins that run, then applies `patch` -- so the page shows the
+// change against the opening. A patch uses the keys of the view's settings (S, F, C, CL, BK; `slam` holds the
+// slam's own, SL). The text names directions only: the page shows the numbers. STRICT JSON between the markers:
+// rust/tests/sandbox_page.rs parses it and runs every patch through the native model.
+const EXPERIMENTS = /* JSON */ [
+  {"view": "design", "title": "Squeeze harder: pressure ratio 30", "patch": {"pi_c": 30},
+   "text": "The compressor now squeezes the air 30 times instead of 10. Fuel per thrust falls: compressing harder before burning turns more of the fuel's heat into work. But thrust falls a little too: the air reaches the burner already hot, and the turbine's temperature is fixed, so less fuel can be added to each kilogram of air. Move the pressure-ratio slider: thrust peaks part-way, fuel per thrust keeps falling. An engine built for thrust and one built for economy want different pressure ratios."},
+  {"view": "design", "title": "A hotter turbine: 1900 K", "patch": {"Tt4": 1900},
+   "text": "More heat makes a faster jet, so thrust rises. But fuel per thrust rises too, and the propulsive efficiency falls: a faster jet leaves more energy behind in its own wake. That is why airliners moved from turbojets to turbofans, which move more air, more slowly."},
+  {"view": "design", "title": "The textbook gas", "patch": {"gas": "perfect"},
+   "text": "The gas is now the textbook one, whose heat capacity never changes. Thrust and fuel per thrust both fall. Hot gas really takes more heat to warm by one kelvin than cold gas does; the textbook gas misses that, so it under-counts the fuel. Now choose the thermally perfect gas: once the heat capacity follows temperature, the finer chemistry barely moves the cycle."},
+  {"view": "design", "title": "Perfect parts", "patch": {"eta_c": 1, "eta_t": 1, "eta_b": 1, "pi_b": 1, "pi_n": 1, "pi_d_max": 1, "eta_m": 1},
+   "text": "Every loss is set to ideal: both efficiencies, the combustion efficiency, the burner and nozzle pressure ratios, the inlet recovery and the shaft. Thrust rises and fuel per thrust falls. Put the losses back one at a time to see which costs the most."},
+  {"view": "design", "title": "Fly at Mach 2", "patch": {"M0": 2},
+   "text": "Thrust falls: the arriving air is already fast, so the same jet adds less to it. But the overall efficiency rises: thrust times flight speed is useful power, and the engine now turns more of its fuel into it. (The design airflow is held fixed here; a real engine swallows more air as it speeds up.)"},
+  {"view": "design", "title": "The test stand: sea level, standing still", "patch": {"M0": 0, "T0": 288.15, "p0": 101325},
+   "text": "Sea level, not moving: the point every engine is rated at. Thrust rises in the thick, cold air. The overall and propulsive efficiencies read exactly 0: the engine pushes hard and moves nothing, so it does no useful work. A standing engine is judged by thrust and fuel per thrust alone."},
+  {"view": "design", "title": "A nozzle that cannot finish the job", "patch": {"nozzle": "convergent"},
+   "text": "A fixed convergent nozzle: the gas leaves at the speed of sound, still above the outside pressure, and the rest of its expansion happens behind the engine, where it pushes on nothing. Thrust falls. Note the thermal and propulsive efficiencies now read oddly (propulsive above 100 %): that split counts only the jet's speed and misses the pressure push. Trust the overall efficiency."},
+  {"view": "design", "title": "Light the afterburner", "patch": {"afterburner": 1},
+   "text": "A second burner behind the turbine. Thrust rises a lot, and fuel per thrust rises even more: fuel burned at low pressure, after the turbine has taken its work, is a poor way to use fuel, and a very good way to get thrust from a small engine for a short time."},
+  {"view": "fly", "title": "Throttle back to 900 K", "patch": {"Tt4": 900},
+   "text": "The shaft slows, and the stall margin shrinks. A compressor is a row of small wings: at low speed its front stages meet the air at too steep an angle. The margin against stall is thinnest at low power, not high, which is why real engines carry bleed valves and variable stators for starting and idling. (The stall line is a number you choose, so read the trend, not the size.)"},
+  {"view": "fly", "title": "Slam the throttle faster", "patch": {"slam": {"ramp": 0.1}},
+   "text": "In the slam below, the throttle now moves in a fifth of the time (the pinned run is the opening one). Watch the fuel-metered line: it peaks hotter. A real throttle meters fuel, and fuel arrives at once, while the shaft needs time to spin up and bring more air. For a moment full fuel burns in part-speed airflow. The temperature-commanded line, as textbooks draw it, cannot show this. This overshoot is why fuel limiters exist (see Controls)."},
+  {"view": "fly", "title": "Afterburner lit, nozzle held at its dry size", "patch": {"ab": "lit"},
+   "text": "Lighting the afterburner LOWERS thrust here. Hotter gas is thinner and needs a bigger hole. Behind a throat held at its dry size it backs up into the turbine: the turbine does less work, the shaft slows and the compressor is pushed toward stall. Now try the next entry, with the nozzle opened."},
+  {"view": "fly", "title": "Afterburner lit, nozzle opened by the rule", "patch": {"ab": "lit", "a8_match": 1},
+   "text": "The nozzle throat now opens to the size that keeps the engine running where it runs unlit, and thrust rises well above the opening engine's. Every afterburning engine has a variable nozzle for this reason."},
+  {"view": "burner", "title": "Burn lean: richness 0.6", "patch": {"phi_p": 0.6},
+   "text": "The front zone now has spare air, and its flame is cooler. NO falls by orders of magnitude. Nitrogen oxides need two things at once: very high temperature and spare oxygen. The richness sweep below draws the whole bell."},
+  {"view": "burner", "title": "Burn rich: richness 1.5", "patch": {"phi_p": 1.5},
+   "text": "Rich, the flame is still hot but there is no oxygen left over, so NO collapses. The worst case is right in the middle, at richness 1, which is exactly where a simple burner wants to run. Next: what happens to the rich gas afterwards."},
+  {"view": "burner", "title": "Burn rich, then dilute slowly", "patch": {"phi_p": 1.5, "quench": "time", "tau_q": 0.003},
+   "text": "The same rich front zone, but the dilution air now mixes in over 3 ms instead of at once. To finish burning, the rich gas must meet the rest of the air, and on the way it passes through the hot, just-right mixture. The longer it lingers there, the more NO it makes back: compare with the previous entry, and move the dilution time. Rich burn, quick quench only works if the quench really is quick."},
+  {"view": "controls", "title": "Slam faster: 0.1 τ", "patch": {"ramp": 0.1},
+   "text": "The throttle now moves in a fifth of the time. The turbine inlet peaks hotter above where it settles, and the thrust arrives sooner. The faster the move, the hotter the overshoot: the fuel arrives before the shafts can bring the air to burn it in."},
+  {"view": "controls", "title": "A gentle move: 2 τ", "patch": {"ramp": 2},
+   "text": "The throttle now moves four times slower. The overshoot shrinks to a fraction, and the thrust takes longer to arrive. Gentle is cool, and slow."},
+  {"view": "controls", "title": "Switch on the temperature limiter", "patch": {"redline_on": 1},
+   "text": "The limiter cuts fuel whenever the turbine inlet would pass its redline: the peak is held there. The price is time: the thrust takes longer to arrive. Every limiter protects the engine by holding fuel back, and pays in response."},
+  {"view": "controls", "title": "A limiter that reacts slowly", "patch": {"redline_on": 1, "gov_lag_on": 1, "gov_lag_two": 0},
+   "text": "The same limiter, now reacting with a lag. Most of the overshoot gets through, and the thrust still arrives later than without a limiter: the worst of both. Compare with the previous entry."},
+  {"view": "controls", "title": "The acceleration schedule", "patch": {"accel_on": 1},
+   "text": "Instead of watching the temperature, the control allows fuel only in step with the compressor's delivery pressure, which rises as the shafts spin up. The peak is lower, and the thrust arrives later."},
+  {"view": "controls", "title": "Ask for thrust, not temperature", "patch": {"ramp": 0.1, "hold": "thrust", "govern": 1},
+   "text": "A fast move, with the throttle now asking for thrust all along the way. The thrust arrives far sooner, and the turbine inlet peaks far hotter. A controller told to deliver thrust now, while the shafts are still slow, has one way to do it: pour in fuel. A fast response and a cool turbine are bought with the same fuel."},
+  {"view": "controls", "title": "Thrust asked for, beside the limiter", "patch": {"ramp": 0.1, "hold": "thrust", "govern": 1, "redline_on": 1},
+   "text": "The same thrust request with the temperature limiter switched on beside it. The governor pours in fuel and the limiter cuts it: watch the chart's colours for which one holds the fuel at each moment, and what it costs the thrust."},
+  {"view": "controls", "title": "A generator on the HP shaft", "patch": {"generator": "hp"},
+   "text": "The aircraft's generator now takes power from the high-pressure shaft. The thrust at the end falls and the peak runs a little hotter: shaft power taken off is work the turbine did that never reaches the jet."},
+  {"view": "controls", "title": "Air for the cabin", "patch": {"customer": "share"},
+   "text": "The aircraft now takes a share of the HP compressor's air for the cabin. The thrust at the end falls further than for the generator: that air was compressed at full cost and then thrown away."},
+  {"view": "controls", "title": "The same slam at sea level", "patch": {"T0": 288.15, "p0": 101325},
+   "text": "The same engine and the same move, flown at sea level. The peak is cooler and the thrust responds sooner: denser air gives the shafts more to work with."},
+  {"view": "cooling", "title": "Older cooling: plain convection", "patch": {"tech": "convection"},
+   "text": "The same cooling air, used by an older technology: air passing inside the blade. The hottest burner temperature the metal allows falls. Each generation of cooling let the same air protect the metal from hotter gas, and hotter gas is thrust."},
+  {"view": "cooling", "title": "Best cooling: transpiration", "patch": {"tech": "transpiration"},
+   "text": "The air now seeps out through a porous wall, a film over the whole surface. The burner may run hotter with the same air."},
+  {"view": "cooling", "title": "No cooling air at all", "patch": {"vane": 0, "blade": 0},
+   "text": "With no cooling air, the same metal allows a far cooler burner. Turbine blades run in gas hotter than their own melting point; they survive on air bled from the compressor."},
+  {"view": "cooling", "title": "More cooling air", "patch": {"vane": 0.08, "blade": 0.05},
+   "text": "More air to the vanes and the blades: the limit climbs. But that air skipped the burner, so it is not free; in Controls, give the vanes and blades cooling air and watch what it does to the run."}
+]; // end EXPERIMENTS
 function setKnob(k, v) { if (linked) { B.lp[k] = v; B.hp[k] = v; } else B[editSpool][k] = v; }
 const STATION = { "0": "0 · outside air", "2": "2 · compressor face", "3": "3 · compressor exit",
                   "4": "4 · turbine inlet", "5": "5 · turbine exit", "7": "7 · afterburner exit", "9": "9 · nozzle exit" };
@@ -1692,6 +1762,7 @@ function showSettings() {
   $("ceff-isen").setAttribute("aria-pressed", String(!cp)); $("ceff-poly").setAttribute("aria-pressed", String(cp));
   $("teff-isen").setAttribute("aria-pressed", String(!tp)); $("teff-poly").setAttribute("aria-pressed", String(tp));
   $("eta_c-row").hidden = cp; $("e_c-row").hidden = !cp; $("eta_t-row").hidden = tp; $("e_t-row").hidden = !tp;
+  fillTry();
 }
 
 function showAmbient(a) {
@@ -1740,11 +1811,97 @@ async function runNow() {
   window.sandbox.last = last; window.sandbox.state = "ran"; window.sandbox.trap = null;
 }
 
-let queued = false;
+let queued = false, queuedRun = Promise.resolve();
 function change() {
   if (queued) return;
   queued = true;
-  requestAnimationFrame(() => { queued = false; runNow(); });
+  queuedRun = new Promise(done => requestAnimationFrame(() => { queued = false; runNow().then(done, done); }));
+}
+// Wait out a run change() queued (entering Fly it queues one): a run started after it is then the newest, so its
+// result is the one that lands -- the gap roadmap A2 named in window.sandbox.fly.
+async function settled() { while (queued) await queuedRun; }
+
+// ---------------------------------------------------------------- try this (roadmap A1)
+let tryView = null, tryGen = 0;
+// The open view's menu, built when the view changes (a view with no experiment hides it).
+function fillTry() {
+  if (tryView === mode) return;
+  tryView = mode; tryGen++;
+  const list = EXPERIMENTS.map((e, i) => [e, i]).filter(([e]) => e.view === mode), sel = $("try");
+  $("try-row").hidden = !list.length; $("try-note").hidden = true; sel.innerHTML = "";
+  const opt = (v, t) => { const o = document.createElement("option"); o.value = v; o.textContent = t; sel.appendChild(o); };
+  opt("", "Choose an experiment…");
+  for (const [e, i] of list) opt(String(i), e.title);
+  opt("back", "Back to the opening settings");
+}
+// The open view's settings as the page opens -- Fly it and the burner on the opening design too. No run.
+async function toOpening(my) {
+  if (mode === "design") S = { ...DEFAULTS };
+  else if (mode === "fly") {
+    S = { ...DEFAULTS };
+    const z = await freezeDesign();
+    if (my !== tryGen || mode !== "fly") return false;
+    stopSlam(); designAsSet = z.asSet; F = z.F; SL = z.SL; slamPinned = null; mapKey = null; lineKey = null;
+  }
+  else if (mode === "controls") C = clone(C_DEFAULTS);
+  else if (mode === "cooling") CL = clone(CL_DEFAULTS);
+  else if (mode === "burner") { S = { ...DEFAULTS }; BK = clone(BK_DEFAULTS); buildModelKnobs(); }
+  showSettings(); return true;
+}
+// Run the open view now; resolve once its result has landed (Fly it's slam too, when `slam`).
+async function runView(slam) {
+  await settled();
+  if (mode === "design" || mode === "fly") {
+    await runNow();
+    if (mode === "fly" && slam) { clearTimeout(slamTimer); slamKey = null; await runSlam(); }
+  }
+  else if (mode === "controls") { clearTimeout(ctlTimer); ctlKey = null; await runCtl(); }
+  else if (mode === "cooling") { clearTimeout(clTimer); clKey = null; await runCool(); }
+  else if (mode === "burner") { bnKey = null; await runBurner(); }
+}
+// A burner patch: a `design` object merges into the Design engine, `closure` picks a mixing model (its own knobs
+// reset), a `knobs` object merges into that model's knobs, the rest into BK.
+function burnerPatch(patch) {
+  const p = { ...(patch || {}) };
+  if (p.design) { Object.assign(S, p.design); delete p.design; }
+  if (p.closure && p.closure !== BK.closure) { BK.closure = p.closure; BK.knobs = clone(BN_MODELS[p.closure].knobs); buildModelKnobs(); }
+  delete p.closure;
+  if (p.knobs) { Object.assign(BK.knobs, p.knobs); delete p.knobs; }
+  Object.assign(BK, p);
+}
+function applyPatch(p) {
+  if (mode === "design") Object.assign(S, p);
+  else if (mode === "fly") { const { slam, ...f } = p; Object.assign(F, f); if (slam) Object.assign(SL, slam); }
+  else if (mode === "controls") { Object.assign(C, p); nudges(); }
+  else if (mode === "cooling") Object.assign(CL, p);
+  else if (mode === "burner") burnerPatch(p);
+  showSettings();
+}
+// Choose an entry: back to the opening, run it, pin it, then apply the experiment and run that.
+async function tryThis(v) {
+  const my = ++tryGen, view = mode, e = v === "back" ? null : EXPERIMENTS[+v];
+  if (v !== "back" && (!e || e.view !== view)) return;
+  window.sandbox.tryState = "running";
+  $("try-note").hidden = true;
+  if (!(await toOpening(my))) return;
+  const slam = !!(e && e.patch.slam);
+  await runView(slam);
+  if (my !== tryGen || mode !== view) return;
+  if (!$("unpin").hidden) $("unpin").click();
+  if (e && window.sandbox.state === "ran") {
+    $("pin").click();
+    // The opening slam may still be running unless this experiment is about the slam: pin no half-finished run.
+    if (mode === "fly" && !slam) { slamPinned = null; drawSlam(); }
+    // The pinned richness sweep could be an older engine's (the opening one's starts after the burner lands).
+    if (mode === "burner") { bnPinnedSweep = null; drawSweeps(); }
+  }
+  if (e) {
+    $("try-note").textContent = e.text; $("try-note").hidden = false;
+    applyPatch(e.patch);
+    await runView(slam);
+    if (my !== tryGen) return;
+  } else $("try").value = "";
+  window.sandbox.tryState = "done";
 }
 
 async function fromAltitude(run = true) {
@@ -1765,16 +1922,22 @@ async function enterFly() {
   // The design as the user set it (its own nozzle and gas), to show beside the frozen re-run. Asked
   // for afresh: the last result on screen can be an OLDER design whose run arrived before the
   // newest one (a click on Fly it right after a change -- the browser test caught it).
-  const t = await model.ask(JSON.stringify({ op: "run", settings: S }));
-  designAsSet = (!t.trap && t.reply.ok) ? { thrust: t.reply.thrust, nozzle: S.nozzle, gas: S.gas } : null;
+  const z = await freezeDesign();
   if (mode === "fly") return;
-  // Freeze THIS design; fly it at its own point first (the reduce: shaft speed 100 %).
-  // Rung 102: an afterburner lit on the Design view flies lit, its nozzle opened by the rule (what that view shows).
-  F = { ...FLY_DEFAULTS, design: { ...S }, Tt4: S.Tt4, T0: S.T0, p0: S.p0, M0: S.M0, Tt7: S.Tt7 ?? FLY_DEFAULTS.Tt7,
-        ab: S.afterburner === 1 ? "lit" : "none", a8_match: S.afterburner === 1 ? 1 : 0 };
-  SL = { ...SLAM_DEFAULTS, from: Math.max(600, Math.round(S.Tt4 - 400)) }; slamPinned = null; slamKey = null;
+  designAsSet = z.asSet; F = z.F; SL = z.SL; slamPinned = null; slamKey = null;
   mode = "fly"; mapKey = null; lineKey = null; pinned = null; $("unpin").hidden = true; $("pin-legend").hidden = true;
   showSettings(); change();
+}
+// Freeze the design S: what Fly it starts from (assigned by the caller, so a click that lost a race assigns nothing).
+async function freezeDesign() {
+  const t = await model.ask(JSON.stringify({ op: "run", settings: S }));
+  const asSet = (!t.trap && t.reply.ok) ? { thrust: t.reply.thrust, nozzle: S.nozzle, gas: S.gas } : null;
+  // Freeze THIS design; fly it at its own point first (the reduce: shaft speed 100 %).
+  // Rung 102: an afterburner lit on the Design view flies lit, its nozzle opened by the rule (what that view shows).
+  return { asSet,
+    F: { ...FLY_DEFAULTS, design: { ...S }, Tt4: S.Tt4, T0: S.T0, p0: S.p0, M0: S.M0, Tt7: S.Tt7 ?? FLY_DEFAULTS.Tt7,
+         ab: S.afterburner === 1 ? "lit" : "none", a8_match: S.afterburner === 1 ? 1 : 0 },
+    SL: { ...SLAM_DEFAULTS, from: Math.max(600, Math.round(S.Tt4 - 400)) } };
 }
 function leaveFly() {
   if (mode === "design") return;
@@ -3390,7 +3553,9 @@ function wire() {
     pinned = null; slamPinned = null; $("unpin").hidden = true; $("pin-legend").hidden = true; render();
     if (mode === "fly") drawSlam();
   });
+  $("try").addEventListener("change", () => { if ($("try").value) tryThis($("try").value); });
   $("reset").addEventListener("click", () => {
+    tryGen++; $("try").value = ""; $("try-note").hidden = true;
     if (mode === "fly") {
       F = { ...FLY_DEFAULTS, design: F.design, Tt4: F.design.Tt4, T0: F.design.T0, p0: F.design.p0, M0: F.design.M0,
             Tt7: F.design.Tt7 ?? FLY_DEFAULTS.Tt7 };
@@ -3409,8 +3574,13 @@ function wire() {
 window.sandbox = {
   state: "loading", last: null, trap: null, mode: null, line: 0,
   set: async patch => { Object.assign(S, patch); showSettings(); await runNow(); return window.sandbox.state; },
-  fly: async patch => { if (mode !== "fly") await enterFly(); Object.assign(F, patch); showSettings(); await runNow(); return window.sandbox.state; },
-  design: async () => { leaveFly(); await runNow(); return window.sandbox.state; },
+  fly: async patch => { if (mode !== "fly") await enterFly(); await settled(); Object.assign(F, patch); showSettings(); await runNow(); return window.sandbox.state; },
+  design: async () => { leaveFly(); await settled(); await runNow(); return window.sandbox.state; },
+  // "Try this" (roadmap A1): the menu's entries, and choosing one as the menu does (an index into `experiments`, or
+  // "back"); resolves when the experiment's run has landed.
+  experiments: EXPERIMENTS, tryState: null,
+  pins: () => ({ design: pinned, slam: slamPinned, controls: cpinned, cooling: clPinned, burner: bnPinned }),
+  tryThis: async v => { $("try").value = String(v); await tryThis(String(v)); return window.sandbox.state; },
   // The blade view: `patch` sets engine knobs, and `lp` / `hp` objects merge into each spool's knobs.
   blades: async patch => {
     if (mode !== "blades") enterBlades();
@@ -3442,12 +3612,7 @@ window.sandbox = {
   // `design` object into the Design engine's); resolves once the burner, its path and its nozzle are in.
   burner: async patch => {
     if (mode !== "burner") enterBurner();
-    const p = { ...(patch || {}) };
-    if (p.design) { Object.assign(S, p.design); delete p.design; }
-    if (p.closure && p.closure !== BK.closure) { BK.closure = p.closure; BK.knobs = clone(BN_MODELS[p.closure].knobs); buildModelKnobs(); }
-    delete p.closure;
-    if (p.knobs) { Object.assign(BK.knobs, p.knobs); delete p.knobs; }
-    Object.assign(BK, p); showSettings(); bnKey = null;
+    burnerPatch(patch); showSettings(); bnKey = null;
     await runBurner(); return { state: window.sandbox.state, run: bnRun, path: bnPath, nozzle: bnNozzle };
   },
   // Run (or re-run) the sweeps now and resolve when both are in.

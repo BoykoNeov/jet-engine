@@ -412,3 +412,151 @@ fn every_op_the_page_sends_is_answered() {
         assert!(!reply.contains("unknown op"), "the page sends op {op:?}, which `sandbox::call` does not know");
     }
 }
+
+// ---------------------------------------------------------------- "Try this" (roadmap A1)
+
+/// The views that carry a "Try this" menu. Size the blades has none: `docs/sandbox/EXPERIMENTS.md` measured no
+/// experiment there, and an entry's words must come from a reading of the page.
+const TRY_VIEWS: [&str; 5] = ["design", "fly", "controls", "burner", "cooling"];
+
+/// The script's experiment table, `const EXPERIMENTS = /* JSON */ [ … ]; // end EXPERIMENTS` — strict JSON, so
+/// read with the crate's own reader (which takes non-ASCII only escaped: the page keeps τ readable).
+fn experiments(t: &str) -> Vec<Json> {
+    let body = spans(t, "const EXPERIMENTS = /* JSON */ ", "; // end EXPERIMENTS");
+    assert_eq!(body.len(), 1, "one experiment table");
+    let mut ascii = String::new();
+    for c in body[0].chars() {
+        if c.is_ascii() {
+            ascii.push(c)
+        } else {
+            for u in c.encode_utf16(&mut [0u16; 2]) { ascii.push_str(&format!("\\u{u:04x}")) }
+        }
+    }
+    match Json::parse(&ascii) { Json::List(v) => v, other => panic!("EXPERIMENTS is not a list: {other:?}") }
+}
+
+fn reply(req: &str) -> Json { Json::parse(&call(req)) }
+
+/// A view's opening settings, as the page reads them.
+fn opening(view: &str) -> Json {
+    match view {
+        "design" => reply(r#"{"op":"defaults"}"#),
+        "fly" => reply(r#"{"op":"fly_defaults"}"#),
+        "controls" => reply(r#"{"op":"controls_defaults"}"#).at("controls").clone(),
+        "cooling" => reply(r#"{"op":"cooling_defaults"}"#).at("cooling").clone(),
+        "burner" => reply(r#"{"op":"burner_defaults"}"#).at("burner").clone(),
+        _ => panic!("no view {view:?}"),
+    }
+}
+
+/// `base` with `patch`'s keys replaced or added (the page's `Object.assign`).
+fn merged(base: &Json, patch: &Json) -> Json {
+    let (Json::Obj(b), Json::Obj(p)) = (base, patch) else { panic!("merge needs two objects") };
+    let mut out = b.clone();
+    for (k, v) in p {
+        match out.iter_mut().find(|(o, _)| o == k) {
+            Some(slot) => slot.1 = v.clone(),
+            None => out.push((k.clone(), v.clone())),
+        }
+    }
+    Json::Obj(out)
+}
+
+/// The same kind of value: a number (an int or a float: the page writes `30` for 30.0), or the same other kind.
+fn same_kind(a: &Json, b: &Json) -> bool {
+    let num = |j: &Json| matches!(j, Json::Int(_) | Json::Float(_));
+    (num(a) && num(b)) || std::mem::discriminant(a) == std::mem::discriminant(b)
+}
+
+/// Each key of `patch` is a setting of `of`, holding the same kind of value.
+fn keys_are_settings(what: &str, patch: &Json, of: &Json) {
+    for k in patch.keys() {
+        let d = of.get(k).unwrap_or_else(|| panic!("{what}: {k:?} is not a setting of this view"));
+        assert!(same_kind(patch.at(k), d), "{what}: {k:?} is {:?}, the setting is {d:?}", patch.at(k));
+    }
+}
+
+/// An experiment's patch without its nested parts (Fly it's `slam`, the burner's `design`).
+fn own_part(patch: &Json) -> Json {
+    let mut own = patch.clone();
+    if let Json::Obj(kv) = &mut own { kv.retain(|(k, _)| k != "slam" && k != "design"); }
+    own
+}
+
+fn text_of<'a>(e: &'a Json, k: &str) -> &'a str {
+    match e.at(k) { Json::Str(s) => s, other => panic!("{k} is not a string: {other:?}") }
+}
+
+#[test]
+fn every_experiment_is_on_a_menu_view_and_patches_only_that_views_settings() {
+    let ex = experiments(&read(TEMPLATE));
+    for v in TRY_VIEWS {
+        assert!(ex.iter().any(|e| text_of(e, "view") == v), "the {v} view has no experiment");
+    }
+    let slam = merged(reply(r#"{"op":"slam_defaults"}"#).at("slam"),
+                      &Json::Obj(vec![("mode".into(), "both".into())]));   // the page's own slam knob
+    for e in &ex {
+        assert_eq!(e.keys(), ["view", "title", "patch", "text"], "an experiment's fields");
+        let (view, title, text) = (text_of(e, "view"), text_of(e, "title"), text_of(e, "text"));
+        assert!(TRY_VIEWS.contains(&view), "{title}: {view:?} is not a view with a menu");
+        assert!(!title.is_empty() && text.len() > 60, "{title}: a title and a few sentences");
+        let patch = e.at("patch");
+        assert!(!patch.keys().is_empty(), "{title}: an empty patch is the opening itself");
+        if let Some(s) = patch.get("slam") {
+            assert_eq!(view, "fly", "{title}: only Fly it has a slam");
+            keys_are_settings(title, s, &slam);
+        }
+        if let Some(d) = patch.get("design") {
+            assert_eq!(view, "burner", "{title}: only the burner patches the Design engine");
+            keys_are_settings(title, d, &opening("design"));
+        }
+        keys_are_settings(title, &own_part(patch), &opening(view));
+    }
+}
+
+#[test]
+fn every_experiment_runs_on_the_native_model_and_its_sea_level_is_the_atmospheres() {
+    let runs = |what: &str, r: &Json| {
+        assert!(!matches!(r.get("ok"), Some(Json::Int(0))), "{what} does not run: {:?}", r.get("reason"));
+    };
+    let obj = |kv: Vec<(&str, Json)>| Json::Obj(kv.into_iter().map(|(k, v)| (k.to_string(), v)).collect());
+    for e in experiments(&read(TEMPLATE)) {
+        let (view, title, patch) = (text_of(&e, "view"), text_of(&e, "title"), e.at("patch"));
+        let set = merged(&opening(view), &own_part(patch));
+        let ask = |op: &str, key: &str, body: Json| reply(&obj(vec![("op", op.into()), (key, body)]).dump_compact());
+        match view {
+            "design" => runs(title, &ask("run", "settings", set)),
+            "fly" => {
+                runs(title, &ask("fly", "fly", set.clone()));
+                if let Some(s) = patch.get("slam") {
+                    // The page's slam: from its starting throttle up to the fly throttle, each mode its own run.
+                    let sl = merged(reply(r#"{"op":"slam_defaults"}"#).at("slam"), s);
+                    for mode in ["temperature", "fuel"] {
+                        runs(title, &ask("slam", "slam", obj(vec![("fly", set.clone()), ("from", sl.at("from").clone()),
+                            ("to", set.at("Tt4").clone()), ("ramp", sl.at("ramp").clone()),
+                            ("settle", sl.at("settle").clone()), ("mode", mode.into())])));
+                    }
+                }
+            }
+            "controls" => runs(title, &ask("controls", "controls", set)),
+            "cooling" => runs(title, &ask("cooling_knob", "cooling", set)),
+            "burner" => {
+                let design = merged(&opening("design"), patch.get("design").unwrap_or(&Json::Obj(Vec::new())));
+                runs(title, &reply(&obj(vec![("op", "burner".into()), ("settings", design), ("burner", set)]).dump_compact()));
+            }
+            _ => unreachable!(),
+        }
+        // An entry that sets the air to sea level sets the atmosphere's own sea level, not a number typed near it.
+        if let (Some(t0), Some(p0)) = (patch.get("T0"), patch.get("p0")) {
+            let a = reply(&obj(vec![("op", "atmosphere".into()), ("T0", t0.clone()), ("p0", p0.clone())]).dump_compact());
+            let num = |k: &str| match a.at(k) { Json::Float(x) => *x, Json::Int(n) => *n as f64, o => panic!("{k}: {o:?}") };
+            assert!(num("altitude").abs() < 1e-9 && num("delta_t").abs() < 1e-9, "{title}: not sea level: {a:?}");
+        }
+    }
+}
+
+#[test]
+fn the_try_menu_and_its_note_are_declared() {
+    let t = read(TEMPLATE);
+    for id in ["try-row", "try", "try-note"] { assert!(t.contains(&format!(r#"id="{id}""#)), "#{id} is missing"); }
+}

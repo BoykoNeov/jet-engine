@@ -89,7 +89,12 @@ Rules that apply to every task here (they are the project's own, from `CLAUDE.md
 
 Ordered by value for effort. Each is independent unless it says otherwise.
 
-### A1. Put the experiments into the page ("Try this")
+### A1. Put the experiments into the page ("Try this") — DONE 2026-11-12
+
+Shipped as written, with one shared menu under the view buttons (refilled per view) instead of one `<select>` per
+view; 29 entries over five views, none on Size the blades (the guide measured none there). How it works and what
+holds it: `docs/sandbox/README.md`, section "Try this". It also fixed the `window.sandbox.fly` timing gap that A2
+names (`settled()` in the template).
 
 **Why.** `docs/sandbox/EXPERIMENTS.md` is a document beside the page; most users will never open it.
 
@@ -137,8 +142,8 @@ if that is too much, parse the Markdown tables directly.
 **Careful.** After `window.sandbox.fly(...)` resolves, the result may not have landed yet: entering
 the view queues a second run that supersedes the first (see `enterFly` → `change()` and the
 `if (my !== gen) return` line in `runNow`). Wait until `window.sandbox.last.fly` matches the knobs you
-set. This is a small flaw in the page's test interface, not in what a user sees; fixing it (make `fly`
-await the queued run) is welcome and is part of this task.
+set. This is a small flaw in the page's test interface, not in what a user sees. *Fixed 2026-11-12 with A1:*
+`fly` and `design` now wait out the queued run (`settled()`) before their own, so they resolve on their result.
 
 ### A3. The standing engine on *Fly it*, *Controls* and with the afterburner
 

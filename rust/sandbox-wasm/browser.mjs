@@ -989,6 +989,62 @@ try {
   check('switching_the_afterburner_off_restores_the_opening_design',
         JSON.stringify(await ev('window.sandbox.last')) === JSON.stringify(first), 'differs');
 
+  // 17c. "TRY THIS" (roadmap A1). On each view with a menu, one experiment chosen THROUGH the menu: it pins the
+  // view's opening run, applies the experiment, and the result moves the way its words promise; then "Back to the
+  // opening settings" brings the opening run back exactly and clears the pin and the note. Size the blades has none.
+  const tryIdx = await ev(`Object.fromEntries(window.sandbox.experiments.map((e, i) => [e.title, i]))`);
+  const choose = async (v, ms = 300000) => {
+    await ev(`(() => { window.sandbox.tryState = null; const s = document.getElementById('try'); s.value = '${v}';
+      s.dispatchEvent(new Event('change')); return null; })()`);
+    return waitFor(`window.sandbox.tryState === 'done'`, ms);
+  };
+  const noteShown = async title => ev(`!document.getElementById('try-note').hidden && !document.getElementById('unpin').hidden
+    && document.getElementById('try-note').textContent === window.sandbox.experiments[${tryIdx[title]}].text`);
+  const cleared = async () => ev(`document.getElementById('try-note').hidden && document.getElementById('unpin').hidden
+    && document.getElementById('try').value === ''`);
+  const tryViews = [];
+  for (const [view, title, moved, opening, now] of [
+    ['design', 'A hotter turbine: 1900 K',
+     'p.design.thrust < l.thrust && l.settings.Tt4 === 1900 && /^\\+/.test(document.getElementById("d-thrust").textContent)',
+     'window.sandbox.pins().design', 'window.sandbox.last'],
+    ['fly', 'Throttle back to 900 K', 'Math.abs(p.design.nu - 1) < 1e-9 && l.nu < p.design.nu && l.fly.Tt4 === 900',
+     'window.sandbox.pins().design', 'window.sandbox.last'],
+    // The slam the fuel meters peaks hotter than the pinned (opening, 0.5 τ) one: rung 35's overshoot.
+    ['fly', 'Slam the throttle faster', `(() => { const r = window.sandbox.slamRuns(); return r.fuel && r.fuel.ok === 1 && p.slam.fuel
+       && Math.max(...r.fuel.Tt4) > Math.max(...p.slam.fuel.Tt4) && Math.max(...p.slam.fuel.Tt4) > 1500; })()`,
+     'window.sandbox.pins().design', 'window.sandbox.last'],
+    ['controls', 'Slam faster: 0.1 τ', 'l.controls.ramp === 0.1 && Math.max(...l.Tt4) > Math.max(...p.controls.Tt4)',
+     'window.sandbox.pins().controls', 'window.sandbox.last'],
+    ['burner', 'Burn rich: richness 1.5', 'b.burner.phi_p === 1.5 && b.ei_total < p.burner.ei_total',
+     '(() => { const { path, nozzle, ...r } = window.sandbox.pins().burner; return r; })()', 'window.sandbox.bnLast'],
+    ['cooling', 'Best cooling: transpiration', 'l.knob.yours.Tt4 > p.cooling.knob.yours.Tt4 && l.points.length === 19',
+     'window.sandbox.pins().cooling', 'window.sandbox.last'],
+  ]) {
+    if (!tryViews.includes(view)) {
+      tryViews.push(view);
+      await ev(`document.getElementById('mode-${view}').click()`);
+      await waitFor(`window.sandbox.view() === '${view}'`);
+      const n = await ev(`[document.getElementById('try-row').hidden, document.getElementById('try').options.length,
+        window.sandbox.experiments.filter(e => e.view === '${view}').length]`);
+      check(`the_${view}_view_offers_its_experiments`, n[0] === false && n[1] === n[2] + 2 && n[2] > 0, JSON.stringify(n));
+    }
+    const done = await choose(tryIdx[title]);
+    const ok = done && await ev(`(() => { const p = window.sandbox.pins(), l = window.sandbox.last, b = window.sandbox.bnLast;
+      return !!(${moved}); })()`);
+    check(`try_${view}_${title.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/_$/, '')}_moves_as_its_words_say`,
+          ok && await noteShown(title), JSON.stringify([done, await ev(`window.sandbox.state`)]));
+    if (view === 'design' && process.env.SANDBOX_SHOTS) { await shot('try-design'); await shot('try-design-phone', 390); await shot('try-design-dark', 1280, true); }
+    const was = await ev(`JSON.stringify(${opening})`);
+    const back = await choose('back');
+    check(`back_to_the_opening_settings_on_${view}_after_${tryIdx[title]}`, back && was === await ev(`JSON.stringify(${now})`) && await cleared(),
+          `back ${back}`);
+  }
+  await ev(`document.getElementById('mode-blades').click()`);
+  await waitFor(`window.sandbox.view() === 'blades'`);
+  check('size_the_blades_has_no_menu', await ev(`document.getElementById('try-row').hidden`));
+  if (process.env.SANDBOX_SHOTS) await shot('try-blades-phone', 390);
+  await ev(`window.sandbox.design()`);
+
   // 18. Nothing threw on the page along the way.
   const thrown = s.events.filter(e => e.method === 'Runtime.exceptionThrown').map(e => e.params.exceptionDetails?.exception?.description || e.params.exceptionDetails?.text);
   check('no_uncaught_errors_on_the_page', thrown.length === 0, thrown.join(' | ').slice(0, 400));

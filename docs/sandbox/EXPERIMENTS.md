@@ -4,6 +4,10 @@ Open `turbojet-sandbox.html` (or double-click `Start Jet Engine.cmd` at the repo
 below says which knob to move, what you should see, and why it happens. Start each one from the page as
 it opens (reload the page to get back there).
 
+The page carries these experiments too: each view's **Try this** menu (under the view buttons) sets one
+up from the opening settings, pins the opening run so every number shows its change, and says what to
+look at. This guide adds the full tables of numbers.
+
 Every number here was read off the page itself on 2026-11-12, at its opening settings unless the
 experiment says otherwise. They are there so you can tell you are looking at the right thing; the
 *direction* of each change is the lesson, not the last digit. These numbers are not yet checked by the
