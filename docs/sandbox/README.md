@@ -20,6 +20,9 @@ ratios; shaft efficiency; nozzle (fully expanded / set exit pressure / fixed con
 **Readouts:** thrust, specific thrust, TSFC, efficiencies, the station table, the T–s diagram (the
 burner and exhaust legs as curves), and **pin & compare** (freeze a design, see every change).
 
+**A standing engine (Mach 0) runs** on this view (2026-11-12, plan § 48): no ram, thrust from the jet alone,
+propulsive and overall efficiency exactly 0. Fly it, Controls and the lit afterburner refuse Mach 0 in words.
+
 **A design that does not run** shows why, in plain words, beside the model's own message. Cheap
 cases are caught before the solve (`sandbox::precheck`); the rest are the model's own assertions,
 translated by `sandbox::explain` — whose seven entries are the seven messages a 13 000-design sweep
@@ -357,7 +360,9 @@ the perfect gas, come out of iterated solves (stopping at 1e-12), so they get th
 
 ## Next slices
 
-None planned. Slices 1–5 cover plan § 5's list; what comes next is the user's choice (plan § 5).
+Slices 1–5 cover plan § 5's list. What comes next — ready-to-build tasks, and the larger directions awaiting the
+user's choice — is `docs/plans/roadmap.md`. Experiments to try on the page, with the numbers it shows:
+`EXPERIMENTS.md` (beside this file).
 
 ## Rung 102 — the afterburner (Parts A, B and C shipped 2026-10-19)
 

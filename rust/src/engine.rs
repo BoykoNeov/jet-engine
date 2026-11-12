@@ -146,6 +146,20 @@ impl Engine {
         self.try_freestream(flight, mdot).unwrap_or_else(|e| panic!("{}", e.0))
     }
 
+    /// [`freestream`](Self::freestream) for a caller that also accepts a STANDING engine (`M0 == 0`).
+    ///
+    /// At rest there is no ram: the total state IS the static state and the flight speed is 0 — taken directly, with
+    /// no enthalpy round trip. [`try_freestream`](Self::try_freestream) must keep REFUSING `M0 = 0` on the integral
+    /// gases (its round trip lands three ulps low, and rung 41's schedule methods use that refusal as control flow), so
+    /// the standing case lives here. On the perfect gas the closed form already gives exactly this at `M0 = 0`. Only
+    /// the design run and the sandbox's design pre-check call this; both failed there before, so no number moves.
+    pub fn freestream_or_static(&self, flight: &FlightCondition, mdot: f64) -> (FlowState, f64) {
+        if flight.m0 == 0.0 {
+            return (FlowState { tt: flight.t0, pt: flight.p0, mdot, far: 0.0 }, 0.0);
+        }
+        self.freestream(flight, mdot)
+    }
+
     /// The FALLIBLE twin of [`freestream`](Self::freestream) — see [`Abort`].
     ///
     /// The ram check is a SANITY check, not a conservation law, and slice L is where it becomes
@@ -193,7 +207,7 @@ impl Engine {
         let gas = &self.gas;
 
         // Station 0: manufacture the freestream totals + flight velocity.
-        let (mut state, v0) = self.freestream(flight, mdot);
+        let (mut state, v0) = self.freestream_or_static(flight, mdot);
         let mut stations: Vec<(&'static str, FlowState)> = vec![("0", state)];
 
         // Nozzle-exit statics, filled when the flow reaches station 9.
@@ -242,7 +256,7 @@ impl Engine {
             stations.push((label, state));
         }
 
-        let performance = score(gas, &stations, v0, t9, v9, p9, flight.p0, gas.hpr());
+        let performance = score_or_static(gas, &stations, v0, t9, v9, p9, flight.p0, gas.hpr());
 
         EngineResult { stations, performance, v0, v9, m9, t9, p9 }
     }
@@ -270,6 +284,29 @@ pub fn score(
     try_score(gas, stations, v0, t9, v9, p9, p0, hpr).unwrap_or_else(|e| panic!("{}", e.0))
 }
 
+/// [`score`] for a caller that also accepts a STANDING engine (`v0 == 0`, the sea-level-static rating point).
+///
+/// Standing still the engine does no propulsive work, so `eta_propulsive = eta_overall = 0` exactly and the cascade
+/// `eta_o == eta_thermal * eta_p` holds as `0 == eta_thermal * 0`. [`try_score`]'s RELATIVE closure test
+/// (`< 1e-9 * eta_overall`) cannot pass at zero, and it must keep failing there: rung 41's schedule methods use that
+/// failure as control flow (see [`try_score`]). So the standing case is scored here, with the closure asserted in the
+/// exact form it takes at rest; every `v0 != 0` call is [`score`], unchanged. Only the design run ([`Engine::run`])
+/// and the sandbox's own scoring call this — both PANICKED at `v0 == 0` before, so no earlier number can move.
+#[allow(clippy::too_many_arguments)]
+pub fn score_or_static(
+    gas: &Gas, stations: &[(&'static str, FlowState)], v0: f64,
+    t9: f64, v9: f64, p9: f64, p0: f64, hpr: f64,
+) -> Performance {
+    if v0 != 0.0 {
+        return score(gas, stations, v0, t9, v9, p9, p0, hpr);
+    }
+    let perf = score_unchecked(gas, stations, v0, t9, v9, p9, p0, hpr);
+    assert!(perf.eta_propulsive == 0.0 && perf.eta_overall == 0.0 && perf.eta_thermal.is_finite(),
+            "a standing engine does no propulsive work: eta_p {} and eta_o {} must both be exactly 0",
+            perf.eta_propulsive, perf.eta_overall);
+    perf
+}
+
 /// The FALLIBLE twin of [`score`] — see [`Abort`].
 ///
 /// The cascade closure is a free consistency check on a converged cycle, so it reads as a
@@ -282,6 +319,24 @@ pub fn try_score(
     gas: &Gas, stations: &[(&'static str, FlowState)], v0: f64,
     t9: f64, v9: f64, p9: f64, p0: f64, hpr: f64,
 ) -> Result<Performance, Abort> {
+    let perf = score_unchecked(gas, stations, v0, t9, v9, p9, p0, hpr);
+    // CASCADE CLOSURE (free consistency check): the KE-based cascade holds EXACTLY, which is
+    // the whole reason eta_thermal is defined on kinetic energy rather than on Tt2/Tt3.
+    if !((perf.eta_overall - perf.eta_thermal * perf.eta_propulsive).abs() < 1e-9 * perf.eta_overall) {
+        return Err(Abort(
+            "efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE definition"
+                .to_string()));
+    }
+    Ok(perf)
+}
+
+/// The scoring formulae alone, before the cascade-closure check ([`try_score`]) — the same expressions in the same
+/// order, so splitting them out moves no bit.
+#[allow(clippy::too_many_arguments)]
+fn score_unchecked(
+    gas: &Gas, stations: &[(&'static str, FlowState)], v0: f64,
+    t9: f64, v9: f64, p9: f64, p0: f64, hpr: f64,
+) -> Performance {
     let f = station_of(stations, "4").far;
     let pressure_thrust = (1.0 + f) * gas.r_t_at(f) * t9 * (1.0 - p0 / p9) / v9;
     let specific_thrust = (1.0 + f) * v9 - v0 + pressure_thrust;
@@ -292,16 +347,9 @@ pub fn try_score(
     let eta_thermal = ke_net / (2.0 * f * hpr);
     let eta_propulsive = (specific_thrust * v0) / (0.5 * ke_net);
     let eta_overall = (specific_thrust * v0) / (f * hpr);
-    // CASCADE CLOSURE (free consistency check): the KE-based cascade holds EXACTLY, which is
-    // the whole reason eta_thermal is defined on kinetic energy rather than on Tt2/Tt3.
-    if !((eta_overall - eta_thermal * eta_propulsive).abs() < 1e-9 * eta_overall) {
-        return Err(Abort(
-            "efficiency cascade eta_o == eta_thermal*eta_p must hold under the KE definition"
-                .to_string()));
-    }
-    Ok(Performance {
+    Performance {
         specific_thrust, tsfc, eta_brayton, eta_thermal, eta_propulsive, eta_overall,
-    })
+    }
 }
 
 /// The rung-2 loss parameters, all defaulting to IDEAL.

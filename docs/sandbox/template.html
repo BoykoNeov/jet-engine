@@ -811,7 +811,7 @@ footer p { max-width: 90ch; }
       <div class="knob"><label for="p0">Air pressure p0 <small>Pa</small></label><input type="number" id="p0" step="100">
         <div class="derived" id="atmo-note"></div></div>
       <div class="knob" id="M0-row"><label for="M0">Flight Mach number</label><input type="number" id="M0" step="0.01">
-        <input type="range" id="M0-r" min="0.05" max="3.5" step="0.01" aria-label="Mach slider"></div>
+        <input type="range" id="M0-r" min="0" max="3.5" step="0.01" aria-label="Mach slider"></div>
       <p class="note" id="ctl-flight-note" hidden>The two-shaft engine keeps the hardware it was designed with (at Mach 0.85) and
         flies here in the air and at the speed set above. Flying faster rams the air denser and warmer before it reaches the
         compressor; flying slower does the opposite. Thinner air at the engine passes less of it through, so the shafts spin
@@ -1299,7 +1299,9 @@ footer p { max-width: 90ch; }
   convergent nozzle, especially high up), part of the thrust is that pressure push, which the speed-based split
   does not count, so the propulsive part can read above 100 %. It can also near zero thrust (around idle): the jet
   then barely outruns the flight, and the fuel's own mass, which the model counts as accelerated, dominates both
-  the thrust and the energy gain. The overall figure is unaffected.</p>
+  the thrust and the energy gain. The overall figure is unaffected. Standing still (Mach 0, how engines are rated on
+  a test stand) the thrust moves nothing, so propulsive and overall efficiency read exactly 0: judge a standing engine by
+  its thrust and its fuel per thrust. Only the Design view runs a standing engine so far.</p>
   <p>Numbers computed here agree with the command-line model to the last few digits. The browser uses a
   different maths library, and the project's test run checks that difference stays below a measured bound.</p>
 </footer>

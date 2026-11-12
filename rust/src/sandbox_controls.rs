@@ -954,7 +954,7 @@ pub fn controls_precheck(s: &ControlsSettings) -> Result<(), DoesNotRun> {
     }
     s.hp_vane.check().map_err(DoesNotRun)?;
     if s.m0 <= 0.0 {
-        return no("The flight Mach number must be above zero.");
+        return no("The flight Mach number must be above zero: the two-shaft engine cannot run standing still yet. Try Mach 0.05.");
     }
     // Rung 102: the afterburner's knobs (Fly it's ranges), its light-off on the march's grid, and the one control that
     // cannot run with it lit.

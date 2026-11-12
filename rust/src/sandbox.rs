@@ -301,9 +301,15 @@ pub fn precheck(s: &Settings) -> Result<(), DoesNotRun> {
     if s.t0 <= 0.0 || s.p0 <= 0.0 {
         return no("Ambient temperature and pressure must be above zero.".into());
     }
-    if s.m0 <= 0.0 {
-        return no("Flight Mach number must be above zero. The model scores efficiency per unit of \
-                   flight speed, so a standing engine (Mach 0) is not supported yet.".into());
+    // Mach 0 is the STANDING engine (the static rating point): it runs, with no propulsive work to score
+    // (`engine::score_or_static`). The afterburner's own scorer has no standing form yet.
+    if s.m0 < 0.0 {
+        return no("Flight Mach number cannot be below zero.".into());
+    }
+    if s.m0 == 0.0 && s.afterburner {
+        return no("A standing engine (Mach 0) with the afterburner lit is not supported yet: the afterburner's \
+                   scoring divides by the flight speed. Give it a little flight speed (Mach 0.05, say), or switch \
+                   the afterburner off.".into());
     }
     if s.mdot <= 0.0 {
         return no("Air mass flow must be above zero.".into());
@@ -332,8 +338,10 @@ pub fn precheck(s: &Settings) -> Result<(), DoesNotRun> {
     // The one solve-dependent check: the burner can only ADD heat. Run the inlet and compressor
     // (cheap, and pure) to find the compressor-exit temperature.
     let engine = build_turbojet(s.gas.gas(), s.pi_c, s.tt4, s.p0, s.losses());
-    let (mut st, _) = engine.try_freestream(&s.flight(), s.mdot)
-        .map_err(|e| DoesNotRun(format!("The freestream could not be formed: {}", e.0)))?;
+    let (mut st, _) = if s.m0 == 0.0 { engine.freestream_or_static(&s.flight(), s.mdot) } else {
+        engine.try_freestream(&s.flight(), s.mdot)
+            .map_err(|e| DoesNotRun(format!("The freestream could not be formed: {}", e.0)))?
+    };
     for (label, c) in &engine.components {
         if *label == "4" { break; }
         if let Component::Inlet(_) | Component::Compressor(_) = c {
@@ -1007,8 +1015,9 @@ pub fn fly_precheck(s: &FlySettings) -> Result<(), DoesNotRun> {
         return no("Ambient temperature and pressure must be above zero.");
     }
     if s.m0 <= 0.0 {
-        return no("Flight Mach number must be above zero. The model scores efficiency per unit of \
-                   flight speed, so a standing engine (Mach 0) is not supported yet.");
+        return no("Flight Mach number must be above zero here. The Design view runs a standing engine (Mach 0), \
+                   but flying a frozen design standing still is not supported yet: the off-design solver needs \
+                   some flight speed. Try Mach 0.05.");
     }
     if s.tt4 <= 0.0 {
         return no("The throttle (turbine-inlet temperature) must be above zero.");

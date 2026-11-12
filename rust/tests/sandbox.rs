@@ -144,7 +144,8 @@ fn the_inlet_answers_to_flight_speed_above_mach_1() {
 fn each_precheck_fires_on_its_case() {
     let d = Settings::defaults;
     let cases: Vec<(Settings, &str)> = vec![
-        (Settings { m0: 0.0, ..d() }, "Mach"),
+        (Settings { m0: -0.1, ..d() }, "Mach"),
+        (Settings { m0: 0.0, afterburner: true, ..d() }, "standing engine"),
         (Settings { pi_c: 1.0, ..d() }, "pressure ratio must be above 1"),
         (Settings { tt4: 500.0, ..d() }, "cool the air"),
         (Settings { eta_c: 1.2, ..d() }, "compressor efficiency"),
@@ -236,4 +237,40 @@ fn the_curved_legs_land_on_their_stations_on_every_gas() {
             assert!(curve.windows(2).all(|w| (w[1].1 - w[0].1) * (at(b).1 - at(a).1) > 0.0), "{g:?}: {a}->{b} not monotone");
         }
     }
+}
+
+/// A STANDING engine (Mach 0, the static rating point) runs — on every gas model and nozzle. What holds it:
+/// - at rest the air's total state IS its static state, bit for bit, and the flight speed is exactly 0;
+/// - it does no propulsive work: propulsive and overall efficiency are exactly 0, the thrust is the jet's alone;
+/// - it is the LIMIT of slow flight: at Mach 1e-6 — scored by the unchanged `engine::score`, cascade check and all —
+///   every station and every other score agrees with it (the ram terms there are of order M0² = 1e-12).
+#[test]
+fn a_standing_engine_runs_and_is_the_limit_of_slow_flight() {
+    let rel = |a: f64, b: f64| (a - b).abs() / a.abs().max(b.abs());
+    for gas in [GasModel::Perfect, GasModel::ThermallyPerfect, GasModel::Reacting, GasModel::ForkB, GasModel::Equilibrium] {
+        for nozzle in [NozzleMode::Expanded, NozzleMode::ExitPressure, NozzleMode::Convergent] {
+            let at = |m0: f64| run(&Settings { gas, nozzle, m0, ..Settings::defaults() })
+                .unwrap_or_else(|e| panic!("{gas:?} {nozzle:?} at Mach {m0}: {}", e.0)).result;
+            let (still, slow) = (at(0.0), at(1e-6));
+            let d = Settings::defaults();
+            let s0 = still.station("0");
+            assert_eq!((s0.tt.to_bits(), s0.pt.to_bits(), still.v0.to_bits()), (d.t0.to_bits(), d.p0.to_bits(), 0f64.to_bits()));
+            let p = &still.performance;
+            assert_eq!((p.eta_propulsive, p.eta_overall), (0.0, 0.0), "{gas:?} {nozzle:?}");
+            assert!(p.specific_thrust > 0.0 && p.tsfc > 0.0 && p.eta_thermal > 0.0 && p.eta_thermal < 1.0);
+            for ((l, a), (_, b)) in still.stations.iter().zip(&slow.stations) {
+                assert!(rel(a.tt, b.tt) < 1e-9 && rel(a.pt, b.pt) < 1e-9 && (a.far - b.far).abs() < 1e-11, "{gas:?} {nozzle:?} station {l}");
+            }
+            let q = &slow.performance;
+            // The thrust loses the ram drag V0 (about 3e-4 m/s of some 900): a few 1e-7 relative, not 1e-12.
+            assert!(rel(p.specific_thrust, q.specific_thrust) < 1e-6 && rel(p.tsfc, q.tsfc) < 1e-6, "{gas:?} {nozzle:?} thrust");
+            assert!(rel(p.eta_thermal, q.eta_thermal) < 1e-9 && rel(p.eta_brayton, q.eta_brayton) < 1e-9, "{gas:?} {nozzle:?}");
+            assert!(q.eta_propulsive > 0.0 && q.eta_propulsive < 1e-5);
+        }
+    }
+    // Through the page's entry point: a result, not a refusal — and the lit afterburner there is refused in words.
+    let j = Json::parse(&call(r#"{"op":"run","settings":{"M0":0}}"#));
+    assert!(matches!(j.get("ok"), Some(Json::Int(1))) && matches!(j.get("eta_overall"), Some(Json::Float(x)) if *x == 0.0));
+    let j = Json::parse(&call(r#"{"op":"run","settings":{"M0":0,"afterburner":1}}"#));
+    assert!(matches!(j.get("reason"), Some(Json::Str(s)) if s.contains("standing engine")));
 }

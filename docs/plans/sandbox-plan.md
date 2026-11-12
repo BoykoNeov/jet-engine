@@ -2483,3 +2483,28 @@ march at the same fine step, not against rung 95's page run.
   reported to the user. The crash map was not re-run at the new step.
 * **What a page user sees:** with *Govern* and the limiter's lag ticked (the two-speed box unticked), the run is drawn
   every 0.005 τ and takes ~4× as long; beside the floor or the schedule its curves no longer depend on the step.
+
+## 48. A standing engine on the Design view (2026-11-12) — a model and page change, not a rung
+
+Found by a whole-project review (`docs/plans/roadmap.md`): Mach 0, the test-stand rating point, was refused ("not
+supported yet"). The cause was two checks that cannot pass at exactly zero flight speed, not physics.
+
+**Measured first:** on the perfect gas the freestream forms at Mach 0 and the run fails only in `engine::try_score`
+(its closure test is `|η_o − η_th·η_p| < 1e−9·η_o`, and both sides are 0); on the table gases `try_freestream` fails
+first (`t_from_h_c(h_c(T0))` lands three ulps low — its own doc comment). Both refusals are control flow for rung 41's
+schedule methods (they skip the Mach 0 column), so neither function may change.
+
+**Built:** `Engine::freestream_or_static` (at `M0 == 0`: total state = static state, `V0 = 0`, no round trip) and
+`engine::score_or_static` (at `V0 == 0`: the same formulae, the closure asserted as `η_p == 0 && η_o == 0`); every
+other input falls through to the unchanged functions. `try_score`'s formulae moved, unedited and in order, into a
+private `score_unchecked` that both call. Callers: `Engine::run` and `sandbox::precheck` only — both failed at Mach 0
+before. `sandbox::precheck` now refuses a negative Mach number, and Mach 0 with the afterburner lit
+(`afterburner::try_score_total` has the same closure). The Mach slider's lower end 0.05 → 0. Fly it and Controls keep
+refusing Mach 0, with new words pointing at Mach 0.05.
+
+**Gate:** `tests/sandbox.rs` `a_standing_engine_runs_and_is_the_limit_of_slow_flight` — five gas models × three
+nozzles: station 0 is the ambient state bit for bit; η_p = η_o = 0; every station within 1e−9 and thrust within 1e−6 of
+the same design at Mach 1e−6, which is scored by the unchanged `score`. On the page (read 2026-11-12): the opening
+design standing at its own altitude 19.86 kN; at sea level 18.86 kN, 28.72 g/(kN·s).
+
+**Open:** the standing engine on Fly it, Controls and with the afterburner — `docs/plans/roadmap.md` task A3.

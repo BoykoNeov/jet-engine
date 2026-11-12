@@ -163,3 +163,8 @@ write the path out literally. The same session typed `python -` once more (hung,
 -File test-all.ps1 *> log` expanded `*` to the repo's file names, so the gate got `CLAUDE.md` as its `-Jobs` argument and
 exited at once — and the background task still reported success (the trailing `echo` exited 0). Launch the gate from
 the PowerShell tool, and read the log's first line before trusting a "completed".
+
+**A Git Bash heredoc or `node -e "…"` is not a safe carrier for backslashes or backticks** (2026-11-12): inside
+`<<'EOF'` a doubled backslash arrived as ONE (a Windows path in a generated script became a TAB; a Rust string's line
+continuation in a patch script stopped matching), and inside `node -e "…"` every backtick span was RUN by bash as a
+command. For text that contains either, use the Write/Edit tools; in generated scripts write paths with forward slashes.
