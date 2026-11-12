@@ -23,8 +23,8 @@ note is a bug.
 | 86–89 levers together | — | to write |
 | 90–94 loads | [90-94-loads.md](90-94-loads.md) | written 2026-11-12 |
 | 95–101 governors and inferred thrust | [95-101-governors-and-inferred-thrust.md](95-101-governors-and-inferred-thrust.md) | written 2026-11-12 |
-| 102 afterburner | — | to write |
-| 103–105 below choke | — | to write |
-| 106–108 governor beside the limiters | — | to write |
+| 102 afterburner | [102-afterburner.md](102-afterburner.md) | written 2026-11-12 |
+| 103–105 below choke | [103-105-below-choke.md](103-105-below-choke.md) | written 2026-11-12 |
+| 106–108 governor beside the limiters | [106-108-governor-beside-limiters.md](106-108-governor-beside-limiters.md) | written 2026-11-12 |
 
 Order (roadmap A4): the families a sandbox user meets first — 31–37, 46–52, 90–108 — then the rest.
