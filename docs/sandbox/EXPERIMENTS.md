@@ -94,8 +94,8 @@ here; a real engine swallows more air as it speeds up.)
 Set **Altitude** to 0 and **Flight Mach number** to 0: a sea-level test stand. Thrust 18.86 kN, fuel
 per thrust 28.72. Overall and propulsive efficiency read exactly 0 — the engine is pushing hard and
 moving nothing, so it does no useful work. That is why a standing engine is judged by thrust and fuel
-per thrust alone. (Only this view runs a standing engine so far; *Fly it* and *Controls* need a little
-flight speed — Mach 0.05 works.)
+per thrust alone. *Fly it*, the throttle slam, *Controls* and the lit afterburner run a standing engine
+too (since 2026-11-12).
 
 ### 7. A nozzle that cannot finish the job
 

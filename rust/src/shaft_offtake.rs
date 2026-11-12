@@ -518,8 +518,13 @@ fn loaded_body(
         ("0", state0), ("2", s2), ("25", s25), ("3", s3), ("4", s4), ("41", s41), ("44", s44),
         ("45", s45), ("5", s5), ("9", exit.state),
     ];
-    let perf = try_score_nozzle(&stations, s45.far, &rgas, v0, exit.t9, exit.v9, exit.p9,
-                                flight.p0, rgas.hpr())?;
+    // The standing engine (roadmap A3): behind the machine's switch, at rest, the exact form of the same scoring.
+    let perf = if base.standing.get() && v0 == 0.0 {
+        crate::afterburner::try_score_total_or_static(&rgas, &stations, s45.far, v0, exit.t9, exit.v9, exit.p9, flight.p0,
+                                                      rgas.hpr())?
+    } else {
+        try_score_nozzle(&stations, s45.far, &rgas, v0, exit.t9, exit.v9, exit.p9, flight.p0, rgas.hpr())?
+    };
     let mdot_nozzle_air = mdot_burner + mdot_vane + mdot_blade;
     let nozzle_share = mdot_nozzle_air / mdot_air;
     let st_inlet = nozzle_share * perf.specific_thrust - (1.0 - nozzle_share) * v0;

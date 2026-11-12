@@ -37,7 +37,7 @@
 use std::cell::Cell;
 
 use crate::components::{try_choked_mfp, ram_recovery, Burner, Compressor, Inlet, Nozzle, Turbine};
-use crate::engine::{try_score, FlightCondition};
+use crate::engine::FlightCondition;
 use crate::fuel_transient::{FuelCloseState, FuelTransientCore};
 use crate::gas::{powp, Abort, FlowState, Gas};
 use crate::map::ComponentMap;
@@ -437,7 +437,7 @@ fn customer_body(
         ("0", state0), ("2", s2), ("25", s25), ("3", s3), ("4", s4),
         ("45", s45), ("5", s5), ("9", exit.state),
     ];
-    let perf = try_score(&rgas, &stations, v0, exit.t9, exit.v9, exit.p9, flight.p0, rgas.hpr())?;
+    let perf = base.try_score_here(&rgas, &stations, v0, exit.t9, exit.v9, exit.p9, flight.p0)?;
     // (6) THRUST per inlet air: both extractions were captured, so both carry full ram drag.
     let burner_share = mdot_burner / mdot_air;
     let st_inlet = burner_share * perf.specific_thrust - (1.0 - burner_share) * v0;

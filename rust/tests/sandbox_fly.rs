@@ -177,7 +177,7 @@ fn each_fly_precheck_fires_on_its_case() {
         (FlySettings { design: Settings { compressor_polytropic: true, ..Settings::defaults() }, ..f() }, "isentropic"),
         (FlySettings { design: Settings { turbine_polytropic: true, ..Settings::defaults() }, ..f() }, "isentropic"),
         (FlySettings { design: Settings { tt4: 500.0, ..Settings::defaults() }, ..f() }, "The design does not run"),
-        (FlySettings { m0: 0.0, ..f() }, "Mach"),
+        (FlySettings { m0: -0.1, ..f() }, "Mach number cannot be below zero"),
         (FlySettings { p0: -1.0, ..f() }, "above zero"),
         (FlySettings { tt4: f64::NAN, ..f() }, "Tt4"),
         (FlySettings { phi_surge: 1.0, ..f() }, "stall line"),

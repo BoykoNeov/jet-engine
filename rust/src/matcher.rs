@@ -71,7 +71,7 @@
 
 use crate::components::{choked_mfp, try_choked_mfp, ram_recovery, Burner, Component, Compressor, Inlet, Nozzle,
                         Turbine};
-use crate::engine::{score, Engine, EngineResult, FlightCondition, Performance};
+use crate::engine::{score, score_or_static, Engine, EngineResult, FlightCondition, Performance};
 use crate::gas::{powp, Abort, FlowState, Gas};
 
 /// WHICH matching mode produced a point. Python carries `branch: str = "choked"`.
@@ -265,6 +265,11 @@ pub struct OffDesignMatcher {
     /// RUNG 105: where the law provably IS the pin (perfect gas, nozzle choked, `η_t` at design), use the pin's own
     /// solve. `true` by default; a gate turns it off to compare the law's own search with the pin.
     pub hp_shortcut: std::cell::Cell<bool>,
+    /// The STANDING engine (`M0 = 0`, roadmap A3). Off by default: then a flight at Mach 0 fails here exactly as it
+    /// always did — a panic on the integral gases' ram check or on the efficiency cascade — and the oracle gates and
+    /// the panels catch those panics as control flow, so they must keep happening. The sandbox's Fly it turns it on
+    /// for its own fresh solver; it changes nothing at any `M0 != 0`.
+    pub standing: std::cell::Cell<bool>,
 }
 
 impl OffDesignMatcher {
@@ -278,7 +283,25 @@ impl OffDesignMatcher {
     /// residual, so a caller reproducing that march — the oracle gate does — needs the same
     /// entry point the Python dump uses.
     pub fn freestream_for(&self, flight: &FlightCondition) -> (FlowState, f64) {
-        self.fs_engine.freestream(flight, self.mdot_air_design)
+        self.fs(flight, self.mdot_air_design)
+    }
+
+    /// Every station-0 formation in this module. With [`standing`](Self::standing) off (the default) it is
+    /// `fs_engine.freestream`, unchanged; on, a flight at exactly `M0 = 0` takes the standing state
+    /// ([`Engine::freestream_or_static`]) — any other flight is the same call either way.
+    fn fs(&self, flight: &FlightCondition, mdot: f64) -> (FlowState, f64) {
+        if self.standing.get() { self.fs_engine.freestream_or_static(flight, mdot) }
+        else { self.fs_engine.freestream(flight, mdot) }
+    }
+
+    /// The matcher's scoring: [`score`], or with [`standing`](Self::standing) on, [`score_or_static`] (the same
+    /// call at any `v0 != 0`).
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn score_here(
+        &self, gas: &Gas, stations: &[(&'static str, FlowState)], v0: f64, t9: f64, v9: f64, p9: f64, p0: f64,
+    ) -> Performance {
+        if self.standing.get() { score_or_static(gas, stations, v0, t9, v9, p9, p0, gas.hpr()) }
+        else { score(gas, stations, v0, t9, v9, p9, p0, gas.hpr()) }
     }
 
     /// The design gas. Python's `self.gas` — the SAME object `_fs_engine` holds, not a copy:
@@ -362,6 +385,7 @@ impl OffDesignMatcher {
             tau_calls: std::cell::Cell::new(0),
             hp_cap: std::cell::Cell::new(hp_cap),
             hp_shortcut: std::cell::Cell::new(true),
+            standing: std::cell::Cell::new(false),
         }
     }
 
@@ -531,7 +555,7 @@ impl OffDesignMatcher {
         let pi_d = self.pi_d_max * ram_recovery(flight.m0);
 
         // Station 0/2: freestream totals + inlet loss (mdot label fixed later; intensive-only).
-        let (state0, _v0) = self.fs_engine.freestream(flight, self.mdot_air_design);
+        let (state0, _v0) = self.fs(flight, self.mdot_air_design);
         let (tt2, pt2) = (state0.tt, pi_d * state0.pt);
 
         // THE JOINT FIXED POINT on (f, pt4): the turbine pin needs the station-4 frozen
@@ -607,7 +631,7 @@ impl OffDesignMatcher {
         let stations = vec![
             ("0", state0), ("2", s2), ("3", s3), ("4", s4), ("5", s5), ("9", exit.state),
         ];
-        let perf = score(&rgas, &stations, v0, exit.t9, exit.v9, exit.p9, flight.p0, rgas.hpr());
+        let perf = self.score_here(&rgas, &stations, v0, exit.t9, exit.v9, exit.p9, flight.p0);
         let thrust = mdot_air * perf.specific_thrust;
         OffDesignResult {
             stations, performance: perf, v0, v9: exit.v9, m9: exit.m9, t9: exit.t9,
@@ -643,7 +667,7 @@ impl OffDesignMatcher {
         } else {
             self.gas().clone()
         };
-        let (state0, v0) = self.fs_engine.freestream(flight, mdot_air);
+        let (state0, v0) = self.fs(flight, mdot_air);
         let s2 = Inlet::new(pi_d).apply(&state0, &rgas);
         let s3 = Compressor::new(pi_c, eta_c, None).apply(&s2, &rgas);
         let s4 = Burner::new(tt4, self.eta_b, self.pi_b).apply(&s3, &rgas);
@@ -769,7 +793,7 @@ impl OffDesignMatcher {
     /// walks past were measured rather than enumerated (§ 5.4 (i)).
     pub fn match_subsonic(&self, flight: &FlightCondition, tt4: f64) -> OffDesignResult {
         let pi_d = self.pi_d_max * ram_recovery(flight.m0);
-        let (state0, _v0) = self.fs_engine.freestream(flight, self.mdot_air_design);
+        let (state0, _v0) = self.fs(flight, self.mdot_air_design);
         let (tt2, pt2) = (state0.tt, pi_d * state0.pt);
 
         // RUNG 105: under the HP vane's law the root is searched from the design expansion outward — the first sign
@@ -900,7 +924,7 @@ impl OffDesignMatcher {
         let stations = vec![
             ("0", state0), ("2", s2), ("3", s3), ("4", s4), ("5", s5), ("9", exit.state),
         ];
-        let perf = score(&rgas, &stations, v0, exit.t9, exit.v9, exit.p9, flight.p0, rgas.hpr());
+        let perf = self.score_here(&rgas, &stations, v0, exit.t9, exit.v9, exit.p9, flight.p0);
         let thrust = mdot_air * perf.specific_thrust;
         OffDesignResult {
             stations, performance: perf, v0, v9: exit.v9, m9: exit.m9, t9: exit.t9,

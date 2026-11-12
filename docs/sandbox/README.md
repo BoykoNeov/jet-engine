@@ -21,7 +21,9 @@ ratios; shaft efficiency; nozzle (fully expanded / set exit pressure / fixed con
 burner and exhaust legs as curves), and **pin & compare** (freeze a design, see every change).
 
 **A standing engine (Mach 0) runs** on this view (2026-11-12, plan § 48): no ram, thrust from the jet alone,
-propulsive and overall efficiency exactly 0. Fly it, Controls and the lit afterburner refuse Mach 0 in words.
+propulsive and overall efficiency exactly 0. Since plan § 49 (roadmap A3) Fly it, the throttle slam, Controls and the
+lit afterburner run it too: each solver has a `standing` switch, off by default (so rung 41's Mach 0 refusals stay), which
+the page's own solvers turn on.
 
 **A design that does not run** shows why, in plain words, beside the model's own message. Cheap
 cases are caught before the solve (`sandbox::precheck`); the rest are the model's own assertions,

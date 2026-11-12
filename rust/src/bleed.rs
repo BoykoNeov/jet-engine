@@ -84,7 +84,7 @@
 //! [`Abort`]: crate::gas::Abort
 
 use crate::components::{try_choked_mfp, ram_recovery, Burner, Compressor, Inlet, Nozzle, Turbine};
-use crate::engine::{try_score, FlightCondition};
+use crate::engine::FlightCondition;
 use crate::gas::{powp, Abort, FlowState, Gas};
 use crate::map::ComponentMap;
 use crate::two_spool::{
@@ -406,8 +406,7 @@ fn bleed_body(
         ("0", state0), ("2", s2), ("25", s25), ("3", s3), ("4", s4),
         ("45", s45), ("5", s5), ("9", exit.state),
     ];
-    let perf = try_score(&rgas, &stations, v0, exit.t9, exit.v9, exit.p9, flight.p0,
-                         rgas.hpr())?;
+    let perf = base.try_score_here(&rgas, &stations, v0, exit.t9, exit.v9, exit.p9, flight.p0)?;
     // (3) THRUST. The dumped air was captured, so it carries FULL ram drag and returns no exhaust
     // momentum (an overboard dump with no recovery — the conservative reading; a real duct into
     // the nacelle/bypass recovers some). Per unit INLET air:

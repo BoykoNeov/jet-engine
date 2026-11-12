@@ -2507,4 +2507,51 @@ nozzles: station 0 is the ambient state bit for bit; η_p = η_o = 0; every stat
 the same design at Mach 1e−6, which is scored by the unchanged `score`. On the page (read 2026-11-12): the opening
 design standing at its own altitude 19.86 kN; at sea level 18.86 kN, 28.72 g/(kN·s).
 
-**Open:** the standing engine on Fly it, Controls and with the afterburner — `docs/plans/roadmap.md` task A3.
+**Open:** the standing engine on Fly it, Controls and with the afterburner — `docs/plans/roadmap.md` task A3. *Built: § 49.*
+
+## 49. The standing engine on every view (2026-11-12) — a model and page change, not a rung
+
+Roadmap task A3: § 48's standing engine on *Fly it* (dry and with the afterburner), the throttle slam and *Controls*.
+
+**Why a switch, not a fix.** The flown engines form their freestream and score their point through the off-design
+matchers. On rung 41's path those refusals at Mach 0 are control flow, and the oracle gates and panels catch the
+matchers' Mach-0 panics with `catch_unwind`. So each solver gets a `standing: Cell<bool>`, **off by default**, and
+then every function is exactly what it was. With it on, a flight at exactly `M0 = 0` takes § 48's standing state and
+standing score. Any other flight takes the same call either way, because each `_or_static` falls through to the
+original.
+- `OffDesignMatcher::standing` (`matcher.rs`): its four freestream formations, its two scorings and `MapMatcher`'s
+  (via `score_here`). Set by `sandbox::fly_solver`, which the slam uses too.
+- `TwoSpoolCore::standing` (`two_spool.rs`): `try_freestream_at` (which `freestream_for` and `try_freestream_for` now
+  go through, same arithmetic) and `try_score_here`, used by rungs 38/39's rebuild and rungs 42/90's scoring. Rungs
+  91/92's explicit-fuel scorers take `afterburner::try_score_total_or_static` behind the same switch. Set by
+  `sandbox_controls::build` on every machine it makes, and on its generator check's sibling.
+- `afterburner::try_score_total_or_static`: § 48's twin of the afterburner's scorer. `try_continue` uses it, and so
+  does Fly it's afterburner. It differs from `try_score_total` only at `v0 == 0`, which every caller refused before.
+- The refusals at Mach 0 (Design with the afterburner lit, Fly it, Controls) are gone; a negative Mach is refused in words.
+
+**Census (measured, then gated).** Every page check request (`sandbox::check_requests`, 373, and the slam's 19),
+flown at Mach 0 and at Mach 1e−6 (the latter through the unchanged path). No request runs at one speed and is refused
+at the other, and the 31 refusals give the same words at both. Every number of every result agrees within 2e−5. The
+exceptions are quantities that are themselves zero at rest (the ram-drag gap) or numerical residuals of order 1e−9.
+The 2e−5 is the speed tables' blend weight, −0.5 against −0.49999.
+
+**The speed tables at rest (rungs 98–101).** Mach 0 lies below the lowest slow table (Mach 0.05), so the grid carries
+the line through the 0.05 and 0.15 tables on, and the page marks that as extended. Measured end misses of the
+inferred-thrust governor (achieved against target; the default move and from 700 K; 250 K/50 kPa and sea level):
+- grid: +0.20 … +1.29 % at Mach 0, against −0.41 … +0.03 % between and on the tables (Mach 0.05–0.15), and +0.69 % at
+  Mach 0.02, which the page allowed before;
+- formula on the pressure ratio: 0.00 % at Mach 0 (exact, as below choke);
+- fan-speed formula: −7.05 % from 700 K at sea level, against −6.29 % at Mach 0.1 (rung 100's known overshoot carried on);
+- no speed correction: +30 … +55 %, the same trend as all slow flight (rung 98's carried table).
+
+Each reads at rest as the smooth limit of slow flight, so none is refused. The probe was a throwaway; the numbers
+above are the record.
+
+**Gates.** `tests/sandbox.rs`: `a_standing_engine_with_the_afterburner_lit_is_the_limit_of_slow_flight` (every gas; lit,
+unlit and no-afterburner readouts) and `fly_it_standing_still_is_the_limit_of_slow_flight` (perfect and
+thermally-perfect gas; dry, fitted unlit and lit; design and 1300 K throttles). Both check every station within 1e−9,
+thrust within 1e−6 and the operating point within 1e−8 of Mach 1e−6. `tests/sandbox_mach.rs`:
+`the_two_shaft_engine_standing_still_is_the_limit_of_slow_flight` (the opening move; both levers with customer air,
+cooling and generator; the thrust governor; the lit afterburner). There the steady ends are within 1e−8 and the march
+within 1e−6, since its inner fuel closures land a few 1e−8 apart mid-ramp (measured 2.4e−8). The full gate shows no
+earlier number moved.

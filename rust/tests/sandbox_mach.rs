@@ -100,11 +100,41 @@ fn the_governors_limits_scale_with_the_density_of_the_air_taken_in() {
     ran(&hp_rate(slow, TAU_MIN / slow.density_ratio() * 1.001));
 }
 
+/// Roadmap A3: the two-shaft engine STANDING STILL (Mach 0) is the limit of slow flight. Flown at Mach 0 and at Mach
+/// 1e-6 — the latter through the unchanged path, every check and all — both steady ends agree (shaft speeds to 1e-8,
+/// thrust to the ram drag's 1e-6) and so does every point of the march (to 1e-6, see below). Over the opening move, both airflow levers with the
+/// aircraft's air, cooling and generator, the governor holding thrust, and the afterburner lit. (A census of every
+/// page check request at the two speeds, 2026-11-12, found no request that runs at one and not the other: plan § 49.)
+#[test]
+fn the_two_shaft_engine_standing_still_is_the_limit_of_slow_flight() {
+    use turbojet::afterburner::AbMode;
+    let rel = |a: f64, b: f64| (a - b).abs() / a.abs().max(b.abs());
+    let d = ControlsSettings::defaults();
+    let loaded = ControlsSettings::from_json(&Json::parse(
+        r#"{"lever":"both","customer":"share","customer_share":0.02,"cool_vane":0.03,"cool_blade":0.02,"generator":"hp","generator_power":0.05}"#)).unwrap();
+    for s in [d, loaded, ControlsSettings { govern: true, hold: Hold::Thrust, ..d }, ControlsSettings { ab: Some(AbMode::Lit), ..d }] {
+        let at = |m0: f64| build(&ControlsSettings { m0, ..s }).unwrap_or_else(|e| panic!("Mach {m0}: {} ({s:?})", e.0));
+        let (still, slow) = (at(0.0), at(1e-6));
+        for (a, b) in [(&still.start, &slow.start), (&still.end, &slow.end)] {
+            assert!(rel(a.nu_hp, b.nu_hp) < 1e-8 && rel(a.nu_lp, b.nu_lp) < 1e-8, "{s:?}");
+            assert!(rel(ControlsSolver::thrust(a), ControlsSolver::thrust(b)) < 1e-6, "{s:?}");
+        }
+        let (p, q) = (still.march(), slow.march());
+        assert_eq!(p.len(), q.len(), "{s:?}");
+        let worst = p.iter().zip(&q).enumerate().map(|(i, (x, y))| (rel(x.nu_hp, y.nu_hp).max(rel(x.nu_lp, y.nu_lp)), i))
+            .fold((0.0, 0), |a, b| if b.0 > a.0 { b } else { a });
+        // Not the steady ends' 1e-8: the march's inner fuel closures stop at their own tolerances, so two flights whose
+        // inlets differ by 1e-12 land on iterates a few 1e-8 apart mid-ramp (measured 2.4e-8, the opening move). The
+        // bar is the thrust's — a standing engine wrongly formed would miss by percent.
+        assert!(worst.0 < 1e-6, "march off by {:.2e} at point {} of {}: {s:?}", worst.0, worst.1, p.len());
+    }
+    ran(&ControlsSettings { m0: 0.0, t0: 288.15, p0: 101_325.0, ..d });
+}
+
 #[test]
 fn every_new_refusal_is_words() {
     let d = ControlsSettings::defaults();
-    refused(&ControlsSettings { m0: 0.0, ..d }, "Mach number must be above zero");
-    refused(&ControlsSettings { m0: -0.2, ..d }, "Mach number must be above zero");
+    refused(&ControlsSettings { m0: -0.2, ..d }, "Mach number cannot be below zero");
     let nan = controls_precheck(&ControlsSettings { m0: f64::NAN, ..d }).unwrap_err().0;
     assert!(nan.contains("M0 is not a number"), "{nan}");
 }

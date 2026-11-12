@@ -46,7 +46,7 @@ Rules that apply to every task here (they are the project's own, from `CLAUDE.md
 3. **An engine could not be run standing still.** Mach 0 — the test-stand point every real engine is
    rated at — was refused. The cause was not physics: two sanity checks cannot pass at exactly zero
    speed. *Fixed this session for the Design view* (see "What changed" below). *Fly it*, *Controls*
-   and the afterburner still refuse it: task A3.
+   and the afterburner still refuse it: task A3 (*done the same day*).
 4. **The plain-language notes stop at rung 22.** `NOTES.md` is the only place the physics is told in
    everyday words, and it covers a fifth of the model. Rungs 25–108 exist only as formal specs. For a
    project whose stated product is understanding, this is the largest gap: task A4.
@@ -145,7 +145,11 @@ the view queues a second run that supersedes the first (see `enterFly` → `chan
 set. This is a small flaw in the page's test interface, not in what a user sees. *Fixed 2026-11-12 with A1:*
 `fly` and `design` now wait out the queued run (`settled()`) before their own, so they resolve on their result.
 
-### A3. The standing engine on *Fly it*, *Controls* and with the afterburner
+### A3. The standing engine on *Fly it*, *Controls* and with the afterburner — DONE 2026-11-12
+
+Shipped as a `standing` switch on each solver, off by default, so rung 41's path is unchanged; the page's solvers turn
+it on. It covers Fly it (dry and lit), the throttle slam, Controls with every lever and load, and the Design view's
+lit afterburner. The census and the speed tables' readings at rest are in `docs/plans/sandbox-plan.md` § 49.
 
 **Why.** Sea-level static is where engines are rated and where every flight starts. The Design view
 now runs it; the other views say "not supported yet".

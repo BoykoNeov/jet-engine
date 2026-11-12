@@ -145,7 +145,6 @@ fn each_precheck_fires_on_its_case() {
     let d = Settings::defaults;
     let cases: Vec<(Settings, &str)> = vec![
         (Settings { m0: -0.1, ..d() }, "Mach"),
-        (Settings { m0: 0.0, afterburner: true, ..d() }, "standing engine"),
         (Settings { pi_c: 1.0, ..d() }, "pressure ratio must be above 1"),
         (Settings { tt4: 500.0, ..d() }, "cool the air"),
         (Settings { eta_c: 1.2, ..d() }, "compressor efficiency"),
@@ -268,9 +267,79 @@ fn a_standing_engine_runs_and_is_the_limit_of_slow_flight() {
             assert!(q.eta_propulsive > 0.0 && q.eta_propulsive < 1e-5);
         }
     }
-    // Through the page's entry point: a result, not a refusal — and the lit afterburner there is refused in words.
-    let j = Json::parse(&call(r#"{"op":"run","settings":{"M0":0}}"#));
-    assert!(matches!(j.get("ok"), Some(Json::Int(1))) && matches!(j.get("eta_overall"), Some(Json::Float(x)) if *x == 0.0));
-    let j = Json::parse(&call(r#"{"op":"run","settings":{"M0":0,"afterburner":1}}"#));
-    assert!(matches!(j.get("reason"), Some(Json::Str(s)) if s.contains("standing engine")));
+    // Through the page's entry point: a result, not a refusal — with the afterburner lit too.
+    for req in [r#"{"op":"run","settings":{"M0":0}}"#, r#"{"op":"run","settings":{"M0":0,"afterburner":1}}"#] {
+        let j = Json::parse(&call(req));
+        assert!(matches!(j.get("ok"), Some(Json::Int(1))) && matches!(j.get("eta_overall"), Some(Json::Float(x)) if *x == 0.0),
+                "{req}: {j:?}");
+    }
+}
+
+/// Two runs at Mach 0 and Mach 1e-6 agree: every station to 1e-9 (the ram terms are of order M0² = 1e-12) and
+/// every score to the ram drag's 1e-6, while the standing run does exactly no propulsive work. `slow` was scored by
+/// the UNCHANGED path (cascade check and all), so this is an independent check, not the new code agreeing with itself.
+fn standing_is_the_limit(still: &EngineResult, slow: &EngineResult, what: &str) {
+    let rel = |a: f64, b: f64| (a - b).abs() / a.abs().max(b.abs());
+    assert_eq!(still.v0, 0.0, "{what}");
+    let (p, q) = (&still.performance, &slow.performance);
+    assert_eq!((p.eta_propulsive, p.eta_overall), (0.0, 0.0), "{what}");
+    assert!(p.specific_thrust > 0.0 && p.eta_thermal > 0.0 && p.eta_thermal < 1.0, "{what}");
+    assert_eq!(still.stations.len(), slow.stations.len(), "{what}");
+    for ((l, a), (m, b)) in still.stations.iter().zip(&slow.stations) {
+        assert_eq!(l, m, "{what}");
+        assert!(rel(a.tt, b.tt) < 1e-9 && rel(a.pt, b.pt) < 1e-9 && rel(a.mdot, b.mdot) < 1e-9 && (a.far - b.far).abs() < 1e-11,
+                "{what} station {l}: {a:?} vs {b:?}");
+    }
+    assert!(rel(p.specific_thrust, q.specific_thrust) < 1e-6 && rel(p.tsfc, q.tsfc) < 1e-6, "{what} thrust");
+    assert!(rel(p.eta_thermal, q.eta_thermal) < 1e-9 && rel(p.eta_brayton, q.eta_brayton) < 1e-9, "{what}");
+    assert!(q.eta_propulsive > 0.0 && q.eta_propulsive < 1e-5, "{what}");
+}
+
+/// Roadmap A3: the STANDING engine with the afterburner lit (Design view), on every gas — the lit afterburner's
+/// standing scorer (`afterburner::try_score_total_or_static`) against Mach 1e-6 through `try_score_total`.
+#[test]
+fn a_standing_engine_with_the_afterburner_lit_is_the_limit_of_slow_flight() {
+    for gas in GasModel::ALL {
+        let at = |m0: f64| run(&Settings { gas, m0, afterburner: true, ..Settings::defaults() })
+            .unwrap_or_else(|e| panic!("{gas:?} lit at Mach {m0}: {}", e.0));
+        let (still, slow) = (at(0.0), at(1e-6));
+        standing_is_the_limit(&still.result, &slow.result, &format!("{gas:?} lit"));
+        let (d0, d1) = (still.ab.as_ref().unwrap(), slow.ab.as_ref().unwrap());
+        standing_is_the_limit(&d0.none, &d1.none, &format!("{gas:?} no afterburner"));
+        match (&d0.dry, &d1.dry) {
+            (Some(a), Some(b)) => {
+                let (a, b) = (&a.performance, &b.performance);
+                assert_eq!((a.eta_propulsive, a.eta_overall), (0.0, 0.0));
+                assert!((a.specific_thrust - b.specific_thrust).abs() < 1e-6 * b.specific_thrust, "{gas:?} unlit");
+            }
+            (a, b) => panic!("{gas:?}: the unlit readout runs at one speed only ({} / {})", a.is_some(), b.is_some()),
+        }
+    }
+}
+
+/// Roadmap A3: *Fly it* at Mach 0 — the captured hardware flown standing still, dry and with the afterburner lit, on
+/// both gases the view offers fast (the perfect and the thermally-perfect gas), at the design throttle and below it.
+#[test]
+fn fly_it_standing_still_is_the_limit_of_slow_flight() {
+    use turbojet::afterburner::AbMode;
+    use turbojet::sandbox::{fly, FlySettings};
+    let rel = |a: f64, b: f64| (a - b).abs() / a.abs().max(b.abs());
+    for gas in [GasModel::Perfect, GasModel::ThermallyPerfect] {
+        for ab in [None, Some(AbMode::Unlit), Some(AbMode::Lit)] {
+            for tt4 in [Settings::defaults().tt4, 1300.0] {
+                let at = |m0: f64| fly(&FlySettings { gas, m0, tt4, ab, ..FlySettings::defaults() })
+                    .unwrap_or_else(|e| panic!("{gas:?} {ab:?} {tt4} K at Mach {m0}: {}", e.0));
+                let (still, slow) = (at(0.0), at(1e-6));
+                let what = format!("fly {gas:?} {ab:?} {tt4} K");
+                standing_is_the_limit(&still.result, &slow.result, &what);
+                let (a, b) = (&still.point, &slow.point);
+                assert!(rel(a.nu, b.nu) < 1e-8 && rel(a.pi_c, b.pi_c) < 1e-8 && rel(a.mdot_air, b.mdot_air) < 1e-8,
+                        "{what}: {a:?} vs {b:?}");
+                assert!(rel(a.thrust, b.thrust) < 1e-6 && a.choked == b.choked, "{what}: {a:?} vs {b:?}");
+            }
+        }
+    }
+    // Through the page's entry point: a result, not a refusal.
+    let j = Json::parse(&call(r#"{"op":"fly","fly":{"M0":0}}"#));
+    assert!(matches!(j.get("ok"), Some(Json::Int(1))), "{j:?}");
 }

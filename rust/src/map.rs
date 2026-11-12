@@ -106,7 +106,7 @@
 
 use crate::components::choked_mfp;
 use crate::components::ram_recovery;
-use crate::engine::{score, Engine, FlightCondition, Performance};
+use crate::engine::{Engine, FlightCondition, Performance};
 use crate::gas::{powp, Abort, FlowState};
 use crate::matcher::{Branch, OffDesignMatcher, OffDesignResult, Rebuilt};
 
@@ -1061,8 +1061,7 @@ impl MapMatcher {
         let stations: Vec<(&'static str, FlowState)> = vec![
             ("0", state0), ("2", s2), ("3", s3), ("4", s4), ("5", s5), ("9", exit.state),
         ];
-        let perf: Performance =
-            score(&rgas, &stations, v0, exit.t9, exit.v9, exit.p9, flight.p0, rgas.hpr());
+        let perf: Performance = m.score_here(&rgas, &stations, v0, exit.t9, exit.v9, exit.p9, flight.p0);
         let thrust = op.mdot_air * perf.specific_thrust;
         MapOffDesignResult {
             base: OffDesignResult {

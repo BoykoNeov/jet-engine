@@ -16,11 +16,11 @@
 //! - **It edits no model code.** It calls `build_turbojet(…).run(…)` exactly as the CLI does, so
 //!   every golden and oracle is unchanged.
 
-use crate::afterburner::{build_afterburning_turbojet, is_refusal, try_afterburn, try_score_total, AbDetail, AbMode,
+use crate::afterburner::{build_afterburning_turbojet, is_refusal, try_afterburn, try_score_total_or_static, AbDetail, AbMode,
                          AbResult, Afterburner, FlyAfterburner, FlyPoint, Throat};
 use crate::atmosphere::{self, Ambient};
 use crate::components::{choked_mfp, ram_recovery, Component, Nozzle};
-use crate::engine::{build_turbojet, score, EngineResult, FlightCondition, Losses};
+use crate::engine::{build_turbojet, score_or_static, EngineResult, FlightCondition, Losses};
 use crate::gas::{powp, Abort, FlowState, Gas};
 use crate::hp_vane::HpVane;
 use crate::jobj;
@@ -302,14 +302,9 @@ pub fn precheck(s: &Settings) -> Result<(), DoesNotRun> {
         return no("Ambient temperature and pressure must be above zero.".into());
     }
     // Mach 0 is the STANDING engine (the static rating point): it runs, with no propulsive work to score
-    // (`engine::score_or_static`). The afterburner's own scorer has no standing form yet.
+    // (`engine::score_or_static`; lit, `afterburner::try_score_total_or_static`).
     if s.m0 < 0.0 {
         return no("Flight Mach number cannot be below zero.".into());
-    }
-    if s.m0 == 0.0 && s.afterburner {
-        return no("A standing engine (Mach 0) with the afterburner lit is not supported yet: the afterburner's \
-                   scoring divides by the flight speed. Give it a little flight speed (Mach 0.05, say), or switch \
-                   the afterburner off.".into());
     }
     if s.mdot <= 0.0 {
         return no("Air mass flow must be above zero.".into());
@@ -1014,10 +1009,9 @@ pub fn fly_precheck(s: &FlySettings) -> Result<(), DoesNotRun> {
     if s.t0 <= 0.0 || s.p0 <= 0.0 {
         return no("Ambient temperature and pressure must be above zero.");
     }
-    if s.m0 <= 0.0 {
-        return no("Flight Mach number must be above zero here. The Design view runs a standing engine (Mach 0), \
-                   but flying a frozen design standing still is not supported yet: the off-design solver needs \
-                   some flight speed. Try Mach 0.05.");
+    // Mach 0 is the standing engine: the solver's switch (`OffDesignMatcher::standing`, set in `fly_solver`).
+    if s.m0 < 0.0 {
+        return no("Flight Mach number cannot be below zero.");
     }
     if s.tt4 <= 0.0 {
         return no("The throttle (turbine-inlet temperature) must be above zero.");
@@ -1035,8 +1029,11 @@ pub fn fly_precheck(s: &FlySettings) -> Result<(), DoesNotRun> {
     // The throttle must at least beat the air's own temperature at the compressor face: below it no
     // shaft speed can work, and the solver could only say "no workable speed" (measured, plan § 10.4).
     let d = s.capture();
-    let (st0, _) = build_turbojet(d.gas.gas(), d.pi_c, d.tt4, d.p0, d.losses()).try_freestream(&s.flight(), d.mdot)
-        .map_err(|e| DoesNotRun(format!("The freestream could not be formed: {}", e.0)))?;
+    let fs = build_turbojet(d.gas.gas(), d.pi_c, d.tt4, d.p0, d.losses());
+    let (st0, _) = if s.m0 == 0.0 { fs.freestream_or_static(&s.flight(), d.mdot) } else {
+        fs.try_freestream(&s.flight(), d.mdot)
+            .map_err(|e| DoesNotRun(format!("The freestream could not be formed: {}", e.0)))?
+    };
     if s.tt4 <= st0.tt {
         return Err(DoesNotRun(format!(
             "The throttle ({:.0} K) is not above the temperature the air already has entering the compressor \
@@ -1106,6 +1103,8 @@ pub fn fly_solver(s: &FlySettings) -> SpoolTransient {
     let d = s.capture();
     let engine = build_turbojet(d.gas.gas(), d.pi_c, d.tt4, d.p0, d.losses());
     let st = SpoolTransient::new(engine, d.flight(), d.mdot, s.map.map());
+    // The standing engine (roadmap A3): this solver may be flown at Mach 0. It changes nothing at any other flight.
+    st.inner.inner.standing.set(true);
     // RUNG 105: the HP vane's law, recaptured on this design (the default — the old pin — captures nothing new).
     if s.hp_vane != st.inner.inner.hp_vane() {
         st.inner.inner.set_hp_vane(s.hp_vane);
@@ -1215,7 +1214,8 @@ fn fly_ab(s: &FlySettings, mode: AbMode, st: &SpoolTransient, fl: &FlightConditi
     }
     let stations = vec![("0", rb.state0), ("2", rb.s2), ("3", rb.s3), ("4", rb.s4), ("5", rb.s5), ("7", s7),
                         ("9", exit.state)];
-    let performance = try_score_total(&rb.gas, &stations, s7.far, rb.v0, exit.t9, exit.v9, exit.p9, fl.p0, rb.gas.hpr())
+    let performance =
+        try_score_total_or_static(&rb.gas, &stations, s7.far, rb.v0, exit.t9, exit.v9, exit.p9, fl.p0, rb.gas.hpr())
         .map_err(fly_words)?;
     let result = EngineResult { stations, performance, v0: rb.v0, v9: exit.v9, m9: exit.m9, t9: exit.t9, p9: exit.p9 };
     let dry_stall = stall_reading(st, &dry.eq, cmap);
@@ -1260,7 +1260,7 @@ pub fn fly(s: &FlySettings) -> Result<FlyOutcome, DoesNotRun> {
     let Rebuilt { state0, v0, s2, s3, s4, s5, exit, gas } =
         m.rebuild(&fl, pi_d, eq.pi_c, s.tt4, eq.mdot_air, eq.eta_c, eq.eta_t);
     let stations = vec![("0", state0), ("2", s2), ("3", s3), ("4", s4), ("5", s5), ("9", exit.state)];
-    let performance = score(&gas, &stations, v0, exit.t9, exit.v9, exit.p9, fl.p0, gas.hpr());
+    let performance = score_or_static(&gas, &stations, v0, exit.t9, exit.v9, exit.p9, fl.p0, gas.hpr());
     let result = EngineResult { stations, performance, v0, v9: exit.v9, m9: exit.m9, t9: exit.t9, p9: exit.p9 };
     let ts = ts_points(&gas, &result, &fl);
     let curves = ts_curves(&gas, &result, &ts);

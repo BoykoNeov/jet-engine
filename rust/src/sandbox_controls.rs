@@ -953,8 +953,9 @@ pub fn controls_precheck(s: &ControlsSettings) -> Result<(), DoesNotRun> {
         return no("The air's temperature and pressure must be above zero.");
     }
     s.hp_vane.check().map_err(DoesNotRun)?;
-    if s.m0 <= 0.0 {
-        return no("The flight Mach number must be above zero: the two-shaft engine cannot run standing still yet. Try Mach 0.05.");
+    // Mach 0 is the standing engine: every machine `build` makes carries the switch (`TwoSpoolCore::standing`).
+    if s.m0 < 0.0 {
+        return no("The flight Mach number cannot be below zero.");
     }
     // Rung 102: the afterburner's knobs (Fly it's ranges), its light-off on the march's grid, and the one control that
     // cannot run with it lit.
@@ -1344,6 +1345,8 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
             ScheduledStatorTransient::Degenerate(_) => unreachable!("the Controls engine has both shafts"),
         };
         c.fuel.inner.inner.base.idle_rule.set(s.idle);
+        // The standing engine (roadmap A3): every machine this view builds may be flown at Mach 0.
+        c.fuel.inner.inner.base.standing.set(true);
         c
     };
     let core = make(design);
@@ -1365,6 +1368,7 @@ pub fn build(s: &ControlsSettings) -> Result<ControlsSolver, DoesNotRun> {
                 // Rung 103: the steady check re-solves an unchoked throttle, as the march's own equilibrium does
                 // (rung 97) — so its answer is no longer the pin's there.
                 st.core.base.below_choke.set(true);
+                st.core.base.standing.set(true);
                 if let Err(e2) = st.try_match_point(&fl, tt4) {
                     if e2.0.contains("rung-92:") { m = e2.0; }
                 }

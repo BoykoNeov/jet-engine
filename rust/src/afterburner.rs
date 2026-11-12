@@ -533,6 +533,38 @@ pub fn try_score_total(
     Ok(Performance { specific_thrust, tsfc, eta_brayton, eta_thermal, eta_propulsive, eta_overall })
 }
 
+/// [`try_score_total`] for a caller that also accepts a STANDING engine (`v0 == 0`, roadmap A3) — the afterburner's
+/// twin of [`crate::engine::score_or_static`]. At rest there is no propulsive work, so `eta_p = eta_o = 0` exactly and
+/// the relative cascade test (`< 1e-9 * eta_o`) cannot pass; it is asserted in the exact form it takes at rest
+/// instead. Every `v0 != 0` call IS [`try_score_total`]. Before this, `v0 == 0` reached here only from a standing core
+/// run, and every caller refused that case before getting here, so no earlier result moves.
+#[allow(clippy::too_many_arguments)]
+pub fn try_score_total_or_static(
+    gas: &Gas, stations: &[(&'static str, FlowState)], f_total: f64, v0: f64,
+    t9: f64, v9: f64, p9: f64, p0: f64, hpr: f64,
+) -> Result<Performance, Abort> {
+    if v0 != 0.0 {
+        return try_score_total(gas, stations, f_total, v0, t9, v9, p9, p0, hpr);
+    }
+    let at = |label: &str| stations.iter().find(|&&(l, _)| l == label).map(|(_, s)| *s)
+        .unwrap_or_else(|| panic!("station {label:?} not reached yet"));
+    let f = f_total;
+    let pressure_thrust = (1.0 + f) * gas.r_t_at(f) * t9 * (1.0 - p0 / p9) / v9;
+    let specific_thrust = (1.0 + f) * v9 - v0 + pressure_thrust;
+    let tsfc = f / specific_thrust;
+    let eta_brayton = 1.0 - at("2").tt / at("3").tt;
+    let ke_net = (1.0 + f) * (v9 * v9) - (v0 * v0);
+    let eta_thermal = ke_net / (2.0 * f * hpr);
+    let eta_propulsive = (specific_thrust * v0) / (0.5 * ke_net);
+    let eta_overall = (specific_thrust * v0) / (f * hpr);
+    if !(eta_propulsive == 0.0 && eta_overall == 0.0 && eta_thermal.is_finite()) {
+        return Err(Abort(format!(
+            "a standing engine does no propulsive work: eta_p {eta_propulsive} and eta_o {eta_overall} must both be \
+             exactly 0")));
+    }
+    Ok(Performance { specific_thrust, tsfc, eta_brayton, eta_thermal, eta_propulsive, eta_overall })
+}
+
 /// The design-point afterburning turbojet: `build_turbojet`'s engine, run as shipped, continued from station 5.
 #[derive(Clone)]
 pub struct AfterburningTurbojet {
@@ -571,7 +603,8 @@ impl AfterburningTurbojet {
         stations.push(("7", s7));
         stations.push(("9", exit.state));
         let p0 = self.nozzle.p_ambient;
-        let performance = try_score_total(gas, &stations, s7.far, core.v0, exit.t9, exit.v9, exit.p9, p0, gas.hpr())?;
+        let performance =
+            try_score_total_or_static(gas, &stations, s7.far, core.v0, exit.t9, exit.v9, exit.p9, p0, gas.hpr())?;
         Ok(AbResult { stations, performance, v0: core.v0, v9: exit.v9, m9: exit.m9, t9: exit.t9, p9: exit.p9, detail })
     }
 

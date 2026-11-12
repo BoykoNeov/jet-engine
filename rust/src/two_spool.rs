@@ -738,6 +738,11 @@ pub struct TwoSpoolCore {
     /// THE BELOW-IDLE RULE (sandbox plan §§ 38–39) — what a steady point with no positive net thrust gets.
     /// [`IdleRule::Old`] by default (the old code: § 37's rule); the sandbox views choose another.
     pub idle_rule: std::cell::Cell<IdleRule>,
+    /// The STANDING engine (`M0 = 0`, roadmap A3). Off by default: then Mach 0 fails exactly as it always did — the
+    /// integral gases' ram check, the efficiency cascade — and rung 41's schedule methods use those failures to skip
+    /// their Mach 0 column, so they must keep happening. The Controls view turns it on for the machines it builds; it
+    /// changes nothing at any `M0 != 0`.
+    pub standing: std::cell::Cell<bool>,
     /// THE FUEL CLOSURES' LEAN WALL (sandbox plan § 40) — the leanest burner mixture the fuel-metered closures (rungs
     /// 43/62/90/91) scan to. `None` by default: rung 43's `F_FLOOR` (0.004), a search bound, not a combustion limit. The
     /// Controls view sets it per run to half the leaner steady end's mixture when that is under it, so a slam can leave a
@@ -844,7 +849,7 @@ impl TwoSpoolCore {
     pub fn a45_pin(&self) -> f64 { self.a45 }
 
     pub fn freestream_for(&self, flight: &FlightCondition) -> (FlowState, f64) {
-        self.fs_engine.freestream(flight, self.mdot_air_design)
+        self.try_freestream_for(flight).unwrap_or_else(|e| panic!("{}", e.0))
     }
 
     /// The FALLIBLE twin of [`freestream_for`](Self::freestream_for) — see
@@ -852,7 +857,19 @@ impl TwoSpoolCore {
     pub fn try_freestream_for(
         &self, flight: &FlightCondition,
     ) -> Result<(FlowState, f64), Abort> {
-        self.fs_engine.try_freestream(flight, self.mdot_air_design)
+        self.try_freestream_at(flight, self.mdot_air_design)
+    }
+
+    /// The machine's scoring: [`try_score`], or with [`standing`](Self::standing) on and the engine at rest
+    /// (`v0 == 0`), [`crate::engine::score_or_static`]. Every other call is [`try_score`] unchanged.
+    #[allow(clippy::too_many_arguments)]
+    pub fn try_score_here(
+        &self, gas: &Gas, stations: &[(&'static str, FlowState)], v0: f64, t9: f64, v9: f64, p9: f64, p0: f64,
+    ) -> Result<Performance, Abort> {
+        if self.standing.get() && v0 == 0.0 {
+            return Ok(crate::engine::score_or_static(gas, stations, v0, t9, v9, p9, p0, gas.hpr()));
+        }
+        try_score(gas, stations, v0, t9, v9, p9, p0, gas.hpr())
     }
 
     /// [`try_freestream_for`](Self::try_freestream_for) at an EXPLICIT mass flow — what the
@@ -863,9 +880,16 @@ impl TwoSpoolCore {
     /// 42's rebuild is a **separate body** in [`crate::bleed`] (a deliberate duplication, not a
     /// parameterisation) and needs the same call from outside. Nothing else about the field's
     /// privacy changes.
+    ///
+    /// Every station-0 formation of the two-shaft machines comes through here. With [`standing`](Self::standing) on, a
+    /// flight at exactly `M0 = 0` takes the standing state ([`Engine::freestream_or_static`]); off (the default), or at
+    /// any other flight, it is `Engine::try_freestream`, unchanged.
     pub fn try_freestream_at(
         &self, flight: &FlightCondition, mdot: f64,
     ) -> Result<(FlowState, f64), Abort> {
+        if self.standing.get() && flight.m0 == 0.0 {
+            return Ok(self.fs_engine.freestream_or_static(flight, mdot));
+        }
         self.fs_engine.try_freestream(flight, mdot)
     }
 
@@ -958,6 +982,7 @@ impl TwoSpoolCore {
             ab_last: std::cell::Cell::new(None),
             below_choke: std::cell::Cell::new(false),
             idle_rule: std::cell::Cell::new(IdleRule::Old),
+            standing: std::cell::Cell::new(false),
             lean_wall: std::cell::Cell::new(None),
             steady_lp: std::cell::Cell::new(crate::steady_unchoked::SteadyLp::Pin),
             dispatching: std::cell::Cell::new(false),
@@ -1320,9 +1345,9 @@ impl TwoSpoolCore {
         } else {
             self.gas().clone()
         };
-        let (state0, v0) = self.fs_engine.try_freestream(flight, mdot_air)?;
+        let (state0, v0) = self.try_freestream_at(flight, mdot_air)?;
         let s2 = Inlet::new(pi_d).apply(&state0, &rgas);
-        let s25 = Compressor::new(pi_lpc, eta_lpc, None).apply(&s2, &rgas);
+        let s25 =Compressor::new(pi_lpc, eta_lpc, None).apply(&s2, &rgas);
         let s3 = Compressor::new(pi_hpc, eta_hpc, None).apply(&s25, &rgas);
         let s4 = Burner::new(tt4, self.eta_b, self.pi_b).apply(&s3, &rgas);
         let dh_hpt_reb = (rgas.h_c(s3.tt) - rgas.h_c(s25.tt)) / (self.eta_m * (1.0 + s4.far));
@@ -1381,8 +1406,7 @@ impl TwoSpoolRebuilt {
             ("0", state0), ("2", s2), ("25", s25), ("3", s3), ("4", s4),
             ("45", s45), ("5", s5), ("9", exit_state),
         ];
-        let perf = try_score(&rgas, &stations, v0, exit_t9, exit_v9, exit_p9, flight.p0,
-                             rgas.hpr())?;
+        let perf = core.try_score_here(&rgas, &stations, v0, exit_t9, exit_v9, exit_p9, flight.p0)?;
         let thrust = mdot_air * perf.specific_thrust;
         Ok(TwoSpoolResult {
             stations, performance: perf, v0, v9: exit_v9, m9: exit_m9, t9: exit_t9, p9: exit_p9,
