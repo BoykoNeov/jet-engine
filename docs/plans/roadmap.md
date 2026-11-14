@@ -228,7 +228,14 @@ Written: 31–33, 34–37, 46–52, 90–94, 95–101, 102, 103–105, 106–108
   (expect "misses: 0"). It checks each rung section against its own spec as WHOLE numbers; a first version that
   searched every spec for any substring could not fail.
 
-### A5. Decide the fate of the charts page
+### A5. Decide the fate of the charts page — DONE 2026-11-15 (the larger option)
+
+The user chose the larger option. The rung map is generated at splice time from `CLAUDE.md`'s rung table, its
+families and read-only lines, and the plain-language notes' `In one sentence` lines (`rust/src/rung_map.rs`), and
+shows all 108 rungs (109 rows with 2b) in foldable families. How it works: `docs/visuals/README.md`, "The rung map is
+generated". Held by `rust/tests/rung_map.rs` and the splice gate in `rust/tests/visuals.rs`, which now fails on every
+new rung until the page is re-spliced. Left open: rungs 1–24 show `CLAUDE.md`'s terse hooks, because no note has a
+one-sentence line for them; writing those sentences would upgrade those rows with no code change.
 
 **Why.** Weakness 5. `docs/visuals/turbojet-visuals.html` calls itself a map of 29 rungs.
 

@@ -4,14 +4,39 @@ A single self-contained HTML page that makes the model visible: an animated
 engine cutaway (flow particles colored by local total temperature), the
 ideal-vs-real T–s diagram, the NOx bell + finite-quench story (rungs 7–10, 19),
 the mixing-optimum J-sweeps (rungs 11–13), the rung-22 J→C collapse animation,
-the rung-23 ξ–τ correlation, the rung-17/20 exhaust-NO clamp ladder, and the
-click-to-expand 29-rung map.
+the rung-23 ξ–τ correlation, the rung-17/20 exhaust-NO clamp ladder, and a
+click-to-expand map of **every** rung, grouped by family.
 
-The computed panels cover rungs 1–23. Rungs 24–29 (the locally-resolved mixing
-time, the finite-rate / freeze-out / NO-freeze-out / coupled-march nozzle
-chain, and the shifting turbine) appear in the rung map only — they are not
-plotted here. Their numbers
-live in the CLI's per-rung panels (`cargo run --release`) and in `rust/tests/`.
+The computed panels cover rungs 1–23. Every later rung appears in the rung map
+only — it is not plotted here. Their numbers live in the CLI's per-rung panels
+(`cargo run --release`), in `rust/tests/`, and (for rungs 25 on) on the
+sandbox page `docs/sandbox/`.
+
+## The rung map is generated (roadmap A5, 2026-11-15)
+
+Until 2026-11-15 the map was a hand-kept array of the first 29 rungs, 79 rungs
+behind the model. It is now written at splice time by `rust/src/rung_map.rs`
+into the template's second placeholder, `/*__RUNG_MAP__*/`, from:
+
+- **`CLAUDE.md`'s rung table** — which rungs exist, their order (sorted by
+  number: the table lists 73 before 72, and 2b sorts after 2), each one's spec,
+  and a fallback title and text (the row's hook, split at its first ` — `);
+- **its families line** — the foldable groups; **its "Read-only diagnostics"
+  line** — the "read-only check" label (1–6 are "cycle", the rest "engine
+  behaviour"); **its "current scope" sentence** — the count in the heading;
+- **the plain-language notes** — a rung whose note has a
+  `## Rung N — title` section with an `**In one sentence:**` line shows that title
+  and sentence instead of the table's hook (rungs 25–108 all do; 69–84 use the
+  `- **Rung N.**` bullets of their one-page note, or the shared `**Rungs A–B**`
+  bullet, label kept). Rungs 1–24 show the table's hook and point at `NOTES.md`
+  where it has a section (not for 17, 20, 21, 23, 24).
+
+So **a new rung, an edited rung row, or an edited note changes the page**, and
+`visuals_html_is_the_current_splice` fails until it is re-spliced
+(`cargo run --release -- splice`) — then republish. `rust/tests/rung_map.rs`
+holds the generator to facts it does not compute (a plain count of table rows,
+CLAUDE.md's second scope sentence, hand-checked spot pins) and the template to
+typing no rung at all.
 
 **Every curve is computed by the model in this repository** — nothing is
 sketched. Open `turbojet-visuals.html` in a browser (it is fully offline,
@@ -77,16 +102,12 @@ splice matches perfectly while the sentence is wrong.
 
 Deliberately *not* bound: the sweep curves' numbers (illustration grids, below);
 the cutaway's geometry, blade counts and primary-zone temperature (drawn — the
-page's own footer says which is which); and the rung map's coverage — the ladder
-is at **rung 84** while the computed panels cover **1–23** and the map lists
-**29**. That last one is a scope statement, not a defect, and nothing gates it: a
-gate on it would fire on every new rung.
+page's own footer says which is which). The rung map's COVERAGE is now bound
+(above): it is generated, and the splice gate fires on every new rung by design.
 
-Also not bound, and worth knowing: the rung-map bodies quote findings in prose
-(`C_opt~2.5`, `a~250`, `dT5/T5 = 0.011%`). Those come from the specs, not from
-`data.json`, so no test can reach them - they are the same class as the typed
-design point, minus a data source to render from. Check them against
-`docs/rungN-spec.md` by hand when a rung's numbers move.
+What the rung map's words say is the source's: the notes' sentences are held to
+their specs by `docs/notes/check-numbers.ps1`; the table hooks shown for rungs
+1–24 are `CLAUDE.md`'s own rows.
 
 ## Honesty note
 

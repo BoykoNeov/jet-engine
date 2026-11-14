@@ -698,13 +698,21 @@ pub fn cutaway_payload(data: &Json) -> Json {
     jobj! { "design" => data.at("design").clone(), "ideal" => trim("ideal"), "real" => trim("real") }
 }
 
-/// `build.py`: the template with its ONE placeholder replaced by `data.json`'s text. The template
-/// is read as Python's `read_text` reads it (universal newlines), so a CRLF working copy splices
-/// to the same LF page.
-pub fn splice_visuals(template: &str, data_json: &str) -> String {
+/// The second placeholder `template.html` carries: the rung map ([`crate::rung_map::build`]),
+/// generated from `CLAUDE.md`'s rung table and the plain-language notes (roadmap A5).
+pub const RUNG_MAP_PLACEHOLDER: &str = "/*__RUNG_MAP__*/";
+
+/// `build.py`: the template with its data placeholder replaced by `data.json`'s text, and (since
+/// roadmap A5) its rung-map placeholder by the compact rung map. The template is read as Python's
+/// `read_text` reads it (universal newlines), so a CRLF working copy splices to the same LF page.
+/// The rung map carries HTML (`</b>`), so every `</` in it is written `<\/` (the same string to a
+/// JSON parser) and no `</script>` can ever close the page's script early.
+pub fn splice_visuals(template: &str, data_json: &str, rung_map: &Json) -> String {
     let tpl = template.replace("\r\n", "\n");
     assert!(tpl.matches(VISUALS_PLACEHOLDER).count() == 1, "template placeholder missing/duplicated");
-    tpl.replacen(VISUALS_PLACEHOLDER, data_json, 1)
+    assert!(tpl.matches(RUNG_MAP_PLACEHOLDER).count() == 1, "template rung-map placeholder missing/duplicated");
+    let map = rung_map.dump_compact().replace("</", "<\\/");
+    tpl.replacen(RUNG_MAP_PLACEHOLDER, &map, 1).replacen(VISUALS_PLACEHOLDER, data_json, 1)
 }
 
 /// `build_cutaway.py`: the cutaway template with its placeholder replaced by the compact payload.

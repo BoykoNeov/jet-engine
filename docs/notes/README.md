@@ -35,3 +35,9 @@ mentioned in passing); those exist only as specs and as their rows in `CLAUDE.md
 
 Before committing a note, run `powershell -NoProfile -File docs\notes\check-numbers.ps1` (expect "misses: 0"):
 it checks every number in each rung section against that rung's own spec, or a spec the section names.
+
+**These notes also feed the charts page.** Each `## Rung N — title` heading and its `**In one sentence:**` line
+(and rungs 69–84's `- **Rung N.**` bullets) are the title and text of that rung in the rung map of
+`docs/visuals/turbojet-visuals.html` (roadmap A5, `rust/src/rung_map.rs`). After editing one, re-splice the page
+(`cargo run --release --manifest-path rust/Cargo.toml -- splice`) and republish it; `rust/tests/visuals.rs` fails
+until you do. Keep that heading and line shape when writing a new rung's note.

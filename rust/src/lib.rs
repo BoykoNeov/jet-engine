@@ -205,4 +205,5 @@ pub mod turbine_law;
 pub mod two_spool;
 pub mod two_spool_transient;
 pub mod valve_reference;
+pub mod rung_map;
 pub mod visuals;

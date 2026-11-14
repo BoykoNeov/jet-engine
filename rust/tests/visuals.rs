@@ -215,11 +215,14 @@ fn cutaway_html_is_the_current_splice() {
 
 #[test]
 fn visuals_html_is_the_current_splice() {
-    let expected = visuals::splice_visuals(&text("template.html"), &data_text());
+    let map = turbojet::rung_map::read_repo(&vis_dir().join("..").join(".."));
+    let expected = visuals::splice_visuals(&text("template.html"), &data_text(), &map);
     assert!(expected == text("turbojet-visuals.html"),
-            "docs/visuals/turbojet-visuals.html is not the splice of its template and data.json — \
-             hand-edited, built without `cargo run --release -- splice`, or data.json was REFORMATTED \
-             (the page splices it verbatim). Rebuild, then republish the artifact (memory/visuals-artifact.md).");
+            "docs/visuals/turbojet-visuals.html is not the splice of its template, data.json and the rung map — \
+             most often a NEW RUNG or an edited rung row in CLAUDE.md, or an edited docs/notes/*.md or NOTES.md \
+             (the page's rung map is generated from them, roadmap A5); else hand-edited, or data.json was \
+             REFORMATTED. Fix: `cargo run --release --manifest-path rust/Cargo.toml -- splice`, commit the page, \
+             then republish the artifact (memory/visuals-artifact.md).");
 }
 
 // ---------------------------------------------------------------- 2. the design point is ONE

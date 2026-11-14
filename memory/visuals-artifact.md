@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: reference
   originSessionId: edd8c029-bea9-4b2c-99e0-c4ce222591f5
-  modified: 2026-10-06T02:20:20.633Z
+  modified: 2026-11-14T22:45:56.014Z
 ---
 
 The project's interactive visuals page (T–s diagram, NOx bell/quench, mixing-optimum
@@ -22,6 +22,9 @@ which was found GONE on 2026-09-07 (not in the user's own list; the cutaway was,
 an auth problem). The rule then was "do not mint a replacement without asking"; on
 2026-10-06 the user said "Publish a replacement link", and this URL is that replacement.
 Neither page links to the other, so no cross-link needed updating.
+
+**Since 2026-11-15 (roadmap A5) the rung map is generated** from CLAUDE.md + the notes ([[rung-map-a5]]),
+so a new rung or a notes edit means `-- splice` AND a republish here, not only a cycle change.
 
 **Before a republish, read the page for stale prose.** On 2026-10-06 the page still
 said "28 cumulative rungs" / "29 rungs" and its footer named the deleted

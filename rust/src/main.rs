@@ -50,7 +50,9 @@ fn write(p: &Path, text: &str) {
 fn splice_pages(data_text: &str, out: &Path) {
     let src = visuals_dir();
     let data = visuals::Json::parse(data_text);
-    let page = visuals::splice_visuals(&read(&src.join("template.html")), data_text);
+    // The rung map is read from the repository root (CLAUDE.md's rung table + the notes).
+    let map = turbojet::rung_map::read_repo(&src.join("..").join(".."));
+    let page = visuals::splice_visuals(&read(&src.join("template.html")), data_text, &map);
     write(&out.join("turbojet-visuals.html"), &page);
     println!("built turbojet-visuals.html ({} bytes)", page.len());
     let cut = visuals::splice_cutaway(&read(&src.join("cutaway-template.html")), &data);
