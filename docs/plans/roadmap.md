@@ -212,7 +212,7 @@ sentence uses a name from the code as if it were a word.
 
 **Progress.** Started 2026-11-12: `docs/notes/README.md` is the index (which families are written).
 Written: 31–33, 34–37, 46–52, 90–94, 95–101, 102, 103–105, 106–108 (every family a sandbox user meets), 38–45,
-25–30, 53–63 (2026-11-14). Next: 64–68, then 85–89 (they lean on 53–68's ideas), and 69–84 last. Practice that worked:
+25–30, 53–68 (2026-11-14). Next: 85–89 (they lean on 53–68's ideas), and 69–84 last. Practice that worked:
 - Before writing a family, read the WHOLE rung table in `CLAUDE.md` for every row that CORRECTS, REFUTES, BOUNDS,
   INVERTS, EXTENDS, EXPLAINS or DISCHARGES a rung in it, and check each in the later spec's "What it does to its
   neighbours" section. (The first pass grepped only the rungs it expected and missed eleven links.) The families

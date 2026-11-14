@@ -17,7 +17,7 @@ note is a bug.
 | 46–52 fuel limiters | [46-52-fuel-limiters.md](46-52-fuel-limiters.md) | written 2026-11-12 |
 | 53–56 and 61 airflow levers | [53-56-61-airflow-levers.md](53-56-61-airflow-levers.md) | written 2026-11-14 |
 | 57–63 schedules (61 is in the airflow-levers file) | [57-63-schedules.md](57-63-schedules.md) | written 2026-11-14 |
-| 64–68 valve and cascades | — | to write |
+| 64–68 valve and cascades | [64-68-valve-and-cascades.md](64-68-valve-and-cascades.md) | written 2026-11-14 |
 | 69–84 control-loop structure | — | to write, last, one short page |
 | 85 blade speeds | — | to write |
 | 86–89 levers together | — | to write |
