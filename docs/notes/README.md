@@ -19,8 +19,8 @@ note is a bug.
 | 57–63 schedules (61 is in the airflow-levers file) | [57-63-schedules.md](57-63-schedules.md) | written 2026-11-14 |
 | 64–68 valve and cascades | [64-68-valve-and-cascades.md](64-68-valve-and-cascades.md) | written 2026-11-14 |
 | 69–84 control-loop structure | — | to write, last, one short page |
-| 85 blade speeds | — | to write |
-| 86–89 levers together | — | to write |
+| 85 blade speeds | [85-blade-speeds.md](85-blade-speeds.md) | written 2026-11-14 |
+| 86–89 levers together | [86-89-levers-together.md](86-89-levers-together.md) | written 2026-11-14 |
 | 90–94 loads | [90-94-loads.md](90-94-loads.md) | written 2026-11-12 |
 | 95–101 governors and inferred thrust | [95-101-governors-and-inferred-thrust.md](95-101-governors-and-inferred-thrust.md) | written 2026-11-12 |
 | 102 afterburner | [102-afterburner.md](102-afterburner.md) | written 2026-11-12 |
