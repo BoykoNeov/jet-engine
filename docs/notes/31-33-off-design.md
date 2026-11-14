@@ -20,7 +20,8 @@ This is the point where the model stops being a calculation you steer and become
 longer a choice — every throttle setting has exactly one place where the engine can run, and those places form
 a single line, the **running line**.
 
-**How it works.** The key idea is a **choked** passage. When gas is pushed through a narrowing passage hard
+**How it works.** The key idea is a **choked** passage (rung 30 added the choke to the nozzle; see
+`25-30-nozzle-and-turbine.md`). When gas is pushed through a narrowing passage hard
 enough, it reaches the speed of sound at the narrowest point, the *throat*. After that, the flow through the
 throat cannot be increased by lowering the pressure behind it; it depends only on the pressure and temperature
 of the gas arriving. A jet engine has two such throats in a row: the ring of vanes at the turbine's entrance,

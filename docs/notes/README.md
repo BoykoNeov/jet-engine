@@ -10,7 +10,7 @@ note is a bug.
 
 | Rungs | File | Status |
 |---|---|---|
-| 25–30 nozzle and turbine marches | — | to write |
+| 25–30 nozzle and turbine: which shortcuts were earned | [25-30-nozzle-and-turbine.md](25-30-nozzle-and-turbine.md) | written 2026-11-14 |
 | 31–33 running the engine you built | [31-33-off-design.md](31-33-off-design.md) | written 2026-11-12 |
 | 34–37 one shaft in time | [34-37-one-shaft-in-time.md](34-37-one-shaft-in-time.md) | written 2026-11-12 |
 | 38–45 two shafts | [38-45-two-shafts.md](38-45-two-shafts.md) | written 2026-11-12 |
