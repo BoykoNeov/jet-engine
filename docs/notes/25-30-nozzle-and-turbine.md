@@ -184,7 +184,7 @@ the turbine exit if the chemistry kept up:
 The threshold chosen for "earned" is 0.1 %, one order below how well the model knows its component losses. At 1500 K
 the freeze is earned outright; somewhere between 1800 and 2100 K it stops being earned. Later checks held this over
 compressor pressure ratios from 2 to 80 (with a 9.4× margin) and flight speeds from Mach 0.3 to 3.0 (8.8×, the
-worst case at take-off speed), and the boundary never fell below 1846 K.
+worst case at take-off speed); across the pressure ratios the boundary never fell below 1846 K.
 
 **The finding: the ratio is the wrong yardstick.** At 1500 K the split-apart pieces are 109.4 times above their
 equilibrium amount; at 2400 K only 3.3 times. Read that ratio and you would expect the shift to be biggest at

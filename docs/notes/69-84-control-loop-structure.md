@@ -50,10 +50,11 @@ These rungs read the model's results rather than adding physics.
   reach the engine, because whenever that limiter is in charge the original reading is what it uses (79).
 - **Rung 80.** A run that cannot start accelerating (rung 74's "arrest") comes from two limits being set at the
   *same* level. Give the airflow levers their own limit and it goes away.
-- **Rung 81.** A limiter that is never in charge has no effect on the run at all, to the last digit, yet still
-  decides *where* the one in charge holds.
-- **Rungs 82–84.** How to find the setting at which one limiter takes over from another. A test read forward along
-  the run reports where the reader started (82). A search that brackets a change of sign finds a jump, not a true
+- **Rung 81.** Which of two fuel limiters is in charge is decided by their delays, not only by their set points:
+  slow the fuel limiter enough and it takes over. And a limiter that is overruled for the whole slam can have its
+  own delay changed tenfold without moving the run by a single digit.
+- **Rungs 82–84.** How to find the setting at which one limiter takes over from another. A forecast read forward
+  from a starting guess errs toward the side that guess was on; only the self-consistent answer lands (82). A search that brackets a change of sign finds a jump, not a true
   crossing, and on one of five slams there is no crossing at all (83). The reason is the simulation's own time step:
   the lowest point of a stepped run moves in small jumps as the setting changes, a sawtooth riding on the true
   curve (84).

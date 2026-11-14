@@ -35,7 +35,9 @@ moves the LP compressor toward stall. Below it the missing air helps.
 **On a slam.** The LP compressor comes closest to stall on the high-power side of that crossing. So with 5 % of
 the HP compressor's air going to the aircraft, the protection valve has to bleed more to hold the same margin
 (**17 to 760 %** more over the spec's cases). A fixed *amount* of air (what a cabin actually asks for) costs it
-more again, because at the low-power start of a slam the same amount is a bigger share of a smaller flow.
+more again, because at the low-power start of a slam the same amount is a bigger share of a smaller flow. The load
+also lowers the most the valve can protect at all, rung 64's ceiling, in every case tried
+(`64-68-valve-and-cascades.md`).
 
 **Later correction.** Rung 92 corrected the *reason* for the HP compressor's relief. Rung 90 had credited the
 HP turbine having less gas to drive its compressor with. In fact the lost work pushes the HP compressor *toward*

@@ -99,7 +99,10 @@ run. Its "the stators do not move the schedule" is a low-pressure-stator stateme
 **Later.** Rung 63 found the table's protection holds only for levers that keep every kilogram of air in the
 engine; a bleed valve moves both the values and the index.
 
-**On the page.** Not on its own; the *Acceleration schedule* on *Controls* is always derived for the engine you run.
+**Later.** Rung 105 found the turbine's entrance vanes are not actually choked at a normal stage reaction (it ships
+as a knob, off by default). That choke is one of this rung's two premises, and rung 105 did not re-check this rung.
+
+**On the page.** Not shown on its own.
 
 ---
 
@@ -183,5 +186,7 @@ in, and rung 58's one-way arrow to the same class. It extends rung 60 with the s
 switches the floor off.
 
 **Later.** Rung 86 put all three, fuel, bleed and stators, on one engine; that closes this rung's open question.
+Rung 105 found the turbine's entrance vanes are not actually choked at a normal stage reaction, which is the premise
+of the table's first guard; it did not re-check this rung.
 
 **On the page.** *Controls*: the bleed valve beside *Acceleration schedule* or *Stall floor*.

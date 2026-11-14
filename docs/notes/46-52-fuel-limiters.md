@@ -30,7 +30,11 @@ compressor whose worst moment comes *after* the limiter starts cutting fuel.
 - **Rung 57** bounded the timing law. It holds for levers that move the engine's running point, like fuel. A lever
   that moves the stall line instead has no such clock: its effect is the same whenever it acts.
 - **Rung 64** bounded the protection. The most any limiter can protect is set by how much its lever can do at full
-  stretch. The limiter's rule decides only what that protection costs.
+  stretch. The limiter's rule decides only what that protection costs. It also bounded the *where*: a limiter that
+  holds its reading exactly at its floor holds it over a stretch of the slam, so "when was the margin lowest" has
+  no single answer there. This family's findings stand, because its limiters were not holding where they read.
+
+Those three rungs are told in `53-56-61-airflow-levers.md`, `57-63-schedules.md` and `64-68-valve-and-cascades.md`.
 
 ---
 
@@ -223,7 +227,8 @@ cruise, slammed from 1000 K to 1400 K).
 - **Slower letting go means less harm**, in the end even a small help (+0.001031 with both speeds at 0.40 τ,
   the 2.0 τ move): rung 51's finding, now on a limiter that could be built.
 
-**Later.** Rung 107 bounded the last point: beside the thrust governor (rung 95) the letting-go harms neither
+**Later.** Rung 89 confirmed the fast-cut, slow-release finding on the bleed valve (`86-89-levers-together.md`).
+Rung 107 bounded the last point: beside the thrust governor (rung 95) the letting-go harms neither
 compressor, so the release-speed finding is about a plain throttle slam. Rung 108 fitted the same cut-fast,
 give-back-slowly behaviour to the temperature limiter.
 

@@ -100,7 +100,8 @@ compressor as one block but not row by row.
 ## Rung 55 — Split the compressor into stages: move only the front row
 
 **In one sentence:** treat the compressor as a stack of stages and move only the front row of vanes, as real
-engines do, and holding the design angle costs about one twenty-ninth of the shaft speed; but the more rows you
+engines do, and holding the design angle costs about one twenty-ninth of the extra shaft speed the whole-block
+lever needs; but the more rows you
 move, the more you push the problem onto the rows you did not move.
 
 **How it works.** The compressor becomes several stages in a row, each doing its share of the work. As the
