@@ -183,7 +183,11 @@ Plus the gate, which proves rung 41 did not move.
 
 **Stop and ask the user if** making *Fly it* work needs any change to a function rung 41 calls.
 
-### A4. Plain-language notes for rungs 25–108
+### A4. Plain-language notes for rungs 25–108 — DONE 2026-11-14
+
+Every family is in `docs/notes/` (index: `docs/notes/README.md`), each held by `docs/notes/check-numbers.ps1`
+(misses: 0). Left outside this task's scope and recorded in that index: `NOTES.md` has no section of its own for
+rungs 17, 20, 21, 23 and 24.
 
 **Why.** See weakness 4. This is writing, not code, and it is the project's stated product.
 
@@ -212,7 +216,7 @@ sentence uses a name from the code as if it were a word.
 
 **Progress.** Started 2026-11-12: `docs/notes/README.md` is the index (which families are written).
 Written: 31–33, 34–37, 46–52, 90–94, 95–101, 102, 103–105, 106–108 (every family a sandbox user meets), 38–45,
-25–30, 53–68, 85–89 (2026-11-14). Next: 69–84, last. Practice that worked:
+25–30, 53–68, 85–89, 69–84 (2026-11-14). Practice that worked:
 - Before writing a family, read the WHOLE rung table in `CLAUDE.md` for every row that CORRECTS, REFUTES, BOUNDS,
   INVERTS, EXTENDS, EXPLAINS or DISCHARGES a rung in it, and check each in the later spec's "What it does to its
   neighbours" section. (The first pass grepped only the rungs it expected and missed eleven links.) The families

@@ -18,7 +18,7 @@ note is a bug.
 | 53–56 and 61 airflow levers | [53-56-61-airflow-levers.md](53-56-61-airflow-levers.md) | written 2026-11-14 |
 | 57–63 schedules (61 is in the airflow-levers file) | [57-63-schedules.md](57-63-schedules.md) | written 2026-11-14 |
 | 64–68 valve and cascades | [64-68-valve-and-cascades.md](64-68-valve-and-cascades.md) | written 2026-11-14 |
-| 69–84 control-loop structure | — | to write, last, one short page |
+| 69–84 control-loop structure | [69-84-control-loop-structure.md](69-84-control-loop-structure.md) | written 2026-11-14, one short page |
 | 85 blade speeds | [85-blade-speeds.md](85-blade-speeds.md) | written 2026-11-14 |
 | 86–89 levers together | [86-89-levers-together.md](86-89-levers-together.md) | written 2026-11-14 |
 | 90–94 loads | [90-94-loads.md](90-94-loads.md) | written 2026-11-12 |
@@ -27,7 +27,11 @@ note is a bug.
 | 103–105 below choke | [103-105-below-choke.md](103-105-below-choke.md) | written 2026-11-12 |
 | 106–108 governor beside the limiters | [106-108-governor-beside-limiters.md](106-108-governor-beside-limiters.md) | written 2026-11-12 |
 
-Order (roadmap A4): the families a sandbox user meets first — 31–37, 46–52, 90–108 — then the rest.
+Every family from 25 to 108 is written (roadmap A4, done 2026-11-14). A later rung that corrects one of these notes
+should add a "Later" line to it.
+
+**Gap, outside A4's scope:** `NOTES.md` has no section of its own for rungs 17, 20, 21, 23 and 24 (rung 17 is only
+mentioned in passing); those exist only as specs and as their rows in `CLAUDE.md`'s rung table.
 
 Before committing a note, run `powershell -NoProfile -File docs\notes\check-numbers.ps1` (expect "misses: 0"):
 it checks every number in each rung section against that rung's own spec, or a spec the section names.

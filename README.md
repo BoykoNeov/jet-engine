@@ -35,7 +35,8 @@ Two older pages sit beside it in `docs/visuals/`: an animated engine cutaway and
 
 | If you want… | Open |
 |---|---|
-| The physics in plain language, station by station | [`NOTES.md`](NOTES.md) |
+| The physics in plain language, station by station (rungs 1–22) | [`NOTES.md`](NOTES.md) |
+| Rungs 25–108 in plain language, one file per family | [`docs/notes/`](docs/notes/README.md) |
 | The formal equations of the base cycle | [`SPEC.md`](SPEC.md) |
 | One line on what every rung adds, and the map of the code | [`CLAUDE.md`](CLAUDE.md) |
 | A rung's full derivation, assumptions and checks | `docs/rungN-spec.md` |
