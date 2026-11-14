@@ -40,7 +40,7 @@ new slices and step links go THERE, not here.
 - [Roadmap + standing engine](roadmap-and-standing-engine.md) — 2026-11-12: `docs/plans/roadmap.md` is the entry point (A1–A8 ready, B1–B5 the user's choice — ask); a refusal can be another rung's control flow, so add a twin
 - [Try-this menu (A1)](try-this-menu-a1.md) — 2026-11-12 SHIPPED: a chained page action must await each run landing (settled()); measure an entry's run against its pin before writing its text
 - [Standing engine (A3)](standing-engine-a3.md) — 2026-11-12 SHIPPED: a census must set the knob where the request reads it (the slam nests its flight); a limit pair off a grid validates nothing
-- [Plain notes (A4)](plain-notes-a4.md) — 2026-11-12, 10 families in docs/notes/: my first number check could not fail (substring over all specs); read the WHOLE rung table for later corrections
+- [Plain notes (A4)](plain-notes-a4.md) — DONE 2026-11-14, all of 25–108: read headlines, don't scrape them (81/82 went wrong); add forward pointers to notes already written
 - [Sandbox Mach](sandbox-mach.md) — "refused at every throttle" written from ONE throttle tried there; an archived probe source was a copy of another (equal output sizes)
 - [Schedule-check census](schedule-check-census.md) — census a fix's reach by RUNNING, not by the seam's stated scope (it said 63; it was 49–73)
 - [Schedule-check flip](schedule-check-flip.md) — a total over a run compares only at equal run length (rung 65 § 3 did not)
