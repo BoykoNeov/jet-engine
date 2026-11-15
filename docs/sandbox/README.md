@@ -54,7 +54,7 @@ heating value, `V0` the flight speed, `F_s` the specific thrust:
 
 The reply carries `V_eq`, `eta_thermal_eq` and `eta_propulsive_eq` (Design and Fly it, which share the reply);
 a value that is not a finite number goes out as null and shows "–", so the new rows can never stop a design that runs.
-Held by `rust/tests/sandbox.rs` (`the_equivalent_jet_split_*`).
+Held by `rust/tests/sandbox.rs` (`the_equivalent_jet_split_*` and `fly_it_carries_the_equivalent_jet_split`).
 
 ## Slice 3 — fly the engine you designed (shipped 2026-10-07)
 

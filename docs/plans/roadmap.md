@@ -56,7 +56,7 @@ Rules that apply to every task here (they are the project's own, from `CLAUDE.md
 6. **The efficiency split misleads with a convergent nozzle.** Switch the Design view to the fixed
    convergent nozzle and "thermal efficiency" reads 15 % and "propulsive" 115 %. The page explains why
    (the split counts jet speed only and misses the pressure push), but a learner should not have to be
-   told to distrust two of the six headline numbers: task A6.
+   told to distrust two of the six headline numbers: task A6. *Fixed 2026-11-15:* task A6.
 7. **Time has no seconds.** Every transient is in units of "the shaft's own response time", because
    the model has no rotor weight. That is honest, but "0.14 τ" means little to a newcomer: task B2.
 8. **Rungs 64–84 drifted away from engines.** They are a careful study of how control loops combine,
