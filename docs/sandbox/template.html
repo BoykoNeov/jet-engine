@@ -1299,12 +1299,16 @@ footer p { max-width: 90ch; }
   limits, on this engine run hotter or on an engine redesigned at that temperature. The knob form takes your cooling and
   finds the hottest burner temperature the metal allows on this engine. The correlation is a fit to engines of its time:
   read the trends and the comparisons, not the last kelvin.</p>
-  <p><b>Efficiencies.</b> Overall efficiency is thrust power per fuel power. The model splits it into a thermal and a
-  propulsive part using the jet's speed alone. When the jet leaves the nozzle above the outside pressure (a fixed
-  convergent nozzle, especially high up), part of the thrust is that pressure push, which the speed-based split
-  does not count, so the propulsive part can read above 100 %. It can also near zero thrust (around idle): the jet
-  then barely outruns the flight, and the fuel's own mass, which the model counts as accelerated, dominates both
-  the thrust and the energy gain. The overall figure is unaffected. Standing still (Mach 0, how engines are rated on
+  <p><b>Efficiencies.</b> Overall efficiency is thrust power per fuel power, split into a thermal part (how much of
+  the fuel's energy becomes jet energy) and a propulsive part (how much of that jet energy becomes thrust power). The
+  model's own split uses the jet's speed alone. When the jet leaves the nozzle above the outside pressure (a fixed
+  convergent nozzle, especially high up), part of the thrust is that pressure push, which a speed-only split does not
+  count: its thermal part reads low and its propulsive part can pass 100 %. So the page leads with a split on the
+  <i>equivalent jet speed</i> — the speed a fully expanded jet would need to give the same thrust — which counts the
+  push at what it buys. With a fully expanded nozzle the two splits are the same; the speed-only rows stay below for
+  comparison. Both can still pass 100 % near zero thrust (around idle): the jet then barely outruns the flight, and
+  the fuel's own mass, which the model counts as accelerated, dominates both the thrust and the energy gain. The
+  overall figure is the same in both splits. Standing still (Mach 0, how engines are rated on
   a test stand) the thrust moves nothing, so propulsive and overall efficiency read exactly 0: judge a standing engine by
   its thrust and its fuel per thrust. Every view that flies the engine runs it standing still too.</p>
   <p>Numbers computed here agree with the command-line model to the last few digits. The browser uses a
@@ -1530,7 +1534,7 @@ const EXPERIMENTS = /* JSON */ [
   {"view": "design", "title": "The test stand: sea level, standing still", "patch": {"M0": 0, "T0": 288.15, "p0": 101325},
    "text": "Sea level, not moving: the point every engine is rated at. Thrust rises in the thick, cold air. The overall and propulsive efficiencies read exactly 0: the engine pushes hard and moves nothing, so it does no useful work. A standing engine is judged by thrust and fuel per thrust alone."},
   {"view": "design", "title": "A nozzle that cannot finish the job", "patch": {"nozzle": "convergent"},
-   "text": "A fixed convergent nozzle: the gas leaves at the speed of sound, still above the outside pressure, and the rest of its expansion happens behind the engine, where it pushes on nothing. Thrust falls. Note the thermal and propulsive efficiencies now read oddly (propulsive above 100 %): that split counts only the jet's speed and misses the pressure push. Trust the overall efficiency."},
+   "text": "A fixed convergent nozzle: the gas leaves at the speed of sound, still above the outside pressure, and the rest of its expansion happens behind the engine, where it pushes on nothing. Thrust falls. Compare the two efficiency splits: the jet-speed-only rows now read oddly (propulsive above 100 %) because they miss the pressure push, while the rows on the equivalent jet speed count it and stay close to the fully expanded engine's."},
   {"view": "design", "title": "Light the afterburner", "patch": {"afterburner": 1},
    "text": "A second burner behind the turbine. Thrust rises a lot, and fuel per thrust rises even more: fuel burned at low pressure, after the turbine has taken its work, is a poor way to use fuel, and a very good way to get thrust from a small engine for a short time."},
   {"view": "fly", "title": "Throttle back to 900 K", "patch": {"Tt4": 900},
@@ -3259,21 +3263,26 @@ function drawLever() {
 
 // ---------------------------------------------------------------- rendering
 function delta(now, then, betterUp) {
-  if (then === undefined || then === null || !isFinite(then)) return ["", ""];
+  if (then === undefined || then === null || !isFinite(then) || !isFinite(now)) return ["", ""];
   const d = now - then, rel = then !== 0 ? d / Math.abs(then) : 0;
   if (Math.abs(rel) < 5e-7) return ["no change", ""];
   const cls = betterUp === undefined ? "" : ((d > 0) === betterUp ? "up" : "down");
   return [(d > 0 ? "+" : "−") + fmt(Math.abs(d), 3) + "  (" + (rel > 0 ? "+" : "−") + Math.abs(rel * 100).toFixed(2) + " %)", cls];
 }
 
+// The equivalent-jet split (roadmap A6) goes out as null where it is not a finite number: show "–", not 0.
+const eqv = x => (typeof x === "number" ? x : NaN);
 const PERF = [
   ["Thrust", r => r.thrust / 1e3, "kN", true],
   ["Specific thrust (per kg/s of air)", r => r.specific_thrust, "N·s/kg", true],
   ["Fuel flow", r => r.fuel_flow, "kg/s", false],
   ["Fuel per thrust (TSFC)", r => r.tsfc * 1e6, "g/(kN·s)", false],
   ["Overall efficiency (thrust power per fuel power)", r => r.eta_overall * 100, "%", true],
-  ["Thermal efficiency (jet speed energy per fuel energy)", r => r.eta_thermal * 100, "%", true],
-  ["Propulsive efficiency (from jet speed alone: can pass 100 % when the jet leaves above the outside pressure, or near zero thrust)", r => r.eta_propulsive * 100, "%", true],
+  ["Thermal efficiency (jet energy per fuel energy, the pressure push counted)", r => eqv(r.eta_thermal_eq) * 100, "%", true],
+  ["Propulsive efficiency (thrust power per jet energy, the pressure push counted; can pass 100 % near zero thrust)", r => eqv(r.eta_propulsive_eq) * 100, "%", true],
+  ["Equivalent jet speed (a fully expanded jet giving the same thrust)", r => eqv(r.V_eq), "m/s"],
+  ["Thermal efficiency, jet speed only (misses the pressure push)", r => r.eta_thermal * 100, "%", true],
+  ["Propulsive efficiency, jet speed only (passes 100 % when the jet leaves above the outside pressure)", r => r.eta_propulsive * 100, "%", true],
   ["Brayton ideal 1 − Tt2/Tt3", r => r.eta_brayton * 100, "%", true],
   ["Flight speed", r => r.V0, "m/s"],
   ["Jet speed", r => r.V9, "m/s"],

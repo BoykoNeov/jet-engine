@@ -248,7 +248,15 @@ one-sentence line for them; writing those sentences would upgrade those rows wit
 
 The cutaway (`turbojet-cutaway.html`) is fine as it is.
 
-### A6. An efficiency split that survives a convergent nozzle
+### A6. An efficiency split that survives a convergent nozzle — DONE 2026-11-15
+
+Shipped as written, with three corrections to the plan below. (1) "Between 0 and 100 %" holds only where
+`(1+f)·(V_eq − V0)² ≥ f·V0²`: the new split removes the pressure push's excess, not the fuel-mass one near zero thrust
+(3 of 507 grid cases). (2) Propulsive is computed on its own, not as overall ÷ thermal, so the product test can fail.
+(3) `f` is the jet's (all the fuel, with an afterburner). The new values go out as null, never as a refusal, where not
+finite. Derivation: `docs/sandbox/README.md`, slice 1; tests `rust/tests/sandbox.rs` (`the_equivalent_jet_split_*`,
+`fly_it_carries_the_equivalent_jet_split`). The opening design with the convergent nozzle: thermal 40.02 %, propulsive
+43.21 % (speed only: 15.07 % and 114.73 %).
 
 **Why.** Weakness 6.
 

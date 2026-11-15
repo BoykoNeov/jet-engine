@@ -30,6 +30,32 @@ cases are caught before the solve (`sandbox::precheck`); the rest are the model'
 translated by `sandbox::explain` — whose seven entries are the seven messages a 13 000-design sweep
 actually produced, each driven by a test.
 
+**An efficiency split that counts the pressure push** (roadmap A6, 2026-11-15). The model splits overall
+efficiency into thermal × propulsive using the jet's *speed* alone. A jet that leaves the nozzle above the outside
+pressure (the fixed convergent nozzle, or a set exit pressure) also pushes with its pressure, which that split leaves
+out, so with the convergent nozzle "thermal" reads low and "propulsive" above 100 %. The page adds a second split,
+computed in `sandbox::equivalent_jet` (on the page only; the model's own scoring is recorded bit for bit and stays).
+Derived before coding — per kg of air, `f` the jet's fuel-air ratio (all the fuel, with an afterburner), `h` the fuel's
+heating value, `V0` the flight speed, `F_s` the specific thrust:
+
+1. **The equivalent jet speed** — the speed a fully expanded jet of the same mass would need for the same thrust:
+   `(1+f)·V_eq − V0 = F_s`, so `V_eq = (F_s + V0)/(1+f)`. It is above the real jet speed when the jet leaves above
+   the outside pressure, below it when the jet leaves below it, and equal to it when fully expanded.
+2. **Thermal efficiency** — the jet's kinetic-energy gain at that speed, per unit of fuel energy:
+   `η_th = ((1+f)·V_eq² − V0²) / (2·f·h)`. It counts the pressure push at what it actually buys in thrust.
+3. **Propulsive efficiency** — thrust power per that energy gain, computed on its own (not as a quotient, so the
+   product check below can fail): `η_p = 2·F_s·V0 / ((1+f)·V_eq² − V0²)`.
+4. **The product** is `F_s·V0/(f·h)`, the overall efficiency, whatever `V_eq` is — so the overall figure does not
+   move, only how it is shared out.
+5. **Where it stays at or below 100 %.** Denominator minus numerator in 3 is `(1+f)·(V_eq − V0)² − f·V0²`, so
+   `η_p ≤ 1` exactly when `(1+f)·(V_eq − V0)² ≥ f·V0²`. The pressure push no longer lifts it past 100 %; near zero
+   thrust (`V_eq` close to `V0`) the fuel's own mass still can, as it can in the speed-only split. Standing still,
+   `V0 = 0` gives `η_p = 0`, as before.
+
+The reply carries `V_eq`, `eta_thermal_eq` and `eta_propulsive_eq` (Design and Fly it, which share the reply);
+a value that is not a finite number goes out as null and shows "–", so the new rows can never stop a design that runs.
+Held by `rust/tests/sandbox.rs` (`the_equivalent_jet_split_*`).
+
 ## Slice 3 — fly the engine you designed (shipped 2026-10-07)
 
 Press **Fly it**: the design's hardware is frozen (turbine and nozzle throat areas, design flow and
@@ -61,7 +87,8 @@ the flight's own air pressure, which the sandbox used to set itself — moved in
 model's efficiency split counts the jet's speed only, and a convergent nozzle high up releases the jet
 well above the outside pressure; and near zero thrust (idle) the fuel's own mass, counted as
 accelerated, dominates both the thrust and the jet's energy gain (135 % measured at an unchoked idle
-point with the jet at outside pressure). Overall efficiency is unaffected.
+point with the jet at outside pressure). Overall efficiency is unaffected. Since roadmap A6 the page
+leads with the equivalent-jet split (slice 1 above), which removes the first reason, not the second.
 
 ## Slice 2 — size the blades (shipped 2026-10-07)
 

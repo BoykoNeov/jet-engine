@@ -585,6 +585,32 @@ fn finite(x: f64, what: &str) -> Result<f64, DoesNotRun> {
     if x.is_finite() { Ok(x) } else { Err(DoesNotRun(format!("The model gave a non-finite {what}."))) }
 }
 
+/// A value the page may show as "–": a non-finite one goes out as null instead of refusing the run.
+fn or_null(x: f64) -> Json {
+    if x.is_finite() { Json::Float(x) } else { Json::Null }
+}
+
+/// Roadmap A6 — the efficiency split counted on the EQUIVALENT jet speed, so it survives a jet that leaves the nozzle
+/// off the outside pressure (derivation: `docs/sandbox/README.md`, slice 1, "An efficiency split that counts the
+/// pressure push"). The page's addition only: the model's own split ([`crate::engine::Performance`]) stays as recorded.
+#[derive(Clone, Copy, Debug)]
+pub struct EquivalentJet {
+    /// The speed a fully expanded jet of the same mass would need for the same thrust, m/s.
+    pub v_eq: f64,
+    /// The jet's kinetic-energy gain at `v_eq`, per unit of fuel energy.
+    pub eta_thermal: f64,
+    /// Thrust power per that energy gain — computed on its own, not as overall ÷ thermal.
+    pub eta_propulsive: f64,
+}
+
+/// [`EquivalentJet`] from the specific thrust `fs` (N·s/kg of air), the flight speed `v0`, the jet's fuel-air ratio `f`
+/// (all the fuel burnt) and the fuel's heating value `hpr` (J/kg).
+pub fn equivalent_jet(fs: f64, v0: f64, f: f64, hpr: f64) -> EquivalentJet {
+    let v_eq = (fs + v0) / (1.0 + f);
+    let ke_gain = (1.0 + f) * (v_eq * v_eq) - v0 * v0;
+    EquivalentJet { v_eq, eta_thermal: ke_gain / (2.0 * f * hpr), eta_propulsive: 2.0 * fs * v0 / ke_gain }
+}
+
 /// The page's view of a run, FULL precision.
 pub fn outcome_json(o: &Outcome) -> Result<Json, DoesNotRun> {
     let r = &o.result;
@@ -611,6 +637,8 @@ pub fn outcome_json(o: &Outcome) -> Result<Json, DoesNotRun> {
     // plus the afterburner's with one (rung 102).
     let f = r.station("9").far;
     let thrust = finite(p.specific_thrust, "specific thrust")? * s.mdot;
+    // Roadmap A6: on the run's own gas model, so its own heating value (a derived one on the Fork B and equilibrium gases).
+    let eq = equivalent_jet(p.specific_thrust, r.v0, f, s.gas.gas().hpr());
     let mut j = jobj! {
         "ok" => Json::Int(1),
         "settings" => s.to_json(),
@@ -627,6 +655,8 @@ pub fn outcome_json(o: &Outcome) -> Result<Json, DoesNotRun> {
         "eta_thermal" => finite(p.eta_thermal, "efficiency")?,
         "eta_propulsive" => finite(p.eta_propulsive, "efficiency")?,
         "eta_overall" => finite(p.eta_overall, "efficiency")?,
+        "V_eq" => or_null(eq.v_eq), "eta_thermal_eq" => or_null(eq.eta_thermal),
+        "eta_propulsive_eq" => or_null(eq.eta_propulsive),
         "ts" => Json::List(ts),
         "ts_burner" => curves[0].clone(),
         "ts_reject" => curves[1].clone(),

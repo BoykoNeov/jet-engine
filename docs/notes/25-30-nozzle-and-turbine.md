@@ -227,6 +227,7 @@ of fixed size is what pins where a built engine runs.
 
 **On the page.** *Design the engine → Nozzle and gas → Nozzle → Fixed convergent (the flow picks; may choke)*, or
 *Try this → A nozzle that cannot finish the job*. In the page's own engine (experiment 7) thrust falls from 15.97
-to 14.91 kN. Note the efficiency split there: "thermal" reads 15 % and "propulsive" 115 %, because that split
-counts only the jet's speed and misses the pressure push. *Fly it* always re-runs the design with a convergent
+to 14.91 kN. Note the efficiency split there: the rows on the jet's speed alone read "thermal" 15 % and
+"propulsive" 115 %, because they miss the pressure push; the rows on the equivalent jet speed (the speed a fully
+expanded jet would need for the same thrust) count it and read 40 % and 43 %. *Fly it* always re-runs the design with a convergent
 nozzle, since a built engine needs a fixed throat.

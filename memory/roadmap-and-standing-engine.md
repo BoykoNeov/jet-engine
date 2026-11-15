@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 97dd3700-c972-4de6-8e1c-5ace8f6fcf10
-  modified: 2026-11-12T18:35:07.550Z
+  modified: 2026-11-15T00:26:32.907Z
 ---
 
 **User, 2026-11-12:** "improve the project — design and concepts, current and future; fix bugs; if too big,
@@ -19,7 +19,7 @@ write plans for a lesser model. Carte blanche." What came of it:
   My stated recommendation there: A1 and A4 first, then A3 and B1.
 - **Shipped:** root `README.md`; `docs/sandbox/EXPERIMENTS.md` (19 experiments, numbers read off the page,
   NOT yet gated — task A2); the standing engine on the Design view (sandbox plan § 48). **Since done: A1, A3
-  (every view, [[standing-engine-a3]]); A4 partly.**
+  (every view, [[standing-engine-a3]]), A4, A5, A6 ([[equivalent-jet-split-a6]]). Left: A2, A7, A8.**
 
 **Process lessons:**
 - **A refusal can be another rung's control flow.** Mach 0 failed in `try_freestream` and `try_score`; rung 41

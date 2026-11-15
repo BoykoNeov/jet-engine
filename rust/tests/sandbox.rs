@@ -343,3 +343,116 @@ fn fly_it_standing_still_is_the_limit_of_slow_flight() {
     let j = Json::parse(&call(r#"{"op":"fly","fly":{"M0":0}}"#));
     assert!(matches!(j.get("ok"), Some(Json::Int(1))), "{j:?}");
 }
+
+// ---------------------------------------------------------------- roadmap A6: the equivalent-jet efficiency split
+
+/// The reply's number at `k`, or `None` where it went out as null.
+fn reply_num(j: &Json, k: &str) -> Option<f64> {
+    match j.get(k) {
+        Some(Json::Float(x)) => Some(*x),
+        Some(Json::Null) => None,
+        other => panic!("{k}: {other:?}"),
+    }
+}
+
+/// The split the page shows, read back from the reply: `(V_eq, thermal, propulsive)`.
+fn eq_split(j: &Json) -> (f64, f64, f64) {
+    let g = |k: &str| reply_num(j, k).unwrap_or_else(|| panic!("{k} is null"));
+    (g("V_eq"), g("eta_thermal_eq"), g("eta_propulsive_eq"))
+}
+
+/// Roadmap A6, step 1 of the derivation: with the jet fully expanded `V_eq` IS the jet speed, so the new split IS the
+/// model's own — on every gas, standing and flying, and with the afterburner lit (where both count ALL the fuel).
+#[test]
+fn the_equivalent_jet_split_is_the_models_own_when_fully_expanded() {
+    let rel = |a: f64, b: f64| if a == b { 0.0 } else { (a - b).abs() / a.abs().max(b.abs()) };
+    let mut cases = 0;
+    for gas in GasModel::ALL {
+        for m0 in [0.0, 0.5, 0.85, 1.6] {
+            for afterburner in [false, true] {
+                let s = Settings { gas, m0, afterburner, ..Settings::defaults() };
+                let o = run(&s).unwrap_or_else(|e| panic!("{gas:?} Mach {m0} ab {afterburner}: {}", e.0));
+                let j = outcome_json(&o).unwrap();
+                let (v_eq, th, pr) = eq_split(&j);
+                let (p, what) = (&o.result.performance, format!("{gas:?} Mach {m0} ab {afterburner}"));
+                assert!(rel(v_eq, o.result.v9) < 1e-12, "{what}: V_eq {v_eq} vs V9 {}", o.result.v9);
+                assert!(rel(th, p.eta_thermal) < 1e-12, "{what}: thermal {th} vs {}", p.eta_thermal);
+                assert!(rel(pr, p.eta_propulsive) < 1e-12, "{what}: propulsive {pr} vs {}", p.eta_propulsive);
+                cases += 1;
+            }
+        }
+    }
+    assert_eq!(cases, 40);
+}
+
+/// Roadmap A6, steps 2–5: off full expansion — the fixed convergent nozzle, and a set exit pressure above and below the
+/// outside air — over pressure ratio, turbine-inlet temperature and Mach number. On every case that runs:
+/// - `V_eq` sits on the side of the jet speed the exit pressure says (above when the jet leaves above the outside);
+/// - thermal × propulsive = overall, both computed on their own;
+/// - thermal lies in (0, 1), and propulsive ≤ 1 exactly where step 5's condition holds;
+/// and the fix BITES: cases where the model's speed-only propulsive passes 100 % and the new one does not.
+#[test]
+fn the_equivalent_jet_split_survives_a_jet_off_the_outside_pressure() {
+    let p0 = Settings::defaults().p0;
+    let nozzles = [(NozzleMode::Convergent, p0), (NozzleMode::ExitPressure, 1.5 * p0), (NozzleMode::ExitPressure, 0.7 * p0)];
+    let (mut ran, mut bounded, mut fuel_mass_cases, mut repaired) = (0, 0, 0, 0);
+    for gas in [GasModel::Perfect, GasModel::ThermallyPerfect, GasModel::Equilibrium] {
+        for (nozzle, p_exit) in nozzles {
+            for pi_c in [4.0, 10.0, 20.0, 35.0] {
+                for tt4 in [1100.0, 1500.0, 1900.0] {
+                    for m0 in [0.0, 0.3, 0.85, 1.5, 2.2] {
+                        let s = Settings { gas, nozzle, p_exit, pi_c, tt4, m0, ..Settings::defaults() };
+                        // A design the model refuses (by error or by its own assertions, as the page catches them).
+                        let Ok(Ok(o)) = catch_unwind(AssertUnwindSafe(|| run(&s))) else { continue };
+                        let Ok(j) = outcome_json(&o) else { continue };
+                        ran += 1;
+                        let what = format!("{gas:?} {nozzle:?} p_exit {p_exit} pi_c {pi_c} Tt4 {tt4} Mach {m0}");
+                        let (v_eq, th, pr) = eq_split(&j);
+                        let r = &o.result;
+                        let p = &r.performance;
+                        let f = r.station("9").far;
+                        // Step 1: the side of the jet speed.
+                        let push = r.p9 - p0;
+                        assert!((v_eq - r.v9) * push >= 0.0, "{what}: V_eq {v_eq} V9 {} p9 {}", r.v9, r.p9);
+                        // Step 4: the product, each factor computed on its own.
+                        assert!((th * pr - p.eta_overall).abs() <= 1e-12 * p.eta_overall.abs().max(1e-300) + 1e-15,
+                                "{what}: {th} × {pr} vs overall {}", p.eta_overall);
+                        // Step 2: a fraction of the fuel's energy.
+                        assert!(th > 0.0 && th < 1.0, "{what}: thermal {th}");
+                        // Step 5: the bound, exactly where its condition holds.
+                        let v0 = r.v0;
+                        let holds = (1.0 + f) * (v_eq - v0) * (v_eq - v0) >= f * v0 * v0;
+                        if holds {
+                            assert!(pr <= 1.0 + 1e-12 && pr >= 0.0, "{what}: propulsive {pr}");
+                            bounded += 1;
+                        } else {
+                            assert!(pr > 1.0 - 1e-12, "{what}: condition fails yet propulsive {pr}");
+                            fuel_mass_cases += 1;
+                        }
+                        if p.eta_propulsive > 1.0 && pr <= 1.0 {
+                            repaired += 1;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    eprintln!("A6 grid: {ran} ran, {bounded} bounded, {fuel_mass_cases} near-zero-thrust, {repaired} repaired");
+    assert!(ran >= 300 && bounded >= 300, "too few cases ran: {ran} ran, {bounded} bounded");
+    assert!(repaired >= 50, "the fix bites in only {repaired} cases");
+}
+
+/// Roadmap A6 on *Fly it*, which shares the Design view's reply: the keys are there, and on its convergent nozzle the
+/// opening point's split stays a proper fraction with the product closing.
+#[test]
+fn fly_it_carries_the_equivalent_jet_split() {
+    use turbojet::sandbox::{fly, fly_json, FlySettings};
+    for m0 in [0.0, 0.85] {
+        let o = fly(&FlySettings { m0, gas: GasModel::ThermallyPerfect, ..FlySettings::defaults() }).unwrap();
+        let j = fly_json(&o).unwrap();
+        let (_, th, pr) = eq_split(&j);
+        let overall = o.result.performance.eta_overall;
+        assert!(th > 0.0 && th < 1.0 && (0.0..=1.0).contains(&pr), "Mach {m0}: {th} {pr}");
+        assert!((th * pr - overall).abs() <= 1e-12 * overall + 1e-15, "Mach {m0}: {th} × {pr} vs {overall}");
+    }
+}

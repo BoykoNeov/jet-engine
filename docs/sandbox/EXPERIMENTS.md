@@ -102,9 +102,11 @@ too (since 2026-11-12).
 Under *Nozzle and gas*, switch the nozzle from fully expanded to **fixed convergent**. Thrust falls from
 15.97 to 14.91 kN. The gas leaves at the speed of sound but still at higher pressure than the air
 outside; the expansion that would have made it faster happens behind the engine, where it pushes on
-nothing. Note the efficiency split: "thermal" drops to 15 % and "propulsive" reads 115 %. That split
-counts only the jet's speed and misses the pressure push — the page's note on efficiencies explains it;
-trust the overall figure.
+nothing. Note the two efficiency splits. The one on the jet's speed alone misses the pressure push:
+"thermal" drops to 15 % and "propulsive" reads 115 %. The one on the equivalent jet speed (the speed a
+fully expanded jet would need for the same thrust: 988.6 m/s, against a real jet of 642.1 m/s) counts
+it: thermal 40.02 %, propulsive 43.21 %, near the fully expanded engine's 44.61 % and 41.50 %. Overall
+efficiency is the same in both (17.29 %; 18.52 % fully expanded). Since 2026-11-15 (roadmap A6).
 
 ### 8. Light the afterburner
 
