@@ -372,6 +372,10 @@ red until the page is rebuilt and committed — the numbers have not changed.
 - `tests/sandbox_page.rs` — the joints: the page is its template + its build; every element the
   script looks up exists; every knob (design and fly) is a setting and back; the dropdowns offer the
   model's choices; every export and op the page uses exists.
+- `tests/sandbox_experiments.rs` — `EXPERIMENTS.md` held to the model (roadmap A2): its tables are read from the
+  guide (headers and row labels choose the runs) and its quoted sentences are templates whose numbers come from
+  the guide; each is asked through `sandbox::call` with the page's own readings and must agree to the last digit
+  the guide shows. A census fails on any number in the guide that is neither checked nor exempt with a reason.
 - `rust/sandbox-wasm/check.ps1`, **in the gate** (`rust/test-all.ps1`) — rebuilds the page and
   compares it with the committed one; runs the page's build against the native model over a grid
   (`check.mjs`, design and fly requests); and drives the real page in a headless Chrome

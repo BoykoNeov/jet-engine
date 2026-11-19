@@ -10,8 +10,9 @@ look at. This guide adds the full tables of numbers.
 
 Every number here was read off the page itself on 2026-11-12, at its opening settings unless the
 experiment says otherwise. They are there so you can tell you are looking at the right thing; the
-*direction* of each change is the lesson, not the last digit. These numbers are not yet checked by the
-test suite, so after a model change they may drift (`docs/plans/roadmap.md`, item A2).
+*direction* of each change is the lesson, not the last digit. The test suite holds every one of them
+to the model, to the last digit shown (`rust/tests/sandbox_experiments.rs`, roadmap A2): a model change
+that moves a number here fails the tests until this guide is updated.
 
 Units used on the page: thrust in kN; "fuel per thrust" (TSFC) in grams of fuel per kN of thrust per
 second — lower is better; τ is the shaft's own response time (the model has no rotor weight, so it
@@ -64,7 +65,7 @@ Under *Nozzle and gas*, switch **Gas model** to the perfect gas, then back.
 | Reacting products / equilibrium chemistry | 15.97 | 34.04 |
 
 **Why.** Hot gas takes more heat to warm by one kelvin than cold gas does. The constant-property
-textbook gas misses that, so it under-counts the fuel by about 11 % and the thrust by about 7 %. Once
+textbook gas misses that, so it under-counts the fuel per thrust by about 11 % and the thrust by about 7 %. Once
 the heat capacity follows temperature, the finer chemistry barely moves the cycle at this temperature —
 it matters for what comes out of the burner (experiment 12), not for thrust.
 
@@ -195,26 +196,26 @@ only works if the quench really is quick.
 ## Controls
 
 A two-shaft engine, the throttle slammed from 1000 K to 1400 K in 0.5 τ. As it opens (no limiter), the
-turbine inlet peaks at **1695 K** before settling at 1400 K, and thrust reaches 90 % of its change
-after 1.08 τ.
+turbine inlet peaks at **1695 K** before settling at 1400 K, and thrust reaches 95 % of its change
+after 1.40 τ.
 
 ### 14. How fast you slam decides how hot it gets
 
 | The move takes | 0.1 τ | 0.5 τ | 2 τ |
 |---|---|---|---|
 | Peak turbine inlet, K | 1943 | 1695 | 1477 |
-| Time to 90 % of the thrust change, τ | 0.86 | 1.08 | 2.10 |
+| Time to 95 % of the thrust change, τ | 1.18 | 1.40 | 2.40 |
 
 ### 15. What each limiter costs
 
 Switch each on by itself (the move back at 0.5 τ).
 
-| Fuel control | Peak turbine inlet, K | Time to 90 % thrust, τ |
+| Fuel control | Peak turbine inlet, K | Time to 95 % thrust, τ |
 |---|---|---|
-| None | 1695 | 1.08 |
-| Temperature limiter at 1480 K | 1480 | 1.28 |
-| The same limiter with a reaction lag of 0.2 τ (untick the two-speed box) | 1618 | 1.36 |
-| Acceleration schedule | 1546 | 1.46 |
+| None | 1695 | 1.40 |
+| Temperature limiter at 1480 K | 1480 | 1.62 |
+| The same limiter with a reaction lag of 0.2 τ (untick the two-speed box) | 1617 | 1.68 |
+| Acceleration schedule | 1546 | 1.80 |
 
 **Why.** Every limiter protects the engine by holding fuel back, and the price is always response time.
 A limiter that reacts slowly lets most of the overshoot through *and* still costs time — the worst of
@@ -222,8 +223,8 @@ both.
 
 ### 16. Asking for thrust instead of temperature
 
-Set the move to 0.1 τ, choose **Holds thrust** and tick **Govern**. The thrust now reaches 90 % of its
-change in 0.14 τ instead of 0.86 τ — and the turbine inlet peaks at **2594 K** instead of 1943 K.
+Set the move to 0.1 τ, choose **Holds thrust** and tick **Govern**. The thrust now reaches 95 % of its
+change in 0.16 τ instead of 1.18 τ — and the turbine inlet peaks at **2594 K** instead of 1943 K.
 
 **Why.** A controller told to deliver thrust *now*, while the shafts are still slow, has only one way to
 do it: pour in fuel. A fast response and a cool turbine are bought with the same fuel, and you cannot
@@ -233,14 +234,14 @@ have both. Now switch the temperature limiter on beside the governor and watch t
 
 Back at the opening run, switch on one at a time and read the thrust at the end of the run, in newtons per
 kg/s of design airflow (it opens at
-615):
+614):
 
 | Load | Thrust at the end | Peak turbine inlet, K |
 |---|---|---|
-| None | 615 | 1695 |
-| Generator on the HP shaft | 591 | 1735 |
-| Generator on the LP shaft | 591 | 1727 |
-| The aircraft takes 5 % of the HP compressor's air | 537 | 1702 |
+| None | 614 | 1695 |
+| Generator on the HP shaft | 589 | 1735 |
+| Generator on the LP shaft | 590 | 1727 |
+| The aircraft takes 5 % of the HP compressor's air | 536 | 1702 |
 
 **Why.** Anything taken from the engine — shaft power for a generator, air for the cabin — is work the
 turbine did that never reaches the jet. Air is the dearer of the two: it was compressed at full cost and
@@ -249,7 +250,7 @@ then thrown away.
 ### 18. The same engine, lower down
 
 Set **Altitude** to 0. The same slam peaks at 1587 K instead of 1695 K and the thrust response is
-quicker (0.80 τ against 1.08 τ): denser air gives the shafts more to work with.
+quicker (1.00 τ against 1.40 τ): denser air gives the shafts more to work with.
 
 ---
 

@@ -42,7 +42,7 @@ Rules that apply to every task here (they are the project's own, from `CLAUDE.md
    an index written for the build assistant. *Fixed this session:* `README.md`.
 2. **The sandbox had no starting point.** Six views and about 150 knobs, with nothing saying what to
    try first. *Fixed this session, on paper:* `docs/sandbox/EXPERIMENTS.md` (19 experiments, every
-   number read off the page). Moving them *into* the page is task A1.
+   number read off the page). Moving them *into* the page is task A1. *Held to the model since 2026-11-19:* task A2.
 3. **An engine could not be run standing still.** Mach 0 — the test-stand point every real engine is
    rated at — was refused. The cause was not physics: two sanity checks cannot pass at exactly zero
    speed. *Fixed this session for the Design view* (see "What changed" below). *Fly it*, *Controls*
@@ -128,7 +128,17 @@ and shows two or three sentences under the menu: what was set, what to look at, 
 can save screenshots: set the environment variable `SANDBOX_SHOTS` to a folder under `W:\temp\claude`
 and look at them).
 
-### A2. Hold the experiments guide to the page
+### A2. Hold the experiments guide to the page — DONE 2026-11-19
+
+*Done:* `rust/tests/sandbox_experiments.rs`, native, through `sandbox::call` (the browser's numbers differ from
+native by ~1e-10, far under the guide's last digit). It reads the guide's tables and quoted sentences, so the
+guide stays the only place the numbers are written; the bar is half a unit in the last digit shown; a census fails
+on any number in the guide neither checked nor exempt with a reason. Red-checked: a moved table cell, a moved prose
+number, an added number and a dropped reader each fail. *What it found:* every Design, Fly it, burner and cooling
+number held. Controls did not: the guide quoted "time to 90 % of the thrust change" (the page shows 95 %) and the
+final steady thrust (the page's "thrust at the end" is the run's last point, still short of it), and one peak was
+mis-rounded (1618 for 1617.46). The guide now quotes the page's own rows; every lesson reads the same. And
+experiment 3's "under-counts the fuel by 11 %" is the fuel *per thrust* (the fuel itself is 18 % short); reworded.
 
 **Why.** `EXPERIMENTS.md` quotes about 120 numbers read by hand on 2026-11-12. Nothing fails when the
 model moves them.
@@ -291,7 +301,9 @@ screenshots (`SANDBOX_SHOTS`) in light, dark and phone width after each.
 4. **An emptied number box stays empty** after the cursor leaves it, while the model keeps the old
    value. On `blur`, write the setting's current value back into the box.
 
-### A8. Tidy the two lines the linter rejects
+### A8. Tidy the two lines the linter rejects — DONE 2026-11-19
+
+*Done:* both lines as described; `cargo clippy --release` (library and program) now stops nowhere. The full gate proves nothing moved.
 
 `cargo clippy` stops on two deliberate lines. Replace `cell.s_eng != cell.s_eng` in
 `rust/src/stator_transient.rs` with `cell.s_eng.is_nan()` (the same test, said plainly), and mark the
