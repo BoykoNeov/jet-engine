@@ -18,8 +18,9 @@ write plans for a lesser model. Carte blanche." What came of it:
   starting, a measured compressor map, a mission) — **the user has not chosen among them; ask, do not pick.**
   My stated recommendation there: A1 and A4 first, then A3 and B1.
 - **Shipped:** root `README.md`; `docs/sandbox/EXPERIMENTS.md` (19 experiments, numbers read off the page,
-  NOT yet gated — task A2); the standing engine on the Design view (sandbox plan § 48). **Since done: A1, A3
-  (every view, [[standing-engine-a3]]), A4, A5, A6 ([[equivalent-jet-split-a6]]). Left: A2, A7, A8.**
+  gated since A2); the standing engine on the Design view (sandbox plan § 48). **Since done: A1, A3
+  (every view, [[standing-engine-a3]]), A4, A5, A6 ([[equivalent-jet-split-a6]]); A2, A7, A8 on 2026-11-19
+  ([[small-tasks-a2-a7-a8]]). Part 2 is empty; only B1–B5 remain.**
 
 **Process lessons:**
 - **A refusal can be another rung's control flow.** Mach 0 failed in `try_freestream` and `try_score`; rung 41
