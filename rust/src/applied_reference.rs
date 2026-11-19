@@ -846,14 +846,16 @@ pub fn handover_law(
         }
     }
     let arms = out;
+    // See `HandoverLaw::full_march`: the `sched` term compares `n` with itself — kept on purpose.
+    #[allow(clippy::eq_op)]
+    let full_march = arms.iter().all(|a| a.sched.n == a.sched.n && a.applied.n == a.sched.n);
     HandoverLaw {
         always_later: arms.iter().all(|a| a.later),
         never_back: arms.iter().all(|a| a.sched.hands_back.is_empty()
                                      && a.applied.hands_back.is_empty()),
         one_handover: arms.iter().all(|a| a.sched.handovers.len() <= 1
                                        && a.applied.handovers.len() <= 1),
-        // See `HandoverLaw::full_march`: the `sched` term compares `n` with itself.
-        full_march: arms.iter().all(|a| a.sched.n == a.sched.n && a.applied.n == a.sched.n),
+        full_march,
         worst_d_tt4: opt_fold(arms.iter().map(|a| a.d_tt4), f64::max)
             .expect("§ 0 sweeps at least one arm"),
         worst_d_phi: opt_fold(arms.iter().map(|a| a.d_phi.abs()), f64::max)

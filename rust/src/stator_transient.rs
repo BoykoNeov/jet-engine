@@ -2821,9 +2821,9 @@ impl ScheduledStatorCore {
         };
         let res = cell.m_i - m_set;
         let dormant = cell.fuel_removed <= 0.0;
-        // Python's `cell["s_eng"] != cell["s_eng"]` — a self-inequality NaN test, which is why
-        // `s_eng` is an `f64` and not an `Option`.
-        let from_zero = (cell.s_eng != cell.s_eng) && !dormant;
+        // Python's `cell["s_eng"] != cell["s_eng"]` — a self-inequality NaN test (said plainly
+        // here as `is_nan`, the same test), which is why `s_eng` is an `f64` and not an `Option`.
+        let from_zero = cell.s_eng.is_nan() && !dormant;
         PinAudit {
             m_set,
             m_min: cell.m_i,
