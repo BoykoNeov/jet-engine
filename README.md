@@ -16,14 +16,14 @@ cooling air and an afterburner. There are 108 rungs today.
 That page is the sandbox: one self-contained, offline file with the whole model compiled into it.
 Change the engine and watch it respond. It has six views:
 
-| View | What you do there |
+| View (its button) | What you do there |
 |---|---|
-| **Design the engine** | Pick the pressure ratio, turbine temperature, losses, gas model and flight condition; read the thrust, fuel use, the station table and the T–s diagram. |
-| **Fly it** | Freeze that design's hardware, then move the throttle and the flight: the running line, shaft speed, stall margin; slam the throttle and watch the engine lag. |
-| **Size the blades** | Two-shaft engine: blade speeds, stage counts, the speed limit, variable stators. |
-| **Controls** | A throttle slam on the two-shaft engine with the fuel limiters, bleed valve, stators, generator load, cooling air and afterburner as switches. |
-| **Burner** | The combustor's zones and mixing, and the nitrogen oxides they make. |
-| **Cool the turbine** | Cooling air against metal temperature. |
+| Design the engine (**Design**) | Pick the pressure ratio, turbine temperature, losses, gas model and flight condition; read the thrust, fuel use, the station table and the T–s diagram. |
+| Fly it (**Fly it**) | Freeze that design's hardware, then move the throttle and the flight: the running line, shaft speed, stall margin; slam the throttle and watch the engine lag. |
+| Size the blades (**Blades**) | Two-shaft engine: blade speeds, stage counts, the speed limit, variable stators. |
+| The fuel controls (**Controls**) | A throttle slam on the two-shaft engine with the fuel limiters, bleed valve, stators, generator load, cooling air and afterburner as switches. |
+| The burner (**Burner**) | The combustor's zones and mixing, and the nitrogen oxides they make. |
+| Cool the turbine (**Cooling**) | Cooling air against metal temperature. |
 
 Not sure where to start? [`docs/sandbox/EXPERIMENTS.md`](docs/sandbox/EXPERIMENTS.md) lists short
 experiments — which knobs to move and what to watch for.

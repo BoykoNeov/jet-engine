@@ -92,7 +92,7 @@ leads with the equivalent-jet split (slice 1 above), which removes the first rea
 
 ## Slice 2 — size the blades (shipped 2026-10-07)
 
-Press **Size the blades**: rung 85 as knobs, on its OWN two-spool engine (two compressors on two
+Press **Blades** (size the blades): rung 85 as knobs, on its OWN two-spool engine (two compressors on two
 shafts — not the *Design* engine, which has one), at 250 K / 50 kPa / Mach 0.85
 (`sandbox_blades.rs`, plan § 11).
 
@@ -275,7 +275,7 @@ each have plain words, found by a crash map and driven by a test.
 
 ## Cool the turbine — rung 93 (shipped 2026-10-16)
 
-Press **Cool the turbine**: the *Controls* engine's turbine given a metal limit — vanes and rotor blades, each cooled
+Press **Cooling** (cool the turbine): the *Controls* engine's turbine given a metal limit — vanes and rotor blades, each cooled
 by its own stream of HP-compressor air (rung 91's) — sized by Gauntner's 1980 NASA correlation
 (`sandbox_cooling.rs`, plan § 22).
 
