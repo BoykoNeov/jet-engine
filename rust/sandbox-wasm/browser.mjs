@@ -1067,9 +1067,9 @@ try {
   const reopened = await waitFor(`window.sandbox && window.sandbox.view && window.sandbox.view() === 'fly'
     && window.sandbox.state === 'ran' && window.sandbox.slamState === 'done'`, 120000);
   const got = reopened ? await ev(`JSON.stringify([window.sandbox.last, window.sandbox.slamRuns()])`) : null;
-  const shown = reopened ? await ev(`[document.getElementById('fly-Tt4').value, location.href]`) : null;
-  check('the_shared_address_reopens_the_same_setup', reopened && got === want && shown[0] === '1300' && shown[1] === link[0],
-        JSON.stringify([reopened, got === want, shown]));
+  const reshown = reopened ? await ev(`[document.getElementById('fly-Tt4').value, location.href]`) : null;
+  check('the_shared_address_reopens_the_same_setup', reopened && got === want && reshown[0] === '1300' && reshown[1] === link[0],
+        JSON.stringify([reopened, got === want, reshown]));
   if (process.env.SANDBOX_SHOTS) await shot('shared-fly');
   await ev(`window.sandbox.design()`);
 
