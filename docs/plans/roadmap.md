@@ -341,6 +341,9 @@ the core.
 - *What a user would see:* fuel per thrust falling as bypass ratio rises, and the best fan pressure
   ratio moving with it.
 - *Then:* flying it off design, and the fan's own stall line.
+- **Status: the smallest step is DONE — rung 109, 2026-11-19** (`docs/rung109-spec.md`; the Design view's *Fan
+  (turbofan)* box). Open: flying the fixed turbofan off design (a fan map, two nozzles sharing the flow, a fan shaft of
+  its own), HP/LP turbines, a mixed exhaust (and with it an afterburning turbofan).
 
 ### B2. Real seconds
 

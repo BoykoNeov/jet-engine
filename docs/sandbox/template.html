@@ -173,6 +173,14 @@ td.delta.up { color: var(--s-aqua); } td.delta.down { color: var(--s-red); }
 .legend { font-size: 12px; color: var(--ink-2); display: flex; gap: 14px; flex-wrap: wrap; margin-top: 4px; }
 .sw { display: inline-block; width: 18px; height: 0; border-top: 2px solid var(--accent); vertical-align: middle; margin-right: 4px; }
 .sw.pin { border-top: 2px dashed var(--pin); }
+/* Rung 109: the bypass stream on the T–s diagram, and the fuel-versus-bypass chart. */
+.chart .fanpath { fill: none; stroke: var(--s-blue); stroke-width: 2; }
+.chart .fpt { fill: var(--s-blue); }
+.chart .fcur { fill: none; stroke: var(--accent); stroke-width: 2.2; }
+.chart .fbest { fill: none; stroke: var(--s-blue); stroke-width: 2; stroke-dasharray: 5 3; }
+.chart .fdot { fill: var(--accent); } .chart .fbdot { fill: var(--s-blue); }
+.chart .fbdot.open { fill: var(--surface); stroke: var(--s-blue); stroke-width: 1.6; }
+.sw.best { border-top: 2px dashed var(--s-blue); } .sw.bypass { border-top-color: var(--s-blue); }
 .chart .jopt { stroke: var(--s-aqua); stroke-width: 1.4; stroke-dasharray: 5 3; }
 .sw.jopt { border-top: 2px dashed var(--s-aqua); }
 .chart .fail { fill: var(--s-red); font-size: 13px; font-weight: 700; }
@@ -907,7 +915,8 @@ footer h2.sec { margin: 8px 0 4px; }
       <div class="knob"><label for="Tt4">Turbine inlet temperature <small>K</small></label><input type="number" id="Tt4" step="5">
         <input type="range" id="Tt4-r" min="800" max="2400" step="5" aria-label="Turbine inlet temperature slider"></div>
       <div class="knob"><label for="mdot">Air mass flow <small>kg/s</small></label><input type="number" id="mdot" step="1">
-        <input type="range" id="mdot-r" min="1" max="200" step="1" aria-label="Mass flow slider"></div>
+        <input type="range" id="mdot-r" min="1" max="200" step="1" aria-label="Mass flow slider">
+        <div class="derived" id="mdot-note"></div></div>
     </fieldset>
     <fieldset id="components-set">
       <legend>Components</legend>
@@ -972,6 +981,27 @@ footer h2.sec { margin: 8px 0 4px; }
           moving (the faster it enters, the more; heated too much it chokes). On the equilibrium gas the hottest reachable
           temperature is about 2 250 K, because the hot gas splits apart and soaks up the heat. Results are shown beside the
           same engine with the afterburner fitted but unlit.</p>
+      </div>
+    </fieldset>
+    <fieldset id="fan-set">
+      <legend>Fan (turbofan)</legend>
+      <div class="knob"><label for="alpha">Bypass ratio <small>kg around the core per kg through it</small></label><input type="number" id="alpha" step="0.1">
+        <input type="range" id="alpha-r" min="0" max="15" step="0.1" aria-label="Bypass ratio slider"></div>
+      <div id="fan-box" hidden>
+        <div class="knob"><label for="pi_f">Fan pressure ratio</label><input type="number" id="pi_f" step="0.01">
+          <input type="range" id="pi_f-r" min="1" max="4" step="0.01" aria-label="Fan pressure ratio slider">
+          <div class="derived" id="pi_f-note"></div></div>
+        <div class="knob" id="eta_f-row"><label for="eta_f">Fan efficiency η<sub>f</sub></label><input type="number" id="eta_f" step="0.005">
+          <input type="range" id="eta_f-r" min="0.5" max="1" step="0.005" aria-label="Fan efficiency slider"></div>
+        <div class="knob" id="e_f-row" hidden><label for="e_f">Fan polytropic e<sub>f</sub></label><input type="number" id="e_f" step="0.005">
+          <input type="range" id="e_f-r" min="0.5" max="1" step="0.005" aria-label="Fan polytropic slider"></div>
+        <div class="knob"><label for="pi_fn">Bypass duct and fan nozzle pressure ratio</label><input type="number" id="pi_fn" step="0.005">
+          <input type="range" id="pi_fn-r" min="0.85" max="1" step="0.005" aria-label="Bypass duct pressure ratio slider"></div>
+        <p class="note">A fan at the front, driven by the same turbine as the compressor, pushes extra air around the core
+          and out of its own nozzle. The air mass flow above is the core's; the bypass air is that times the bypass ratio.
+          The fan's efficiency follows the compressor's isentropic/polytropic switch, and its nozzle follows the core
+          nozzle's choice. The engine is looked at on the drawing board only: Fly it does not fly a turbofan yet, and an
+          afterburner is not modelled with a fan.</p>
       </div>
     </fieldset>
     <div class="actions">
@@ -1135,6 +1165,12 @@ footer h2.sec { margin: 8px 0 4px; }
         <div class="tile"><div class="k">Nozzle throat, lit over unlit</div><div class="v"><span id="v-ab-a8">–</span> <span class="u">×</span></div><div class="d" id="d-ab-a8"></div></div>
         <div class="tile"><div class="k">Afterburner duct pressure ratio</div><div class="v"><span id="v-ab-pi">–</span></div><div class="d" id="d-ab-pi"></div></div>
       </div>
+      <div class="tiles" id="fan-tiles" hidden style="margin-top:10px">
+        <div class="tile"><div class="k">Best fan pressure ratio</div><div class="v"><span id="v-fan-best">–</span></div><div class="d" id="d-fan-best"></div></div>
+        <div class="tile"><div class="k">Fan jet over core jet speed</div><div class="v"><span id="v-fan-vr">–</span></div><div class="d" id="d-fan-vr"></div></div>
+        <div class="tile"><div class="k">Thrust from the fan</div><div class="v"><span id="v-fan-share">–</span> <span class="u">%</span></div><div class="d" id="d-fan-share"></div></div>
+        <div class="tile"><div class="k">Thrust per kg/s of core air</div><div class="v"><span id="v-fan-stc">–</span> <span class="u">N·s/kg</span></div><div class="d" id="d-fan-stc"></div></div>
+      </div>
       <div class="tiles" id="fly-tiles" hidden style="margin-top:10px">
         <div class="tile"><div class="k">Shaft speed</div><div class="v"><span id="v-nu">–</span> <span class="u">% of design</span></div><div class="d" id="d-nu"></div></div>
         <div class="tile"><div class="k">Compressor pressure ratio</div><div class="v"><span id="v-pic">–</span></div><div class="d" id="d-pic"></div></div>
@@ -1206,10 +1242,21 @@ footer h2.sec { margin: 8px 0 4px; }
         <span><span class="sw grey"></span>speed lines (labelled % corrected speed)</span><span id="map-progress"></span></div>
       <p class="note">The big dot is this operating point. The map is a representative shape, not measured data, and the stall line is the number you chose.</p>
     </div>
+    <div class="card chart" id="fan-card" hidden>
+      <h2 class="sec">Fuel against bypass ratio</h2>
+      <svg id="fan-chart" viewBox="0 0 640 400" role="img" aria-label="Fuel per thrust and thrust per kilogram of core air against bypass ratio, on this core, at your fan pressure ratio and at each bypass ratio's best"></svg>
+      <div class="legend"><span><span class="sw"></span>at your fan pressure ratio</span><span><span class="sw best"></span>at each bypass ratio's best fan pressure ratio</span>
+        <span>hollow dot: the best lies above the knob's top (4)</span><span>gaps: does not run</span><span>vertical line: your bypass ratio</span></div>
+      <p class="note">The same core every time: the compressor, burner and turbine as you set them, with a fan of bypass
+        ratio 0 to 12 added. Bypass ratio 0 is the turbojet. More bypass air leaving more slowly makes the same core's
+        fuel buy more thrust, so fuel per thrust falls, then flattens. Where your line stops, that much fan at your fan
+        pressure ratio asks more work than the turbine can give. The lower panel is thrust per kilogram of core air, what the fan adds to the same core.</p>
+    </div>
     <div class="card chart" id="ts-card">
       <h2 class="sec">Temperature–entropy diagram</h2>
       <svg id="ts" viewBox="0 0 640 360" role="img" aria-label="Temperature against entropy for the engine's stations"></svg>
       <div class="legend"><span><span class="sw"></span>this design</span><span id="pin-legend" hidden><span class="sw pin"></span>pinned design</span>
+        <span id="ts-fan-legend" hidden><span class="sw bypass"></span>bypass air (2 → 13 → 19)</span>
         <span>dashed: the exhaust cooling back to the air outside (not part of the engine)</span></div>
     </div>
     <div class="card" id="stations-card">
@@ -1253,6 +1300,21 @@ footer h2.sec { margin: 8px 0 4px; }
   engine's. The "unlit" numbers are the same engine with the afterburner fitted but not burning. The afterburner uses
   the burned-gas properties of the turbine section; it is checked against the afterburning turbojet in Mattingly's
   <i>Elements of Propulsion</i> (§ 8.4).</p>
+  <p data-views="design"><b>The turbofan.</b> The project's rung 109: a fan at the front pushes extra air, the bypass air,
+  around the core and out of its own nozzle. The bypass ratio is how many kilograms go around for each kilogram through
+  the core; the air mass flow knob stays the core's. The fan is the compressor's own law on the outside air, and one
+  turbine drives both, so its work grows with the fan's. The bypass air loses pressure in its duct and leaves through a
+  nozzle of the same kind as the core's (with a set exit pressure, the same pressure). The thrust is both jets'; specific
+  thrust, fuel per thrust and the efficiencies are counted on all the air, and the efficiency split counts the energy of
+  both jets. The fan's tiles add the thrust per kilogram of core air, what the fan buys on the same core. The best fan
+  pressure ratio is the one between 1 and 4 with the lowest fuel per thrust at your bypass ratio, searched for each run.
+  It does not make the two jets equally fast, as a loss-free engine would: work moved from the core jet to the fan jet
+  loses a share in the turbine and again in the fan, so the best leaves the fan jet slower, near the product of those
+  two efficiencies times the core jet's speed. The chart repeats the search at bypass ratios 1 to 12. On the T–s diagram,
+  station 13 (the fan exit, a total state) and 19 (the fan's jet, a static state, like 9) are drawn on air. Bypass ratio 0
+  is the turbojet, number for number; the turbofan is checked against Mattingly's Example 7-6 (<i>Elements of Gas Turbine
+  Propulsion</i>). Only the design point is modelled (Fly it does not fly a turbofan yet); the streams leave separately,
+  and an afterburner with a fan is not modelled.</p>
   <p data-views="fly"><b>Fly it.</b> The design's hardware is frozen: the turbine and nozzle throat areas, and the flow and
   speed it was designed for. Moving the throttle or the flight then lets the engine find its own pressure ratio,
   airflow and shaft speed (the project's rungs 31–36: a choked turbine, a fixed convergent nozzle that may
@@ -1437,7 +1499,8 @@ async function makeModel() {
 // ---------------------------------------------------------------- state
 let model = null, S = null, DEFAULTS = null, last = null, pinned = null, gen = 0;
 const NUM = ["T0", "p0", "M0", "pi_c", "Tt4", "mdot", "pi_d_max", "eta_c", "e_c", "eta_b", "pi_b",
-             "eta_t", "e_t", "eta_m", "pi_n", "p_exit", "Tt7", "eta_ab", "pi_fh", "M6"];
+             "eta_t", "e_t", "eta_m", "pi_n", "p_exit", "Tt7", "eta_ab", "pi_fh", "M6",
+             "alpha", "pi_f", "eta_f", "e_f", "pi_fn"];
 // Fly it (slice 3): F is the fly settings (turbojet::sandbox::FlySettings). The flight knobs are
 // shared: in fly mode they move the FLIGHT, not the design. FLY_NUM maps a knob id to its setting.
 let mode = "design", F = null, FLY_DEFAULTS = null, designAsSet = null;
@@ -1554,6 +1617,8 @@ const EXPERIMENTS = /* JSON */ [
    "text": "A fixed convergent nozzle: the gas leaves at the speed of sound, still above the outside pressure, and the rest of its expansion happens behind the engine, where it pushes on nothing. Thrust falls. Compare the two efficiency splits: the jet-speed-only rows now read oddly (propulsive above 100 %) because they miss the pressure push, while the rows on the equivalent jet speed count it and stay close to the fully expanded engine's."},
   {"view": "design", "title": "Light the afterburner", "patch": {"afterburner": 1},
    "text": "A second burner behind the turbine. Thrust rises a lot, and fuel per thrust rises even more: fuel burned at low pressure, after the turbine has taken its work, is a poor way to use fuel, and a very good way to get thrust from a small engine for a short time."},
+  {"view": "design", "title": "Add a fan: bypass ratio 6", "patch": {"alpha": 6},
+   "text": "A fan on the same turbine now blows six kilograms of air around the core for every kilogram through it. Thrust rises and fuel per thrust falls a lot: more air thrown back more slowly leaves less of the fuel's energy behind in the jet. The fan tiles name the best fan pressure ratio for this bypass ratio. Type it in: the fan jet still leaves slower than the core jet, because work passed from one jet to the other loses a share in the turbine and again in the fan. The chart shows fuel per thrust falling with bypass ratio, then flattening."},
   {"view": "fly", "title": "Throttle back to 900 K", "patch": {"Tt4": 900},
    "text": "The shaft slows, and the stall margin shrinks. A compressor is a row of small wings: at low speed its front stages meet the air at too steep an angle. The margin against stall is thinnest at low power, not high, which is why real engines carry bleed valves and variable stators for starting and idling. (The stall line is a number you choose, so read the trend, not the size.)"},
   {"view": "fly", "title": "Slam the throttle faster", "patch": {"slam": {"ramp": 0.1}},
@@ -1599,7 +1664,8 @@ const EXPERIMENTS = /* JSON */ [
 ]; // end EXPERIMENTS
 function setKnob(k, v) { if (linked) { B.lp[k] = v; B.hp[k] = v; } else B[editSpool][k] = v; }
 const STATION = { "0": "0 · outside air", "2": "2 · compressor face", "3": "3 · compressor exit",
-                  "4": "4 · turbine inlet", "5": "5 · turbine exit", "7": "7 · afterburner exit", "9": "9 · nozzle exit" };
+                  "4": "4 · turbine inlet", "5": "5 · turbine exit", "7": "7 · afterburner exit", "9": "9 · nozzle exit",
+                  "13": "13 · fan exit (bypass air)", "19": "19 · fan nozzle exit" };
 
 function fmt(x, sig = 4) {
   if (x === null || x === undefined || !isFinite(x)) return "–";
@@ -1607,6 +1673,12 @@ function fmt(x, sig = 4) {
   if (a !== 0 && (a >= 1e6 || a < 1e-3)) return x.toExponential(sig - 1);
   const d = Math.max(0, sig - 1 - Math.floor(Math.log10(a || 1)));
   return x.toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
+}
+
+// Rung 109: the airflow knob is the CORE's; with a bypass stream, say how much air the whole engine takes in.
+function mdotNote() {
+  $("mdot-note").textContent = S.alpha > 0
+    ? `through the core; with the bypass air, ${fmt(S.mdot * (1 + S.alpha), 3)} kg/s in all` : "";
 }
 
 function showSettings() {
@@ -1639,9 +1711,11 @@ function showSettings() {
   for (const [id, m] of [["mode-design", "design"], ["mode-fly", "fly"], ["mode-blades", "blades"], ["mode-controls", "controls"],
                          ["mode-burner", "burner"], ["mode-cooling", "cooling"]]) $(id).setAttribute("aria-pressed", String(mode === m));
   $("cycle-set").hidden = mode !== "design" && !burner;
-  for (const id of ["components-set", "nozzle-set", "ab-set"]) $(id).hidden = mode !== "design";
+  for (const id of ["components-set", "nozzle-set", "ab-set", "fan-set"]) $(id).hidden = mode !== "design";
   // Rung 102: the afterburner switch and, when it is on, its knobs.
   $("ab-on").checked = S.afterburner === 1; $("ab-box").hidden = S.afterburner !== 1;
+  // Rung 109: the fan's knobs once there is a bypass stream.
+  $("fan-box").hidden = !(S.alpha > 0); mdotNote();
   for (const id of ["fly-set", "fly-ab-set", "fly-tiles", "map-card", "slam-set", "slam-card"]) $(id).hidden = !fly;
   for (const id of BLADE_VIEW) $(id).hidden = !blades;
   for (const id of CTL_VIEW) $(id).hidden = !controls;
@@ -1654,6 +1728,7 @@ function showSettings() {
   $("ctl-flight-note").hidden = !controls;
   $("ctl-tables-row").hidden = !controls || !C || !ctlTables(C);
   for (const id of ["out", "ts-card", "stations-card", "perf-card"]) $(id).hidden = blades || controls || burner || cooling;
+  $("fan-card").hidden = mode !== "design" || !(last && last.fan);      // rung 109
   showExplain(); saveAddress();
   $("mode-note").innerHTML = fly
     ? "The hardware is frozen. Move the throttle or the flight; press <b>Design</b> to change the design."
@@ -1784,6 +1859,7 @@ function showSettings() {
   $("ceff-isen").setAttribute("aria-pressed", String(!cp)); $("ceff-poly").setAttribute("aria-pressed", String(cp));
   $("teff-isen").setAttribute("aria-pressed", String(!tp)); $("teff-poly").setAttribute("aria-pressed", String(tp));
   $("eta_c-row").hidden = cp; $("e_c-row").hidden = !cp; $("eta_t-row").hidden = tp; $("e_t-row").hidden = !tp;
+  $("eta_f-row").hidden = cp; $("e_f-row").hidden = !cp;     // rung 109: the fan follows the compressor's switch
   fillTry();
 }
 
@@ -3392,6 +3468,25 @@ const PERF = [
   ["Jet pressure (static)", r => r.p9 / 1e3, "kPa"],
   ["Inlet recovery applied", r => r.pi_d, ""],
 ];
+// Rung 109: a turbofan's own rows, shown when this design or the pinned one has a fan ("–" on the one without).
+// With a fan, the rows above read per kilogram of ALL the air (specific thrust), and the jet rows are the core's.
+const fv = (r, k) => (r.fan && typeof r.fan[k] === "number" ? r.fan[k] : NaN);
+const PERF_FAN = [
+  ["Bypass ratio", r => (r.fan ? r.fan.alpha : 0), ""],
+  ["Bypass air mass flow", r => (r.fan ? r.fan.mdot_bypass : 0), "kg/s"],
+  ["Thrust per kg/s of core air", r => (r.fan ? r.fan.thrust_per_core : r.specific_thrust), "N·s/kg", true],
+  ["Core jet thrust (per kg/s of core air)", r => (r.fan ? r.fan.core_thrust : r.specific_thrust), "N·s/kg", true],
+  ["Fan jet thrust (per kg/s of bypass air)", r => fv(r, "fan_thrust"), "N·s/kg", true],
+  ["Fan exit temperature (total, station 13)", r => fv(r, "Tt13"), "K"],
+  ["Fan jet speed", r => fv(r, "V19"), "m/s"],
+  ["Fan jet speed over core jet speed", r => fv(r, "V19") / r.V9, ""],
+  ["Fan jet equivalent speed (fully expanded, same thrust)", r => fv(r, "V_eq19"), "m/s"],
+  ["Fan jet Mach number", r => fv(r, "M19"), ""],
+  ["Fan jet temperature (static)", r => fv(r, "T19"), "K"],
+  ["Fan jet pressure (static)", r => fv(r, "p19") / 1e3, "kPa"],
+  ["Best fan pressure ratio for this bypass ratio", r => (r.fan && r.fan.best ? r.fan.best.pi_f : NaN), ""],
+  ["Fuel per thrust at the best fan pressure ratio", r => (r.fan && r.fan.best ? r.fan.best.tsfc * 1e6 : NaN), "g/(kN·s)", false],
+];
 // Fly it: the operating point's own numbers (a design result lacks them, and shows "–").
 const smv = (r, k) => (r.stall && r.stall.kind === "margin" && typeof r.stall[k] === "number" ? r.stall[k] * 100 : NaN);
 const PERF_FLY = [
@@ -3446,6 +3541,28 @@ function render() {
     $("d-ab-pi").textContent = a.mode === "unlit" ? `flame holders only; the duct entered at Mach ${fmt(a.M6, 3)}`
       : `heating alone ${fmt(a.pi_heat, 4)}; enters the burning zone at Mach ${fmt(a.M6, 3)}, leaves at ${fmt(a.M7, 3)}`;
   }
+  // Rung 109: a turbofan's tiles (Design view only; the fan is not flown).
+  const fan = mode === "design" && r.fan;
+  $("fan-tiles").hidden = !fan; $("fan-card").hidden = !fan; $("ts-fan-legend").hidden = !fan;
+  $("pi_f-note").textContent = "";
+  if (fan) {
+    const a = r.fan, b = a.best, mine = r.settings.pi_f ?? DEFAULTS.pi_f;
+    const share = x => (x.fan ? x.fan.alpha * x.fan.fan_thrust / (x.fan.core_thrust + x.fan.alpha * x.fan.fan_thrust) * 100 : 0);
+    $("v-fan-best").textContent = b ? fmt(b.pi_f, 4) : "–";
+    $("d-fan-best").textContent = !b ? "no fan pressure ratio runs here"
+      : b.at_top ? "at the knob's top: the best lies above 4"
+      : (b.at_wall ? "against the turbine's limit: a stronger fan does not run; " : "")
+        + (Math.abs(b.pi_f - mine) < 5e-4 ? "yours is the best" : `yours ${fmt(mine, 4)}; at the best, ${fmt((1 - b.tsfc / r.tsfc) * 100, 3)} % less fuel per thrust`);
+    if (b) $("pi_f-note").textContent = `best for this bypass ratio: ${fmt(b.pi_f, 4)}` + (b.at_top ? " (the knob's top)" : "");
+    $("v-fan-vr").textContent = fmt(a.V19 / r.V9, 3);
+    $("d-fan-vr").textContent = `fan jet ${fmt(a.V19, 4)} m/s, core jet ${fmt(r.V9, 4)} m/s`;
+    $("v-fan-share").textContent = fmt(share(r), 3);
+    $("d-fan-share").textContent = p && p.fan ? delta(share(r), share(p), true)[0] : `bypass air ${fmt(a.mdot_bypass, 4)} kg/s`;
+    $("v-fan-stc").textContent = fmt(a.thrust_per_core);
+    const jet = a.chart[0] && a.chart[0].current;
+    $("d-fan-stc").textContent = p ? delta(a.thrust_per_core, p.fan ? p.fan.thrust_per_core : p.specific_thrust, true)[0]
+      : jet ? `the core alone: ${fmt(jet.st_core)} (${fmt(a.thrust_per_core / jet.st_core, 3)} ×)` : "";
+  }
   if (r.nu !== undefined) {
     tile("nu", x => x.nu * 100, true); tile("pic", x => x.settings.pi_c, true); tile("mdot", x => x.mdot_air, true);
     const sm = r.stall.kind === "margin";
@@ -3476,7 +3593,8 @@ function render() {
   }
   const pb = $("perf").tBodies[0]; pb.innerHTML = "";
   $("perf-pin").textContent = p ? "Pinned" : ""; $("perf-delta").textContent = p ? "Change" : "";
-  for (const [name, f, unit, up] of (r.nu !== undefined ? PERF_FLY.concat(PERF) : PERF)) {
+  const rows = (r.nu !== undefined ? PERF_FLY.concat(PERF) : PERF).concat(r.fan || (p && p.fan) ? PERF_FAN : []);
+  for (const [name, f, unit, up] of rows) {
     const tr = pb.insertRow();
     tr.insertCell().textContent = name + (unit ? " (" + unit + ")" : "");
     tr.insertCell().textContent = fmt(f(r), 5);
@@ -3485,14 +3603,46 @@ function render() {
     if (p) { const [t, cls] = delta(f(r), f(p), up); c.textContent = t; c.className = "delta " + cls; }
   }
   drawTs();
+  if (fan) drawFan();
   if (r.nu !== undefined) drawMap();
+}
+
+// Rung 109: fuel per thrust (top) and thrust per kilogram of core air (bottom) against bypass ratio, on this core, at your
+// fan pressure ratio (solid) and at each bypass ratio's best (dashed). A setting that does not run is a gap.
+function drawFan() {
+  const svg = $("fan-chart"), ch = last.fan.chart, a = last.fan.alpha;
+  const cur = k => ch.map(c => (c.current ? [c.alpha, k === "tsfc" ? c.current.tsfc * 1e6 : c.current.st_core] : null));
+  const best = k => ch.map(c => (c.best ? [c.alpha, k === "tsfc" ? c.best.tsfc * 1e6 : c.best.st_core] : null));
+  const here = a <= ch[ch.length - 1].alpha;
+  const range = (k, now) => {
+    const v = cur(k).concat(best(k)).filter(q => q).map(q => q[1]).concat(here ? [now] : []);
+    let lo = Math.min(...v), hi = Math.max(...v); const pad = (hi - lo) * 0.1 || 1; return [lo - pad, hi + pad];
+  };
+  const x1 = ch[ch.length - 1].alpha;
+  const [t0, t1] = range("tsfc", last.tsfc * 1e6), [f0, f1] = range("st", last.fan.thrust_per_core);
+  const top = frame(0, x1, t0, t1, { L: 58, R: 16, T: 12, B: 222, W: 640, H: 400, ny: 4 }, null, "g/(kN·s)");
+  const bot = frame(0, x1, f0, f1, { L: 58, R: 16, T: 200, B: 40, W: 640, H: 400, ny: 4 }, "bypass ratio", "N·s/kg core air");
+  let g = top.g + bot.g;
+  g += `<text x="64" y="24">fuel per thrust</text><text x="64" y="212">thrust per kg/s of core air</text>`;
+  for (const [pan, k] of [[top, "tsfc"], [bot, "st"]]) {
+    g += `<path class="fbest" d="${pathOf(best(k), pan.X, pan.Y)}"/><path class="fcur" d="${pathOf(cur(k), pan.X, pan.Y)}"/>`;
+    ch.forEach((c, i) => {
+      const bq = best(k)[i];
+      if (bq) g += `<circle class="fbdot${c.best.at_top ? " open" : ""}" cx="${pan.X(bq[0])}" cy="${pan.Y(bq[1])}" r="3"><title>bypass ${c.alpha}: best fan pressure ratio ${fmt(c.best.pi_f, 4)}${c.best.at_top ? " (the knob's top; the best lies above)" : c.best.at_wall ? " (against the turbine's limit)" : ""}</title></circle>`;
+    });
+  }
+  if (here) {
+    g += `<line class="here" x1="${top.X(a)}" x2="${top.X(a)}" y1="12" y2="360"/>`;
+    g += `<circle class="now" cx="${top.X(a)}" cy="${top.Y(last.tsfc * 1e6)}" r="4.5"/><circle class="now" cx="${bot.X(a)}" cy="${bot.Y(last.fan.thrust_per_core)}" r="4.5"/>`;
+  }
+  svg.innerHTML = g;
 }
 
 function drawTs() {
   const svg = $("ts"), W = 640, H = 360, L = 58, R = 16, T = 14, B = 40;
   // Every drawn (s, T): the station points and the two curved heat-exchange legs.
   const pts = r => r.ts.concat(r.ts_burner.map(([s, T]) => ({ s, T })), r.ts_reject.map(([s, T]) => ({ s, T })),
-                               (r.ts_afterburner || []).map(([s, T]) => ({ s, T })));
+                               (r.ts_afterburner || []).map(([s, T]) => ({ s, T })), r.ts_fan || []);
   const all = pts(last).concat(pinned ? pts(pinned) : []);
   let s0 = Math.min(...all.map(q => q.s)), s1 = Math.max(...all.map(q => q.s));
   let t0 = Math.min(...all.map(q => q.T)), t1 = Math.max(...all.map(q => q.T));
@@ -3512,9 +3662,16 @@ function drawTs() {
   const engine = r => { const at = l => { const q = r.ts.find(p => p.label === l); return [q.s, q.T]; };
     // Rung 102: a lit afterburner's heat addition (5→7) is a third curve, between the turbine and the nozzle.
     return line([at("0"), at("2")].concat(r.ts_burner, [at("5")], r.ts_afterburner || [], [at("9")])); };
+  // Rung 109: the bypass air leaves the core's path at the fan face (2), through the fan (13) and out of its own nozzle (19).
+  const bypass = r => { const q = r.ts.find(p => p.label === "2"); return line([[q.s, q.T]].concat(r.ts_fan.map(p => [p.s, p.T]))); };
   if (pinned) g += `<path class="pinned" d="${engine(pinned)} ${line(pinned.ts_reject).replace("M", "L")}"/>`;
+  if (pinned && pinned.ts_fan) g += `<path class="pinned" d="${bypass(pinned)}"/>`;
   g += `<path class="cycle" d="${engine(last)}"/>`;
   g += `<path class="reject" d="${line(last.ts_reject)}"/>`;
+  if (last.ts_fan) {
+    g += `<path class="fanpath" d="${bypass(last)}"/>`;
+    for (const q of last.ts_fan) g += `<circle class="fpt" cx="${X(q.s)}" cy="${Y(q.T)}" r="3.5"/><text class="ptl" x="${X(q.s) + 6}" y="${Y(q.T) + 14}">${q.label}</text>`;
+  }
   for (const q of last.ts) g += `<circle class="pt" cx="${X(q.s)}" cy="${Y(q.T)}" r="3.5"/><text class="ptl" x="${X(q.s) + 6}" y="${Y(q.T) - 6}">${q.label}</text>`;
   svg.innerHTML = g;
 }
@@ -3531,7 +3688,11 @@ function wire() {
       r.addEventListener("change", () => { if (slow()) change(); });
     }
   };
-  for (const k of NUM) knob($(k), $(k + "-r"), v => { if (FLIGHT.includes(k)) target()[k] = v; else S[k] = v; });
+  for (const k of NUM) knob($(k), $(k + "-r"), v => {
+    if (FLIGHT.includes(k)) target()[k] = v; else S[k] = v;
+    if (k === "alpha") $("fan-box").hidden = !(v > 0);        // rung 109: the fan's knobs appear with a bypass stream
+    if (k === "alpha" || k === "mdot") mdotNote();
+  });
   $("ab-on").addEventListener("change", () => { S.afterburner = $("ab-on").checked ? 1 : 0; showSettings(); change(); });
   for (const [id, k] of Object.entries(FLY_NUM)) knob($(id), $(id + "-r"), v => { F[k] = v; });
   for (const k of ["altitude", "delta_t"]) {

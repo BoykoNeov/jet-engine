@@ -455,3 +455,23 @@ and the HP spins past its design speed instead (`docs/rung102-spec.md` § Part C
 rule, no shaft notices. The *Afterburner* chart shows its exit temperature, a row sums it up, and a stop the
 afterburner causes says so. "Holds thrust" is refused while it is lit: lit, more main fuel lowers thrust at that moment
 (`docs/rung102-spec.md`, plan § 34).
+
+## Rung 109 — the turbofan (shipped 2026-11-19)
+
+On the **Design** view, under *Fan (turbofan)*: the **bypass ratio** (0 to 15; 0 is the turbojet, number for number),
+then the fan pressure ratio (1 to 4), the fan's efficiency (isentropic or polytropic, following the compressor's switch)
+and the bypass duct and fan nozzle's pressure ratio. The air mass flow knob stays the core's (a line under it gives the whole engine's intake, core plus bypass). A row of tiles gives the
+best fan pressure ratio for this bypass ratio (or says it lies above the knob's top, or against the turbine's limit), the
+fan jet's speed over the core jet's, the fan's share of the thrust, and the thrust per kilogram of core air. A chart
+plots fuel per thrust and thrust per kilogram of core air against bypass ratio 0–12 on the same core, at your fan
+pressure ratio and at each one's best. Stations 13 (fan exit) and 19 (fan nozzle exit) join the table and the T–s chart,
+and the performance table gains the fan's rows; the efficiency split counts both jets (`sandbox::equivalent_jets`).
+
+**Cost, measured 2026-11-19 (native release, the opening design on the equilibrium gas):** a turbojet run 1.0 ms; a
+turbofan run with its best-fan search and the whole chart 6.6 ms (10 ms with the convergent nozzle, whose cold sonic
+throat is a bisection on the tables). The best-fan search alone is 0.4–0.8 ms, inside the anchor's bar of ten design
+runs, so it runs on every change at its full resolution; the chart's twelve searches are most of the rest.
+
+Refused in words: a turbine that cannot pay for the fan, a fan too weak to cover the inlet and duct losses standing
+still, an afterburner beside a fan, a knob out of range, and *Fly it* (or the throttle slam) with a fan on the design —
+the fixed turbofan flown off design is a later rung (`docs/rung109-spec.md`).

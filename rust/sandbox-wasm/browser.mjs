@@ -989,6 +989,48 @@ try {
   check('switching_the_afterburner_off_restores_the_opening_design',
         JSON.stringify(await ev('window.sandbox.last')) === JSON.stringify(first), 'differs');
 
+  // 17b-fan. RUNG 109: a fan of bypass ratio 6 on the opening design. The run is the native one (the first of
+  // check_fan_requests on the opening gas); its knobs, tiles, chart and stations 13 and 19 show; the fan's efficiency
+  // follows the compressor's switch; the afterburner beside it is refused in words; bypass 0 restores the opening run.
+  const fanState = await ev(`window.sandbox.set({alpha: 6})`, 60000);
+  const fanRun = await ev('window.sandbox.last');
+  const nativeFan = JSON.parse(readFileSync(nativeTxt, 'utf8').split(/\r?\n/).find(l => l.startsWith('{"op":"run"')
+    && l.split('\t')[0].includes('"alpha":6') && l.split('\t')[0].includes('"gas":"equilibrium"')).split('\t')[1]);
+  const eFan = fanRun ? close(fanRun, nativeFan) : 'no result';
+  check('the_turbofan_matches_native', fanState === 'ran' && fanRun.fan && !eFan, eFan || fanState);
+  const fanShown = await ev(`[document.getElementById('fan-tiles').hidden, document.getElementById('fan-box').hidden,
+    document.getElementById('fan-card').hidden,
+    [...document.getElementById('stations').tBodies[0].rows].map(r => r.cells[0].textContent).join('|'),
+    document.getElementById('d-fan-best').textContent, document.getElementById('fan-chart').innerHTML,
+    document.getElementById('ts').innerHTML, document.getElementById('pi_f-note').textContent]`);
+  check('the_turbofan_shows_its_knobs_tiles_chart_and_stations', fanShown[0] === false && fanShown[1] === false
+        && fanShown[2] === false && /13 · fan exit/.test(fanShown[3]) && /19 · fan nozzle exit/.test(fanShown[3])
+        && /less fuel per thrust/.test(fanShown[4]) && /class="fcur"/.test(fanShown[5]) && /class="fbest"/.test(fanShown[5])
+        && /class="fanpath"/.test(fanShown[6]) && /^best for this bypass ratio/.test(fanShown[7]),
+        JSON.stringify([fanShown[0], fanShown[1], fanShown[2], fanShown[3], fanShown[4], fanShown[7]]));
+  // The airflow knob is the core's: with a bypass stream a line under it gives the whole engine's intake.
+  const mdotNote = await ev(`[document.getElementById('mdot-note').textContent,
+    parseFloat(document.getElementById('mdot').value)]`);
+  const wantAll = Math.round(mdotNote[1] * 7);
+  check('the_airflow_knob_says_it_is_the_cores', mdotNote[0] === `through the core; with the bypass air, ${wantAll} kg/s in all`,
+        JSON.stringify(mdotNote));
+  await shot('design-turbofan');
+  if (process.env.SANDBOX_SHOTS) await shot('design-turbofan-phone', 390);
+  await ev(`window.sandbox.set({compressor_eff: 'polytropic'})`, 60000);
+  const fanPoly = await ev(`[document.getElementById('eta_f-row').hidden, document.getElementById('e_f-row').hidden]`);
+  await ev(`window.sandbox.set({compressor_eff: 'isentropic'})`, 60000);
+  check('the_fan_efficiency_follows_the_compressor_switch', fanPoly[0] === true && fanPoly[1] === false, JSON.stringify(fanPoly));
+  const fanAb = await ev(`window.sandbox.set({afterburner: 1})`, 30000);
+  const fanAbWords = await ev(`document.getElementById('bad-plain').textContent`);
+  check('an_afterburner_on_a_turbofan_is_refused_in_words', fanAb === 'does-not-run' && /not modelled on a turbofan/.test(fanAbWords),
+        JSON.stringify([fanAb, fanAbWords]));
+  await ev(`window.sandbox.set({afterburner: 0, alpha: 0})`, 30000);
+  check('bypass_ratio_zero_restores_the_opening_design',
+        JSON.stringify(await ev('window.sandbox.last')) === JSON.stringify(first)
+        && await ev(`document.getElementById('fan-tiles').hidden && document.getElementById('fan-card').hidden && document.getElementById('fan-box').hidden
+          && document.getElementById('mdot-note').textContent === ''`),
+        'differs');
+
   // 17c. "TRY THIS" (roadmap A1). On each view with a menu, one experiment chosen THROUGH the menu: it pins the
   // view's opening run, applies the experiment, and the result moves the way its words promise; then "Back to the
   // opening settings" brings the opening run back exactly and clears the pin and the note. Size the blades has none.

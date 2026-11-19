@@ -27,6 +27,7 @@ use crate::jobj;
 use crate::map::ComponentMap;
 use crate::matcher::{Branch, Rebuilt};
 use crate::spool::SpoolTransient;
+use crate::turbofan::{best_pi_f, build_turbofan, BestFan, CoreTo4, Fan, Turbofan, TurbofanResult};
 use crate::panels::{flight, real_losses, PI_C, TT4};
 use crate::visuals::Json;
 
@@ -143,6 +144,14 @@ pub struct Settings {
     pub eta_ab: f64,
     pub pi_fh: f64,
     pub m6: f64,
+    /// RUNG 109 — a fan (`turbofan::Fan`): the bypass ratio (0, the default, is the turbojet), the fan's pressure ratio,
+    /// its two efficiencies (the compressor's switch picks one) and the bypass duct's pressure ratio. `mdot` stays the
+    /// CORE airflow. Written in a reply only off their defaults.
+    pub alpha: f64,
+    pub pi_f: f64,
+    pub eta_f: f64,
+    pub e_f: f64,
+    pub pi_fn: f64,
 }
 
 impl Settings {
@@ -159,7 +168,14 @@ impl Settings {
             eta_b: l.eta_b, pi_b: l.pi_b, eta_m: l.eta_m, pi_n: l.pi_n,
             nozzle: NozzleMode::Expanded, p_exit: f.p0, gas: GasModel::Equilibrium,
             afterburner: false, tt7: ab.tt7, eta_ab: ab.eta_ab, pi_fh: ab.pi_fh, m6: ab.m6,
+            alpha: 0.0, pi_f: Fan::default().pi_f, eta_f: Fan::default().eta_f, e_f: 0.90, pi_fn: Fan::default().pi_fn,
         }
+    }
+
+    /// The fan the knobs describe (rung 109); its efficiency follows the compressor's switch.
+    pub fn fan(&self) -> Fan {
+        let (eta_f, e_f) = if self.compressor_polytropic { (1.0, Some(self.e_f)) } else { (self.eta_f, None) };
+        Fan { alpha: self.alpha, pi_f: self.pi_f, eta_f, e_f, pi_fn: self.pi_fn }
     }
 
     /// The afterburner the knobs describe.
@@ -198,6 +214,12 @@ impl Settings {
             if self.afterburner { kv.push(("afterburner".into(), Json::Int(1))); }
             for (k, v, dv) in [("Tt7", self.tt7, d.tt7), ("eta_ab", self.eta_ab, d.eta_ab), ("pi_fh", self.pi_fh, d.pi_fh),
                                ("M6", self.m6, d.m6)] {
+                if v != dv { kv.push((k.into(), Json::Float(v))); }
+            }
+            // Rung 109's five, likewise.
+            let d = Settings::defaults();
+            for (k, v, dv) in [("alpha", self.alpha, d.alpha), ("pi_f", self.pi_f, d.pi_f), ("eta_f", self.eta_f, d.eta_f),
+                               ("e_f", self.e_f, d.e_f), ("pi_fn", self.pi_fn, d.pi_fn)] {
                 if v != dv { kv.push((k.into(), Json::Float(v))); }
             }
         }
@@ -242,6 +264,11 @@ impl Settings {
         num("eta_ab", &mut s.eta_ab)?;
         num("pi_fh", &mut s.pi_fh)?;
         num("M6", &mut s.m6)?;
+        num("alpha", &mut s.alpha)?;
+        num("pi_f", &mut s.pi_f)?;
+        num("eta_f", &mut s.eta_f)?;
+        num("e_f", &mut s.e_f)?;
+        num("pi_fn", &mut s.pi_fn)?;
         match j.get("afterburner") {
             None => {}
             Some(Json::Int(n)) if *n == 0 || *n == 1 => s.afterburner = *n == 1,
@@ -288,6 +315,35 @@ pub fn ab_precheck(ab: &Afterburner) -> Result<(), DoesNotRun> {
     Ok(())
 }
 
+/// Rung 109's knob ranges, in words.
+pub fn fan_precheck(s: &Settings) -> Result<(), DoesNotRun> {
+    let no = |m: &str| Err(DoesNotRun(m.to_string()));
+    let named = [("alpha", s.alpha), ("pi_f", s.pi_f), ("eta_f", s.eta_f), ("e_f", s.e_f), ("pi_fn", s.pi_fn)];
+    if let Some((k, _)) = named.iter().find(|(_, v)| !v.is_finite()) {
+        return Err(DoesNotRun(format!("Setting {k} is not a number.")));
+    }
+    if !(0.0..=15.0).contains(&s.alpha) {
+        return no("The bypass ratio must be between 0 (a turbojet) and 15.");
+    }
+    if !(1.0..=4.0).contains(&s.pi_f) {
+        return no("The fan pressure ratio must be between 1 and 4: a single fan stage gives about 1.5 to 1.8, a \
+                   military multi-stage fan up to about 4.");
+    }
+    let eff = if s.compressor_polytropic { s.e_f } else { s.eta_f };
+    if !(0.5..=1.0).contains(&eff) {
+        return no("The fan efficiency must be between 0.5 and 1 (100 %).");
+    }
+    if !(0.85..=1.0).contains(&s.pi_fn) {
+        return no("The bypass duct's pressure ratio must be between 0.85 and 1 — a duct can only lose pressure, and \
+                   real ones lose a few percent.");
+    }
+    if s.alpha > 0.0 && s.afterburner {
+        return no("The afterburner is not modelled on a turbofan (it would need the two streams mixed first). Set \
+                   the bypass ratio to 0, or switch the afterburner off.");
+    }
+    Ok(())
+}
+
 /// The checks made BEFORE the solve. Each names the knob and the physical reason.
 pub fn precheck(s: &Settings) -> Result<(), DoesNotRun> {
     let no = |m: String| Err(DoesNotRun(m));
@@ -327,6 +383,7 @@ pub fn precheck(s: &Settings) -> Result<(), DoesNotRun> {
     if s.nozzle == NozzleMode::ExitPressure && s.p_exit <= 0.0 {
         return no("The nozzle exit pressure must be above zero.".into());
     }
+    fan_precheck(s)?;
     if s.afterburner {
         ab_precheck(&s.ab())?;
     }
@@ -363,6 +420,75 @@ pub struct Outcome {
     pub curves: [Vec<(f64, f64)>; 2],
     /// Rung 102, with the afterburner lit: the same engine unlit, and what the afterburner did.
     pub ab: Option<AbOutcome>,
+    /// Rung 109, with a fan: the bypass stream, the best fan pressure ratio and the fuel-versus-bypass chart.
+    pub fan: Option<FanOutcome>,
+}
+
+/// What the Design view shows beside a turbofan (rung 109).
+pub struct FanOutcome {
+    pub result: TurbofanResult,
+    /// The fan pressure ratio with the lowest fuel per thrust at this bypass ratio (`None`: none runs).
+    pub best: Option<BestFan>,
+    /// Bypass ratios 0, 1, … [`FAN_CHART_MAX`] at the current settings — see [`fan_chart`].
+    pub chart: Vec<FanChartPoint>,
+    /// `(label, s, T)` for the bypass stream on the T–s diagram: 13 (fan exit, total) and 19 (the fan's jet, static),
+    /// on the cold section from the run's ambient datum (station 2 is the core's).
+    pub ts_fan: Vec<(&'static str, f64, f64)>,
+}
+
+/// One bypass ratio on the fuel-versus-bypass chart: at the current fan pressure ratio and at the best one —
+/// `(TSFC kg/(N·s), thrust per kilogram of CORE air N·s/kg)`, `None` where that setting does not run.
+pub struct FanChartPoint {
+    pub alpha: f64,
+    pub current: Option<(f64, f64)>,
+    /// `(π_f, TSFC, thrust per core air, at the knob's top, against the turbine's wall)`.
+    pub best: Option<(f64, f64, f64, bool, bool)>,
+}
+
+/// The chart's last bypass ratio.
+pub const FAN_CHART_MAX: usize = 12;
+
+/// The fuel-versus-bypass chart (rung 109, the user's choice): every bypass ratio 0 … [`FAN_CHART_MAX`] on the same
+/// core, at the current fan pressure ratio and at each one's best. At α = 0 both are the turbojet. Thrust per core air
+/// is `f/TSFC` (`TSFC = f/((1+α)·F/ṁ0)`), so the best's needs no second run.
+pub fn fan_chart(tf: &Turbofan, core: &CoreTo4, s: &Settings) -> Vec<FanChartPoint> {
+    let jet = tf.engine.run(&core.flight, s.mdot);
+    let f = jet.station("4").far;
+    let j = (jet.performance.tsfc, jet.performance.specific_thrust);
+    let mut out = vec![FanChartPoint { alpha: 0.0, current: Some(j), best: Some((1.0, j.0, j.1, false, false)) }];
+    for k in 1..=FAN_CHART_MAX {
+        let fan = Fan { alpha: k as f64, ..s.fan() };
+        let current = tf.try_finish(core, fan).ok().map(|r| (r.core.performance.tsfc, r.thrust_per_core()));
+        let best = best_pi_f(tf, core, fan).map(|b| (b.pi_f, b.tsfc, f / b.tsfc, b.at_top, b.at_wall));
+        out.push(FanChartPoint { alpha: k as f64, current, best });
+    }
+    out
+}
+
+/// The bypass stream's T–s points — slice 1's cold-section entropy ([`ts_points`]), the same expressions.
+pub fn ts_fan_points(gas: &Gas, r: &TurbofanResult, fl: &FlightCondition) -> Vec<(&'static str, f64, f64)> {
+    let (tref, pref) = (fl.t0, fl.p0);
+    let s_cold = |t: f64, p: f64| {
+        if gas.cold_is_cpg() {
+            gas.spec.cp_c * (t / tref).ln() - gas.spec.r_c * (p / pref).ln()
+        } else {
+            gas.r_c() * (gas.pr_c(t).ln() - gas.pr_c(tref).ln()) - gas.r_c() * (p / pref).ln()
+        }
+    };
+    let fs = r.fan.as_ref().expect("a fan run");
+    vec![("13", s_cold(fs.s13.tt, fs.s13.pt), fs.s13.tt), ("19", s_cold(fs.exit.t9, fs.exit.p9), fs.exit.t9)]
+}
+
+/// Roadmap A6's equivalent-jet split for TWO jets (rung 109): each jet's equivalent speed from its own thrust —
+/// `V_eq9 = (F_core + V0)/(1+f)`, `V_eq19 = F_fan + V0` — then thermal = kinetic energy gained by both per fuel energy,
+/// propulsive = thrust power over that gain, computed on its own. Returns the split (its `v_eq` the core's) and
+/// `V_eq19`. Fully expanded, each equals its jet's speed, so this is the speed-only split.
+pub fn equivalent_jets(core: f64, fan: f64, alpha: f64, v0: f64, f: f64, hpr: f64) -> (EquivalentJet, f64) {
+    let v_eq9 = (core + v0) / (1.0 + f);
+    let v_eq19 = fan + v0;
+    let ke_gain = (1.0 + f) * (v_eq9 * v_eq9) + alpha * (v_eq19 * v_eq19) - (1.0 + alpha) * (v0 * v0);
+    let eta_propulsive = 2.0 * (core + alpha * fan) * v0 / ke_gain;
+    (EquivalentJet { v_eq: v_eq9, eta_thermal: ke_gain / (2.0 * f * hpr), eta_propulsive }, v_eq19)
 }
 
 /// What the Design view shows beside a lit afterburner.
@@ -382,6 +508,23 @@ pub struct AbOutcome {
 /// lit, rung 102's builder continues that very run from station 5.
 pub fn run(s: &Settings) -> Result<Outcome, DoesNotRun> {
     precheck(s)?;
+    if s.alpha > 0.0 {
+        // Rung 109: the core to the burner exit once, then the fan's run, its best and its chart on that core.
+        let tf = build_turbofan(s.gas.gas(), s.pi_c, s.tt4, s.p0, s.losses(), s.fan());
+        let fl = s.flight();
+        let core = tf.core_to_4(&fl, s.mdot);
+        let r = tf.try_finish(&core, s.fan()).map_err(|e| {
+            if crate::turbofan::is_refusal(&e) { DoesNotRun(e.0) } else { DoesNotRun(format!("{} Model message: {}", explain(&e.0), e.0)) }
+        })?;
+        let best = best_pi_f(&tf, &core, s.fan());
+        let chart = fan_chart(&tf, &core, s);
+        let result = r.core.clone();
+        let ts = ts_points(&tf.engine.gas, &result, &fl);
+        let curves = ts_curves(&tf.engine.gas, &result, &ts);
+        let ts_fan = ts_fan_points(&tf.engine.gas, &r, &fl);
+        return Ok(Outcome { settings: *s, result, ts, curves, ab: None,
+                            fan: Some(FanOutcome { result: r, best, chart, ts_fan }) });
+    }
     if s.afterburner {
         let e = build_afterburning_turbojet(s.gas.gas(), s.pi_c, s.tt4, s.p0, s.losses(), s.ab());
         let none = e.run_core(&s.flight(), s.mdot);
@@ -404,13 +547,13 @@ pub fn run(s: &Settings) -> Result<Outcome, DoesNotRun> {
         let curves = ts_curves(gas, &result, &ts);
         let curve = ts_afterburner_leg(gas, &result, &ts);
         let ab = AbOutcome { detail: lit.detail, dry, none, a8_ratio, curve };
-        return Ok(Outcome { settings: *s, result, ts, curves, ab: Some(ab) });
+        return Ok(Outcome { settings: *s, result, ts, curves, ab: Some(ab), fan: None });
     }
     let engine = build_turbojet(s.gas.gas(), s.pi_c, s.tt4, s.p0, s.losses());
     let result = engine.run(&s.flight(), s.mdot);
     let ts = ts_points(&engine.gas, &result, &s.flight());
     let curves = ts_curves(&engine.gas, &result, &ts);
-    Ok(Outcome { settings: *s, result, ts, curves, ab: None })
+    Ok(Outcome { settings: *s, result, ts, curves, ab: None, fan: None })
 }
 
 /// Entropy at each station for the T–s diagram, ON THE RUN'S OWN GAS and from the run's OWN
@@ -636,9 +779,28 @@ pub fn outcome_json(o: &Outcome) -> Result<Json, DoesNotRun> {
     // The TOTAL fuel: the jet's fuel/air ratio — station 4's without an afterburner (the same value), the main burner's
     // plus the afterburner's with one (rung 102).
     let f = r.station("9").far;
-    let thrust = finite(p.specific_thrust, "specific thrust")? * s.mdot;
+    // Rung 109: `specific_thrust` is per TOTAL air and `mdot` the CORE's, so a turbofan's thrust carries (1+α). Without a
+    // fan this is the turbojet's line, untouched.
+    let thrust = match &o.fan {
+        None => finite(p.specific_thrust, "specific thrust")? * s.mdot,
+        Some(fo) => finite(fo.result.thrust_per_core(), "specific thrust")? * s.mdot,
+    };
     // Roadmap A6: on the run's own gas model, so its own heating value (a derived one on the Fork B and equilibrium gases).
-    let eq = equivalent_jet(p.specific_thrust, r.v0, f, s.gas.gas().hpr());
+    // With a fan, the two-jet split (rung 109).
+    let hpr = s.gas.gas().hpr();
+    let (eq, v_eq19) = match &o.fan {
+        None => (equivalent_jet(p.specific_thrust, r.v0, f, hpr), None),
+        Some(fo) => {
+            let (e, v) = equivalent_jets(fo.result.core_thrust, fo.result.fan_thrust, fo.result.alpha, r.v0, f, hpr);
+            (e, Some(v))
+        }
+    };
+    if let Some(fs) = o.fan.as_ref().and_then(|fo| fo.result.fan.as_ref()) {
+        for (l, st) in [("13", &fs.s13), ("19", &fs.exit.state)] {
+            stations.push(jobj! { "label" => l, "Tt" => finite(st.tt, "temperature")?,
+                                  "pt" => finite(st.pt, "pressure")?, "far" => 0.0 });
+        }
+    }
     let mut j = jobj! {
         "ok" => Json::Int(1),
         "settings" => s.to_json(),
@@ -690,6 +852,40 @@ pub fn outcome_json(o: &Outcome) -> Result<Json, DoesNotRun> {
                 "thrust" => finite(np.specific_thrust, "specific thrust")? * s.mdot, "tsfc" => finite(np.tsfc, "TSFC")?,
             },
         }));
+    }
+    if let (Some(fo), Json::Obj(kv)) = (&o.fan, &mut j) {
+        let tr = &fo.result;
+        let fs = tr.fan.as_ref().expect("a fan run carries its bypass stream");
+        let best = match &fo.best {
+            None => Json::Null,
+            Some(b) => jobj! { "pi_f" => b.pi_f, "tsfc" => b.tsfc,
+                               "at_top" => Json::Int(b.at_top as i64), "at_wall" => Json::Int(b.at_wall as i64) },
+        };
+        let mut chart = Vec::new();
+        for c in &fo.chart {
+            let current = match c.current { None => Json::Null,
+                Some((t, st)) => jobj! { "tsfc" => finite(t, "TSFC")?, "st_core" => finite(st, "specific thrust")? } };
+            let best = match c.best { None => Json::Null,
+                Some((pf, t, st, top, wall)) => jobj! { "pi_f" => pf, "tsfc" => finite(t, "TSFC")?,
+                    "st_core" => finite(st, "specific thrust")?, "at_top" => Json::Int(top as i64), "at_wall" => Json::Int(wall as i64) } };
+            chart.push(jobj! { "alpha" => c.alpha, "current" => current, "best" => best });
+        }
+        let mut ts_fan = Vec::new();
+        for &(l, sv, t) in &fo.ts_fan {
+            ts_fan.push(jobj! { "label" => l, "s" => finite(sv, "entropy")?, "T" => finite(t, "temperature")? });
+        }
+        kv.push(("fan".into(), jobj! {
+            "alpha" => tr.alpha, "mdot_bypass" => tr.alpha * s.mdot,
+            "Tt13" => finite(fs.s13.tt, "temperature")?, "pt13" => finite(fs.s13.pt, "pressure")?,
+            "V19" => finite(fs.exit.v9, "fan jet speed")?, "M19" => finite(fs.exit.m9, "fan jet Mach number")?,
+            "T19" => finite(fs.exit.t9, "fan jet temperature")?, "p19" => finite(fs.exit.p9, "fan jet pressure")?,
+            "core_thrust" => finite(tr.core_thrust, "core thrust")?, "fan_thrust" => finite(tr.fan_thrust, "fan thrust")?,
+            "thrust_per_core" => finite(tr.thrust_per_core(), "specific thrust")?,
+            "V_eq19" => or_null(v_eq19.unwrap_or(f64::NAN)),
+            "best" => best,
+            "chart" => Json::List(chart),
+        }));
+        kv.push(("ts_fan".into(), Json::List(ts_fan)));
     }
     Ok(j)
 }
@@ -752,13 +948,14 @@ pub fn call(request: &str) -> String {
         _ => None,
     };
     let out = match op {
-        // The page reads every knob's opening value here, so rung 102's five ride along even at their defaults
-        // (a run's reply echoes them only off their defaults).
+        // The page reads every knob's opening value here, so rung 102's five and rung 109's five ride along even at
+        // their defaults (a run's reply echoes them only off their defaults).
         "defaults" => {
             let (s, mut j) = (Settings::defaults(), Settings::defaults().to_json());
             if let Json::Obj(kv) = &mut j {
                 kv.push(("afterburner".into(), Json::Int(0)));
-                for (k, v) in [("Tt7", s.tt7), ("eta_ab", s.eta_ab), ("pi_fh", s.pi_fh), ("M6", s.m6)] {
+                for (k, v) in [("Tt7", s.tt7), ("eta_ab", s.eta_ab), ("pi_fh", s.pi_fh), ("M6", s.m6),
+                               ("alpha", s.alpha), ("pi_f", s.pi_f), ("eta_f", s.eta_f), ("e_f", s.e_f), ("pi_fn", s.pi_fn)] {
                     kv.push((k.into(), Json::Float(v)));
                 }
             }
@@ -1021,6 +1218,10 @@ impl FlySettings {
 /// the captured design), and the off-design solver's own limits are named in plain words.
 pub fn fly_precheck(s: &FlySettings) -> Result<(), DoesNotRun> {
     let no = |m: &str| Err(DoesNotRun(m.to_string()));
+    if s.design.alpha > 0.0 {
+        return no("Flying a turbofan off its design point is not modelled yet (rung 109 is the design point only). \
+                   Set the bypass ratio to 0 on the Design view to fly the turbojet.");
+    }
     if s.design.compressor_polytropic || s.design.turbine_polytropic {
         return no("Flying the engine uses the isentropic efficiencies: the off-design solver reads the \
                    compressor and turbine through them. Switch both efficiency knobs to isentropic.");
@@ -1311,7 +1512,7 @@ pub fn fly_json(o: &FlyOutcome) -> Result<Json, DoesNotRun> {
     let op = Outcome {
         settings: Settings { t0: s.t0, p0: s.p0, m0: s.m0, tt4: s.tt4, pi_c: p.pi_c, mdot: p.mdot_air,
                              gas: s.gas, nozzle: NozzleMode::Convergent, afterburner: false, ..s.design },
-        result: o.result.clone(), ts: o.ts.clone(), curves: o.curves.clone(), ab: None,
+        result: o.result.clone(), ts: o.ts.clone(), curves: o.curves.clone(), ab: None, fan: None,
     };
     let mut j = outcome_json(&op)?;
     let d = &o.design;
@@ -1520,6 +1721,29 @@ pub fn check_requests() -> Vec<String> {
     out.extend(check_ab_requests());
     out.extend(check_ab_fly_requests());
     out.extend(crate::sandbox_controls::check_ab_requests());
+    out.extend(check_fan_requests());
+    out
+}
+
+/// RUNG 109's Design-view requests, appended LAST (every earlier request keeps its number): a turbofan on every gas at
+/// the opening design; the fixed convergent and set-exit-pressure nozzles; the polytropic fan; standing still; a high
+/// bypass ratio whose best fan sits against the turbine's limit; and the refusals in words — the turbine's limit, the
+/// fan's floor standing still, the fan with the afterburner, a knob out of range, and flying a turbofan.
+pub fn check_fan_requests() -> Vec<String> {
+    let run = |s: Settings| jobj! { "op" => "run", "settings" => s.to_json() }.dump_compact();
+    let d = Settings::defaults();
+    let fan = Settings { alpha: 6.0, ..d };
+    let mut out: Vec<String> = GasModel::ALL.iter().map(|&g| run(Settings { gas: g, ..fan })).collect();
+    out.push(run(Settings { nozzle: NozzleMode::Convergent, ..fan }));
+    out.push(run(Settings { nozzle: NozzleMode::ExitPressure, p_exit: 0.9 * d.p0, gas: GasModel::ThermallyPerfect, ..fan }));
+    out.push(run(Settings { compressor_polytropic: true, e_f: 0.92, gas: GasModel::Perfect, ..fan }));
+    out.push(run(Settings { m0: 0.0, pi_f: 1.4, ..fan }));
+    out.push(run(Settings { alpha: 12.0, tt4: 1400.0, pi_c: 40.0, gas: GasModel::Perfect, ..d }));
+    out.push(run(Settings { alpha: 10.0, pi_f: 3.0, ..d }));                                  // the turbine's limit
+    out.push(run(Settings { m0: 0.0, pi_f: 1.02, ..fan }));                                   // the fan's floor
+    out.push(run(Settings { afterburner: true, ..fan }));                                      // with the afterburner
+    out.push(run(Settings { alpha: 20.0, ..d }));                                              // out of range
+    out.push(jobj! { "op" => "fly", "fly" => FlySettings { design: fan, ..FlySettings::defaults() }.to_json() }.dump_compact());
     out
 }
 

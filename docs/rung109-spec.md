@@ -5,7 +5,8 @@
 `score_turbofan` (two jets, per total air), `best_pi_f` (the fan pressure ratio with the lowest fuel per thrust).
 **Gates and scoring:** `rust/tests/rung109.rs`. **Panel:** `print_turbofan_table` (born in Rust, held to
 `rust/oracle/rust_owned/`; a change detector only). **Anchor:** `docs/plans/rung109-anchor-turbofan.md`, committed as
-`19a2b6e` before any rung-109 code. **Sandbox:** the Design view (the page's commit, the anchor's third stage).
+`19a2b6e` before any rung-109 code. **Sandbox:** the Design view's *Fan (turbofan)* box (`docs/sandbox/README.md`
+§ Rung 109; gates `tests/sandbox_fan.rs`, the browser checks `the_turbofan_*`).
 
 Roadmap B1; SPEC.md § Future directions B, *"Turbofan. Add a fan, a bypass stream, and a splitter."* The scope was set
 on a measured probe, each answer the user's (memory `rung109-decisions`): the **design point only**, on the Design view;
@@ -92,6 +93,17 @@ there (0.58) is read at the knob's edge, not at the best; two are standing, `π_
 under the band. Over every scored cell whose best is inside the range, the ratio runs **0.6988 to 0.8085**, falling as
 bypass ratio rises — the "two efficiencies" argument sets the level, the fuel's mass and the duct losses tilt it.
 P5's penalties: turbojet 8.7–15.2 %, α 8 0.39–1.30 %. P6: 2.43–2.56×.
+
+## The page (anchor § 4)
+
+Bypass ratio 0 is the turbojet's reply byte for byte (every key but the echoed settings, `tests/sandbox_fan.rs`). The
+page's thrust is `(F_core + α·F_fan)·ṁ_core` (its airflow knob is the core's); the efficiency split is roadmap A6's on two
+jets (`sandbox::equivalent_jets`, which reduces to the one-jet split at α = 0 bit for bit). **The cost bar:** the best-fan
+search is 0.4–0.8 ms against a 1.0 ms design run (native release, equilibrium gas), inside the anchor's 10×, so it runs
+on every change at full resolution; a whole turbofan run with the chart's twelve searches is 6.6–10 ms. *Found while
+writing the page's experiment:* on the opening design (Mach 0.85, 5.6 km) the best-fan fuel per thrust has an interior
+minimum near bypass ratio 11 (22.564 g/(kN·s), against 22.575 at 12): past it, a bigger fan at its best costs slightly
+more fuel per thrust.
 
 ## Concessions
 

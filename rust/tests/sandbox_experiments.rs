@@ -352,6 +352,19 @@ fn experiments() -> Vec<Exp> {
                   vec![kn(&a), kn(&b), (kn(&b) / kn(&a) - 1.0) * 100.0, tsfc(&a), tsfc(&b), (tsfc(&b) / tsfc(&a) - 1.0) * 100.0,
                        num(b.at("afterburner").at("a8_ratio"))] }),
         ], exempt: &[] },
+        // Rung 109: the fan, beside the afterburner (8b, so every later experiment keeps its number).
+        Exp { key: "8b. Add a fan: more air, thrown back more slowly", table: None, prose: vec![
+            ("Thrust rises from {} to {} kN and fuel per thrust falls from {} to {} (−{} %).",
+             || { let (a, b) = (design(&[]), design(&[("alpha", i(6))]));
+                  vec![kn(&a), kn(&b), tsfc(&a), tsfc(&b), (1.0 - tsfc(&b) / tsfc(&a)) * 100.0] }),
+            ("ratio, {}; type it in and fuel per thrust falls a little more, to {}. Even there the fan jet leaves at only {} of the core jet's speed,",
+             || { let best = num(design(&[("alpha", i(6))]).at("fan").at("best").at("pi_f"));
+                  let r = design(&[("alpha", i(6)), ("pi_f", f(best))]);
+                  vec![best, tsfc(&r), num(r.at("fan").at("V19")) / num(r.at("V9"))] }),
+            ("the fan's efficiency times the turbine's is {}.",
+             || { let d = defaults("defaults", None); vec![num(d.at("eta_f")) * num(d.at("eta_t"))] }),
+        ], exempt: &[("6", "the knob the experiment sets"), ("2026", "the date of rung 109"), ("11", "the date"), ("19", "the date"),
+                     ("109", "the rung's number")] },
         Exp { key: "9", table: Some(|row, col| {
             let r = fly(&[("Tt4", f(knob(col)))]);
             match row {

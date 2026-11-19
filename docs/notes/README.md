@@ -1,4 +1,4 @@
-# Plain-language notes, rungs 25–108
+# Plain-language notes, rungs 25–109
 
 `NOTES.md` at the repository root tells rungs 1–22 in everyday words. This folder carries the story on, one
 file per family of rungs (the families of `CLAUDE.md`'s rung table). Each rung gets: what it found, in one
@@ -26,6 +26,7 @@ note is a bug.
 | 102 afterburner | [102-afterburner.md](102-afterburner.md) | written 2026-11-12 |
 | 103–105 below choke | [103-105-below-choke.md](103-105-below-choke.md) | written 2026-11-12 |
 | 106–108 governor beside the limiters | [106-108-governor-beside-limiters.md](106-108-governor-beside-limiters.md) | written 2026-11-12 |
+| 109 turbofan (design point) | [109-turbofan.md](109-turbofan.md) | written 2026-11-19 |
 
 Every family from 25 to 108 is written (roadmap A4, done 2026-11-14). A later rung that corrects one of these notes
 should add a "Later" line to it.

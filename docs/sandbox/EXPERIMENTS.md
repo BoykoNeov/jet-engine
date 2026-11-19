@@ -116,6 +116,16 @@ thrust rises from 34.04 to 49.83 (+46 %). The nozzle throat must open to 1.33 ti
 Burning fuel at low pressure, after the turbine has taken its work, is a poor way to use fuel and a
 very good way to get thrust from a small engine for a short time.
 
+### 8b. Add a fan: more air, thrown back more slowly
+
+Under *Fan (turbofan)*, set the **bypass ratio** to 6: six kilograms of air now go around the core for every
+kilogram through it, pushed by a fan on the same turbine. Thrust rises from 15.97 to 22.84 kN and fuel per
+thrust falls from 34.04 to 23.80 (−30 %). The fan tile names the best fan pressure ratio for this bypass
+ratio, 1.810; type it in and fuel per thrust falls a little more, to 23.19. Even there the fan jet leaves at
+only 0.787 of the core jet's speed, not at the same speed: work passed from the core jet to the fan jet loses
+a share in the turbine and again in the fan, and the fan's efficiency times the turbine's is 0.792. Since
+2026-11-19 (rung 109).
+
 ---
 
 ## Fly it
