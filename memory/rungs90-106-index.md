@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 24769f1e-166a-49a8-9795-5af4eefb98aa
-  modified: 2026-11-10T08:26:53.403Z
+  modified: 2026-11-19T10:14:01.201Z
 ---
 
 Moved out of `MEMORY.md` on 2026-11-10, when the index reached 19.6 KB. Append new rungs and decisions here.
@@ -30,6 +30,7 @@ Moved out of `MEMORY.md` on 2026-11-10, when the index reached 19.6 KB. Append n
 - [106](rung106-governor-lag.md) re-run a comparison claim on the same configurations; all-HIT ⇒ look past the grid
 - [107](rung107-governor-release.md) a HIT can rest on the wrong mechanism: split a two-edge device's edges; scope a comparison to its hold; ask if a knob floor is numerical
 - [108](rung108-two-speed-limiter.md) re-read a picked option's exact words before asking on it; name a loop's cell in its assertion; log RK4 stages for a pinned-trigger claim
+- [109](rung109-turbofan.md) a new lib.rs module stales the committed sandbox page; an optimiser must bisect its feasibility wall; check the wall before a table inversion
 
 ## The user's decisions, per rung
 - [93/94](rung93-94-decisions.md) user 2026-10-16: two rungs, both framings, hold thrust or HP speed

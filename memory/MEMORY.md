@@ -37,7 +37,7 @@ new slices and step links go THERE, not here.
 - [Needless precision](needless-precision.md) — user 2026-11-09: set tolerances by physical meaning, not tightness; floor = the smallest effect the model shows
 - [Back-pressure repair](back-pressure-repair.md) — 2026-10-16: a census logger in a threaded test process must write each record in ONE call; red-check by stashing src only
 - [Sandbox altitude](sandbox-altitude.md) — a step-checked limit holds only at its flight; a ×2 similarity cannot see a re-capture; empty-vs-empty cmp says IDENTICAL
-- [Roadmap + standing engine](roadmap-and-standing-engine.md) — 2026-11-12: `docs/plans/roadmap.md` is the entry point (A1–A8 all DONE by 2026-11-19; B1–B5 the user's choice — ask); a refusal can be another rung's control flow, so add a twin
+- [Roadmap + standing engine](roadmap-and-standing-engine.md) — 2026-11-12: `docs/plans/roadmap.md` is the entry point (A1–A8 all DONE by 2026-11-19; B1 design point DONE as rung 109; B2–B5 + B1 off-design the user's choice — ask); a refusal can be another rung's control flow, so add a twin
 - [Try-this menu (A1)](try-this-menu-a1.md) — 2026-11-12 SHIPPED: a chained page action must await each run landing (settled()); measure an entry's run against its pin before writing its text
 - [Standing engine (A3)](standing-engine-a3.md) — 2026-11-12 SHIPPED: a census must set the knob where the request reads it (the slam nests its flight); a limit pair off a grid validates nothing
 - [Plain notes (A4)](plain-notes-a4.md) — DONE 2026-11-14, all of 25–108: read headlines, don't scrape them (81/82 went wrong); add forward pointers to notes already written
@@ -99,8 +99,8 @@ new slices and step links go THERE, not here.
 - 69–76 splits & rank — [69](rung69-reference-split.md) a null space absorbs a moved start · [70](rung70-generic-split.md) a gate computing my formula twice · [71](rung71-full-split.md) rank ≠ constraint independence · [72](rung72-shared-actuator.md) instruments agreeing with themselves · [73](rung73-applied-reference.md) a perfect confirmation that measured nothing · [74](rung74-demand-coordinate.md) a closed-loop difference cannot isolate a forcing · [75](rung75-antiwindup-device.md) the inherited instrument was blind · [76](rung76-fuel-dependent-cap.md) the 0.7 % miss WAS the finding
 - 77–84 reader-only — [77](rung77-stiffness-ledger.md) UNITS before normalising · [78](rung78-residual-gauge.md) only COUNTING caught three vacuity traps · [79](rung79-state-coordinate.md) register the VACUITY CONDITION · [80](rung80-split-wall.md) the seam named the wrong noun · [81](rung81-authority-clock.md) the first 100 % was the weaker measurement · [82](rung82-threshold-law.md) a quantity vs a loop count is void · [83](rung83-corrector-law.md) an identity round-trip is not verification · [84](rung84-staircase-law.md) a small COUNT cannot carry a RATE
 - 85–89 knobs — [85](rung85-blade-speed.md) list EVERY parameter two cases differ in; a (1,1) identity fed by hand · [86](rung86-three-levers.md) the READING is not the RUN · [87](rung87-valve-reference.md) a prediction vs a pointwise optimum is construction · [88](rung88-slow-valve.md) no slack ⇒ a perturbation FLIPS it; predict the sign · [89](rung89-asymmetric-valve.md) a fixed-set-point forecast cannot bound a case-switching perturbation
-- 90–108 loads … the two-speed temperature limiter — [rungs 90–106 index](rungs90-106-index.md): one process lesson per rung (one lesson per file); append new rungs THERE
-- Decisions 93–108 — the user's scope choices per rung, in [rungs 90–106 index](rungs90-106-index.md)
+- 90–109 loads … the turbofan — [rungs 90–106 index](rungs90-106-index.md): one process lesson per rung (one lesson per file); append new rungs THERE
+- Decisions 93–109 — the user's scope choices per rung, in [rungs 90–106 index](rungs90-106-index.md)
 
 
 ## Margin sweeps — confirmations, not rungs
