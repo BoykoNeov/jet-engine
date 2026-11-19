@@ -132,7 +132,8 @@ and look at them).
 
 *Done:* `rust/tests/sandbox_experiments.rs`, native, through `sandbox::call` (the browser's numbers differ from
 native by ~1e-10, far under the guide's last digit). It reads the guide's tables and quoted sentences, so the
-guide stays the only place the numbers are written; the bar is half a unit in the last digit shown; a census fails
+guide stays the only place the numbers are written; the bar is one unit in the last digit shown (half a unit was
+measured brittle: 31 numbers used over 80 % of it, one all of it); a census fails
 on any number in the guide neither checked nor exempt with a reason. Red-checked: a moved table cell, a moved prose
 number, an added number and a dropped reader each fail. *What it found:* every Design, Fly it, burner and cooling
 number held. Controls did not: the guide quoted "time to 90 % of the thrust change" (the page shows 95 %) and the

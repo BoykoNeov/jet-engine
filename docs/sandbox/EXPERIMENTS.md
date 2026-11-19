@@ -11,8 +11,8 @@ look at. This guide adds the full tables of numbers.
 Every number here was read off the page itself on 2026-11-12, at its opening settings unless the
 experiment says otherwise. They are there so you can tell you are looking at the right thing; the
 *direction* of each change is the lesson, not the last digit. The test suite holds every one of them
-to the model, to the last digit shown (`rust/tests/sandbox_experiments.rs`, roadmap A2): a model change
-that moves a number here fails the tests until this guide is updated.
+to the model, within one unit of the last digit shown (`rust/tests/sandbox_experiments.rs`, roadmap A2): a
+model change that moves a number further fails the tests until this guide is updated.
 
 Units used on the page: thrust in kN; "fuel per thrust" (TSFC) in grams of fuel per kN of thrust per
 second — lower is better; τ is the shaft's own response time (the model has no rotor weight, so it
