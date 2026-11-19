@@ -307,6 +307,18 @@ of that view's settings; Fly it's `slam` holds the slam's knobs), text. A multi-
 several entries, each one change from the pinned opening; a sweep in the guide is one representative point, its
 text saying which slider to move next.
 
+## Save and share a setup (roadmap A7, 2026-11-19)
+
+The address keeps the open view and every knob that differs from that view's opening settings, after `#`, as JSON:
+`{"view":"fly","design":{"pi_c":12},"fly":{"Tt4":1300},"slam":{"ramp":0.2}}` (percent-encoded). `design` is the
+Design engine (also the engine Fly it froze and the burner's); `fly` and `slam` are measured from the opening of THAT
+frozen engine; `blades`, `controls`, `cooling`, `burner` are their views' own. **Copy link** copies it; where the
+browser refuses the clipboard (headless Chrome did), the link is shown selected, to copy by hand. Opening the page at
+such an address sets the engine up as a person would — the Design engine, then the view, then its knobs — and runs it
+once. Pins are not saved. Keys the opening settings do not have are dropped, and an unreadable address opens the
+page as usual. The address is rewritten with `history.replaceState` (works from a double-clicked file; no history
+entry), a moment after the knobs stop.
+
 ## How it is built
 
 | Piece | What it is |
@@ -391,7 +403,9 @@ red until the page is rebuilt and committed — the numbers have not changed.
   knob move, pin & compare; and Cool the turbine — the opening knob form and sweep against native, pin & compare, the
   redesigned framing, a refused year, a sweep stopped by a knob move, and the slam's metal readout; and a failure whose message is not ASCII getting its words;
   and Try this — on each view one experiment chosen through the menu moves the way its words say against the
-  pinned opening, and Back to the opening settings brings the opening run back exactly).
+  pinned opening, and Back to the opening settings brings the opening run back exactly; and a shared setup — three
+  knobs on three levels, Copy link, the page reopened at that address shows the same results bit for bit; and an
+  emptied number box shows the value in use again when the cursor leaves it, with no run).
   `tests/sandbox_page.rs` holds the Try this table itself: every key of every experiment is a setting of its view,
   every experiment runs on the native model, and a sea-level entry sets the atmosphere's own sea level.
   Needs Node ≥ 22 and Chrome. Each page call has a 300 s ceiling, so a page that never answers fails

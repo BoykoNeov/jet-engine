@@ -1045,6 +1045,52 @@ try {
   if (process.env.SANDBOX_SHOTS) await shot('try-blades-phone', 390);
   await ev(`window.sandbox.design()`);
 
+  // 17d. SAVE AND SHARE A SETUP (roadmap A7). Three knobs on three levels -- the Design engine, Fly it's throttle,
+  // the slam's ramp -- then "Copy link": the page reopened at that address shows the same view, the same knobs and
+  // the same results, bit for bit (same build, same requests), and writes the same address back.
+  await ev(`window.sandbox.set({pi_c: 12})`, 30000);
+  await ev(`window.sandbox.fly({Tt4: 1300})`, 60000);
+  await ev(`window.sandbox.slam({ramp: 0.2})`);
+  await ev(`document.getElementById('copy-link').click()`);
+  await sleep(500);
+  const link = await ev(`[location.href, document.getElementById('link-row').hidden, document.getElementById('link-box').value,
+    document.getElementById('copy-link').textContent]`);
+  const want = await ev(`JSON.stringify([window.sandbox.last, window.sandbox.slamRuns()])`);
+  const shared = (() => { try { return JSON.parse(decodeURIComponent(link[0].split('#')[1])); } catch { return null; } })();
+  check('copy_link_puts_the_view_and_its_changed_knobs_in_the_address',
+        shared && shared.view === 'fly' && shared.design?.pi_c === 12 && shared.fly?.Tt4 === 1300 && shared.slam?.ramp === 0.2
+          && (link[3] === 'Link copied' || (link[1] === false && link[2] === link[0])),
+        JSON.stringify(link));
+  await s.send('Page.navigate', { url: 'about:blank' });
+  await sleep(300);
+  await s.send('Page.navigate', { url: link[0] });
+  const reopened = await waitFor(`window.sandbox && window.sandbox.view && window.sandbox.view() === 'fly'
+    && window.sandbox.state === 'ran' && window.sandbox.slamState === 'done'`, 120000);
+  const got = reopened ? await ev(`JSON.stringify([window.sandbox.last, window.sandbox.slamRuns()])`) : null;
+  const shown = reopened ? await ev(`[document.getElementById('fly-Tt4').value, location.href]`) : null;
+  check('the_shared_address_reopens_the_same_setup', reopened && got === want && shown[0] === '1300' && shown[1] === link[0],
+        JSON.stringify([reopened, got === want, shown]));
+  if (process.env.SANDBOX_SHOTS) await shot('shared-fly');
+  await ev(`window.sandbox.design()`);
+
+  // 17e. AN EMPTIED NUMBER BOX (roadmap A7) shows the value in use again once the cursor leaves it, and starts no
+  // run. A headless page never has focus, so no blur would fire: focus emulation gives it one. The altitude is read
+  // back from the air (its slider rounds to 50 m), not from the slider.
+  await s.send('Emulation.setFocusEmulationEnabled', { enabled: true });
+  const emptied = await ev(`(async () => {
+    const out = [];
+    for (const id of ['pi_c', 'altitude']) {
+      const n = document.getElementById(id), was = n.value, last = JSON.stringify(window.sandbox.last);
+      n.focus(); n.value = ''; n.dispatchEvent(new Event('input', { bubbles: true }));
+      n.dispatchEvent(new Event('change', { bubbles: true })); n.blur();
+      await new Promise(r => setTimeout(r, 800));
+      out.push([id, was, n.value, JSON.stringify(window.sandbox.last) === last]);
+    }
+    return out; })()`);
+  check('an_emptied_number_box_shows_the_value_in_use_and_runs_nothing',
+        emptied.every(([, was, now, same]) => was !== '' && now === was && same), JSON.stringify(emptied));
+  await s.send('Emulation.setFocusEmulationEnabled', { enabled: false });
+
   // 18. Nothing threw on the page along the way.
   const thrown = s.events.filter(e => e.method === 'Runtime.exceptionThrown').map(e => e.params.exceptionDetails?.exception?.description || e.params.exceptionDetails?.text);
   check('no_uncaught_errors_on_the_page', thrown.length === 0, thrown.join(' | ').slice(0, 400));

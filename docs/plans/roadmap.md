@@ -285,7 +285,15 @@ in the page script, so the native tests can hold them. Tests in `rust/tests/sand
 existing split when fully expanded, on every gas; between 0 and 1 for the convergent nozzle over a
 grid of pressure ratios and Mach numbers; their product equals the overall efficiency.
 
-### A7. Page polish
+### A7. Page polish — DONE 2026-11-19
+
+*Done, one commit each for 1 and 2, one for 3 + 4:* (1) the view buttons are a 3 x 2 grid with one-line labels
+(Design, Fly it, Blades, Controls, Burner, Cooling; full names as tooltips); (2) "What is computed" shows the open
+view's paragraphs, the rest under "More"; (3) the address carries the setup (`docs/sandbox/README.md`, "Save and
+share a setup") with **Copy link** and a select-to-copy fallback, browser-checked round trip bit for bit; (4) an
+emptied box shows the value in use on leaving it, no run, browser-checked. Item 4 found a real bug beside it: the HP
+vane's reaction box sent an emptied entry as a reaction of 0 (`+""`); it now takes only a number. Screenshots light,
+dark, phone after each.
 
 Each is a small change to `docs/sandbox/template.html`; do them one commit at a time and look at
 screenshots (`SANDBOX_SHOTS`) in light, dark and phone width after each.

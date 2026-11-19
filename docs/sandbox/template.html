@@ -62,6 +62,7 @@ legend { font-weight: 600; font-size: 12px; text-transform: uppercase; letter-sp
 .actions button { font: inherit; padding: 5px 10px; border-radius: 6px; cursor: pointer;
   border: 1px solid var(--border); background: var(--bg); color: var(--ink); }
 .actions button:hover { border-color: var(--accent); }
+#link-box { width: 100%; font: inherit; font-size: 12px; margin-top: 4px; }
 .results { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; min-width: 0; }
 .status { font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 .tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
@@ -977,7 +978,10 @@ footer h2.sec { margin: 8px 0 4px; }
       <button type="button" id="pin">Pin this design</button>
       <button type="button" id="unpin" hidden>Clear pin</button>
       <button type="button" id="reset">Reset all</button>
+      <button type="button" id="copy-link" title="A link to this view with the knobs you changed">Copy link</button>
     </div>
+    <p class="note" id="link-row" hidden><label for="link-box">Copy this link (Ctrl+C):</label>
+      <input type="text" id="link-box" readonly></p>
   </section>
 
   <section class="results" aria-live="polite">
@@ -1464,7 +1468,11 @@ function hpWire(p, obj, then) {
     else { delete o.hp_vane; delete o.reaction; }
     showSettings(); then();
   });
-  $(p + "-reaction").addEventListener("change", () => { obj().reaction = +$(p + "-reaction").value; then(); });
+  // An emptied box is not a reaction of 0 (roadmap A7 found `+""` sent as one): only a number is taken.
+  $(p + "-reaction").addEventListener("change", () => {
+    const v = parseFloat($(p + "-reaction").value);
+    if (isFinite(v)) { obj().reaction = v; then(); }
+  });
 }
 const slow = () => mode === "fly" && SLOW.includes(F.gas);
 // Size the blades (slice 2): B is the blade settings (turbojet::sandbox_blades::BladeSettings) on its
@@ -1646,7 +1654,7 @@ function showSettings() {
   $("ctl-flight-note").hidden = !controls;
   $("ctl-tables-row").hidden = !controls || !C || !ctlTables(C);
   for (const id of ["out", "ts-card", "stations-card", "perf-card"]) $(id).hidden = blades || controls || burner || cooling;
-  showExplain();
+  showExplain(); saveAddress();
   $("mode-note").innerHTML = fly
     ? "The hardware is frozen. Move the throttle or the flight; press <b>Design</b> to change the design."
     : blades
@@ -1918,6 +1926,86 @@ async function tryThis(v) {
   window.sandbox.tryState = "done";
 }
 
+// Save and share a setup (roadmap A7): the open view and the knobs that differ from its opening settings live in
+// the address after "#", as JSON -- `design` (the Design engine: Design, Fly it's frozen engine, the burner's),
+// `fly` and `slam` (against the opening of THAT frozen engine), `blades`, `controls`, `cooling`, `burner`. The page
+// reads it back on load. history.replaceState works from a double-clicked file too (checked in Chrome) and adds no
+// history entry; it is written a moment after the knobs stop moving.
+function diffOf(now, base) {
+  const d = {};
+  for (const k of Object.keys(now)) if (JSON.stringify(now[k]) !== JSON.stringify(base[k])) d[k] = now[k];
+  return d;
+}
+// Only keys the opening settings have: a stale or hand-edited address cannot add a setting the model never had.
+function known(d, base) {
+  const o = {};
+  for (const [k, v] of Object.entries(d && typeof d === "object" ? d : {})) if (k in base) o[k] = v;
+  return o;
+}
+function setupNow() {
+  const s = { view: mode }, put = (k, d) => { if (Object.keys(d).length) s[k] = d; };
+  if (mode === "design" || mode === "burner") put("design", diffOf(S, DEFAULTS));
+  if (mode === "fly") {
+    put("design", diffOf(F.design, DEFAULTS));
+    const o = flyOpening(F.design), { design, ...f } = F;
+    put("fly", diffOf(f, o.F)); put("slam", diffOf(SL, o.SL));
+  }
+  if (mode === "blades") put("blades", diffOf(B, B_DEFAULTS));
+  if (mode === "controls") put("controls", diffOf(C, C_DEFAULTS));
+  if (mode === "cooling") put("cooling", diffOf(CL, CL_DEFAULTS));
+  if (mode === "burner") put("burner", diffOf(BK, BK_DEFAULTS));
+  return s;
+}
+function addressNow() {
+  const s = setupNow(), plain = s.view === "design" && Object.keys(s).length === 1;
+  return location.href.split("#")[0] + (plain ? "" : "#" + encodeURIComponent(JSON.stringify(s)));
+}
+function saveAddress(now) {
+  if (!saveAddress.ready) return;
+  clearTimeout(saveAddress.timer);
+  const write = () => {
+    const a = addressNow();
+    if (a !== location.href) try { history.replaceState(null, "", a); } catch { }
+    if (!$("link-row").hidden) $("link-box").value = a;     // a link shown for copying by hand follows the knobs
+  };
+  if (now) write(); else saveAddress.timer = setTimeout(write, 300);
+}
+// The setup in the address as the page opened, or null (none, or not readable: then the page opens as usual).
+function sharedSetup() {
+  if (location.hash.length < 2) return null;
+  try {
+    const s = JSON.parse(decodeURIComponent(location.hash.slice(1)));
+    return s && typeof s === "object" && VIEWS.includes(s.view) ? s : null;
+  } catch { return null; }
+}
+const VIEWS = ["design", "fly", "blades", "controls", "burner", "cooling"];
+// Open the page on a shared setup: the Design engine first (every view that flies it starts from it), then the view
+// and its knobs, then one run -- as a person would set it up by hand.
+async function openShared(s) {
+  Object.assign(S, known(s.design, DEFAULTS)); showSettings();
+  if (s.view === "design") return;
+  if (s.view === "fly") {
+    await enterFly(); await settled();
+    Object.assign(F, known(s.fly, F)); Object.assign(SL, known(s.slam, SL)); showSettings();
+    await runView(true);
+  } else if (s.view === "blades") { enterBlades(); Object.assign(B, known(s.blades, B)); showSettings(); await runNow(); }
+  else if (s.view === "controls") { enterControls(); Object.assign(C, known(s.controls, C)); nudges(); showSettings(); await runView(); }
+  else if (s.view === "cooling") { enterCooling(); Object.assign(CL, known(s.cooling, CL)); showSettings(); await runView(); }
+  else if (s.view === "burner") { enterBurner(); burnerPatch(known(s.burner, BK)); showSettings(); await runView(); }
+}
+async function copyLink() {
+  saveAddress(true);
+  const a = addressNow();
+  try {
+    await navigator.clipboard.writeText(a);
+    $("link-row").hidden = true; $("copy-link").textContent = "Link copied";
+    setTimeout(() => { $("copy-link").textContent = "Copy link"; }, 2000);
+  } catch {
+    // No clipboard here (some browsers refuse it to a file): show the link, selected, to copy by hand.
+    $("link-box").value = a; $("link-row").hidden = false; $("link-box").focus(); $("link-box").select();
+  }
+}
+
 async function fromAltitude(run = true) {
   const z = +$("altitude").value, dt = +$("delta_t").value;
   const r = (await model.ask(JSON.stringify({ op: "atmosphere", altitude: z, delta_t: dt }))).reply;
@@ -1946,12 +2034,15 @@ async function enterFly() {
 async function freezeDesign() {
   const t = await model.ask(JSON.stringify({ op: "run", settings: S }));
   const asSet = (!t.trap && t.reply.ok) ? { thrust: t.reply.thrust, nozzle: S.nozzle, gas: S.gas } : null;
-  // Freeze THIS design; fly it at its own point first (the reduce: shaft speed 100 %).
-  // Rung 102: an afterburner lit on the Design view flies lit, its nozzle opened by the rule (what that view shows).
-  return { asSet,
-    F: { ...FLY_DEFAULTS, design: { ...S }, Tt4: S.Tt4, T0: S.T0, p0: S.p0, M0: S.M0, Tt7: S.Tt7 ?? FLY_DEFAULTS.Tt7,
-         ab: S.afterburner === 1 ? "lit" : "none", a8_match: S.afterburner === 1 ? 1 : 0 },
-    SL: { ...SLAM_DEFAULTS, from: Math.max(600, Math.round(S.Tt4 - 400)) } };
+  return { asSet, ...flyOpening(S) };
+}
+// Freeze THIS design; fly it at its own point first (the reduce: shaft speed 100 %).
+// Rung 102: an afterburner lit on the Design view flies lit, its nozzle opened by the rule (what that view shows).
+function flyOpening(d) {
+  return {
+    F: { ...FLY_DEFAULTS, design: { ...d }, Tt4: d.Tt4, T0: d.T0, p0: d.p0, M0: d.M0, Tt7: d.Tt7 ?? FLY_DEFAULTS.Tt7,
+         ab: d.afterburner === 1 ? "lit" : "none", a8_match: d.afterburner === 1 ? 1 : 0 },
+    SL: { ...SLAM_DEFAULTS, from: Math.max(600, Math.round(d.Tt4 - 400)) } };
 }
 function leaveFly() {
   if (mode === "design") return;
@@ -3585,6 +3676,27 @@ function wire() {
     if (mode === "fly") drawSlam();
   });
   $("try").addEventListener("change", () => { if ($("try").value) tryThis($("try").value); });
+  $("copy-link").addEventListener("click", copyLink);
+  // Roadmap A7: a number box emptied (or left unreadable) kept its blank while the model kept the old value. Once the
+  // cursor leaves it, show the value in use again: the settings as the page holds them (every view's box is written
+  // there unless it has the cursor), else its slider's, which follows the setting. It starts no run.
+  document.addEventListener("focusout", e => {
+    const n = e.target;
+    if (!(n instanceof HTMLInputElement) || n.type !== "number" || isFinite(parseFloat(n.value))) return;
+    setTimeout(async () => {
+      if (document.activeElement === n) return;
+      // The altitude pair is not a setting: it is read back from the air's temperature and pressure (its sliders
+      // round to their step, so they cannot stand in for it).
+      if (n.id === "altitude" || n.id === "delta_t") {
+        const a = (await model.ask(JSON.stringify({ op: "atmosphere", T0: target().T0, p0: target().p0 }))).reply;
+        if (document.activeElement !== n) showAmbient(a && a.ok !== 0 ? a : null);
+        return;
+      }
+      showSettings();
+      const r = document.getElementById(n.id + "-r");
+      if (!isFinite(parseFloat(n.value)) && r) n.value = r.value;
+    });
+  });
   $("reset").addEventListener("click", () => {
     tryGen++; $("try").value = ""; $("try-note").hidden = true;
     if (mode === "fly") {
@@ -3679,6 +3791,12 @@ window.sandbox = {
     S = { ...DEFAULTS };
     showSettings(); wire();
     await runNow();
+    // A shared setup in the address (roadmap A7): opened after the opening design has run, as if set by hand.
+    const shared = sharedSetup();
+    if (shared) await openShared(shared);
+    saveAddress.ready = true; saveAddress(true);
+    // A different setup pasted into this tab's address changes only the part after "#": open it afresh.
+    window.addEventListener("hashchange", () => location.reload());
   } catch (e) {
     $("status").textContent = "The model could not start in this browser: " + e;
     window.sandbox.state = "failed";
