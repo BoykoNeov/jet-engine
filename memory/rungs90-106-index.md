@@ -48,3 +48,4 @@ Moved out of `MEMORY.md` on 2026-11-10, when the index reached 19.6 KB. Append n
 - [107](rung107-decisions.md) governor beside rung 52's release AS BUILT (schedule + floor lagged, redline/metal instant); all holds
 - [107 fast attack](gov-fast-attack-decisions.md) sandbox § 45: attack floor 0.02 beside the governor (4 substeps), every substep recorded
 - [108](rung108-decisions.md) two-speed temperature limiter: BOTH governed and open, ALL holds, box TICKED on the page (model default off), shipped at 3.3 s/run governed
+- [109](rung109-decisions.md) turbofan, design point only; fan nozzle follows the core; lumped turbine; best-πf readout + fuel-vs-bypass chart + two-jet efficiency rows
