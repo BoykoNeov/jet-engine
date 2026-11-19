@@ -181,6 +181,8 @@ td.delta.up { color: var(--s-aqua); } td.delta.down { color: var(--s-red); }
 #bn-knobs .knob .derived { font-size: 11px; }
 footer { max-width: 1280px; margin: 0 auto; padding: 0 16px 32px; color: var(--ink-2); font-size: 12px; }
 footer p { max-width: 90ch; }
+footer h2.sec { margin: 8px 0 4px; }
+#explain-more summary { cursor: pointer; color: var(--accent); margin: 6px 0; }
 </style>
 </head>
 <body>
@@ -1216,15 +1218,20 @@ footer p { max-width: 90ch; }
     </div>
   </section>
 </main>
-<footer>
-  <p><b>What is computed, and what is not.</b> Each change runs the project's design-point cycle
+<footer id="explain">
+  <h2 class="sec">What is computed, and what is not</h2>
+  <!-- Roadmap A7: the open view's paragraphs show here; the rest fold under "more" (showExplain). -->
+  <div id="explain-now"></div>
+  <details id="explain-more"><summary>More: what the other views compute</summary>
+  <div id="explain-rest">
+  <p data-views="design"><b>Design.</b> Each change runs the project's design-point cycle
   (<code>build_turbojet(…).run(…)</code>, the same call the command line makes) for the gas model you pick: one
   engine with its compressor sized to your pressure ratio and its burner to your turbine inlet temperature. It
   is a design point, not a fixed engine being throttled. Flight altitude and air temperature/pressure are
   linked through the 1976 US Standard Atmosphere: type a pressure and the altitude becomes the pressure altitude.
   Type a temperature and the "off standard day" value follows. Above Mach 1 the inlet loses extra pressure
   through the model's supersonic recovery law.</p>
-  <p><b>The T–s diagram.</b> Stations 0 and 9 are the still outside air and the exhaust jet (static states).
+  <p data-views="design fly"><b>The T–s diagram.</b> Stations 0 and 9 are the still outside air and the exhaust jet (static states).
   Stations 2–5 are total (stagnation) states. Entropy is measured from the outside air. The air and the
   burned gas are different mixtures, so the jump across the burner mixes heat added with that change of
   mixture. The burner and the exhaust-cooling legs are drawn as curves: the shape is the burned gas's own
@@ -1233,7 +1240,7 @@ footer p { max-width: 90ch; }
   with each other. An ideal compressor then shows a tiny, exactly predictable slope instead of a vertical line.
   With an afterburner lit, station 7 (its exit, a total state) joins, and its heat addition (5 → 7) is a third curve,
   drawn the same way on the afterburner's own products.</p>
-  <p><b>The afterburner.</b> The project's rung 102: a second burner behind the turbine, burning the oxygen the main
+  <p data-views="design fly controls"><b>The afterburner.</b> The project's rung 102: a second burner behind the turbine, burning the oxygen the main
   burner left. Its fuel follows from an energy balance with the turbine's exhaust as the "air" coming in; on the
   equilibrium gas the hot products split apart, which sets the hottest reachable temperature (about 2 250 K). The duct
   loses pressure at the flame holders (a fixed ratio, lit or not) and from heating a moving gas in a constant-area duct
@@ -1242,7 +1249,7 @@ footer p { max-width: 90ch; }
   engine's. The "unlit" numbers are the same engine with the afterburner fitted but not burning. The afterburner uses
   the burned-gas properties of the turbine section; it is checked against the afterburning turbojet in Mattingly's
   <i>Elements of Propulsion</i> (§ 8.4).</p>
-  <p><b>Fly it.</b> The design's hardware is frozen: the turbine and nozzle throat areas, and the flow and
+  <p data-views="fly"><b>Fly it.</b> The design's hardware is frozen: the turbine and nozzle throat areas, and the flow and
   speed it was designed for. Moving the throttle or the flight then lets the engine find its own pressure ratio,
   airflow and shaft speed (the project's rungs 31–36: a choked turbine, a fixed convergent nozzle that may
   unchoke at low power, and a representative compressor map). Capturing a throat area needs a convergent nozzle,
@@ -1250,7 +1257,7 @@ footer p { max-width: 90ch; }
   pushes against the air pressure of the flight you set. The stall margin is rung 36's: it rests on a stall line
   you choose and a map shape you pick, so only its trend (thinner at low power) is meaningful. It is not
   modelled while the nozzle is unchoked.</p>
-  <p><b>Slam the throttle.</b> The project's rungs 34 and 35: the shaft speed becomes something that changes in time,
+  <p data-views="fly"><b>Slam the throttle.</b> The project's rungs 34 and 35: the shaft speed becomes something that changes in time,
   driven by the gap between the turbine's power and the compressor's, and the engine is stepped forward in small
   time steps. Time is counted in the shaft's own response time τ (its rotor inertia times the design speed squared,
   over the design shaft power); the model has no rotor inertia, so it cannot give seconds, and its findings are about
@@ -1258,13 +1265,13 @@ footer p { max-width: 90ch; }
   between steps makes the peak temperature depend on the step size. When a run cannot continue, the page shows the
   points it has and why it stopped (some stops are limits of the model, said as such). The equilibrium gas is not
   offered here: the model cannot meter fuel on it.</p>
-  <p><b>Blades.</b> Rung 85 on its own two-spool engine (a separate engine from <b>Design</b>'s, which has one
+  <p data-views="blades"><b>Blades.</b> Rung 85 on its own two-spool engine (a separate engine from <b>Design</b>'s, which has one
   compressor). Each compressor's front row is sized from two limits, how fast the air may meet the blade tips (an
   efficiency target) and the blade material's strength at the root, and the stage count, blade speeds and the
   redline come out. A stator lever then holds the front row's design angle as the throttle comes back, and the chart
   shows whether either shaft passes its redline. The two-spool model only handles a choked nozzle; throttles where it
   unchokes are listed as not modelled.</p>
-  <p><b>Controls.</b> The project's rungs 43–62 and 86 on the two-shaft engine of <b>Blades</b>: both shaft speeds change
+  <p data-views="controls"><b>Controls.</b> The project's rungs 43–62 and 86 on the two-shaft engine of <b>Blades</b>: both shaft speeds change
   in time, the fuel is metered and the turbine temperature is an output (it overshoots on a slam), and the fuel controls a
   real engine carries can be switched on, each with its one number: a turbine temperature limiter and its reaction lag, an
   acceleration schedule read off the engine's own steady running line, a stall floor on either compressor, and a realistic
@@ -1283,7 +1290,7 @@ footer p { max-width: 90ch; }
   flying slowly, the nozzle unchokes: it then passes less gas at a given pressure, and the low-pressure turbine expands
   only as far as still leaves the nozzle enough pressure to push the gas out (rung 97; both turbines' inlet guide vanes
   stay choked, as modelled throughout). Those stretches are drawn thin and dashed.</p>
-  <p><b>Burner.</b> The project's rungs 7–24, beside the cycle: they never change a cycle number. They read four numbers off
+  <p data-views="burner"><b>Burner.</b> The project's rungs 7–24, beside the cycle: they never change a cycle number. They read four numbers off
   the <b>Design</b> engine run on the equilibrium gas (compressor exit temperature, turbine inlet temperature, fuel-air ratio,
   burner pressure) and do their own chemistry: an equilibrium flame in the front zone, the extended Zeldovich reactions for
   NO over the time the gas stays there, and the dilution down to the turbine inlet temperature, instantly, over a set time,
@@ -1292,7 +1299,7 @@ footer p { max-width: 90ch; }
   marked so: read trends, not sizes. The anchor is rung 8's: a stoichiometric front zone at this design gives an emission
   index inside the band airliner engines certify at. The nozzle readout is rung 14's frozen-against-re-reacting expansion,
   carrying the burner's NO; with a mixing model that NO is converted from its emission index the way rung 17 does.</p>
-  <p><b>Cooling.</b> The project's rung 93 on the two-shaft engine of <b>Controls</b>: the turbine's vanes and
+  <p data-views="cooling"><b>Cooling.</b> The project's rung 93 on the two-shaft engine of <b>Controls</b>: the turbine's vanes and
   rotor blades each have a metal temperature limit, set from a material year and a part life by Gauntner's 1980 NASA
   relation, and the air from the high-pressure compressor that cools them (rung 91's vane and blade air) is sized by
   Gauntner's correlation: a row needs more air the hotter the gas it sees and the colder the metal must stay, scaled by
@@ -1300,7 +1307,7 @@ footer p { max-width: 90ch; }
   limits, on this engine run hotter or on an engine redesigned at that temperature. The knob form takes your cooling and
   finds the hottest burner temperature the metal allows on this engine. The correlation is a fit to engines of its time:
   read the trends and the comparisons, not the last kelvin.</p>
-  <p><b>Efficiencies.</b> Overall efficiency is thrust power per fuel power, split into a thermal part (how much of
+  <p data-views="design fly"><b>Efficiencies.</b> Overall efficiency is thrust power per fuel power, split into a thermal part (how much of
   the fuel's energy becomes jet energy) and a propulsive part (how much of that jet energy becomes thrust power). The
   model's own split uses the jet's speed alone. When the jet leaves the nozzle above the outside pressure (a fixed
   convergent nozzle, especially high up), part of the thrust is that pressure push, which a speed-only split does not
@@ -1312,6 +1319,7 @@ footer p { max-width: 90ch; }
   overall figure is the same in both splits. Standing still (Mach 0, how engines are rated on
   a test stand) the thrust moves nothing, so propulsive and overall efficiency read exactly 0: judge a standing engine by
   its thrust and its fuel per thrust. Every view that flies the engine runs it standing still too.</p>
+  </div></details>
   <p>Numbers computed here agree with the command-line model to the last few digits. The browser uses a
   different maths library, and the project's test run checks that difference stays below a measured bound.</p>
 </footer>
@@ -1638,6 +1646,7 @@ function showSettings() {
   $("ctl-flight-note").hidden = !controls;
   $("ctl-tables-row").hidden = !controls || !C || !ctlTables(C);
   for (const id of ["out", "ts-card", "stations-card", "perf-card"]) $(id).hidden = blades || controls || burner || cooling;
+  showExplain();
   $("mode-note").innerHTML = fly
     ? "The hardware is frozen. Move the throttle or the flight; press <b>Design</b> to change the design."
     : blades
@@ -3307,6 +3316,18 @@ const PERF_FLY = [
   ["Stall margin at constant speed (trend only)", r => smv(r, "sm_n"), "%", true],
   ["Stall margin at constant flow (a weak sign check only)", r => smv(r, "sm_flow"), "%", true],
 ];
+
+// Roadmap A7: "What is computed" shows the open view's paragraphs first; the others fold under "more", in their order.
+// The paragraphs are read once, in the page's order, so every view keeps that order; the state lives on the function
+// (it is called from the first render, before a top-level `let` further down would exist).
+function showExplain() {
+  if (showExplain.for === mode) return;
+  showExplain.for = mode;
+  showExplain.all = showExplain.all || [...document.querySelectorAll("#explain p[data-views]")];
+  const mine = el => el.dataset.views.split(" ").includes(mode);
+  for (const el of showExplain.all) (mine(el) ? $("explain-now") : $("explain-rest")).append(el);
+  $("explain-more").hidden = showExplain.all.every(mine);
+}
 
 function render() {
   const r = last, p = pinned;
