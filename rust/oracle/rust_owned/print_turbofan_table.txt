@@ -1,0 +1,36 @@
+
+THE TURBOFAN (rung 109): a fan, driven by the same turbine, pushes a second stream of air around the core
+and out of its own nozzle: more air, more slowly.
+
+  Mattingly's turbofan (Elements of Gas Turbine Propulsion, Example 7-6), Mach 0.8, bypass ratio 8:
+                                    book     model
+  fuel/air                       0.02868   0.02868
+  core jet speed / a0              2.427     2.426
+  fan jet speed / a0               1.186     1.186
+  F/m0, lbf/(lbm/s)                18.02     18.02
+  TSFC, (lbm/h)/lbf               0.6366    0.6365
+  thermal efficiency              0.4098    0.4098
+  overall (from thrust)           0.3060    0.3060
+
+  The project's design (pressure ratio 10, Tt4 1500 K) on the equilibrium gas, each bypass ratio at the fan
+  pressure ratio with the lowest fuel per thrust:
+
+  Mach 0.85, 250 K, 50 kPa
+   alpha  best fan   TSFC g/kN.s thrust/core air    V19/V9
+       0         -        34.043           798.4         -
+       1    4.000+        28.812           943.3     0.699
+       2    3.455         26.270          1034.6     0.824
+       4    2.228         24.125          1126.6     0.800
+       8    1.603         22.758          1194.3     0.778
+      12    1.398         22.575          1204.0     0.769
+
+  standing, sea level
+   alpha  best fan   TSFC g/kN.s thrust/core air    V19/V9
+       0         -        28.722           943.0         -
+       1    4.000+        21.573          1255.5     0.760
+       2    2.947         18.141          1493.0     0.808
+       4    2.012         14.572          1858.6     0.784
+       8    1.511         11.371          2381.9     0.763
+      12    1.341          9.818          2758.7     0.754
+
+  (+: the best fan is at the knob's top, 4.0, or above it; w: against the turbine's limit.)

@@ -199,6 +199,7 @@ pub mod three_loop;
 pub mod three_levers;
 pub mod threshold_law;
 pub mod turbine_cooling;
+pub mod turbofan;
 pub mod two_lag;
 pub mod hp_vane;
 pub mod turbine_law;
