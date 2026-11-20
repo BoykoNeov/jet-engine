@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: eb011473-7f0f-453f-88f5-c065f3698fd3
-  modified: 2026-11-20T01:57:20.540Z
+  modified: 2026-11-20T02:25:29.475Z
 ---
 
 User said "what is next" → I offered roadmap B1–B5 → "go with your recommendation" → I picked B1's next step (fly the
@@ -34,6 +34,12 @@ they replaced it.) Example 8-9 is curves on a max-thrust schedule: trend context
 efficiency (rung 109's convention; split polytropically) so the design reduce to rung 109 is exact and no derived
 efficiency can exceed 1; the book's own convention lives only in the Example 8-8 gate. The LP turbine ships on rung
 104's law (as every two-shaft page engine); the book gate runs on the pin (its own assumption).
+
+**ONE LOOP, not a copy (user, 2026-11-20, mid-build).** My first module ran the bypass case through its OWN copy of
+rung 38's loop (dispatching α 0 to rung 39). A side-agent note flagged it; asked, the user chose **"One shared loop"**:
+the bypass stream goes INSIDE rung 39's loop in `two_spool.rs` (`r39_body` / `try_cascade_map` / the rebuild), the
+no-fan lines unchanged and held by the bit-for-bit oracles, so rung 111's charts land in one place. Lesson: "extend
+the code" means the SAME loop — a new loop that calls the same helpers is still a parallel module.
 
 **Correction I owed the user:** my first option text said B switches off Controls — false; Controls, Cooling, Blades,
 Burner run their OWN engines. B touches Fly it only (experiments 9–11, ~12 browser checks).
