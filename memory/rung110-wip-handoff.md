@@ -1,6 +1,6 @@
 ---
 name: rung110-wip-handoff
-description: "Rung 110 (turbofan flown) paused AGAIN 2026-11-20 (session 2): gates 1-5 green, gate 4b one convergence failure, full gate NOT run, all UNCOMMITTED on main — what is done, what is next"
+description: "Rung 110 (turbofan flown) paused 2026-11-20: gates 1-5 green, gate 4b one convergence failure, full gate NOT run; COMMITTED as wip d316954 on main (2026-11-20, user order) — what is done, what is next"
 metadata:
   node_type: memory
   type: project
@@ -8,7 +8,7 @@ metadata:
   modified: 2026-11-20T09:07:28.311Z
 ---
 
-**Paused 2026-11-20 (second session) at the user's "wrap up".** Still UNCOMMITTED on `main` (not verified by the
+**Committed 2026-11-20 as `wip(rung110)` d316954 and pushed, at the user's "always commit and push" — it had sat uncommitted across two pauses.** Paused 2026-11-20 (second session) at the user's "wrap up". The files (not verified by the
 full gate): `rust/src/two_spool.rs`, `matcher.rs` (NEW this session), `flown_turbofan.rs`, `bleed.rs`,
 `customer_bleed.rs`, `shaft_offtake.rs`, `stator.rs`, `turbine_cooling.rs`, `two_spool_transient.rs`, `lib.rs`, and
 `rust/tests/rung110.rs` (new).

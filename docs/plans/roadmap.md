@@ -357,6 +357,17 @@ view).
 constants for computed ones; or rebuild the cutaway as a live sandbox view that follows the knobs (the
 stronger connection, more work, and the published cutaway link would then point at an old page).
 
+### A10. Keep the folder path out of the sandbox page — not started (found 2026-11-20)
+
+The compiled model inside `docs/sandbox/turbojet-sandbox.html` carries the absolute folder it was built in
+(`W:\Claude_projects\jet engine…`, 42 times — Rust's panic-location strings). So a moved or re-cloned
+repo fails `check.ps1`'s `the_committed_page_is_current` with no change at all, and a page built in a
+worktree cannot be committed. Fix: build the wasm with the path remapped (e.g. `--remap-path-prefix`
+for the repo root, set in BOTH `rust/sandbox-wasm/build.ps1` and `check.ps1`, or in a
+`rust/sandbox-wasm/.cargo/config.toml` both pick up), rebuild and commit the page, and add a check that
+the blob contains no drive-letter path. Do it when `rust/src/` is clean and the gate is green (not while
+rung 110's wip sits on `main`), since the rebuilt page bakes in whatever `src/` holds.
+
 ---
 
 ## Part 3 — Larger directions (the user chooses)
