@@ -71,7 +71,7 @@
 //! finding into a parameter. Slice F's lesson, twice.
 
 use crate::components::{choked_mfp, try_choked_mfp, ram_recovery, Burner, Component, Compressor, Inlet, Nozzle,
-                        Turbine};
+                        NozzleExit, Turbine};
 use crate::engine::{score, try_score, Engine, EngineResult, FlightCondition, Performance};
 use crate::gas::{powp, Abort, FlowState, Gas};
 use crate::map::{ComponentMap, MapMatcher, MapOffDesignResult};
@@ -282,6 +282,88 @@ pub fn build_two_spool_turbojet(
     TwoSpoolEngine::new(gas, components, losses.eta_m)
 }
 
+/// RUNG 110 — THE BYPASS STREAM (`docs/rung110-spec.md`): the LP compressor's air split at its exit, a share going around
+/// the core through the fan TIP and its own convergent nozzle. The LP compressor is then the fan's ROOT (the core air at
+/// the LP compressor's efficiency) and the LP turbine pays for both streams. Fitted by [`TwoSpoolEngine::with_fan`]; with
+/// no fan every path is the two-shaft engine's, line for line.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Bypass {
+    /// The DESIGN bypass ratio, bypass air per kilogram of core air, `> 0`. Off design an OUTPUT of the match.
+    pub alpha: f64,
+    /// The fan tip's isentropic efficiency on the bypass air.
+    pub eta_f: f64,
+    /// Bypass duct + fan nozzle total-pressure ratio (13 → 19).
+    pub pi_fn: f64,
+    /// The LP shaft's mechanical efficiency (the HP shaft keeps the engine's `eta_m`; Mattingly gives the two shafts two).
+    pub eta_m_lp: f64,
+}
+
+impl Bypass {
+    /// Station 13: `alpha` kilograms of the station-2 air per kilogram of core air through the fan's pressure ratio
+    /// `pi_f` at the tip's efficiency — the shipped [`Compressor`], so every one of its checks fires.
+    pub fn s13(&self, s2: &FlowState, pi_f: f64, alpha: f64, gas: &Gas) -> FlowState {
+        Compressor::new(pi_f, self.eta_f, None).apply(&FlowState { mdot: alpha * s2.mdot, ..*s2 }, gas)
+    }
+
+    /// The fan nozzle's exit (rung 109's cold convergent nozzle) against `p0`.
+    pub fn try_exit(&self, s13: &FlowState, p0: f64, gas: &Gas) -> Result<NozzleExit, Abort> {
+        crate::turbofan::try_cold_nozzle(&Nozzle::convergent(p0, self.pi_fn), s13, gas)
+    }
+
+    /// The fan nozzle's exit mass flux `ρ19·V19`, kg/(s·m²); 0 where it cannot push the air out against `p0`.
+    pub fn flux(&self, s13: &FlowState, p0: f64, gas: &Gas) -> f64 {
+        match self.try_exit(s13, p0, gas) {
+            Ok(e) => e.p9 * e.v9 / (gas.r_c() * e.t9),
+            Err(_) => 0.0,
+        }
+    }
+}
+
+/// RUNG 110: the refusal where the fan nozzle cannot blow any air at the lowest fan pressure ratio the LP turbine leaves.
+pub const FAN_NOZZLE_DRY: &str = "rung-110: the fan cannot push its air out here — even at the lowest fan pressure ratio     that flows, the LP turbine's work is used up on the core air before any bypass air leaves the fan nozzle.";
+
+/// RUNG 110: the fan's captured hardware on the two-shaft core.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct FanHw {
+    pub bypass: Bypass,
+    /// The fan nozzle's throat, m² — sized at the design's ACTUAL exit (choked or not), from the design bypass flow.
+    pub a18: f64,
+}
+
+/// RUNG 110: where the bypass cascade stands — the outer loop's `pt4` (the core's flow reads it) and the flight's `p0`
+/// (the fan nozzle pushes against it).
+#[derive(Clone, Copy, Debug)]
+pub struct FanFace {
+    pub pt4: f64,
+    pub p0: f64,
+}
+
+/// RUNG 110: the LP shaft's split between the two streams at one cascade pass.
+#[derive(Clone, Copy, Debug)]
+pub struct FanSplit {
+    /// The fan pressure ratio (both streams).
+    pub pi_f: f64,
+    /// The bypass ratio — an OUTPUT: the fan nozzle's flow over the core's.
+    pub alpha: f64,
+    /// Core airflow at this pass, kg/s (from the HP vane's flow at the outer loop's `pt4`).
+    pub mdot_core: f64,
+}
+
+/// RUNG 110: what the bypass stream did at a flown point.
+#[derive(Clone, Copy, Debug)]
+pub struct FanOut {
+    /// The bypass ratio — an OUTPUT.
+    pub alpha: f64,
+    /// Station 13 (its `mdot` is the bypass airflow, kg/s).
+    pub s13: FlowState,
+    /// The fan nozzle's exit.
+    pub exit: NozzleExit,
+    /// Core net thrust per kilogram of CORE air, N·s/kg (it may be negative: the fan then carries the engine).
+    pub core_thrust: f64,
+    /// Fan net thrust per kilogram of BYPASS air, N·s/kg.
+    pub fan_thrust: f64,
+}
+
 /// The two-spool design-point cycle: chains the components, closing BOTH shaft balances.
 ///
 /// **Deliberately not an [`Engine`], and it does not call [`Engine::run`]** — so the
@@ -328,6 +410,9 @@ pub struct TwoSpoolEngine {
     pub turbine_law: crate::turbine_law::TurbineLaw,
     /// RUNG 105: the HP turbine vane's flow law — copied into every core built from this engine.
     pub hp_vane: crate::hp_vane::HpVane,
+    /// RUNG 110: the bypass stream ([`Bypass`]). [`run`](Self::run) DOES read it — the turbofan is designed with its fan
+    /// — and the core captures the fan nozzle from that run. Every solver but rung 39's map matcher refuses it.
+    pub fan: Option<Bypass>,
 }
 
 impl TwoSpoolEngine {
@@ -336,7 +421,26 @@ impl TwoSpoolEngine {
         TwoSpoolEngine { gas, components, eta_m, fs_engine, customer: None, cooling: None,
                          offtake: None, afterburner: None,
                          turbine_law: crate::turbine_law::TurbineLaw::default(),
-                         hp_vane: crate::hp_vane::HpVane::default() }
+                         hp_vane: crate::hp_vane::HpVane::default(), fan: None }
+    }
+
+    /// RUNG 110's refusal at construction, for every two-shaft solver but rung 39's map matcher: a turbofan handed to one
+    /// that cannot carry its bypass stream is refused in words, never flown as a turbojet.
+    pub fn refuse_fan(&self, who: &str) {
+        assert!(self.fan.is_none(),
+                "rung-110: {who} cannot fly a turbofan (air blown around the core); fly it through rung 39's map                  matcher on flat maps (flown_turbofan.rs)");
+    }
+
+    /// RUNG 110: the same engine with a fan — the LP compressor's air split, `bypass.alpha` kilograms around the core per
+    /// kilogram through it. Unlike the loads above, the DESIGN run reads it.
+    pub fn with_fan(mut self, bypass: Bypass) -> Self {
+        assert!(bypass.alpha > 0.0, "a fitted fan blows some air around the core: alpha > 0 (no fan is `fan: None`)");
+        assert!(0.0 < bypass.eta_f && bypass.eta_f <= 1.0 && 0.0 < bypass.pi_fn && bypass.pi_fn <= 1.0
+                    && 0.0 < bypass.eta_m_lp && bypass.eta_m_lp <= 1.0,
+                "rung-110 fan knobs out of range: {bypass:?}");
+        assert!(self.afterburner.is_none(), "rung 110 flies the turbofan dry: no afterburner with a fan");
+        self.fan = Some(bypass);
+        self
     }
 
     /// RUNG 105: the same engine with its HP turbine vane on `law`.
@@ -417,13 +521,21 @@ impl TwoSpoolEngine {
             * (gas.h_t(s4.tt, s45.far) - gas.h_t(s45.tt, s45.far));
         assert!((turbine_power_hp - dh_hpc).abs() < 1e-6 * dh_hpc, "HP shaft does not close");
 
-        // LP shaft: the LPT (station 5) drives the LPC (2 → 25) ALONE.
+        // LP shaft: the LPT (station 5) drives the LPC (2 → 25) ALONE — and, RUNG 110, the fan tip on the bypass air.
         let dh_lpc = gas.h_c(s25.tt) - gas.h_c(s2.tt);
+        let s13 = self.fan.map(|b| match lpc {
+            Component::Compressor(x) => b.s13(&s2, x.pi_c, b.alpha, gas),
+            _ => panic!("station 25 must be a Compressor"),
+        });
+        let (dh_lpc, eta_m_lp) = match (self.fan, s13) {
+            (Some(b), Some(s13)) => (dh_lpc + b.alpha * (gas.h_c(s13.tt) - gas.h_c(s2.tt)), b.eta_m_lp),
+            _ => (dh_lpc, self.eta_m),
+        };
         let s5 = match lpt {
-            Component::Turbine(t) => t.apply(&s45, gas, dh_lpc / (self.eta_m * (1.0 + f))),
+            Component::Turbine(t) => t.apply(&s45, gas, dh_lpc / (eta_m_lp * (1.0 + f))),
             _ => panic!("station 5 must be a Turbine"),
         };
-        let turbine_power_lp = self.eta_m * (1.0 + s5.far)
+        let turbine_power_lp = eta_m_lp * (1.0 + s5.far)
             * (gas.h_t(s45.tt, s5.far) - gas.h_t(s5.tt, s5.far));
         assert!((turbine_power_lp - dh_lpc).abs() < 1e-6 * dh_lpc, "LP shaft does not close");
 
@@ -436,8 +548,20 @@ impl TwoSpoolEngine {
             ("0", state0), ("2", s2), ("25", s25), ("3", s3), ("4", s4),
             ("45", s45), ("5", s5), ("9", exit.state),
         ];
-        let performance = score(gas, &stations, v0, exit.t9, exit.v9, exit.p9,
-                                flight.p0, gas.hpr());
+        let performance = match (self.fan, s13) {
+            // RUNG 110: two jets, per TOTAL air (rung 109's scoring).
+            (Some(b), Some(s13)) => {
+                let fan_exit = b.try_exit(&s13, flight.p0, gas).unwrap_or_else(|e| panic!("rung-110 fan design: {}", e.0));
+                crate::turbofan::score_turbofan(gas, &stations, b.alpha, v0, &exit, &fan_exit, flight.p0, gas.hpr())
+                    .performance
+            }
+            // RUNG 110: a two-shaft engine DESIGNED standing still (the turbofan's α = 0 end, designed at Mach 0 on the
+            // Design view) is scored as the standing engine — every such call panicked in `score` before, so no result
+            // moves (the off-design matchers' own Mach-0 words, rung 38's gate, are a different call).
+            _ if v0 == 0.0 => crate::engine::score_or_static(gas, &stations, v0, exit.t9, exit.v9, exit.p9, flight.p0,
+                                                             gas.hpr()),
+            _ => score(gas, &stations, v0, exit.t9, exit.v9, exit.p9, flight.p0, gas.hpr()),
+        };
         EngineResult {
             stations, performance, v0, v9: exit.v9, m9: exit.m9, t9: exit.t9, p9: exit.p9,
         }
@@ -483,6 +607,9 @@ pub struct TwoSpoolResult {
     /// Air mass flow — OUTPUT (set by the HP-NGV choke).
     pub mdot_air: f64,
     pub mdot_ratio: f64,
+    /// RUNG 110: the bypass stream (`None` with no fan). With a fan `mdot_air` is the CORE airflow, `performance` is per
+    /// TOTAL air and `thrust` is both jets'.
+    pub fan: Option<FanOut>,
 }
 
 impl TwoSpoolResult {
@@ -618,6 +745,7 @@ impl TwoSpoolMatcher {
     pub fn new(
         design_engine: TwoSpoolEngine, flight_design: FlightCondition, mdot_design: f64,
     ) -> Self {
+        design_engine.refuse_fan("rung 38's two-spool matcher");
         TwoSpoolMatcher::Full(TwoSpoolCore::new(design_engine, flight_design, mdot_design))
     }
 
@@ -777,6 +905,9 @@ pub struct TwoSpoolCore {
     /// RUNG 105: the HP ratio the last closure trial of this instant landed on (anchor C1's count: ~13 joint residuals a
     /// search from cold). Cleared by the inlet step, so each instant runs the same sequence whatever ran before it.
     pub hp_last: std::cell::Cell<f64>,
+    /// RUNG 110: the fan, captured off the design engine ([`TwoSpoolEngine::fan`]). Read by rung 39's body alone; every
+    /// other body refuses one ([`refuse_fan`](Self::refuse_fan)).
+    pub fan: Option<FanHw>,
 }
 
 /// RUNG 105: a closure trial's warm start, set for the length of the trial and cleared on every exit, panics included.
@@ -798,6 +929,11 @@ impl Drop for HpWarm<'_> {
 impl TwoSpoolCore {
     pub const TOL: f64 = 1e-13;
     pub const MAX: usize = 200;
+    /// RUNG 110: the joint `(f, pt4)` loop's bar WITH A FAN. The bypass ratio reads `pt4` (the core's flow), so the
+    /// cascade's own noise now circulates — and on the table gases that noise is the property inversions' (~1e-11
+    /// relative in `Tt25`, measured: the loop's gain is ~0.3 but `pt4_new` scatters ~2e-11 about its line). `TOL` is
+    /// then out of reach and the loop flips between two iterates for ever. 1e-10: 3× the floor, 10× inside gate 3.
+    pub const FAN_TOL: f64 = 1e-10;
 
     /// RUNG 92: does this core carry a shaft load that takes any power? `None` and zero demands
     /// on both shafts are INACTIVE — and an inactive one dispatches to the earlier code.
@@ -841,6 +977,63 @@ impl TwoSpoolCore {
                 "rung-90: {who} cannot model a customer bleed (station-3 air the aircraft takes); \
                  build the engine's solver through rung 90 (customer_bleed.rs) or rung 62's \
                  transient machine");
+    }
+
+    /// RUNG 110's refusal, for every body that cannot fly a turbofan: a bypass stream is never silently dropped.
+    pub fn refuse_fan(&self, who: &str) {
+        assert!(self.fan.is_none(),
+                "rung-110: {who} cannot fly a turbofan (air blown around the core); fly it through rung 39's map                  matcher on flat maps (flown_turbofan.rs)");
+    }
+
+    /// RUNG 110 — THE LP SHAFT PAYS FOR TWO STREAMS (`docs/rung110-spec.md`, anchor § 1 D2–D3). Per kilogram of core
+    /// air the LP turbine's work `W = η_mL·(1+f)·(h45 − h5)` drives the core air through the fan ROOT (the LP compressor's
+    /// efficiency) and `α` kilograms of bypass air through the fan TIP, both through ONE isentropic rise `Δh_s(π_f)`:
+    ///
+    /// ```text
+    /// W = Δh_s(π_f)·(1/η_root + α(π_f)/η_f),   α(π_f) = A18·(ρV)_19(π_f) / ṁ_core,   ṁ_core = A4·pt4·MFP*/√Tt4/(1+f)
+    /// ```
+    ///
+    /// The bypass ratio is the fan nozzle's flow over the core's — an OUTPUT, read off the two fixed throats. Both terms
+    /// rise with `π_f`, so the root is unique; it is bisected from the lowest ratio that is still a fan and still blows
+    /// air out of its nozzle. `ṁ_core` reads `pt4`, which reads `π_HPC`, which reads `Tt25`: with a fan the LP spool hears
+    /// the HP one — rung 38's triangle closes into the outer `(f, pt4)` loop, which carries it.
+    #[allow(clippy::too_many_arguments)]
+    pub fn try_fan_split(
+        &self, fan: &FanHw, wgas: &Gas, tt2: f64, pt2: f64, tt4: f64, f: f64, tt45: f64, tt5: f64, a4: f64,
+        mfp4_pin: f64, face: FanFace,
+    ) -> Result<FanSplit, Abort> {
+        let b = fan.bypass;
+        let mdot_core = a4 * face.pt4 * mfp4_pin / powp(tt4, 0.5) / (1.0 + f);
+        let w = b.eta_m_lp * (1.0 + f) * (wgas.h_t(tt45, f) - wgas.h_t(tt5, f));
+        let (h2, pr2) = (wgas.h_c(tt2), wgas.pr_c(tt2));
+        let dhs = |pf: f64| wgas.h_c(wgas.t_from_pr_c(pr2 * pf)) - h2;
+        let alpha = |pf: f64, dh: f64| -> f64 {
+            let s13 = FlowState { tt: wgas.t_from_h_c(h2 + dh / b.eta_f), pt: pf * pt2, mdot: 1.0, far: 0.0 };
+            fan.a18 * b.flux(&s13, face.p0, wgas) / mdot_core
+        };
+        let g = |pf: f64| -> f64 {
+            let dh = dhs(pf);
+            dh * (1.0 / self.eta_lpc + alpha(pf, dh) / b.eta_f) - w
+        };
+        let lo0 = f64::max(1.0, face.p0 / (b.pi_fn * pt2));
+        if !(g(lo0) < 0.0) {
+            return Err(Abort(FAN_NOZZLE_DRY.to_string()));
+        }
+        let mut hi = f64::max(lo0 * 1.05, self.pi_lpc_design);
+        while !(g(hi) >= 0.0) {
+            hi = lo0 + 2.0 * (hi - lo0);
+            if hi > 100.0 {
+                return Err(Abort("rung-110: no fan pressure ratio absorbs the LP turbine's work".to_string()));
+            }
+        }
+        let mut lo = lo0;
+        for _ in 0..Self::MAX {
+            let mid = 0.5 * (lo + hi);
+            if g(mid) < 0.0 { lo = mid } else { hi = mid }
+            if hi - lo <= 1e-15 * hi { break }
+        }
+        let pi_f = 0.5 * (lo + hi);
+        Ok(FanSplit { pi_f, alpha: alpha(pi_f, dhs(pi_f)), mdot_core })
     }
 
     pub fn gas(&self) -> &Gas { &self.fs_engine.gas }
@@ -905,6 +1098,7 @@ impl TwoSpoolCore {
         let offtake = design_engine.offtake;
         let turbine_law = design_engine.turbine_law;
         let hp_vane = design_engine.hp_vane;
+        let fan_knobs = design_engine.fan;
 
         let by = |label: &str| -> Component {
             design_engine.components.iter().find(|(l, _)| *l == label)
@@ -957,6 +1151,23 @@ impl TwoSpoolCore {
         let hp_cap = crate::hp_vane::HpCapacity::capture(&gas, f_design, s4.tt, s45.pt / s4.pt, eta_hpt, a4, hp_vane);
         let (tt9_r, pt9_r) = (s5.tt, pi_n * s5.pt);     // Tt9 = Tt5; pt9 = pi_n * pt5
         let a8 = mdot4_r * powp(tt9_r, 0.5) / (pt9_r * choked_mfp(&gas, tt9_r, f_design));
+        // RUNG 110: the fan nozzle, sized from the design run's bypass flow at its actual exit; and the core nozzle,
+        // when UNCHOKED at design (a turbofan's often is), sized at its actual exit too (the free LP root's own flux,
+        // rung 97) — the choked formula above would size a throat that passes the design flow only when sonic, so the
+        // engine flown at its own design point would not return to it. Every engine, fan or not (the user's decision,
+        // 2026-11-20: one rule, no step on the bypass knob); a choked design keeps the line above, bit for bit.
+        let fan = fan_knobs.map(|b| {
+            let s13 = b.s13(reference.station("2"), pi_lpc_design, b.alpha, &gas);
+            let flux = b.flux(&s13, flight_design.p0, &gas);
+            assert!(flux > 0.0, "rung-110: this fan cannot push its air out at the design point — the fan nozzle's \
+                                 pressure does not beat the outside air. Raise the fan pressure ratio.");
+            FanHw { bypass: b, a18: b.alpha * mdot_design / flux }
+        });
+        let a8 = if reference.p9 <= flight_design.p0 + 1e-6 {
+            mdot4_r / (reference.p9 / (gas.r_t_at(f_design) * reference.t9) * reference.v9)
+        } else {
+            a8
+        };
         // RUNG 102: fitted, the unlit duct costs the flame holders' loss, so the dry throat opens by 1/π_fh — the same
         // choked flow, the core where the unfitted engine has it.
         let afterburner = design_engine.afterburner
@@ -994,6 +1205,7 @@ impl TwoSpoolCore {
             hp_flight: std::cell::Cell::new([f64::NAN; 3]),
             hp_warm: std::cell::Cell::new(f64::NAN),
             hp_last: std::cell::Cell::new(f64::NAN),
+            fan,
         }
     }
 
@@ -1215,6 +1427,7 @@ impl TwoSpoolCore {
     pub fn try_cascade(
         &self, wgas: &Gas, tt2: f64, tt4: f64, f: f64,
     ) -> Result<Cascade, Abort> {
+        self.refuse_fan("rung 38's cascade");
         counters::bump_cascade();
         // Step 1 (★-HP): tau_HPT from (A4, A45) alone.
         // Step 2 (★-LP): tau_LPT from (A45, A8) alone — needs the nozzle choked (rung 103: or the re-solve's root).
@@ -1257,6 +1470,7 @@ impl TwoSpoolCore {
     /// cells, between ~8 passes and never (§ 5.7 (c)).
     pub fn match_point(&self, flight: &FlightCondition, tt4: f64) -> TwoSpoolResult {
         self.refuse_customer("rung 38's two-spool matcher");
+        self.refuse_fan("rung 38's two-spool matcher");
         self.refuse_cooling("rung 38's two-spool matcher");
         self.refuse_offtake("rung 38's two-spool matcher");
         let pi_d = self.pi_d_max * ram_recovery(flight.m0);
@@ -1299,7 +1513,7 @@ impl TwoSpoolCore {
         // that catches, and the twin rule is about the CALLERS. Rung 39's — which rung 41 does
         // catch — is the fallible one below.
         let r = self.try_rebuild(flight, pi_d, c.pi_lpc, c.pi_hpc, tt4, mdot_air,
-                                 self.eta_lpc, self.eta_hpc, self.eta_hpt, self.eta_lpt)
+                                 self.eta_lpc, self.eta_hpc, self.eta_hpt, self.eta_lpt, 0.0)
             .unwrap_or_else(|e| panic!("{}", e.0));
         let nozzle_choked = r.exit_p9 > flight.p0 + 1e-6;
 
@@ -1335,9 +1549,12 @@ impl TwoSpoolCore {
     /// and reads exactly as before, rung 39 passes the map's values at the operating point, and
     /// the Python duplicates the whole body across the two `match` methods.
     #[allow(clippy::too_many_arguments)]
+    ///
+    /// RUNG 110: with a fan, `alpha` kilograms of bypass air per kilogram of core air go through the fan tip at `pi_lpc`
+    /// and out of the fan nozzle, and the LP turbine pays for them. Read only with a fan.
     fn try_rebuild(
         &self, flight: &FlightCondition, pi_d: f64, pi_lpc: f64, pi_hpc: f64, tt4: f64,
-        mdot_air: f64, eta_lpc: f64, eta_hpc: f64, eta_hpt: f64, eta_lpt: f64,
+        mdot_air: f64, eta_lpc: f64, eta_hpc: f64, eta_hpt: f64, eta_lpt: f64, alpha: f64,
     ) -> Result<TwoSpoolRebuilt, Abort> {
         let rgas = if self.gas().is_equilibrium() {
             Gas::reacting_equilibrium_with(
@@ -1352,13 +1569,24 @@ impl TwoSpoolCore {
         let s4 = Burner::new(tt4, self.eta_b, self.pi_b).apply(&s3, &rgas);
         let dh_hpt_reb = (rgas.h_c(s3.tt) - rgas.h_c(s25.tt)) / (self.eta_m * (1.0 + s4.far));
         let s45 = Turbine::new(eta_hpt, None).apply(&s4, &rgas, dh_hpt_reb);
-        let dh_lpt_reb = (rgas.h_c(s25.tt) - rgas.h_c(s2.tt)) / (self.eta_m * (1.0 + s4.far));
+        let s13 = self.fan.map(|fh| fh.bypass.s13(&s2, pi_lpc, alpha, &rgas));
+        let dh_lpt_reb = match (self.fan, s13) {
+            (Some(fh), Some(s13)) => {
+                let w = (rgas.h_c(s25.tt) - rgas.h_c(s2.tt)) + alpha * (rgas.h_c(s13.tt) - rgas.h_c(s2.tt));
+                w / (fh.bypass.eta_m_lp * (1.0 + s4.far))
+            }
+            _ => (rgas.h_c(s25.tt) - rgas.h_c(s2.tt)) / (self.eta_m * (1.0 + s4.far)),
+        };
         let s5 = Turbine::new(eta_lpt, None).apply(&s45, &rgas, dh_lpt_reb);
         let exit = Nozzle::convergent(flight.p0, self.pi_n).try_apply(&s5, &rgas)?;
+        let fan = match (self.fan, s13) {
+            (Some(fh), Some(s13)) => Some((alpha, s13, fh.bypass.try_exit(&s13, flight.p0, &rgas)?)),
+            _ => None,
+        };
         Ok(TwoSpoolRebuilt {
             state0, v0, s2, s25, s3, s4, s45, s5,
             exit_state: exit.state, exit_m9: exit.m9, exit_t9: exit.t9, exit_v9: exit.v9,
-            exit_p9: exit.p9, gas: rgas,
+            exit_p9: exit.p9, gas: rgas, fan,
         })
     }
 }
@@ -1379,6 +1607,8 @@ struct TwoSpoolRebuilt {
     exit_v9: f64,
     exit_p9: f64,
     gas: Gas,
+    /// RUNG 110: `(alpha, station 13, the fan nozzle's exit)` with a fan.
+    fan: Option<(f64, FlowState, NozzleExit)>,
 }
 
 impl TwoSpoolRebuilt {
@@ -1400,8 +1630,11 @@ impl TwoSpoolRebuilt {
         self, core: &TwoSpoolCore, flight: &FlightCondition, tt4: f64, mdot_air: f64,
         c: &Cascade,
     ) -> Result<TwoSpoolResult, Abort> {
+        if let Some(fan) = self.fan_out(flight.p0) {
+            return Ok(self.into_fan_result(core, flight, tt4, mdot_air, c, fan));
+        }
         let TwoSpoolRebuilt { state0, v0, s2, s25, s3, s4, s45, s5,
-                              exit_state, exit_m9, exit_t9, exit_v9, exit_p9, gas: rgas } = self;
+                              exit_state, exit_m9, exit_t9, exit_v9, exit_p9, gas: rgas, fan: _ } = self;
         let stations = vec![
             ("0", state0), ("2", s2), ("25", s25), ("3", s3), ("4", s4),
             ("45", s45), ("5", s5), ("9", exit_state),
@@ -1413,8 +1646,51 @@ impl TwoSpoolRebuilt {
             thrust, tt4, m0: flight.m0, pi_lpc: c.pi_lpc, pi_hpc: c.pi_hpc,
             tau_lpc: s25.tt / s2.tt, tau_hpc: s3.tt / s25.tt,
             tau_hpt: c.tau_hpt, pi_hpt: c.pi_hpt, tau_lpt: c.tau_lpt, pi_lpt: c.pi_lpt,
-            mdot_air, mdot_ratio: mdot_air / core.mdot_air_design,
+            mdot_air, mdot_ratio: mdot_air / core.mdot_air_design, fan: None,
         })
+    }
+
+    /// The eight core stations, in flow order.
+    fn stations(&self) -> Vec<(&'static str, FlowState)> {
+        vec![("0", self.state0), ("2", self.s2), ("25", self.s25), ("3", self.s3), ("4", self.s4),
+             ("45", self.s45), ("5", self.s5), ("9", self.exit_state)]
+    }
+
+    /// RUNG 110: both jets scored per TOTAL air (rung 109's [`crate::turbofan::score_turbofan`]); `None` with no fan.
+    fn fan_out(&self, p0: f64) -> Option<FanOut> {
+        let (alpha, s13, exit) = self.fan?;
+        let core_exit = NozzleExit { state: self.exit_state, m9: self.exit_m9, t9: self.exit_t9, v9: self.exit_v9,
+                                     p9: self.exit_p9 };
+        let sc = crate::turbofan::score_turbofan(&self.gas, &self.stations(), alpha, self.v0, &core_exit, &exit, p0,
+                                                 self.gas.hpr());
+        Some(FanOut { alpha, s13, exit, core_thrust: sc.core_thrust, fan_thrust: sc.fan_thrust })
+    }
+
+    /// RUNG 110: the net thrust per TOTAL air the unchoked guard and the below-idle rule judge — the WHOLE engine's,
+    /// since with a fan the core's own may be negative while the engine still pushes. Without a fan, the core's
+    /// (the guard's old expression, unchanged).
+    fn guard_thrust(&self, p0: f64) -> f64 {
+        match self.fan_out(p0) {
+            Some(fo) => (fo.core_thrust + fo.alpha * fo.fan_thrust) / (1.0 + fo.alpha),
+            None => (1.0 + self.s4.far) * self.exit_v9 - self.v0,
+        }
+    }
+
+    fn into_fan_result(
+        self, core: &TwoSpoolCore, flight: &FlightCondition, tt4: f64, mdot_air: f64, c: &Cascade, fan: FanOut,
+    ) -> TwoSpoolResult {
+        let stations = self.stations();
+        let core_exit = NozzleExit { state: self.exit_state, m9: self.exit_m9, t9: self.exit_t9, v9: self.exit_v9,
+                                     p9: self.exit_p9 };
+        let perf = crate::turbofan::score_turbofan(&self.gas, &stations, fan.alpha, self.v0, &core_exit, &fan.exit,
+                                                   flight.p0, self.gas.hpr()).performance;
+        TwoSpoolResult {
+            stations, performance: perf, v0: self.v0, v9: self.exit_v9, m9: self.exit_m9, t9: self.exit_t9,
+            p9: self.exit_p9, thrust: mdot_air * (1.0 + fan.alpha) * perf.specific_thrust, tt4, m0: flight.m0,
+            pi_lpc: c.pi_lpc, pi_hpc: c.pi_hpc, tau_lpc: self.s25.tt / self.s2.tt, tau_hpc: self.s3.tt / self.s25.tt,
+            tau_hpt: c.tau_hpt, pi_hpt: c.pi_hpt, tau_lpt: c.tau_lpt, pi_lpt: c.pi_lpt,
+            mdot_air, mdot_ratio: mdot_air / core.mdot_air_design, fan: Some(fan),
+        }
     }
 }
 
@@ -1761,8 +2037,18 @@ impl TwoSpoolMapCore {
     ///
     /// [`Abort`]: crate::gas::Abort
     pub fn try_cascade_map(
-        &self, wgas: &Gas, tt2: f64, _pt2: f64, tt4: f64, f: f64,
+        &self, wgas: &Gas, tt2: f64, pt2: f64, tt4: f64, f: f64,
     ) -> Result<CascadeMap, Abort> {
+        self.try_cascade_map_at(wgas, tt2, pt2, tt4, f, None).map(|(c, _)| c)
+    }
+
+    /// [`try_cascade_map`](Self::try_cascade_map) with, RUNG 110, the fan's [`FanFace`]: with a fan the LP shaft's work
+    /// is split between the core and the bypass air ([`TwoSpoolCore::try_fan_split`]), and that split reads the core's
+    /// flow (the outer loop's `pt4`) and the fan nozzle's back-pressure (`p0`), so a fan needs the face. With no fan the
+    /// face is never read and this is rung 39's cascade, line for line.
+    pub fn try_cascade_map_at(
+        &self, wgas: &Gas, tt2: f64, pt2: f64, tt4: f64, f: f64, face: Option<FanFace>,
+    ) -> Result<(CascadeMap, Option<FanSplit>), Abort> {
         counters::bump_cascade();
         let mfp4_pin = try_choked_mfp(wgas, tt4, f)?;
         let (mut eta_hpt, mut eta_lpt) = (self.base.eta_hpt, self.base.eta_lpt);
@@ -1777,8 +2063,22 @@ impl TwoSpoolMapCore {
             let mfp4 = mfp4_pin * (a4 / self.base.a4);
 
             // ENERGY (map-free): the LP balance fixes Tt25, the HP balance fixes Tt3 onto it.
-            let dh_lpt = self.base.eta_m * (1.0 + f) * (wgas.h_t(tt45, f) - wgas.h_t(tt5, f));
-            let tt25 = wgas.t_from_h_c(wgas.h_c(tt2) + dh_lpt);
+            // RUNG 110: with a fan the LP balance pays for the bypass air too, so Tt25 comes out of the split.
+            let (tt25, split) = match (self.base.fan, face) {
+                (None, _) => {
+                    let dh_lpt = self.base.eta_m * (1.0 + f) * (wgas.h_t(tt45, f) - wgas.h_t(tt5, f));
+                    (wgas.t_from_h_c(wgas.h_c(tt2) + dh_lpt), None)
+                }
+                (Some(fan), Some(face)) => {
+                    let sp = self.base.try_fan_split(&fan, wgas, tt2, pt2, tt4, f, tt45, tt5, a4, mfp4_pin, face)?;
+                    let tt25 = wgas.t_from_h_c(wgas.h_c(tt2) + (wgas.h_c(wgas.t_from_pr_c(wgas.pr_c(tt2) * sp.pi_f))
+                        - wgas.h_c(tt2)) / self.base.eta_lpc);
+                    (tt25, Some(sp))
+                }
+                (Some(_), None) => return Err(Abort(
+                    "rung-110: the bypass cascade needs the outer loop's pt4 and the flight's p0 (try_cascade_map_at)"
+                        .to_string())),
+            };
             let dh_hpt = self.base.eta_m * (1.0 + f) * (wgas.h_t(tt4, f) - wgas.h_t(tt45, f));
             let tt3 = wgas.t_from_h_c(wgas.h_c(tt25) + dh_hpt);
 
@@ -1809,7 +2109,7 @@ impl TwoSpoolMapCore {
             if (t_hpt - eta_hpt).abs() <= Self::ETA_TOL
                 && (t_lpt - eta_lpt).abs() <= Self::ETA_TOL {
                 counters::note_turb(turb_pass as u64 + 1);
-                return Ok(out);
+                return Ok((out, split));
             }
             eta_hpt = t_hpt;
             eta_lpt = t_lpt;
@@ -1954,6 +2254,10 @@ fn r39_body(
     core.base.refuse_customer("rung 39's map matcher");
     core.base.refuse_cooling("rung 39's map matcher");
     core.base.refuse_offtake("rung 39's map matcher");
+    // RUNG 110: the textbook turbofan (efficiencies at design). A live LP map would read the fan face's corrected flow,
+    // which then carries the bypass air too, and the root's efficiency off it: rung 111's charts.
+    assert!(core.base.fan.is_none() || core.map_lp().is_flat(),
+            "rung-110 flies the turbofan on a FLAT LP map (the textbook method): the fan's chart is rung 111's");
     let b = &core.base;
     let pi_d = b.pi_d_max * ram_recovery(flight.m0);
     let (state0, _v0) = b.try_freestream_for(flight)?;
@@ -1961,23 +2265,34 @@ fn r39_body(
 
     let (mut f, mut pt4) = (b.f_design, b.pi_b * b.pi_hpc_design * b.pi_lpc_design * pt2);
     let mut c: Option<CascadeMap> = None;
+    let mut split: Option<FanSplit> = None;
+    let mut converged = false;
     for _ in 0..TwoSpoolCore::MAX {
         crate::steady_unchoked::track_pt4(b, pt4);
         let owned = b.try_working_gas(f, tt4, pt4)?;
         let wgas = owned.as_ref().unwrap_or(b.gas());
-        let cm = core.try_cascade_map(wgas, tt2, pt2, tt4, f)?;
+        let (cm, sp) = core.try_cascade_map_at(wgas, tt2, pt2, tt4, f, b.fan.map(|_| FanFace { pt4, p0: flight.p0 }))?;
+        split = sp;
         let pt4_new = b.pi_b * cm.c.pi_hpc * cm.c.pi_lpc * pt2;
         let f_new = b.try_solve_f(cm.c.tt3, pt4_new, tt4)?;
-        let done = (f_new - f).abs() <= TwoSpoolCore::TOL * (f_new + 1e-30)
-            && (pt4_new - pt4).abs() <= TwoSpoolCore::TOL * pt4_new;
+        let tol = if b.fan.is_some() { TwoSpoolCore::FAN_TOL } else { TwoSpoolCore::TOL };
+        let done = (f_new - f).abs() <= tol * (f_new + 1e-30)
+            && (pt4_new - pt4).abs() <= tol * pt4_new;
         c = Some(cm);
         f = f_new;
         pt4 = pt4_new;
         if done {
+            converged = true;
             break;
         }
     }
     let c = c.expect("the joint loop runs at least once");
+    // RUNG 110: with a fan the bypass ratio rides this loop (it reads pt4), so an exhausted loop is REFUSED rather than
+    // handed on as an answer. Without one the old fall-through stands — oracle-gated behaviour, untouched.
+    if b.fan.is_some() && !converged {
+        return Err(Abort(format!("rung-110: the turbofan's operating point did not settle at Tt4={tt4:.0} K, \
+                                  M0={:.2} (the fan's split and the burner did not agree)", flight.m0)));
+    }
 
     assert!(c.c.pi_lpc > 1.0 && c.c.pi_hpc > 1.0 && 0.0 < c.c.tau_hpt && c.c.tau_hpt < 1.0
                 && 0.0 < c.c.tau_lpt && c.c.tau_lpt < 1.0,
@@ -1989,7 +2304,7 @@ fn r39_body(
 
     // Rebuild FORWARD at the MAP-CONSISTENT efficiencies.
     let r = b.try_rebuild(flight, pi_d, c.c.pi_lpc, c.c.pi_hpc, tt4, mdot_air,
-                          c.eta_lpc, c.eta_hpc, c.eta_hpt, c.eta_lpt)?;
+                          c.eta_lpc, c.eta_hpc, c.eta_hpt, c.eta_lpt, split.map_or(0.0, |s| s.alpha))?;
 
     // SCOPE GUARD (inherited from rung 38 — unchoke is still a rung-33-shaped follow-on).
     // An `Abort` rather than a panic FROM SLICE L ON: rung 41's schedule methods SKIP such a
@@ -1997,7 +2312,7 @@ fn r39_body(
     // `b = 0`, rising to 25 at `b = 0.10`, which IS rung 42 gate 6's shrinking envelope, as a
     // count.
     if r.exit_p9 <= flight.p0 + 1e-6
-        && crate::steady_unchoked::refuse_unchoked(b, tt4, (1.0 + r.s4.far) * r.exit_v9 - r.v0)? {
+        && crate::steady_unchoked::refuse_unchoked(b, tt4, r.guard_thrust(flight.p0))? {
         return Err(Abort(format!(
             "rung-39 two-spool map match at Tt4={tt4:.0}, M0={:.2}: nozzle UNCHOKED -- OUT \
              OF SCOPE (docs/rung38-spec.md 'Scope'). The LP turbine's geometric tau_LPT pin \

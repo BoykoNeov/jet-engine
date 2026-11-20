@@ -374,6 +374,15 @@ impl OffDesignMatcher {
         // precisely because getting it wrong here is a silent one-bit defect a tolerance hides.
         let a4 = mdot4_r * powp(tt4_r, 0.5) / (pt4_r * choked_mfp(&gas, tt4_r, f_design));
         let a8 = mdot4_r * powp(tt9_r, 0.5) / (pt9_r * choked_mfp(&gas, tt9_r, f_design));
+        // RUNG 110 (the user's decision, 2026-11-20: one rule for every engine): a design whose nozzle is UNCHOKED is
+        // sized at its ACTUAL exit, `A8 = ṁ9/(ρ9·V9)` — the choked formula above would size a throat that passes the
+        // design flow only when sonic, so the engine flown at its own design point would not return to it. A choked
+        // design keeps the line above, bit for bit.
+        let a8 = if reference.p9 <= flight_design.p0 + 1e-6 {
+            mdot4_r / (reference.p9 / (gas.r_t_at(f_design) * reference.t9) * reference.v9)
+        } else {
+            a8
+        };
         let hp_cap = crate::hp_vane::HpCapacity::capture(&gas, f_design, tt4_r, s5.pt / pt4_r, eta_t, a4,
                                                          crate::hp_vane::HpVane::default());
 

@@ -419,6 +419,7 @@ impl VariableStatorCore {
         // `let core`, not `let mut core`: since slice V the two map fields are `Cell`, so the
         // arming setter takes `&self`. That is not cosmetic — it is the whole reason rung 57 can
         // arm from inside a `&self` hook cell, visible here nine rungs early.
+        design_engine.refuse_fan("rung 53's variable-stator matcher");
         let core = TwoSpoolMapCore::with_hooks(
             design_engine.clone(), flight_design, mdot_design, map_lp, map_hp, two_hooks);
         // At v == 0 the maps are LEFT ALONE, so the reduce is an identity and not a

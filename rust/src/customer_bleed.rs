@@ -447,7 +447,7 @@ fn customer_body(
         thrust, tt4, m0: flight.m0, pi_lpc: x.c.pi_lpc, pi_hpc: x.c.pi_hpc,
         tau_lpc: s25.tt / s2.tt, tau_hpc: s3.tt / s25.tt,
         tau_hpt: x.c.tau_hpt, pi_hpt: x.c.pi_hpt, tau_lpt: x.c.tau_lpt, pi_lpt: x.c.pi_lpt,
-        mdot_air, mdot_ratio: mdot_air / base.mdot_air_design,
+        mdot_air, mdot_ratio: mdot_air / base.mdot_air_design, fan: None,
     };
     Ok(CustomerBleedResult {
         base: TwoSpoolMapResult {
@@ -483,6 +483,7 @@ impl CustomerBleedMatcher {
         design_engine: TwoSpoolEngine, flight_design: FlightCondition, mdot_design: f64,
         map_lp: ComponentMap, map_hp: ComponentMap, bleed: f64,
     ) -> Self {
+        design_engine.refuse_fan("rung 90's customer-bleed matcher");
         let mut core = TwoSpoolMapCore::with_hooks(
             design_engine, flight_design, mdot_design, map_lp, map_hp, &R90);
         assert!((0.0..0.5).contains(&bleed), "rung-42 bleed fraction must be in [0, 0.5)");

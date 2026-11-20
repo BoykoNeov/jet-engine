@@ -419,7 +419,7 @@ fn bleed_body(
         thrust, tt4, m0: flight.m0, pi_lpc: c.c.pi_lpc, pi_hpc: c.c.pi_hpc,
         tau_lpc: s25.tt / s2.tt, tau_hpc: s3.tt / s25.tt,
         tau_hpt: c.c.tau_hpt, pi_hpt: c.c.pi_hpt, tau_lpt: c.c.tau_lpt, pi_lpt: c.c.pi_lpt,
-        mdot_air, mdot_ratio: mdot_air / base.mdot_air_design,
+        mdot_air, mdot_ratio: mdot_air / base.mdot_air_design, fan: None,
     };
     Ok(TwoSpoolBleedResult {
         base: TwoSpoolMapResult {
@@ -458,6 +458,7 @@ impl TwoSpoolBleedMatcher {
         design_engine: TwoSpoolEngine, flight_design: FlightCondition, mdot_design: f64,
         map_lp: ComponentMap, map_hp: ComponentMap, bleed: f64,
     ) -> Self {
+        design_engine.refuse_fan("rung 42's interstage-bleed matcher");
         let mut core = TwoSpoolMapCore::with_hooks(
             design_engine, flight_design, mdot_design, map_lp, map_hp, &R42);
         core.bleed = bleed;

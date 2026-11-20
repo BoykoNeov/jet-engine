@@ -695,7 +695,7 @@ fn cooled_body(
         thrust, tt4, m0: flight.m0, pi_lpc: m.c.pi_lpc, pi_hpc: m.c.pi_hpc,
         tau_lpc: s25.tt / s2.tt, tau_hpc: s3.tt / s25.tt,
         tau_hpt: m.c.tau_hpt, pi_hpt: m.c.pi_hpt, tau_lpt: m.c.tau_lpt, pi_lpt: m.c.pi_lpt,
-        mdot_air, mdot_ratio: mdot_air / base.mdot_air_design,
+        mdot_air, mdot_ratio: mdot_air / base.mdot_air_design, fan: None,
     };
     Ok(CooledResult {
         base: TwoSpoolMapResult {
@@ -730,6 +730,7 @@ impl TurbineCoolingMatcher {
         design_engine: TwoSpoolEngine, flight_design: FlightCondition, mdot_design: f64,
         map_lp: crate::map::ComponentMap, map_hp: crate::map::ComponentMap, bleed: f64,
     ) -> Self {
+        design_engine.refuse_fan("rung 91's turbine-cooling matcher");
         let mut core = TwoSpoolMapCore::with_hooks(
             design_engine, flight_design, mdot_design, map_lp, map_hp, &R91);
         assert!((0.0..0.5).contains(&bleed), "rung-42 bleed fraction must be in [0, 0.5)");

@@ -155,6 +155,7 @@ pub mod cross_split;
 pub mod demand_coordinate;
 pub mod customer_bleed;
 pub mod engine;
+pub mod flown_turbofan;
 pub mod fuel_transient;
 pub mod full_split;
 pub mod gas;

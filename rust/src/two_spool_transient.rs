@@ -1345,6 +1345,7 @@ impl TwoSpoolTransientCore {
         } else {
             &crate::two_spool::R39
         };
+        design_engine.refuse_fan("rung 40's two-shaft transient");
         let inner = TwoSpoolMapCore::with_hooks(design_engine, flight_design, mdot_design, map_lp,
                                                 map_hp, steady);
         let (s2, s25, s3) = (*inner.base.reference.station("2"),
