@@ -38,7 +38,7 @@ new slices and step links go THERE, not here.
 - [Back-pressure repair](back-pressure-repair.md) — 2026-10-16: a census logger in a threaded test process must write each record in ONE call; red-check by stashing src only
 - [Sandbox altitude](sandbox-altitude.md) — a step-checked limit holds only at its flight; a ×2 similarity cannot see a re-capture; empty-vs-empty cmp says IDENTICAL
 - [Roadmap + standing engine](roadmap-and-standing-engine.md) — 2026-11-12: `docs/plans/roadmap.md` is the entry point (A1–A8 all DONE by 2026-11-19; B1 design point DONE as rung 109; B2–B5 + B1 off-design the user's choice — ask); a refusal can be another rung's control flow, so add a twin
-- [Rung 110 WIP handoff](rung110-wip-handoff.md) — 2026-11-20 PAUSED: bypass built into the two-shaft loop, compiles, UNCOMMITTED + untested on main; next = old-engine tests, then gate 3
+- [Rung 110 WIP handoff](rung110-wip-handoff.md) — 2026-11-20 PAUSED (2nd): gates 1–5 green, 4b one convergence fail, full gate NOT run after the user's one-nozzle-rule change; UNCOMMITTED on main
 - [Try-this menu (A1)](try-this-menu-a1.md) — 2026-11-12 SHIPPED: a chained page action must await each run landing (settled()); measure an entry's run against its pin before writing its text
 - [Standing engine (A3)](standing-engine-a3.md) — 2026-11-12 SHIPPED: a census must set the knob where the request reads it (the slam nests its flight); a limit pair off a grid validates nothing
 - [Plain notes (A4)](plain-notes-a4.md) — DONE 2026-11-14, all of 25–108: read headlines, don't scrape them (81/82 went wrong); add forward pointers to notes already written

@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: eb011473-7f0f-453f-88f5-c065f3698fd3
-  modified: 2026-11-20T02:25:29.475Z
+  modified: 2026-11-20T09:07:34.859Z
 ---
 
 User said "what is next" → I offered roadmap B1–B5 → "go with your recommendation" → I picked B1's next step (fly the
@@ -43,5 +43,11 @@ the code" means the SAME loop — a new loop that calls the same helpers is stil
 
 **Correction I owed the user:** my first option text said B switches off Controls — false; Controls, Cooling, Blades,
 Burner run their OWN engines. B touches Fly it only (experiments 9–11, ~12 browser checks).
+
+**Session 2 decisions (AskUserQuestion, 2026-11-20):**
+- **One nozzle rule for every engine** (two-shaft and one-shaft, fan or not): A8 sized at the design's actual exit
+  when unchoked at design. Condition: run the full gate; if any recorded result moves, stop and show the user first.
+- **Gate 5 tests the explanation**: keep the exact-equations check; the 0.3 %-of-printed claim is recorded as a MISS
+  (thrust 0.367 %), replaced by asserting the model's reference is the book's components with a consistent HP turbine.
 
 Related: [[rung109-decisions]], [[roadmap-and-standing-engine]], [[sandbox-direction]].
