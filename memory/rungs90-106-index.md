@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: 24769f1e-166a-49a8-9795-5af4eefb98aa
-  modified: 2026-11-19T10:14:01.201Z
+  modified: 2026-11-20T01:57:22.909Z
 ---
 
 Moved out of `MEMORY.md` on 2026-11-10, when the index reached 19.6 KB. Append new rungs and decisions here.
@@ -50,3 +50,4 @@ Moved out of `MEMORY.md` on 2026-11-10, when the index reached 19.6 KB. Append n
 - [107 fast attack](gov-fast-attack-decisions.md) sandbox § 45: attack floor 0.02 beside the governor (4 substeps), every substep recorded
 - [108](rung108-decisions.md) two-speed temperature limiter: BOTH governed and open, ALL holds, box TICKED on the page (model default off), shipped at 3.3 s/run governed
 - [109](rung109-decisions.md) turbofan, design point only; fan nozzle follows the core; lumped turbine; best-πf readout + fuel-vs-bypass chart + two-jet efficiency rows
+- [110](rung110-decisions.md) turbofan FLOWN: textbook (no maps) first; ONE solver = the two-shaft code + bypass; Fly it switches at rung 111; anchor Ex 8-8 (user's PDF, never commit)
