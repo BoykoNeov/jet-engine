@@ -319,6 +319,44 @@ screenshots (`SANDBOX_SHOTS`) in light, dark and phone width after each.
 kept self-comparison in `rust/src/applied_reference.rs` with `#[allow(clippy::eq_op)]` and its existing
 comment. Nothing may move; the gate proves it. The other 131 warnings are style and may be left.
 
+### A9. Bind the cutaway to the model — PRIORITY (user, 2026-11-20), not started
+
+**The user's words (2026-11-20):** "for future session (with priority) make stronger connections between
+the computation and the what the cutaway shows and make that connection permanent". Ask the user first
+whether this goes before or after finishing rung 110 (paused, uncommitted on `main`).
+
+**Where it stands (read from `docs/visuals/cutaway-template.html`, 2026-11-20).** The cutaway
+(`docs/visuals/turbojet-cutaway.html`, published at https://claude.ai/artifact/KbCcwpVMiJWJm1sN7kYdZm) draws
+ONE run of the model, the default design point, with an ideal/real toggle. Its numbers are written into the
+page at splice time (`rust/src/visuals.rs` → `data.json` → `/*__DATA__*/`) and `rust/tests/visuals.rs`
+holds them to the model.
+- *The model's:* the six station readouts (Tt, pt, f), the performance table, the T–s diagram, the
+  exhaust velocity and exit Mach, the flight and design condition. Parcel colour is anchored to the
+  station temperatures.
+- *Drawn, not computed:* all geometry and proportions; the 8 compressor and 2 turbine stages; the shaft
+  speed; the parcel speeds inside the engine (`speedAt`: fixed 150 / 60 / 95 / 260 px/s between the
+  model's V0 and V9); the primary-zone flame (`T_PRIMARY = 2150` K, a constant); the jet-pipe-to-throat
+  temperature (`Tt5 * 0.87`, a made-up factor); every colour between stations (interpolated).
+- *Not connected at all:* the sandbox. Change a knob there and the cutaway does not change.
+- *Stale text on the page:* its footer and comments still name the deleted Python
+  (`docs/visuals/extract_data.py`, `tests/test_visuals_data.py`, `main.py`); the source is now
+  `rust/src/visuals.rs` (`cargo run --release -- visuals`). Fix in this task.
+
+**What "stronger" can mean — model pieces that already exist** (verify each before relying on it):
+the zoned burner (rungs 8–10) computes a primary-zone temperature to replace the 2150 K constant;
+rung 85 sizes blades, stage counts and shaft speed; the off-design matchers (31+) and the throttle slam
+(34+) give a running engine whose cutaway could move; the sandbox already runs the model live in the
+browser, so the cutaway could become a sandbox view driven by the user's own design.
+
+**What "permanent" must mean:** every number the cutaway shows is either read from a model run or
+labelled as drawn on the page, and a gate fails when a drawn constant creeps back in or a computed one
+stops matching the model (extend `rust/tests/visuals.rs`, or the sandbox's browser check if it becomes a
+view).
+
+**Open choice for the user** (ask, with the cost of each): keep a separate page and swap its drawn
+constants for computed ones; or rebuild the cutaway as a live sandbox view that follows the knobs (the
+stronger connection, more work, and the published cutaway link would then point at an old page).
+
 ---
 
 ## Part 3 — Larger directions (the user chooses)
