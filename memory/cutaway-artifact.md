@@ -18,7 +18,7 @@ to the old cutaway panel.
 
 Publish parameters that must stay stable: favicon ⚙️; title from the
 `<title>` tag (Turbojet Cutaway). URL (pass as `url` on a redeploy from another session):
-https://claude.ai/code/artifact/968af1ea-4e24-436b-ac1e-16b299ec0304
+https://claude.ai/artifact/KbCcwpVMiJWJm1sN7kYdZm (the gallery link as of 2026-11-20; the old form was claude.ai/code/artifact/968af1ea-4e24-436b-ac1e-16b299ec0304)
 
 Lessons from building it:
 - Chrome's MCP tools refuse `file://` URLs; serve the folder with
