@@ -28,8 +28,11 @@ Change the engine and watch it respond. It has six views:
 Not sure where to start? [`docs/sandbox/EXPERIMENTS.md`](docs/sandbox/EXPERIMENTS.md) lists short
 experiments — which knobs to move and what to watch for.
 
-Two older pages sit beside it in `docs/visuals/`: an animated engine cutaway and a page of charts
-(they cover the first rungs only).
+Two older pages sit beside it in `docs/visuals/`: an
+[animated engine cutaway](docs/visuals/turbojet-cutaway.html) and a
+[page of charts](docs/visuals/turbojet-visuals.html). They show the default design only, with numbers
+fixed when the pages were built, and the charts cover the first rungs only. The sandbox page links to
+both from its header.
 
 ## Read it
 

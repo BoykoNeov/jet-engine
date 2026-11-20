@@ -38,6 +38,8 @@ body { margin: 0; background: var(--bg); color: var(--ink);
 header { padding: 20px 16px 8px; max-width: 1280px; margin: 0 auto; }
 h1 { font-size: 22px; margin: 0 0 4px; letter-spacing: -.01em; }
 .lede { color: var(--ink-2); margin: 0; max-width: 70ch; }
+.also { color: var(--ink-2); margin: 6px 0 0; max-width: 90ch; font-size: 13px; }
+.also a { color: var(--accent); }
 main { max-width: 1280px; margin: 0 auto; padding: 8px 16px 32px;
   display: grid; grid-template-columns: minmax(280px, 360px) 1fr; gap: 16px; align-items: start; }
 @media (max-width: 820px) { main { grid-template-columns: minmax(0, 1fr); } }
@@ -199,6 +201,10 @@ footer h2.sec { margin: 8px 0 4px; }
   <h1>Turbojet Sandbox</h1>
   <p class="lede">Change the engine and watch it respond. Every number on this page is computed by the
   project's own Rust model, running in your browser. A design that does not run is shown as such, with the reason.</p>
+  <p class="also">Two more pages, in <code>docs/visuals/</code>:
+  <a href="../visuals/turbojet-cutaway.html">the animated engine cutaway</a> and
+  <a href="../visuals/turbojet-visuals.html">the charts page</a>. Both show the default design only, with
+  numbers fixed when the pages were built; they do not follow the knobs on this page.</p>
 </header>
 <main>
   <section class="card knobs" aria-label="Design knobs">
