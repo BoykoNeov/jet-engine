@@ -48,12 +48,23 @@ function Start-Low($exe, $argList, $out, $err) {
 Write-Host "building (below-normal)..."
 $feat = @()
 if ($Features) { $feat = @('--features', $Features) }
+# DISK (2026-11-22): every build CONFIGURATION gets its own full set of ~250 test programs (~1 GB) in
+# target\release\deps, and cargo never deletes an old set -- by then three sets (default + the two
+# feature gates) and an older one had grown target\ to 13 GB. So a -Features build goes to a throwaway
+# target dir, deleted at the end of the run (logs stay in target\test-all), and a default build drops
+# the superseded copies of the programs it just built (step 1b).
+$featDir = $null
+if ($Features) {
+    $featDir = Join-Path $root ('target\feat-' + ($Features -replace '[^A-Za-z0-9_-]', '_'))
+    $env:CARGO_TARGET_DIR = $featDir
+}
 $b = Start-Low 'cargo' (@('test', '--release', '--no-run', '--message-format=json-render-diagnostics',
                           '--manifest-path', "`"$root\Cargo.toml`"") + $feat) "$logs\build.json" "$logs\build.err"
 $b.WaitForExit()
 if ($b.ExitCode -ne 0) {
     Get-Content "$logs\build.err" -Tail 30
     Write-Host "BUILD FAILED (exit $($b.ExitCode)); full log: $logs\build.err"
+    if ($featDir) { Remove-Item -LiteralPath $featDir -Recurse -Force -ErrorAction SilentlyContinue }
     exit 1
 }
 $programs = @(Get-Content "$logs\build.json" |
@@ -74,6 +85,30 @@ $programs += [pscustomobject]@{ Name = 'doc-tests'; Exe = 'cargo';
 $programs += [pscustomobject]@{ Name = 'sandbox-browser'; Exe = 'powershell';
     Args = @('-NoProfile', '-File', "`"$root\sandbox-wasm\check.ps1`"") }
 $programs = @($programs | Where-Object { $_.Name -like $Only })
+
+# ---- 1b. a default build: delete the older copies (another hash) of every test program just built --
+# left by a toolchain or profile change, or by a feature build from before 2026-11-22. `turbojet` is
+# skipped: its stem is shared by the lib/bin unit tests AND the CLI binary that `cargo run` uses.
+if (-not $Features) {
+    $deps = Join-Path $root 'target\release\deps'
+    $keep = @{}; $stems = @{}           # from ALL built programs, not just -Only's
+    Get-Content "$logs\build.json" | Where-Object { $_ -like '*"executable":"*' } |
+        ForEach-Object { ($_ | ConvertFrom-Json).executable } | Where-Object { $_ } | ForEach-Object {
+            $base = [IO.Path]::GetFileNameWithoutExtension($_)
+            $keep[$base] = $true
+            $stems[($base -replace '-[0-9a-f]{16}$', '')] = $true
+        }
+    $freed = 0L
+    Get-ChildItem $deps -File | Where-Object { $_.Extension -in '.exe', '.pdb', '.d' } | ForEach-Object {
+        $base = $_.BaseName
+        if ($base -notmatch '^(.+)-[0-9a-f]{16}$') { return }
+        $stem = $Matches[1]
+        if ($stem -eq 'turbojet' -or -not $stems.ContainsKey($stem) -or $keep.ContainsKey($base)) { return }
+        $freed += $_.Length
+        Remove-Item -LiteralPath $_.FullName -Force
+    }
+    if ($freed -gt 0) { Write-Host ("pruned {0:N0} MB of superseded test programs" -f ($freed / 1048576)) }
+}
 Write-Host ("built in {0:N0} s; {1} programs to run, {2} at a time" -f $clock.Elapsed.TotalSeconds, $programs.Count, $Jobs)
 
 # ---- 2. longest first, by the last run's times (an unknown program goes first: it may be long)
@@ -96,6 +131,8 @@ while ($queue.Count -gt 0 -or $running.Count -gt 0) {
         $t = $queue.Dequeue()
         $safe = $t.Name -replace '[^A-Za-z0-9_.-]', '_'
         $out = "$logs\$safe.out"; $err = "$logs\$safe.err"
+        # the browser check builds its own (no features) and reads its paths under the usual target dirs
+        if ($featDir) { if ($t.Name -eq 'sandbox-browser') { Remove-Item Env:CARGO_TARGET_DIR -ErrorAction SilentlyContinue } else { $env:CARGO_TARGET_DIR = $featDir } }
         $p = Start-Low $t.Exe $t.Args $out $err
         $running[$p.Id] = [pscustomobject]@{ P = $p; T = $t; Out = $out; Err = $err; Start = $clock.Elapsed.TotalSeconds }
     }
@@ -122,6 +159,11 @@ while ($queue.Count -gt 0 -or $running.Count -gt 0) {
 # ---- 4. summary; the times feed the next run's order (only on a whole default run, so -Only cannot thin it)
 if ($Only -eq '*' -and -not $Features) {
     $results | ForEach-Object { "{0}`t{1:F1}" -f $_.Name, $_.Secs } | Set-Content -Encoding ascii $timesFile
+}
+if ($featDir) {   # the throwaway feature build (step 1); its logs are in target\test-all
+    Remove-Item Env:CARGO_TARGET_DIR -ErrorAction SilentlyContinue
+    Remove-Item -LiteralPath $featDir -Recurse -Force -ErrorAction SilentlyContinue
+    Write-Host "removed the feature build $featDir"
 }
 $bad = @($results | Where-Object { -not $_.Ok })
 $sum = ($results | Measure-Object Passed, Failed, Ignored -Sum).Sum
