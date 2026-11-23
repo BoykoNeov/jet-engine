@@ -892,6 +892,14 @@ pub struct TwoSpoolCore {
     /// RUNG 104: where a law provably IS the pin, use the pin's own solve ([`TwoSpoolCore::law_is_pin`]). `true` by
     /// default; gate R2 turns it off to compare the law's own search with the pin.
     pub law_shortcut: std::cell::Cell<bool>,
+    /// RUNG 104's shortcut's premise, captured (repaired at rung 110): on a calorically perfect hot section the LP
+    /// turbine's choked-nozzle root is pure geometry (`A45`, `A8`, `π_n`, `η_LPT`), so it is the DESIGN expansion `xd`,
+    /// where every law passes its design flow, only when `A8` was sized by the choked formula — a design whose nozzle
+    /// was CHOKED. Unchoked at design, `A8` is sized at the actual exit (rung 110's one nozzle rule) and the choked root
+    /// is some other `x`: the shortcut would hand back the pin's pair where the law's is different, and the engine's
+    /// balance jumps where the nozzle chokes (measured: perfect gas, π_c 2, π_f 1.2, α 1, the joint loop with NO root —
+    /// its correction stepping from +8.5 to −14.8 kPa across 1 kPa of pt4). `false` keeps the law's own search.
+    pub pin_root_is_design: bool,
     /// RUNG 105: the HP vane's flow law and its design capture (`crate::hp_vane`).
     pub hp_cap: std::cell::Cell<crate::hp_vane::HpCapacity>,
     /// RUNG 105: the flight's `p0` a transient closure solves its turbines against under the HP vane's law, with the
@@ -1173,7 +1181,8 @@ impl TwoSpoolCore {
                                  pressure does not beat the outside air. Raise the fan pressure ratio.");
             FanHw { bypass: b, a18: b.alpha * mdot_design / flux }
         });
-        let a8 = if reference.p9 <= flight_design.p0 + 1e-6 {
+        let design_choked = !(reference.p9 <= flight_design.p0 + 1e-6);
+        let a8 = if !design_choked {
             mdot4_r / (reference.p9 / (gas.r_t_at(f_design) * reference.t9) * reference.v9)
         } else {
             a8
@@ -1210,6 +1219,7 @@ impl TwoSpoolCore {
             pin_past_choke: std::cell::Cell::new(false),
             turbine_law: std::cell::Cell::new(turbine_law),
             law_shortcut: std::cell::Cell::new(true),
+            pin_root_is_design: design_choked,
             lp_capacity,
             hp_cap: std::cell::Cell::new(hp_cap),
             hp_flight: std::cell::Cell::new([f64::NAN; 3]),

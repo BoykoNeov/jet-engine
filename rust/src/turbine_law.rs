@@ -264,6 +264,7 @@ impl TwoSpoolCore {
 
     pub fn law_is_pin(&self, gas: &Gas, eta_lpt: f64) -> bool {
         self.law_shortcut.get() && gas.hot_is_cpg() && eta_lpt == self.lp_capacity.eta && !self.lit_held()
+            && self.pin_root_is_design
     }
 
     /// The LP turbine with the nozzle CHOKED: `(π_LPT, τ_LPT, Tt5)`. `Pin` is rung 38's (★-LP), called literally.
