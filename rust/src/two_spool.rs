@@ -933,7 +933,17 @@ impl TwoSpoolCore {
     /// cascade's own noise now circulates — and on the table gases that noise is the property inversions' (~1e-11
     /// relative in `Tt25`, measured: the loop's gain is ~0.3 but `pt4_new` scatters ~2e-11 about its line). `TOL` is
     /// then out of reach and the loop flips between two iterates for ever. 1e-10: 3× the floor, 10× inside gate 3.
+    /// A step is not the distance to the root: below choke the loop shrinks its step by only r ≈ 0.94 a pass (measured,
+    /// below), so the distance is step/(1−r) ≈ 17× the bar, ~2e-9 — still inside gate 4b's 1e-7 home and 1e-6 step bars.
     pub const FAN_TOL: f64 = 1e-10;
+    /// RUNG 110: the joint loop's pass cap WITH A FAN. Below choke (rung 103's free LP turbine) the bypass ratio reads
+    /// pt4 strongly and the loop CRAWLS: 306 passes worst over a census of ~2 700 points (3 gases × 2 loss sets × 3
+    /// design flights × 3 π_c/π_f × 3 design Tt4, flown to 3 flights down 600 K, plus rung 110's P grid), late shrink
+    /// ratio ≤ 0.943 — over `MAX`. 1 000 is 3× that. `MAX` itself is shared by eight loops and oracle-gated: untouched.
+    pub const FAN_MAX: usize = 1000;
+    /// RUNG 110: the step below which a sign-flipping, non-shrinking joint loop is at its rounding floor (the equilibrium
+    /// gas's ~1.4e-10, measured), 7× that.
+    pub const FAN_FLOOR: f64 = 1e-9;
 
     /// RUNG 92: does this core carry a shaft load that takes any power? `None` and zero demands
     /// on both shafts are INACTIVE — and an inactive one dispatches to the earlier code.
@@ -2267,7 +2277,9 @@ fn r39_body(
     let mut c: Option<CascadeMap> = None;
     let mut split: Option<FanSplit> = None;
     let mut converged = false;
-    for _ in 0..TwoSpoolCore::MAX {
+    let cap = if b.fan.is_some() { TwoSpoolCore::FAN_MAX } else { TwoSpoolCore::MAX };
+    let mut prev_dpt4 = f64::NAN;
+    for _ in 0..cap {
         crate::steady_unchoked::track_pt4(b, pt4);
         let owned = b.try_working_gas(f, tt4, pt4)?;
         let wgas = owned.as_ref().unwrap_or(b.gas());
@@ -2278,10 +2290,19 @@ fn r39_body(
         let tol = if b.fan.is_some() { TwoSpoolCore::FAN_TOL } else { TwoSpoolCore::TOL };
         let done = (f_new - f).abs() <= tol * (f_new + 1e-30)
             && (pt4_new - pt4).abs() <= tol * pt4_new;
+        // RUNG 110: with a fan, the loop at its rounding floor. On the equilibrium gas the cascade's table inversions can
+        // leave pt4 flipping between two neighbours ~1.4e-10 apart for ever (measured: equilibrium, lossless, π_c 2,
+        // π_f 1.2, α 1, design Tt4 1500 at standing, flown to cruise at Tt4 1300), just over FAN_TOL. A step that is
+        // below FAN_FLOOR, flips sign, and has not shrunk is that floor, not a crawl (a crawl keeps its sign).
+        let dpt4 = (pt4_new - pt4) / pt4_new;
+        let floor = b.fan.is_some() && dpt4.abs() <= TwoSpoolCore::FAN_FLOOR
+            && (f_new - f).abs() <= TwoSpoolCore::FAN_FLOOR * f_new
+            && dpt4 * prev_dpt4 < 0.0 && dpt4.abs() >= 0.5 * prev_dpt4.abs();
+        prev_dpt4 = dpt4;
         c = Some(cm);
         f = f_new;
         pt4 = pt4_new;
-        if done {
+        if done || floor {
             converged = true;
             break;
         }
@@ -2291,7 +2312,8 @@ fn r39_body(
     // handed on as an answer. Without one the old fall-through stands — oracle-gated behaviour, untouched.
     if b.fan.is_some() && !converged {
         return Err(Abort(format!("rung-110: the turbofan's operating point did not settle at Tt4={tt4:.0} K, \
-                                  M0={:.2} (the fan's split and the burner did not agree)", flight.m0)));
+                                  M0={:.2} (the fan's split and the burner did not agree) — the joint loop was still \
+                                  moving after {} passes", flight.m0, TwoSpoolCore::FAN_MAX)));
     }
 
     assert!(c.c.pi_lpc > 1.0 && c.c.pi_hpc > 1.0 && 0.0 < c.c.tau_hpt && c.c.tau_hpt < 1.0
