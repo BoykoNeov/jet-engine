@@ -543,7 +543,7 @@ fn gate4b_unchoked_designs_return_home_and_bypass_zero_has_no_step() {
                             "{name} {lname} M{} pi_c {pi_c} pi_f {pi_f} Tt4 {tt4_d}: the design refuses: {}", fl_d.m0, e.0));
                         let w = rel(a.performance.specific_thrust, r0.core.performance.specific_thrust)
                             .max(rel(a.mdot_core, MDOT)).max(rel(a.performance.tsfc, r0.core.performance.tsfc));
-                        println!("4b home {name:17} {lname:8} M{:.2} pi_c {pi_c} pi_f {pi_f} Tt4_d {tt4_d}: design M9 {:.3}                                   miss {w:.1e}", fl_d.m0, r0.core.m9);
+                        println!("4b home {name:17} {lname:8} M{:.2} pi_c {pi_c} pi_f {pi_f} Tt4_d {tt4_d}: design M9 {:.3}  miss {w:.1e}", fl_d.m0, r0.core.m9);
                         // 1e-7: these designs fly BELOW CHOKE, where the roots are rung 33's subsonic branch (one shaft) and
                         // rung 103's free LP turbine (two), converged looser than the choked chain — rung 31 itself misses
                         // a one-shaft design here by ~6e-9 (measured). A tenth of a part per million of thrust or airflow is

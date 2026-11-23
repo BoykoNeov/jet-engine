@@ -24,12 +24,12 @@ the web page running the Rust model live is `docs/sandbox/` (slices 1–5 built;
 ## The rungs
 
 The model is built in cumulative **rungs** — each adds one physical effect and is anchored to a
-published case. All rungs are live; the current scope is **rung 109**.
+published case. All rungs are live; the current scope is **rung 110**.
 
 **Families** (contiguous): 1–6 cycle · 7–24 NOx & mixing · 25–30 nozzle/turbine marches ·
 31–33 off-design steady · 34–37 1-spool transient · 38–45 two-spool · 46–52 fuel limiters ·
 53–56 + 61 airflow levers (steady) · 57–60, 62–63 schedules · 64–68 valve/lag/cascades ·
-69–84 reference splits & rank · 85 blade-speed walls · 86–89 three levers, valve reference, slow & asymmetric valve · 90–94 customer bleed, turbine cooling, shaft offtake, metal limit, burner hold · 95–96 governor in the slam, inferred thrust (knobs) · 97 unchoked nozzle, two shafts · 98–101 corrected tables, speed axis, below choke, airflow off the line · 102 afterburner · 103 steady matchers below choke · 104 LP-turbine flow law · 105 HP-turbine vane law (a knob, off) · 106 governor beside the slow limiter · 107 governor beside the realistic release · 108 two-speed temperature limiter · 109 turbofan (design point). **Read-only diagnostics: 7–30, 36, 41, 44, 45**; all else
+69–84 reference splits & rank · 85 blade-speed walls · 86–89 three levers, valve reference, slow & asymmetric valve · 90–94 customer bleed, turbine cooling, shaft offtake, metal limit, burner hold · 95–96 governor in the slam, inferred thrust (knobs) · 97 unchoked nozzle, two shafts · 98–101 corrected tables, speed axis, below choke, airflow off the line · 102 afterburner · 103 steady matchers below choke · 104 LP-turbine flow law · 105 HP-turbine vane law (a knob, off) · 106 governor beside the slow limiter · 107 governor beside the realistic release · 108 two-speed temperature limiter · 109 turbofan (design point) · 110 turbofan flown. **Read-only diagnostics: 7–30, 36, 41, 44, 45**; all else
 STRUCTURAL / DYNAMIC — an operating point, via § Layout's ladders.
 
 | Rung | Adds (one-line hook) | Spec |
@@ -144,6 +144,7 @@ STRUCTURAL / DYNAMIC — an operating point, via § Layout's ladders.
 | 107 | **THE GOVERNOR BESIDE THE REALISTIC RELEASE** — rung 52's fast-cut, slow-release lag off rung 95's governor, as KNOBS. **HEADLINE: holding thrust, at the page's slowest cut the sag is the CUT's** — the engine runs ahead, then sags; a fast cut leaves the release's. **BOUNDS 106's seam and 52's rate verdict.** | `docs/rung107-spec.md` |
 | 108 | **THE TWO-SPEED TEMPERATURE LIMITER** — rung 52's fast-cut, slow-give-back lag on the redline, governed and open, as KNOBS. **HEADLINE: a fast cut ends most of the overshoot but STORES more**, so beside the governor the slow give-back is paid in thrust TIME. **BOUNDS 106; CONFIRMS 107.** | `docs/rung108-spec.md` |
 | 109 | **THE TURBOFAN** — a fan on the same turbine blows a second stream around the core, on the design point, as KNOBS. **HEADLINE: the best fan does NOT make the two jets equally fast** — the fan jet leaves near the turbine and fan efficiencies times the core's. Bypass 0 IS 6, bit for bit. | `docs/rung109-spec.md` |
+| 110 | **THE TURBOFAN FLOWN** — rung 109's fixed turbofan off design on the two-shaft engine; bypass ratio an OUTPUT. **HEADLINE: a fan closes rung 38's triangle and opens the core nozzle** — the LP shaft hears the HP compressor; below choke 104's law slows the HP. Bypass 0 IS 38, bit for bit. | `docs/rung110-spec.md` |
 
 ## Working contract (from SPEC.md — these override convenience)
 - **Derive before you code.** For each station, write the governing equation and
@@ -159,7 +160,7 @@ STRUCTURAL / DYNAMIC — an operating point, via § Layout's ladders.
 - **Every new rung reduces to its predecessor**, exactly and by test (`X=None` ⇒
   the prior code path). This is the project's spine — see any `docs/rungN-spec.md`.
 
-**Current scope (rung 109).** The **cycle solve** is a thermally-perfect, reacting,
+**Current scope (rung 110).** The **cycle solve** is a thermally-perfect, reacting,
 dissociation-equilibrium gas (`Gas.reacting_equilibrium()`) through ideal + real components
 (rungs 2/2b's knobs, mutually exclusive; specified exit pressure). The burner root-finds `f` over the scale-B
 absolute balance, then freezes the station-4 mixture through turbine + nozzle; Fork A/B and
@@ -195,7 +196,7 @@ Never re-open one, and never re-enumerate them here.
 - **A per-pocket clamp that fires AT THE BURNER** (`max_a>1` at station 4) — a slow-enough freeze on a cooling pocket (20/21).
 - **Detailed Fenimore** (`CH+N₂→HCN`) and **super-eq-O radical decay** — need new species / a relaxing pocket.
 - **Reacting-gas fuel control** (35/43 defer — the forward burner asserts against an equilibrium gas).
-- **Rungs 69–109's seams — in each rung's spec, not here.** `n`=4 needs a 4th non-fuel lever or a non-`min` composition; every route TRIED (72–76, 80) is CLOSED.
+- **Rungs 69–110's seams — in each rung's spec, not here.** `n`=4 needs a 4th non-fuel lever or a non-`min` composition; every route TRIED (72–76, 80) is CLOSED.
 - **Rung 37's internal clocks on two shafts** + the combined 3-state.
 - A **real hardware/CFD map + surge line** (32's concession, doubled on two spools).
 - **Feeding a shifted/marched state into the production cycle** — a re-foundation, not a rung.
@@ -218,7 +219,7 @@ The code is the Rust crate `rust/`. The deleted Python lives at tag **`python-fi
   `two_spool_transient.rs` (40, 44) → `bleed.rs` (42) → `fuel_transient.rs` (43, 45, and the
   fuel-side limiters 46–52) → `stator.rs` (53–54) → `stage.rs` (55–56) → `stator_transient.rs`
   (57–60) → `stator_bleed.rs` (61) → `bleed_transient.rs` (62–63) → `limited_bleed.rs` (64) →
-  `lagged_bleed.rs` (65) → **exactly ONE module per rung, 66→109** (`two_lag.rs` … `turbofan.rs`).
+  `lagged_bleed.rs` (65) → **exactly ONE module per rung, 66→110** (`two_lag.rs` … `flown_turbofan.rs`).
   A rung = a core + a `const` fn-pointer table, reducing to its predecessor; **each module's
   header names its rung, its spec what it adds**, so this entry never grows.
 - `rust/src/main.rs` + `panels/` + `pyfmt.rs` — the CLI: the design-point tables and **one panel per

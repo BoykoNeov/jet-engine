@@ -391,8 +391,10 @@ the core.
   ratio moving with it.
 - *Then:* flying it off design, and the fan's own stall line.
 - **Status: the smallest step is DONE — rung 109, 2026-11-19** (`docs/rung109-spec.md`; the Design view's *Fan
-  (turbofan)* box). Open: flying the fixed turbofan off design (a fan map, two nozzles sharing the flow, a fan shaft of
-  its own), HP/LP turbines, a mixed exhaust (and with it an afterburning turbofan).
+  (turbofan)* box). **Flown off design: DONE — rung 110, 2026-11-24** (`docs/rung110-spec.md`; the textbook method,
+  no maps, on the two-shaft engine — model and a CLI panel, no page change). Open: rung 111 (the fan and compressor
+  maps, Fly it switched to this engine for every design, and the edge-of-running message the spec leaves OPEN), a mixed
+  exhaust (and with it an afterburning turbofan).
 
 ### B2. Real seconds
 
