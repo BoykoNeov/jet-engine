@@ -320,7 +320,7 @@ impl Bypass {
 }
 
 /// RUNG 110: the refusal where the fan nozzle cannot blow any air at the lowest fan pressure ratio the LP turbine leaves.
-pub const FAN_NOZZLE_DRY: &str = "rung-110: the fan cannot push its air out here — even at the lowest fan pressure ratio     that flows, the LP turbine's work is used up on the core air before any bypass air leaves the fan nozzle.";
+pub const FAN_NOZZLE_DRY: &str = "rung-110: the fan cannot push its air out here — even at the lowest fan pressure ratio that flows, the LP turbine's work is used up on the core air before any bypass air leaves the fan nozzle.";
 
 /// RUNG 110: the fan's captured hardware on the two-shaft core.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -428,7 +428,7 @@ impl TwoSpoolEngine {
     /// that cannot carry its bypass stream is refused in words, never flown as a turbojet.
     pub fn refuse_fan(&self, who: &str) {
         assert!(self.fan.is_none(),
-                "rung-110: {who} cannot fly a turbofan (air blown around the core); fly it through rung 39's map                  matcher on flat maps (flown_turbofan.rs)");
+                "rung-110: {who} cannot fly a turbofan (air blown around the core); fly it through rung 39's map matcher on flat maps (flown_turbofan.rs)");
     }
 
     /// RUNG 110: the same engine with a fan — the LP compressor's air split, `bypass.alpha` kilograms around the core per
@@ -1000,7 +1000,7 @@ impl TwoSpoolCore {
     /// RUNG 110's refusal, for every body that cannot fly a turbofan: a bypass stream is never silently dropped.
     pub fn refuse_fan(&self, who: &str) {
         assert!(self.fan.is_none(),
-                "rung-110: {who} cannot fly a turbofan (air blown around the core); fly it through rung 39's map                  matcher on flat maps (flown_turbofan.rs)");
+                "rung-110: {who} cannot fly a turbofan (air blown around the core); fly it through rung 39's map matcher on flat maps (flown_turbofan.rs)");
     }
 
     /// RUNG 110 — THE LP SHAFT PAYS FOR TWO STREAMS (`docs/rung110-spec.md`, anchor § 1 D2–D3). Per kilogram of core

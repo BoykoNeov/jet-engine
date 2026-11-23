@@ -578,3 +578,390 @@ fn gate4b_unchoked_designs_return_home_and_bypass_zero_has_no_step() {
     println!("gate 4b: {home} unchoked designs return home (worst {worst_home:.1e}); {steps} points with no step");
     assert!(home >= 20 && steps >= 40, "too few: {home} / {steps}");
 }
+
+// --- § 2 gate 6: the perfect-gas closed forms ----------------------------------------------------------------------
+
+/// Gate 6: on ONE perfect gas (`Gas::default`, hot = cold) with the pin law, both HP throats choked hold `τtH, πtH`
+/// fixed across the throttle; the HP shaft's speed is `√[(1+f)Tt4/((1+f_R)Tt4_R)]`; at bypass 0 with the core nozzle
+/// choked the two shafts slow together. Bars: 1e-12 where the quantity comes from the throats alone; a fan's outer
+/// (f, pt4) loop stops at FAN_TOL 1e-10 (two_spool.rs), so with a fan the loop-carried quantities are held to that
+/// loop's own tolerance, measured and printed.
+#[test]
+fn gate6_perfect_gas_closed_forms() {
+    let mut n = 0;
+    for (alpha, pi_f) in [(0.0, 1.6), (2.0, 3.46), (6.0, 1.81), (6.0, 1.6)] {
+        let tf = turbofan(Gas::default, page_losses(), alpha, pi_f, &cruise());
+        let ft = fly_rung109(&tf, &cruise(), MDOT).expect("fly");
+        ft.set_turbine_law(TurbineLaw::Pin);
+        let d = ft.match_point(&cruise(), TT4_D);
+        let tau = |p: &FlownPoint| (p.station("45").tt / p.station("4").tt, p.station("45").pt / p.station("4").pt);
+        let (tth_d, pth_d) = tau(&d);
+        let f_d = d.station("4").far;
+        let (mut w_tau, mut w_nhp, mut w_lp): (f64, f64, f64) = (0.0, 0.0, 0.0);
+        for fl in flights() {
+            for tt4 in [1500.0, 1400.0, 1300.0, 1200.0, 1100.0, 1000.0, 900.0] {
+                let Ok(p) = ft.try_match(&fl, tt4) else { continue };
+                let (tth, pth) = tau(&p);
+                w_tau = w_tau.max(rel(tth, tth_d)).max(rel(pth, pth_d));
+                let f = p.station("4").far;
+                w_nhp = w_nhp.max(rel(p.n_hp, ((1.0 + f) * tt4 / ((1.0 + f_d) * TT4_D)).sqrt()));
+                if alpha == 0.0 && p.core_choked(fl.p0) { w_lp = w_lp.max((p.n_fan / p.n_hp - 1.0).abs()) }
+                n += 1;
+            }
+        }
+        println!("gate 6 ({alpha:>4},{pi_f:.2}): tau_tH/pi_tH {w_tau:.1e}  N_HP closed form {w_nhp:.1e}  \
+                  N_LP/N_HP - 1 (alpha 0, choked) {w_lp:.1e}");
+        // With a fan the (f, pt4) loop stops at FAN_TOL 1e-10, so 1e-9 is what it promises (measured: ~3e-13).
+        let bar = if alpha == 0.0 { 1e-12 } else { 1e-9 };
+        assert!(w_tau <= bar, "({alpha},{pi_f}): tau_tH / pi_tH moved {w_tau:e}");
+        assert!(w_nhp <= bar, "({alpha},{pi_f}): N_HP off its closed form by {w_nhp:e}");
+        assert!(w_lp <= 1e-12, "({alpha},{pi_f}): the shafts did not slow together: {w_lp:e}");
+    }
+    assert!(n >= 60, "too few points: {n}");
+}
+
+// --- § 2 gate 7: rung 38's triangle, kept at bypass 0 ---------------------------------------------------------------
+
+/// Gate 7: with no fan, lowering the HP compressor's efficiency ON THE FROZEN HARDWARE leaves the first compressor's
+/// ratio bit for bit where it was, wherever the core nozzle is choked (below choke rung 103 opens the street, by design).
+#[test]
+fn gate7_bypass_zero_keeps_rung_38s_triangle() {
+    let (mut n, mut worst_eq) = (0, 0.0f64);
+    for (name, g) in gases() {
+        let tf = turbofan(g, page_losses(), 0.0, 1.6, &cruise());
+        let ft = fly_rung109(&tf, &cruise(), MDOT).expect("fly");
+        let mut weak = fly_rung109(&tf, &cruise(), MDOT).expect("fly");
+        weak.core_mut().expect("two shafts").eta_hpc -= 0.01;
+        for fl in flights() {
+            for tt4 in THROTTLES {
+                let (Ok(a), Ok(b)) = (ft.try_match(&fl, tt4), weak.try_match(&fl, tt4)) else { continue };
+                if !a.core_choked(fl.p0) { continue }
+                assert!(b.pi_hpc != a.pi_hpc, "{name} M{} Tt4 {tt4}: pi_hpc should move with its own efficiency", fl.m0);
+                if name == "equilibrium" {
+                    // The one gas whose make-up reads PRESSURE: a lower pt4 shifts the dissociation, so the turbine's
+                    // work per kelvin moves and the LP spool hears the HP compressor — but faintly.
+                    let r = rel(b.pi_f, a.pi_f) / rel(b.pi_hpc, a.pi_hpc);
+                    worst_eq = worst_eq.max(r);
+                    assert!(r <= 1e-3, "{name} M{} Tt4 {tt4}: pi_f moved {r:e} of pi_hpc's move", fl.m0);
+                } else {
+                    assert!(b.pi_f == a.pi_f, "{name} M{} Tt4 {tt4}: pi_f moved {} → {}", fl.m0, a.pi_f, b.pi_f);
+                }
+                n += 1;
+            }
+        }
+    }
+    println!("gate 7: {n} choked points, pi_f bit-for-bit unmoved on the perfect and thermally perfect gases; on the equilibrium gas it moves {worst_eq:.1e} of pi_hpc's relative move at worst");
+    assert!(n >= 20, "too few points: {n}");
+}
+
+// --- § 2 gate 8: refusals in words ---------------------------------------------------------------------------------
+
+fn panic_words<T>(f: impl FnOnce() -> T) -> String {
+    // The panic hook is process-wide, so silencing it here hid ANOTHER test's failure message: leave it alone.
+    let r = catch_unwind(AssertUnwindSafe(f));
+    match r {
+        Ok(_) => "(no refusal)".into(),
+        Err(e) => e.downcast_ref::<String>().cloned().or_else(|| e.downcast_ref::<&str>().map(|s| s.to_string()))
+            .unwrap_or_default(),
+    }
+}
+
+#[test]
+fn gate8_refusals_in_words() {
+    use turbojet::customer_bleed::{CustomerBleed, CustomerBleedMatcher};
+    use turbojet::bleed::TwoSpoolBleedMatcher;
+    use turbojet::map::ComponentMap;
+    use turbojet::turbofan::NO_CORE_PRESSURE;
+    // (1) a bypass stream with no fan pressure rise.
+    let e = fly_rung109(&turbofan(Gas::thermally_perfect, page_losses(), 6.0, 1.0, &cruise()), &cruise(), MDOT)
+        .err().expect("refused");
+    println!("gate 8 (1): {}", e.0);
+    assert!(e.0.starts_with("rung-110: a bypass stream needs a fan pressure rise"), "{}", e.0);
+    // (2) the core with no pressure left (rung 109's words, at the design).
+    let e = fly_rung109(&turbofan(Gas::thermally_perfect, page_losses(), 10.0, 3.0, &cruise()), &cruise(), MDOT)
+        .err().expect("refused");
+    assert_eq!(e.0, NO_CORE_PRESSURE);
+    // (3) the fan nozzle running dry has NO gate: `probe_dry` (3 gases x 2 loss sets x 2 design flights x 7 designs x 5
+    // flights, every throttle line scanned to its edge) never met it — the core nozzle refuses first (rung 97 / 103).
+    // (4) a two-shaft load solver handed a turbofan.
+    let tf = turbofan(Gas::thermally_perfect, page_losses(), 6.0, 1.6, &cruise());
+    let c = split_rung109(&tf, &cruise(), MDOT).expect("split");
+    let gas = tf.engine.gas.clone();
+    let w = panic_words(|| CustomerBleedMatcher::new(c.engine(&gas, 50_000.0).with_customer_bleed(CustomerBleed::share(0.05)),
+                                                     cruise(), MDOT, ComponentMap::flat(), ComponentMap::flat(), 0.0));
+    assert!(w.starts_with("rung-110: rung 90's customer-bleed matcher cannot fly a turbofan"), "{w}");
+    let w = panic_words(|| TwoSpoolBleedMatcher::new(c.engine(&gas, 50_000.0), cruise(), MDOT, ComponentMap::flat(),
+                                                     ComponentMap::flat(), 0.0));
+    assert!(w.starts_with("rung-110: rung 42's interstage-bleed matcher cannot fly a turbofan"), "{w}");
+    println!("gate 8: three refusals in words");
+}
+
+#[test]
+#[ignore]
+fn probe_dry() {
+    // Every refusal kind met: on each throttle line (100 K steps from 1700 K) the first refusal, and the one at the edge of
+    // flight (bisected to 0.1 K from the last point that flies), so a narrow band shows up too. One thread per design;
+    // each line prints as it ends, one println per record.
+    let mut jobs = vec![];
+    for (gname, g) in gases() { for lname in ["page", "lossless"] { for dname in ["cruise", "sls"] {
+        for (alpha, pi_f) in [(2.0, 3.46), (6.0, 1.81), (10.0, 1.48), (6.0, 1.6), (2.0, 1.6), (10.0, 1.2), (6.0, 1.3)] {
+            jobs.push((gname, g, lname, dname, alpha, pi_f));
+        }
+    } } }
+    std::thread::scope(|sc| {
+        for chunk in jobs.chunks(jobs.len().div_ceil(14)) {
+            sc.spawn(move || for &(gname, g, lname, dname, alpha, pi_f) in chunk {
+                let l = if lname == "page" { page_losses() } else { lossless() };
+                let fl_d = if dname == "cruise" { cruise() } else { sls() };
+                let tag = format!("{gname} {lname} {dname}-built ({alpha},{pi_f})");
+                let Ok(ft) = fly_rung109(&turbofan(g, l, alpha, pi_f, &fl_d), &fl_d, MDOT) else {
+                    println!("REC | (design does not fly) | {tag}"); continue;
+                };
+                for fl in [cruise(), sls(), FlightCondition::new(268.65, 70_108.0, 0.5),
+                           FlightCondition::new(288.15, 101_325.0, 0.3), FlightCondition::new(220.0, 25_000.0, 0.9)] {
+                    let short = |e: &str| e.chars().take(60).collect::<String>();
+                    let mut ok_t: Option<f64> = None;
+                    let mut t = 1700.0;
+                    let mut line = format!("REC | (flies to 400 K) | {tag} M{} {:.0} Pa", fl.m0, fl.p0);
+                    while t >= 400.0 {
+                        match ft.try_match(&fl, t) {
+                            Ok(_) => ok_t = Some(t),
+                            Err(e) => {
+                                line = format!("REC | {} | {tag} M{} {:.0} Pa Tt4 {t:.0}", short(&e.0), fl.m0, fl.p0);
+                                if let Some(mut hi) = ok_t {
+                                    let mut lo = t;
+                                    while hi - lo > 0.1 {
+                                        let mid = 0.5 * (hi + lo);
+                                        if ft.try_match(&fl, mid).is_ok() { hi = mid } else { lo = mid }
+                                    }
+                                    if let Err(e) = ft.try_match(&fl, lo) {
+                                        line += &format!("
+REC | {} | {tag} M{} {:.0} Pa EDGE Tt4 {lo:.2}", short(&e.0), fl.m0, fl.p0);
+                                    }
+                                }
+                                break;
+                            }
+                        }
+                        t -= 100.0;
+                    }
+                    println!("{line}");
+                }
+            });
+        }
+    });
+}
+
+// --- § 3: the predictions ------------------------------------------------------------------------------------------
+
+struct Tally { hit: usize, miss: usize }
+impl Tally {
+    fn score(&mut self, ok: bool) -> &'static str { if ok { self.hit += 1; "HIT" } else { self.miss += 1; "MISS" } }
+}
+
+/// § 3's grid, flown ONCE: every design built at cruise on the page's losses, D6's law (rung 104's ellipse), and two
+/// variants on the SAME frozen hardware — the HP compressor 0.01 less efficient (P4), the LP turbine pinned (P8).
+const P_DESIGNS: [(f64, f64); 5] = [(0.0, 1.6), (2.0, 3.46), (6.0, 1.81), (10.0, 1.48), (6.0, 1.6)];
+const P_TT4: [f64; 7] = [1500.0, 1400.0, 1300.0, 1200.0, 1100.0, 1000.0, 900.0];
+type Run = Result<FlownPoint, String>;
+struct PCell { base: Run, weak: Run, pin: Run }
+
+fn flown(ft: &turbojet::flown_turbofan::FlownTurbofan, fl: &FlightCondition, tt4: f64) -> Run {
+    match catch_unwind(AssertUnwindSafe(|| ft.try_match(fl, tt4))) {
+        Ok(Ok(p)) => Ok(p),
+        Ok(Err(e)) => Err(e.0),
+        Err(_) => Err("PANIC".into()),
+    }
+}
+
+#[test]
+fn predictions_section_3_scored() {
+    let p_gases: [(&str, fn() -> Gas); 2] = [("thermally_perfect", Gas::thermally_perfect),
+                                            ("equilibrium", Gas::reacting_equilibrium)];
+    let p_flights = [("cruise", cruise()), ("standing", sls()), ("climb", FlightCondition::new(268.65, 70_108.0, 0.5))];
+    // grid[gas][design][flight][tt4]
+    let mut grid: Vec<Vec<Vec<Vec<PCell>>>> = Vec::new();
+    // No silenced panic hook: it is process-wide and would hide another test's failure (a panic here prints, and the
+    // cell scores as refused).
+    for (_, g) in p_gases {
+        let mut gd = Vec::new();
+        for (alpha, pi_f) in P_DESIGNS {
+            let tf = turbofan(g, page_losses(), alpha, pi_f, &cruise());
+            let base = fly_rung109(&tf, &cruise(), MDOT).expect("fly");
+            let mut weak = fly_rung109(&tf, &cruise(), MDOT).expect("fly");
+            weak.core_mut().expect("two shafts").eta_hpc -= 0.01;
+            let pin = fly_rung109(&tf, &cruise(), MDOT).expect("fly");
+            pin.set_turbine_law(TurbineLaw::Pin);
+            gd.push(p_flights.iter().map(|(_, fl)| P_TT4.iter().map(|&t| PCell {
+                base: flown(&base, fl, t), weak: flown(&weak, fl, t), pin: flown(&pin, fl, t) }).collect()).collect());
+        }
+        grid.push(gd);
+    }
+
+    // The table.
+    for (gi, (gname, _)) in p_gases.iter().enumerate() {
+        for (di, (alpha, pi_f)) in P_DESIGNS.iter().enumerate() {
+            for (fi, (fname, fl)) in p_flights.iter().enumerate() {
+                println!("\n== {gname}, design ({alpha}, {pi_f}), {fname}");
+                println!("   {:>5} {:>7} {:>7} {:>7} {:>7} {:>7} {:>9} {:>9} {:>6} {:>6} {:>9} {:>9} {:>9}", "Tt4", "alpha",
+                         "pi_f", "pi_cH", "N_fan", "N_HP", "TSFC", "core F/m", "core", "fan", "dpi_f/-1%", "F pin/F-1",
+                         "F (N)");
+                for (ti, &tt4) in P_TT4.iter().enumerate() {
+                    let c = &grid[gi][di][fi][ti];
+                    match &c.base {
+                        Err(e) => println!("   {tt4:>5} REFUSED: {e}"),
+                        Ok(p) => {
+                            let dpf = c.weak.as_ref().map_or(f64::NAN, |w| w.pi_f - p.pi_f);
+                            let dl = c.pin.as_ref().map_or(f64::NAN, |q| q.thrust / p.thrust - 1.0);
+                            println!("   {tt4:>5} {:>7.4} {:>7.4} {:>7.3} {:>7.4} {:>7.4} {:>9.3} {:>9.2} {:>6} {:>6} {:>9.2e} \
+                                      {:>9.2e} {:>9.0}", p.alpha, p.pi_f, p.pi_hpc, p.n_fan, p.n_hp,
+                                     p.performance.tsfc * 1e6, p.core_thrust,
+                                     if p.core_choked(fl.p0) { "choke" } else { "open" },
+                                     p.fan_choked(fl.p0).map_or("-", |b| if b { "choke" } else { "open" }), dpf, dl,
+                                     p.thrust);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    let mut t: Vec<Tally> = (0..8).map(|_| Tally { hit: 0, miss: 0 }).collect();
+    let mut misses: Vec<String> = Vec::new();
+    let mut note = |k: usize, ok: bool, what: String, t: &mut Vec<Tally>| {
+        if t[k].score(ok) == "MISS" { misses.push(format!("P{} MISS: {what}", k + 1)) }
+    };
+    for (gi, (gname, _)) in p_gases.iter().enumerate() {
+        for (di, &(alpha, pi_f)) in P_DESIGNS.iter().enumerate() {
+            let fan = alpha > 0.0;
+            for (fi, (fname, fl)) in p_flights.iter().enumerate() {
+                let row = &grid[gi][di][fi];
+                let at = |ti: usize| row[ti].base.as_ref().ok();
+                let tag = |ti: usize| format!("{gname} ({alpha},{pi_f}) {fname} Tt4 {}", P_TT4[ti]);
+                for ti in 0..7 {
+                    // P1: N_HP follows sqrt(Tt4) within 0.010.
+                    let ok = at(ti).is_some_and(|p| (p.n_hp - (P_TT4[ti] / TT4_D).sqrt()).abs() <= 0.010);
+                    let d = at(ti).map_or(f64::NAN, |p| p.n_hp - (P_TT4[ti] / TT4_D).sqrt());
+                    note(0, ok, format!("{} (N_HP - sqrt {d:+.4})", tag(ti)), &mut t);
+                    if fan {
+                        // P4: a weaker HP compressor lowers pi_f.
+                        let ok = matches!((&row[ti].base, &row[ti].weak), (Ok(b), Ok(w)) if w.pi_f < b.pi_f);
+                        note(3, ok, tag(ti), &mut t);
+                    }
+                    // P6.
+                    if fan && P_TT4[ti] <= 1300.0 {
+                        let ok = at(ti).is_some_and(|p| p.n_fan <= p.n_hp - 0.02);
+                        let d = at(ti).map_or(f64::NAN, |p| p.n_hp - p.n_fan);
+                        note(5, ok, format!("{} (N_HP - N_fan {d:.4})", tag(ti)), &mut t);
+                    }
+                    if !fan {
+                        match at(ti) {
+                            Some(p) if !p.core_choked(fl.p0) => {}
+                            Some(p) => note(5, (p.n_fan / p.n_hp - 1.0).abs() <= 0.005,
+                                            format!("{} (N_LP/N_HP {:.4})", tag(ti), p.n_fan / p.n_hp), &mut t),
+                            None => note(5, false, format!("{} refused", tag(ti)), &mut t),
+                        }
+                    }
+                    // P8: the law's effect at a fan design under a third of the turbojet's, where that is >= 1e-4.
+                    if fan {
+                        let eff = |r: &PCell| match (&r.base, &r.pin) { (Ok(b), Ok(q)) => Some((q.thrust / b.thrust - 1.0).abs()), _ => None };
+                        let jet = eff(&grid[gi][0][fi][ti]);
+                        if jet.map_or(true, |j| j >= 1e-4) {
+                            let f_eff = eff(&row[ti]);
+                            let ok = matches!((jet, f_eff), (Some(j), Some(f)) if f < j / 3.0);
+                            note(7, ok, format!("{} (fan {:?} vs jet {:?})", tag(ti), f_eff, jet), &mut t);
+                        }
+                    }
+                }
+                if fan {
+                    // P2: alpha rises for each 100 K down, where the fan nozzle is choked at both ends.
+                    for ti in 0..6 {
+                        match (at(ti), at(ti + 1)) {
+                            (Some(a), Some(b)) => {
+                                if a.fan_choked(fl.p0) == Some(true) && b.fan_choked(fl.p0) == Some(true) {
+                                    note(1, b.alpha > a.alpha, format!("{} → {} ({:.4} → {:.4})", tag(ti), P_TT4[ti + 1],
+                                                                       a.alpha, b.alpha), &mut t);
+                                }
+                            }
+                            _ => note(1, false, format!("{} → {}: refused", tag(ti), P_TT4[ti + 1]), &mut t),
+                        }
+                    }
+                    let series = |f: &dyn Fn(&FlownPoint) -> f64| -> Option<Vec<f64>> {
+                        (0..7).map(|ti| at(ti).map(f)).collect()
+                    };
+                    let interior = |v: &[f64], max: bool| {
+                        let k = (0..7).fold(0, |b, i| if (max && v[i] > v[b]) || (!max && v[i] < v[b]) { i } else { b });
+                        k > 0 && k < 6
+                    };
+                    if *fname == "standing" {
+                        // P3: interior maximum of alpha.
+                        let s = series(&|p| p.alpha);
+                        note(2, s.as_ref().is_some_and(|v| interior(v, true)), format!("{gname} ({alpha},{pi_f}) {s:.4?}"), &mut t);
+                        // P7 standing: interior minimum of TSFC.
+                        let s = series(&|p| p.performance.tsfc * 1e6);
+                        note(6, s.as_ref().is_some_and(|v| interior(v, false)), format!("{gname} ({alpha},{pi_f}) standing {s:.3?}"), &mut t);
+                    }
+                    if *fname == "cruise" {
+                        // P7 cruise: TSFC strictly rising as Tt4 falls.
+                        let s = series(&|p| p.performance.tsfc * 1e6);
+                        note(6, s.as_ref().is_some_and(|v| v.windows(2).all(|w| w[1] > w[0])),
+                             format!("{gname} ({alpha},{pi_f}) cruise {s:.3?}"), &mut t);
+                    }
+                }
+                if *fname == "cruise" {
+                    // P5: the core's own net thrust in cruise.
+                    let s: Option<Vec<f64>> = (0..7).map(|ti| at(ti).map(|p| p.core_thrust)).collect();
+                    let window = match (alpha, pi_f) { (a, p) if a == 6.0 && p == 1.81 => Some((950.0, 1250.0)),
+                                                      (a, _) if a == 10.0 => Some((1000.0, 1300.0)), _ => None };
+                    let ok = s.as_ref().is_some_and(|v| match window {
+                        None => v.iter().all(|&x| x > 0.0),
+                        Some((lo, hi)) => {
+                            let flips: Vec<usize> = (0..6).filter(|&i| (v[i] > 0.0) != (v[i + 1] > 0.0)).collect();
+                            flips.len() == 1 && v[0] > 0.0 && {
+                                let i = flips[0];
+                                let x = P_TT4[i] + (P_TT4[i + 1] - P_TT4[i]) * v[i] / (v[i] - v[i + 1]);
+                                println!("P5 {gname} ({alpha},{pi_f}): core thrust crosses zero at {x:.0} K");
+                                lo < x && x < hi
+                            }
+                        }
+                    });
+                    note(4, ok, format!("{gname} ({alpha},{pi_f}) core F/m {s:.2?}"), &mut t);
+                }
+            }
+        }
+    }
+    println!();
+    for m in &misses { println!("{m}") }
+    println!();
+    for (k, x) in t.iter().enumerate() { println!("P{}: {} HIT, {} MISS", k + 1, x.hit, x.miss) }
+    assert_eq!(t[0].hit + t[0].miss, 210, "P1 is every cell");
+    assert_eq!(t[2].hit + t[2].miss, 8);
+    assert_eq!(t[3].hit + t[3].miss, 168);
+    assert_eq!(t[4].hit + t[4].miss, 10);
+    assert_eq!(t[6].hit + t[6].miss, 16);
+    assert!(t[7].hit + t[7].miss <= 168);
+    // P8 scores no cell when the turbojet's own law effect never reaches 1e-4 (the anchor's named risk): measure it.
+    let mut jet_max = 0.0f64;
+    for gd in &grid { for row in &gd[0] { for c in row {
+        if let (Ok(b), Ok(q)) = (&c.base, &c.pin) { jet_max = jet_max.max((q.thrust / b.thrust - 1.0).abs()) }
+    } } }
+    println!("P8: the turbojet's largest thrust change from the LP turbine law, over every cell: {jet_max:.2e}");
+    // P1's reading: the same cells on the PIN law (both HP throats truly fixed), and whether the core nozzle was open.
+    let (mut pin_worst, mut open_worst, mut choked_worst) = (0.0f64, 0.0f64, 0.0f64);
+    for gd in &grid { for fr in gd { for (fi, row) in fr.iter().enumerate() { for (ti, c) in row.iter().enumerate() {
+        let p0 = p_flights[fi].1.p0;
+        let s = (P_TT4[ti] / TT4_D).sqrt();
+        if let Ok(q) = &c.pin { pin_worst = pin_worst.max((q.n_hp - s).abs()) }
+        if let Ok(b) = &c.base {
+            let d = (b.n_hp - s).abs();
+            if b.core_choked(p0) { choked_worst = choked_worst.max(d) } else { open_worst = open_worst.max(d) }
+        }
+    } } } }
+    println!("P1 reading: |N_HP - sqrt| worst {choked_worst:.4} where the core nozzle is choked, {open_worst:.4} where it is open; on the pin law {pin_worst:.4}");
+    // P8 is VACUOUS on this grid — UNTESTED, not passed: the turbojet's own law effect (~2.7e-5) never reaches the
+    // 1e-4 the anchor set before the run, so no cell qualifies. The threshold is not moved after seeing the data.
+    assert!(t[7].hit + t[7].miss == 0 && jet_max < 1e-4, "P8 found cells: re-read it, it is no longer vacuous");
+    println!("P8: VACUOUS — no cell reaches the anchor's 1e-4, so the claim is untested on this grid");
+    // The score, frozen at its first run (2026-11-23) — a moved number is a finding, never a re-freeze.
+    let score: Vec<(usize, usize)> = t.iter().map(|x| (x.hit, x.miss)).collect();
+    assert_eq!(score, [(93, 117), (54, 6), (4, 4), (162, 6), (7, 3), (150, 10), (10, 6), (0, 0)]);
+}

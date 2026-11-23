@@ -207,6 +207,11 @@ impl FlownPoint {
 
 /// Fly rung 109's turbofan: its design split onto two shafts (D1), then the hardware frozen.
 pub fn fly_rung109(tf: &Turbofan, flight: &FlightCondition, mdot: f64) -> Result<FlownTurbofan, Abort> {
+    if tf.fan.alpha > 0.0 && tf.fan.pi_f <= 1.0 {
+        return Err(Abort(format!("rung-110: a bypass stream needs a fan pressure rise — a fan pressure ratio of {:.3} \
+                                  with bypass ratio {} has nothing to drive air around the core; set the fan pressure \
+                                  ratio above 1 or the bypass ratio to 0", tf.fan.pi_f, tf.fan.alpha)));
+    }
     let c = split_rung109(tf, flight, mdot)?;
     if c.alpha == 0.0 && c.pi_f == 1.0 {
         // One shaft: rung 31's matcher on rung 109's engine (the turbojet), the standing engine on as the two-shaft
@@ -243,6 +248,15 @@ impl FlownTurbofan {
     pub fn core(&self) -> Option<&TwoSpoolCore> {
         match &self.matcher {
             Shafts::Two(TwoSpoolMapMatcher::Full(m)) => Some(&m.base),
+            _ => None,
+        }
+    }
+
+    /// The two-shaft core, mutably — to perturb a component ON THE FROZEN HARDWARE (P4 and gate 7 lower `eta_hpc` this
+    /// way, as rung 38's gate 3 does; rebuilding the engine would re-capture every throat at a new design).
+    pub fn core_mut(&mut self) -> Option<&mut TwoSpoolCore> {
+        match &mut self.matcher {
+            Shafts::Two(TwoSpoolMapMatcher::Full(m)) => Some(&mut m.base),
             _ => None,
         }
     }

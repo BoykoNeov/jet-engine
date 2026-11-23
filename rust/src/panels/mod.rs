@@ -48,6 +48,7 @@ pub mod unchoked_formula;
 pub mod airflow_source;
 pub mod afterburner;
 pub mod turbofan;
+pub mod flown_turbofan;
 pub mod unchoked_lp;
 pub mod valve_reference;
 pub mod twospool;
@@ -121,7 +122,8 @@ pub const RUST_OWNED: &[&str] = &["print_blade_speed_table", "print_three_levers
                                   "print_corrected_tables_table", "print_mach_axis_table",
                                   "print_unchoked_formula_table", "print_airflow_source_table",
                                   "print_afterburner_table", "print_governor_lag_table",
-                                  "print_governor_release_table", "print_turbofan_table"];
+                                  "print_governor_release_table", "print_turbofan_table",
+                                  "print_flown_turbofan_table"];
 
 /// **RUNG 104 — Python panels whose segment was RETIRED.** Under the LP turbine's flow law (the default) these six
 /// two-shaft panels print different numbers (no sentence changes; `docs/rung104-spec.md` § 5): the user retired the
@@ -248,6 +250,7 @@ pub const PANELS: &[(&str, Panel)] = &[
     ("print_governor_lag_table", governor_lag::governor_lag_table),
     ("print_governor_release_table", governor_release::governor_release_table),
     ("print_turbofan_table", turbofan::turbofan_table),
+    ("print_flown_turbofan_table", flown_turbofan::flown_turbofan_table),
     // ---- slice AR: the chart's line (the data itself is written by `src/main.rs`)
     ("plot_ts_diagram", cycle::ts_diagram_line),
 ];
