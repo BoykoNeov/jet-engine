@@ -24,3 +24,7 @@ artifact republished, version 4). Score 480 HIT of 632, P8 vacuous. Decisions: [
   "fails" without running. Run `rust\sandbox-wasm\check.ps1` from pwsh to judge the page.
 - **Open, asked 2026-11-23, unanswered:** at the edge of running the turbofan says "did not settle" instead of the
   physical reason (169 of 420 lines). Recorded as OPEN in the spec; rung 111 must settle it. Ask the user again.
+- **Kept on purpose:** `W:\temp\claude\rung110-flown-turbofan\probe\` (the anchor's § 0 probe scripts, cited by the
+  committed anchor) and `book\` (gate 5's source text read from the user's scan). Not orphans; ask before deleting.
+- **Read the cited rung's spec before writing "corrects".** Gate 7's equilibrium drift was first written as correcting
+  rung 38; rung 38's spec already named it (the shafts talk through `f` on the equilibrium gas) — it CONFIRMS.

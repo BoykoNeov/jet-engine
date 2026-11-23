@@ -70,9 +70,10 @@ ratio for both streams.
    `√[(1+f)Tt4/((1+fR)Tt4R)]`, and `N_LP = N_HP` at α 0 with the core choked — worst 3.1e−13 (bar 1e−12 at α 0, 1e−9
    with a fan: the fan loop's own promise).
 7. **The triangle at bypass 0:** a 0.01 weaker HP compressor on the FROZEN hardware leaves `πf` bit for bit unmoved —
-   on the perfect and thermally perfect gases, 42 choked points. **Found:** on the equilibrium gas it moves, by 6.4e−7
-   of `πcH`'s relative move at worst: the gas's make-up reads pressure, so a lower `pt4` shifts the dissociation and the
-   turbine's work per kelvin. Rung 38's triangle is exact only where the gas ignores pressure; asserted `≤ 1e−3`.
+   on the perfect and thermally perfect gases, 42 choked points. On the equilibrium gas it moves, by 6.4e−7 of
+   `πcH`'s relative move at worst — **CONFIRMS rung 38's own caveat** (`docs/rung38-spec.md`, "the one place the spools
+   still talk"): the triangle is exact at a fixed `f`, and on the equilibrium gas the burner's `f` reads `pt4` (its
+   dissociation), so the shafts still talk through `f`, weakly. Asserted `≤ 1e−3` there; bit for bit elsewhere.
 8. **Refusals in words:** a bypass with no fan rise; the core with no pressure left (rung 109's words); the customer- and
    interstage-bleed matchers handed a turbofan. **No gate for "the fan nozzle cannot blow any air"** (`FAN_NOZZLE_DRY`):
    a wide search (`probe_dry`, ignored: 3 gases × 2 loss sets × 7 designs built at cruise and standing × 5 flights, each
