@@ -316,7 +316,7 @@ pub struct Machine {
 /// 1.4, whatever the temperature). Disclosed: read at the face TOTAL temperature, not at the row's
 /// static one (up to ~80 K colder on the LP face) — on air near 200–450 K `γ` moves by a few parts
 /// in a thousand across that gap.
-fn face_props(gas: &crate::gas::Gas, tt: f64) -> (f64, f64) {
+pub fn face_props(gas: &crate::gas::Gas, tt: f64) -> (f64, f64) {
     if gas.cold_is_cpg() {
         let gamma = gas.gamma_c();
         (gamma, gas.r_c() * gamma / (gamma - 1.0))

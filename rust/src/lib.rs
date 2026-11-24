@@ -182,6 +182,7 @@ pub mod sandbox_blades;
 pub mod sandbox_burner;
 pub mod sandbox_controls;
 pub mod sandbox_cooling;
+pub mod sandbox_cutaway;
 pub mod sandbox_transient;
 pub mod sensed_cap;
 pub mod shared_actuator;

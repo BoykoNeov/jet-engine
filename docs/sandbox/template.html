@@ -194,6 +194,68 @@ footer { max-width: 1280px; margin: 0 auto; padding: 0 16px 32px; color: var(--i
 footer p { max-width: 90ch; }
 footer h2.sec { margin: 8px 0 4px; }
 #explain-more summary { cursor: pointer; color: var(--accent); margin: 6px 0; }
+/* The Engine view (roadmap A9): the cutaway's own colours, on its card only. */
+#eng-card {
+  --stage: #E3E8EE; --stage-vig: #D2D9E1; --station: #16202B;
+  --metal-hi: #DDE3EA; --metal-lo: #A3AEBB; --metal-edge: #5F6E80;
+  --hub: #AEB9C5; --hub-hi: #D3DBE3; --hub-lo: #7F8B99; --bore: #CAD2DB; --bore-lo: #B4BEC9;
+  --rotor: #2C3D52; --stator: #6F8096; --liner: #3C4B5C; --fuel: #4A34A6;
+  --air-cold: #2F7FE0; --air-cool: #6C9BC8; --air-mid: #7A8A9A; --air-warm: #E08A3C; --air-hot: #F26A1B; --air-glow: #FFB347; --air-white: #FFE9B8;
+  --flame-out: rgba(242,106,27,.55); --flame-mid: rgba(255,178,71,.85); --flame-core: rgba(255,240,200,.95); --flame-glow: rgba(255,140,40,.28);
+  --plume: rgba(240,138,60,.16); --plume-edge: rgba(240,138,60,0);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) #eng-card {
+    --stage: #0A0F16; --stage-vig: #05080C; --station: #E6ECF2;
+    --metal-hi: #3E4B5C; --metal-lo: #1F2833; --metal-edge: #6B7B90;
+    --hub: #3A4756; --hub-hi: #5B6A7C; --hub-lo: #1E2731; --bore: #111821; --bore-lo: #0B1016;
+    --rotor: #A9BBD0; --stator: #5E7088; --liner: #8C9BAD; --fuel: #D9CCFF;
+    --air-cold: #6FB1FF; --air-cool: #9DBBDD; --air-mid: #C3CDD6; --air-warm: #F0A45A; --air-hot: #FF8A3D; --air-glow: #FFC46B; --air-white: #FFF6D0;
+    --flame-out: rgba(255,122,26,.55); --flame-mid: rgba(255,209,102,.85); --flame-core: rgba(255,248,220,.97); --flame-glow: rgba(255,140,40,.35);
+    --plume: rgba(255,170,90,.09); --plume-edge: rgba(255,170,90,0);
+  }
+}
+:root[data-theme="dark"] #eng-card {
+  --stage: #0A0F16; --stage-vig: #05080C; --station: #E6ECF2;
+  --metal-hi: #3E4B5C; --metal-lo: #1F2833; --metal-edge: #6B7B90;
+  --hub: #3A4756; --hub-hi: #5B6A7C; --hub-lo: #1E2731; --bore: #111821; --bore-lo: #0B1016;
+  --rotor: #A9BBD0; --stator: #5E7088; --liner: #8C9BAD; --fuel: #D9CCFF;
+  --air-cold: #6FB1FF; --air-cool: #9DBBDD; --air-mid: #C3CDD6; --air-warm: #F0A45A; --air-hot: #FF8A3D; --air-glow: #FFC46B; --air-white: #FFF6D0;
+  --flame-out: rgba(255,122,26,.55); --flame-mid: rgba(255,209,102,.85); --flame-core: rgba(255,248,220,.97); --flame-glow: rgba(255,140,40,.35);
+  --plume: rgba(255,170,90,.09); --plume-edge: rgba(255,170,90,0);
+}
+.eng-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: 0 0 8px; }
+.eng-bar .toggle { margin: 0; }
+.eng-btn { font: inherit; font-size: 12px; padding: 3px 10px; border-radius: 5px; cursor: pointer;
+  border: 1px solid var(--border); background: var(--bg); color: var(--ink); }
+.eng-speed { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-2); }
+.eng-speed input { width: 110px; accent-color: var(--accent); }
+.eng-stage { position: relative; background: var(--stage); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+#eng-canvas { display: block; width: 100%; aspect-ratio: 1400 / 500; height: auto; cursor: crosshair; }
+.eng-stations { position: absolute; left: 0; top: 0; width: 100%; height: 0; pointer-events: none; }
+.eng-st { position: absolute; top: 8px; transform: translateX(-50%); text-align: center; color: var(--station); line-height: 1; }
+.eng-st .n { font-weight: 700; font-size: clamp(13px, 2vw, 22px); }
+.eng-st .l { font-size: clamp(8px, .8vw, 10px); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2);
+  margin-top: 2px; max-width: 7em; line-height: 1.2; }
+.eng-probe { position: absolute; pointer-events: none; background: var(--surface); color: var(--ink); border: 1px solid var(--border);
+  border-radius: 6px; padding: 6px 8px; font-size: 12px; line-height: 1.4; min-width: 160px; transform: translate(14px, -50%);
+  box-shadow: 0 6px 20px rgba(0,0,0,.2); }
+.eng-probe .r { font-weight: 600; margin-bottom: 2px; }
+.eng-probe .v { display: flex; justify-content: space-between; gap: 12px; font-variant-numeric: tabular-nums; color: var(--ink-2); }
+.eng-readouts { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
+@media (max-width: 900px) { .eng-readouts { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.eng-tile { border: 1px solid var(--border); border-radius: 8px; padding: 6px 8px 6px 12px; position: relative; overflow: hidden; }
+.eng-tile::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--sw, var(--border)); }
+.eng-tile .num { font-weight: 700; font-size: 18px; line-height: 1; }
+.eng-tile .name { font-size: 11px; color: var(--ink-2); margin: 2px 0 4px; min-height: 2.4em; }
+.eng-tile dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 1px 6px; font-size: 11.5px; font-variant-numeric: tabular-nums; }
+.eng-tile dt { color: var(--muted); margin: 0; }
+.eng-tile dd { margin: 0; text-align: right; }
+.eng-cbar { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: center; margin-top: 8px; font-size: 12px; color: var(--ink-2); }
+.eng-grad { height: 9px; border-radius: 2px; border: 1px solid var(--border); }
+.eng-ticks { display: flex; justify-content: space-between; font-size: 10.5px; margin-top: 3px; color: var(--muted); }
+.eng-drawn { margin: 0; padding-left: 18px; font-size: 12.5px; color: var(--ink-2); }
+.eng-drawn li { margin: 3px 0; }
 </style>
 </head>
 <body>
@@ -203,13 +265,15 @@ footer h2.sec { margin: 8px 0 4px; }
   project's own Rust model, running in your browser. A design that does not run is shown as such, with the reason.</p>
   <p class="also">Two more pages, in <code>docs/visuals/</code>:
   <a href="../visuals/turbojet-cutaway.html">the animated engine cutaway</a> and
-  <a href="../visuals/turbojet-visuals.html">the charts page</a>. Both show the default design only, with
+  <a href="../visuals/turbojet-visuals.html">the charts page</a>. (The <b>Engine</b> view here draws the cutaway live, for
+  the design you set.) Both pages show the default design only, with
   numbers fixed when the pages were built; they do not follow the knobs on this page.</p>
 </header>
 <main>
   <section class="card knobs" aria-label="Design knobs">
     <div class="toggle mode" role="group" aria-label="The page's views">
       <button type="button" id="mode-design" aria-pressed="true" title="Design the engine">Design</button>
+      <button type="button" id="mode-engine" aria-pressed="false" title="The engine you designed, cut open and running">Engine</button>
       <button type="button" id="mode-fly" aria-pressed="false" title="Fly the engine you designed">Fly it</button>
       <button type="button" id="mode-blades" aria-pressed="false" title="Size the blades">Blades</button>
       <button type="button" id="mode-controls" aria-pressed="false" title="The fuel controls, in a throttle slam">Controls</button>
@@ -1158,6 +1222,46 @@ footer h2.sec { margin: 8px 0 4px; }
         assumes) and re-reacting as it cools. NO is carried frozen; above 1 in the last row, the exhaust holds more NO than
         equilibrium would allow at the exit, and stays that way (rung 27 showed the freeze is earned).</p>
     </div>
+    <div class="card" id="eng-card" hidden>
+      <h2 class="sec">The engine you designed, cut open</h2>
+      <div class="eng-bar">
+        <div class="toggle" role="group" aria-label="Your design, or the same design with every loss at ideal">
+          <button type="button" id="eng-real" aria-pressed="true">Your design</button>
+          <button type="button" id="eng-ideal" aria-pressed="false">Every loss at ideal</button></div>
+        <button type="button" class="eng-btn" id="eng-play">Pause</button>
+        <label class="eng-speed">Animation speed <input type="range" id="eng-speed" min="0.25" max="3" step="0.25" value="1"
+          aria-label="Animation speed"> <output id="eng-speed-out">1×</output></label>
+      </div>
+      <div class="eng-stage" id="eng-stage">
+        <canvas id="eng-canvas" aria-label="Animated cutaway of the engine you designed: inlet, axial compressor, burner with its flame, turbine, nozzle and jet. Air parcels are coloured by temperature."></canvas>
+        <div class="eng-stations" id="eng-stations"></div>
+        <div class="eng-probe" id="eng-probe" hidden></div>
+      </div>
+      <p class="note" id="eng-note"></p>
+      <div class="eng-readouts" id="eng-readouts"></div>
+      <div class="eng-cbar"><span>Parcel colour = temperature</span>
+        <div><div class="eng-grad" id="eng-cbar"></div><div class="eng-ticks"><span>250 K</span><span>600 K</span><span>1000 K</span><span>1500 K</span><span>2200 K and up</span></div></div></div>
+      <h2 class="sec" style="margin-top:14px">Computed for this design</h2>
+      <div class="scroll"><table id="eng-computed"><thead><tr><th>What is drawn</th><th>Value</th><th>Where it comes from</th></tr></thead><tbody></tbody></table></div>
+      <h2 class="sec" style="margin-top:14px">Drawn, not computed</h2>
+      <ul class="eng-drawn" id="eng-drawn">
+        <li data-drawn="geometry">All the geometry: the casing, the hub, the burner's liner, the nozzle's shape and every length.
+          The compressor keeps one length; its rows are spaced to fit the computed stage count.</li>
+        <li data-drawn="turbine">The turbine's <span id="eng-nturb">2</span> stages. No part of the model sizes a turbine stage.</li>
+        <li data-drawn="blades">How many blades each row has, and how they lean.</li>
+        <li data-drawn="speeds">The parcels' speed in the burner, the turbine and the jet pipe, and ahead of an engine standing
+          still. The model gives a speed at three places only: the flight, the compressor face and the jet. Between them the
+          speed is interpolated.</li>
+        <li data-drawn="colours">Every colour between the stations (interpolated), and the flame's flicker (±160 K).</li>
+        <li data-drawn="slow">The pace: the shaft turns <span id="eng-slow">600</span> times slower than computed, and the parcels
+          move at a fixed fraction of their real speed, so the eye can follow them. The slider speeds both up together.</li>
+        <li data-drawn="ramp">The colour ramp: fixed, from blue at 250 K to white at 2200 K and above.</li>
+        <li data-drawn="flame-gas">The flame is worked out on the equilibrium-chemistry gas, whatever gas you choose (the
+          <b>Burner</b> view's rule). On another gas its compressor-exit temperature differs a little from station 3 here.</li>
+        <li data-drawn="blade-choices">The compressor's blade choices: rung 85's defaults (front-row hub-to-tip 0.5, front-row
+          tip Mach 1.4, titanium, the <b>Fly it</b> view's opening map). <b>Blades</b> changes them on its own engine.</li>
+      </ul>
+    </div>
     <div id="out">
       <div class="tiles">
         <div class="tile"><div class="k">Thrust</div><div class="v"><span id="v-thrust">–</span> <span class="u">kN</span></div><div class="d" id="d-thrust"></div></div>
@@ -1321,6 +1425,17 @@ footer h2.sec { margin: 8px 0 4px; }
   is the turbojet, number for number; the turbofan is checked against Mattingly's Example 7-6 (<i>Elements of Gas Turbine
   Propulsion</i>). Only the design point is modelled (Fly it does not fly a turbofan yet); the streams leave separately,
   and an afterburner with a fan is not modelled.</p>
+  <p data-views="engine"><b>Engine.</b> The design you set on <b>Design</b> (the same knobs, shown beside it), cut open and
+  running. Each change runs that design and reads off it what the picture draws, from the project's own model: the
+  station temperatures and pressures, the jet, and the air's speed at the flight and at the compressor face (the Design
+  view's run); the compressor's stage count, blade speed and the speed of the air entering it (rung 85's blade sizing, at
+  its default blade choices); the shaft speed (new arithmetic: the airflow must pass the compressor face, which sets its
+  size, and the blade tip speed over that radius is the shaft speed; NASA's Rotor 37 checks the arithmetic); the
+  front-zone flame (the Burner view's, at its opening, stoichiometric front zone); and the nozzle throat's temperature (the
+  model's sonic throat, where the jet reaches the speed of sound inside the nozzle). The card lists what is drawn, not
+  computed. "Every loss at ideal" sets every efficiency and pressure-loss knob to 1 on the same gas; the inlet's shock loss
+  above Mach 1 stays, as it is no knob. A turbofan or a lit afterburner is not drawn: the cutaway is a plain turbojet. Like
+  Design, it draws a design point, not an engine being throttled.</p>
   <p data-views="fly"><b>Fly it.</b> The design's hardware is frozen: the turbine and nozzle throat areas, and the flow and
   speed it was designed for. Moving the throttle or the flight then lets the engine find its own pressure ratio,
   airflow and shaft speed (the project's rungs 31–36: a choked turbine, a fixed convergent nozzle that may
@@ -1438,7 +1553,7 @@ async function ask(text) {
       else if (op === "blade_lever") view = "blades_lever";   // a THROTTLE's failure, not the design's
       else if (op.startsWith("blade_")) view = "blades";
       else if (op === "controls") view = "controls";
-      else if (op.startsWith("burner")) view = "burner";
+      else if (op.startsWith("burner") || op === "cutaway_flame") view = "burner";   // the Engine view's flame: the burner's
       else if (op.startsWith("cooling")) view = "cooling";
     } catch (_) {}
     // The words are a second call on the fresh instance; if THAT traps, the reply still goes out (with the
@@ -1713,11 +1828,15 @@ function showSettings() {
     for (const q of Object.keys(SLAM_Q)) $("q-" + q).setAttribute("aria-pressed", String(slamQ === q));
   }
   const fly = mode === "fly", blades = mode === "blades", controls = mode === "controls", burner = mode === "burner",
-        cooling = mode === "cooling";
-  for (const [id, m] of [["mode-design", "design"], ["mode-fly", "fly"], ["mode-blades", "blades"], ["mode-controls", "controls"],
-                         ["mode-burner", "burner"], ["mode-cooling", "cooling"]]) $(id).setAttribute("aria-pressed", String(mode === m));
-  $("cycle-set").hidden = mode !== "design" && !burner;
-  for (const id of ["components-set", "nozzle-set", "ab-set", "fan-set"]) $(id).hidden = mode !== "design";
+        cooling = mode === "cooling", engine = mode === "engine";
+  for (const [id, m] of [["mode-design", "design"], ["mode-engine", "engine"], ["mode-fly", "fly"], ["mode-blades", "blades"],
+                         ["mode-controls", "controls"], ["mode-burner", "burner"], ["mode-cooling", "cooling"]]) $(id).setAttribute("aria-pressed", String(mode === m));
+  // The Engine view draws the Design view's engine: the same knobs, shown beside it.
+  const designKnobs = mode === "design" || engine;
+  $("cycle-set").hidden = !designKnobs && !burner;
+  for (const id of ["components-set", "nozzle-set", "ab-set", "fan-set"]) $(id).hidden = !designKnobs;
+  $("eng-card").hidden = !engine;
+  $("pin").hidden = engine;
   // Rung 102: the afterburner switch and, when it is on, its knobs.
   $("ab-on").checked = S.afterburner === 1; $("ab-box").hidden = S.afterburner !== 1;
   // Rung 109: the fan's knobs once there is a bypass stream.
@@ -1733,7 +1852,7 @@ function showSettings() {
   if (controls) $("ctl-set").after($("flight-set")); else $("cycle-set").before($("flight-set"));
   $("ctl-flight-note").hidden = !controls;
   $("ctl-tables-row").hidden = !controls || !C || !ctlTables(C);
-  for (const id of ["out", "ts-card", "stations-card", "perf-card"]) $(id).hidden = blades || controls || burner || cooling;
+  for (const id of ["out", "ts-card", "stations-card", "perf-card"]) $(id).hidden = blades || controls || burner || cooling || engine;
   $("fan-card").hidden = mode !== "design" || !(last && last.fan);      // rung 109
   showExplain(); saveAddress();
   $("mode-note").innerHTML = fly
@@ -1746,6 +1865,8 @@ function showSettings() {
     ? "Open the burner of the engine you design: how rich it burns first, and how the dilution air mixes in, decide the NO it makes."
     : cooling
     ? "Give a separate two-shaft engine's turbine a metal limit and cooling air, and see how hot its burner may run."
+    : engine
+    ? "The engine you design, cut open and running. Every change redesigns it, as in <b>Design</b>."
     : "Every change redesigns the engine. Press <b>Fly it</b> to freeze this design's hardware and move the throttle instead.";
   $("pin").textContent = fly ? "Pin this point" : blades ? "Pin these blades" : controls ? "Pin this run" : burner ? "Pin this burner"
     : cooling ? "Pin this sweep" : "Pin this design";
@@ -1880,6 +2001,7 @@ function showAmbient(a) {
 
 // ---------------------------------------------------------------- running
 async function runNow() {
+  if (mode === "engine") return runEngine();
   if (mode === "blades") return runBlades();
   if (mode === "controls") { scheduleCtl(); return; }
   if (mode === "burner") return bnChanged(true);
@@ -1940,7 +2062,7 @@ function fillTry() {
 }
 // The open view's settings as the page opens -- Fly it and the burner on the opening design too. No run.
 async function toOpening(my) {
-  if (mode === "design") S = { ...DEFAULTS };
+  if (mode === "design" || mode === "engine") S = { ...DEFAULTS };
   else if (mode === "fly") {
     S = { ...DEFAULTS };
     const z = await freezeDesign();
@@ -1962,6 +2084,7 @@ async function runView(slam) {
   else if (mode === "controls") { clearTimeout(ctlTimer); ctlKey = null; await runCtl(); }
   else if (mode === "cooling") { clearTimeout(clTimer); clKey = null; await runCool(); }
   else if (mode === "burner") { bnKey = null; await runBurner(); }
+  else if (mode === "engine") { engKey = null; await runEngine(); }
 }
 // A burner patch: a `design` object merges into the Design engine, `closure` picks a mixing model (its own knobs
 // reset), a `knobs` object merges into that model's knobs, the rest into BK.
@@ -1974,7 +2097,7 @@ function burnerPatch(patch) {
   Object.assign(BK, p);
 }
 function applyPatch(p) {
-  if (mode === "design") Object.assign(S, p);
+  if (mode === "design" || mode === "engine") Object.assign(S, p);
   else if (mode === "fly") { const { slam, ...f } = p; Object.assign(F, f); if (slam) Object.assign(SL, slam); }
   else if (mode === "controls") { Object.assign(C, p); nudges(); }
   else if (mode === "cooling") Object.assign(CL, p);
@@ -2026,7 +2149,7 @@ function known(d, base) {
 }
 function setupNow() {
   const s = { view: mode }, put = (k, d) => { if (Object.keys(d).length) s[k] = d; };
-  if (mode === "design" || mode === "burner") put("design", diffOf(S, DEFAULTS));
+  if (mode === "design" || mode === "burner" || mode === "engine") put("design", diffOf(S, DEFAULTS));
   if (mode === "fly") {
     put("design", diffOf(F.design, DEFAULTS));
     const o = flyOpening(F.design), { design, ...f } = F;
@@ -2060,12 +2183,13 @@ function sharedSetup() {
     return s && typeof s === "object" && VIEWS.includes(s.view) ? s : null;
   } catch { return null; }
 }
-const VIEWS = ["design", "fly", "blades", "controls", "burner", "cooling"];
+const VIEWS = ["design", "engine", "fly", "blades", "controls", "burner", "cooling"];
 // Open the page on a shared setup: the Design engine first (every view that flies it starts from it), then the view
 // and its knobs, then one run -- as a person would set it up by hand.
 async function openShared(s) {
   Object.assign(S, known(s.design, DEFAULTS)); showSettings();
   if (s.view === "design") return;
+  if (s.view === "engine") { enterEngine(); await runView(); return; }
   if (s.view === "fly") {
     await enterFly(); await settled();
     Object.assign(F, known(s.fly, F)); Object.assign(SL, known(s.slam, SL)); showSettings();
@@ -3807,6 +3931,10 @@ function wire() {
   for (const q of Object.keys(CL_Q)) $("clq-" + q).addEventListener("click", () => { clQ = q; showSettings(); drawCool(); });
   // The burner: its own knobs write BK; slow mixing models compute when a slider is let go (bnChanged).
   $("mode-burner").addEventListener("click", enterBurner);
+  // The Engine view (roadmap A9): the design or its every-loss-ideal twin, both already computed.
+  $("mode-engine").addEventListener("click", enterEngine);
+  $("eng-real").addEventListener("click", () => { engCase = "real"; showEngine(); });
+  $("eng-ideal").addEventListener("click", () => { engCase = "ideal"; showEngine(); });
   for (const [id, [k, sc, kind]] of Object.entries(BN_NUM)) {
     const n = $(id), r = $(id + "-r");
     n.addEventListener("input", () => { const v = parseFloat(n.value); if (isFinite(v) && v > 0) { BK[k] = v / sc; r.value = toSlider(v, kind); bnChanged(false); } });
@@ -3880,6 +4008,469 @@ function wire() {
   });
 }
 
+// ---------------------------------------------------------------- the engine, cut open (roadmap A9)
+// The animated cutaway (until 2026-11 only docs/visuals/turbojet-cutaway.html's, which drew one baked design), drawing
+// the design S. What the model computes comes from the `cutaway` / `cutaway_flame` replies (turbojet::sandbox_cutaway);
+// what it does not is listed on the card (#eng-drawn). drawn() reports what the DRAWING used -- the rows the draw loop
+// went over, the turn rate the animation step applied, the temperature the colour function gives at the flame, the
+// speed the parcel step uses at each of the three anchors -- and the browser check (browser.mjs) holds each to the reply.
+const ENG = (() => {
+  const W = 1400, H = 500, CY = 272;
+  const X = { s0: 90, lip: 170, tip: 176, face: 270, s3: 560, dome: 612, s4: 800, s5: 900, jp: 980, throat: 1085, s9: 1180 };
+  const C0 = 274, C1 = 556, T0X = 802, T1X = 898;   // the bladed lengths of the compressor and the turbine (drawn)
+  const FLAME_X = 668;        // where the drawn temperature peaks at the front zone's flame
+  const PX = 0.5;             // the parcels' pace on screen, px per second per m/s (drawn)
+  const SLOW = 600;           // the shaft turns this many times slower on screen (drawn)
+  const FLICKER = 160;        // the flame's colour flicker, K (drawn)
+  const V_DOME = 60, V_S4 = 95, V_S5 = 260;   // parcel speeds in the burner and the turbine, m/s (drawn: the model has none)
+  const lerp = (a, b, t) => a + (b - a) * t, clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  const seg = (x, a, b) => clamp((x - a) / (b - a), 0, 1), smooth = t => t * t * (3 - 2 * t);
+  function pw(knots, x, sm) {
+    if (x <= knots[0][0]) return knots[0][1];
+    for (let i = 1; i < knots.length; i++) {
+      if (x <= knots[i][0]) { let t = seg(x, knots[i - 1][0], knots[i][0]); if (sm) t = smooth(t); return lerp(knots[i - 1][1], knots[i][1], t); }
+    }
+    return knots[knots.length - 1][1];
+  }
+  // The casing's radius: a convergent-divergent nozzle, or (a convergent design) a nozzle whose throat is its exit.
+  const RC_CD = [[0, 130], [170, 130], [270, 146], [560, 118], [600, 138], [760, 138], [800, 124], [900, 144], [980, 150], [1085, 108], [1180, 124], [1400, 124]];
+  const RC_CONV = [[0, 130], [170, 130], [270, 146], [560, 118], [600, 138], [760, 138], [800, 124], [900, 144], [980, 150], [1180, 112], [1400, 112]];
+  let RC_K = RC_CD;
+  const Rc = x => pw(RC_K, x, true);
+  const RH_K = [[270, 70], [560, 92], [605, 62], [800, 62], [900, 70]];
+  function Rh(x) {
+    if (x < X.tip) return 0;
+    if (x < X.face) { const s = seg(x, X.tip, X.face); return 70 * Math.sqrt(1 - (1 - s) * (1 - s)); }
+    if (x <= 900) return pw(RH_K, x, true);
+    if (x < 1000) return 70 * (1 - seg(x, 900, 1000));
+    return 0;
+  }
+  const SKIN = 12, LIN_IN = 74, LIN_OUT = 128, LIN_X0 = 612, LIN_X1 = 792, HOLES = [[690, 700], [735, 745]];
+  let COMP = [], TURB = [], G = null, rowsDrawn = 0, turbDrawn = 0, lastRps = 0;
+  // Rows spaced to fit the count in the drawn length: a rotor, a gap, a stator per stage.
+  function rows(k, a, b, rotorFirst) {
+    const out = [], p = (b - a) / k, w = Math.min(rotorFirst ? 14 : 21, p * 0.42), gap = Math.min(6, p * 0.12);
+    for (let i = 0; i < k; i++) {
+      const x = a + i * p, first = [x, x + w], second = [x + w + gap, x + 2 * w + gap];
+      out.push(rotorFirst ? { rotor: first, stator: second } : { stator: first, rotor: second });
+    }
+    return out;
+  }
+
+  // ---- the gas along the engine
+  function Tgas(x) {
+    const st = G.st, Tt2 = st["2"].Tt, Tt3 = st["3"].Tt, Tt4 = st["4"].Tt, Tt5 = st["5"].Tt;
+    if (x < X.lip) return G.T0;
+    if (x < X.face) return lerp(G.T0, Tt2, seg(x, X.lip, X.face));
+    if (x < X.s3) return lerp(Tt2, Tt3, seg(x, X.face, X.s3));
+    if (x < X.dome) return Tt3;
+    if (G.flame === null) { if (x < X.s4) return lerp(Tt3, Tt4, smooth(seg(x, X.dome, X.s4))); }
+    else {
+      if (x < FLAME_X) return lerp(Tt3, G.flame, smooth(seg(x, X.dome, FLAME_X)));
+      if (x < X.s4) return lerp(G.flame, Tt4, smooth(seg(x, FLAME_X, X.s4)));
+    }
+    if (x < X.s5) return lerp(Tt4, Tt5, seg(x, X.s4, X.s5));
+    const th = G.conv ? X.s9 : X.throat;
+    if (x < X.jp) return Tt5;
+    if (x < th) return lerp(Tt5, G.throatT, smooth(seg(x, X.jp, th)));
+    if (x < X.s9) return lerp(G.throatT, G.T9, seg(x, th, X.s9));
+    return G.T9;
+  }
+  function ptgas(x) {
+    const st = G.st, k = [[X.s0, st["0"].pt], [X.face, st["2"].pt], [X.s3, st["3"].pt], [X.s4, st["4"].pt], [X.s5, st["5"].pt], [X.s9, st["9"].pt]];
+    if (x <= k[0][0]) return k[0][1];
+    for (let i = 1; i < k.length; i++) if (x <= k[i][0]) { const t = seg(x, k[i - 1][0], k[i][0]); return Math.exp(lerp(Math.log(k[i - 1][1]), Math.log(k[i][1]), t)); }
+    return k[k.length - 1][1];
+  }
+  // The parcels' speed, px/s: the model's at the flight, through the compressor and at the jet; drawn in between.
+  function speedAt(x) {
+    const Vin = G.V0 > 0 ? G.V0 : 0.5 * G.vx;   // standing still, air is drawn in ahead of the inlet (drawn)
+    if (x < X.lip) return Vin * PX;
+    if (x < X.face) return lerp(Vin, G.vx, seg(x, X.lip, X.face)) * PX;
+    if (x < X.s3) return G.vx * PX;
+    if (x < X.dome) return lerp(G.vx, V_DOME, seg(x, X.s3, X.dome)) * PX;
+    if (x < X.s4) return lerp(V_DOME, V_S4, seg(x, X.dome, X.s4)) * PX;
+    if (x < X.s5) return lerp(V_S4, V_S5, seg(x, X.s4, X.s5)) * PX;
+    if (x < X.jp) return V_S5 * PX;
+    if (x < X.s9) return lerp(V_S5, G.V9, smooth(seg(x, X.jp, X.s9))) * PX;
+    return G.V9 * PX * lerp(1, 0.8, seg(x, X.s9, W));
+  }
+  function regionAt(x) {
+    if (x < X.lip) return "Free stream";
+    if (x < X.face) return "Inlet";
+    if (x < X.s3) { const i = clamp(Math.floor((x - C0) / ((C1 - C0) / G.K)) + 1, 1, G.K); return `Compressor · stage ${i} of ${G.K}`; }
+    if (x < X.dome) return "Diffuser";
+    if (x < 690) return "Burner · front zone";
+    if (x < X.s4) return "Burner · dilution";
+    if (x < X.s5) { const i = clamp(Math.floor((x - T0X) / ((T1X - T0X) / G.nT)) + 1, 1, G.nT); return `Turbine · stage ${i} of ${G.nT}`; }
+    if (x < X.jp) return "Jet pipe";
+    if (G.conv) return x < X.s9 ? "Nozzle · convergent" : "Exhaust jet";
+    if (x < X.throat) return "Nozzle · convergent";
+    if (x < X.s9) return "Nozzle · divergent";
+    return "Exhaust jet";
+  }
+
+  // ---- colours (the card's own tokens, light and dark)
+  let TK = {}, LUT = [];
+  function readTokens() {
+    const cs = getComputedStyle($("eng-card")), g = n => cs.getPropertyValue(n).trim();
+    TK = {
+      stage: g("--stage"), vig: g("--stage-vig"), metalHi: g("--metal-hi"), metalLo: g("--metal-lo"), metalEdge: g("--metal-edge"),
+      hub: g("--hub"), hubHi: g("--hub-hi"), hubLo: g("--hub-lo"), bore: g("--bore"), boreLo: g("--bore-lo"),
+      rotor: g("--rotor"), stator: g("--stator"), liner: g("--liner"), fuel: g("--fuel"),
+      flameOut: g("--flame-out"), flameMid: g("--flame-mid"), flameCore: g("--flame-core"), flameGlow: g("--flame-glow"),
+      plume: g("--plume"), plumeEdge: g("--plume-edge"), station: g("--station"),
+      stops: [[250, g("--air-cold")], [450, g("--air-cool")], [620, g("--air-mid")], [950, g("--air-warm")], [1250, g("--air-hot")], [1550, g("--air-glow")], [2200, g("--air-white")]]
+    };
+    const hex = h => { h = h.replace("#", ""); if (h.length === 3) h = h.split("").map(c => c + c).join(""); const n = parseInt(h, 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
+    const st = TK.stops.map(s => [s[0], hex(s[1])]);
+    LUT = [];
+    for (let i = 0; i < 256; i++) {
+      const T = 250 + i / 255 * 1950;
+      let j = 1; while (j < st.length - 1 && T > st[j][0]) j++;
+      const t = seg(T, st[j - 1][0], st[j][0]), c = st[j - 1][1].map((v, k) => Math.round(lerp(v, st[j][1][k], t)));
+      LUT.push(`rgb(${c[0]},${c[1]},${c[2]})`);
+    }
+    $("eng-cbar").style.background = `linear-gradient(90deg, ${TK.stops.map(s => `${s[1]} ${((s[0] - 250) / 1950 * 100).toFixed(1)}%`).join(", ")})`;
+    if (G) paintReadouts();
+  }
+  const colorT = T => LUT[clamp(Math.round((T - 250) / 1950 * 255), 0, 255)];
+
+  // ---- parcels
+  const N_IN = 620, N_OUT = 110, N_FUEL = 90, P = [], OUT = [], FUEL = [];
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  function spawn(p, x) { const s = Math.random() < .5 ? -1 : 1; p.x = x; p.rn = s * rnd(.04, .97); p.rt = p.rn; p.burn = false; p.T = Tgas(p.x); p.seed = Math.random() * 6.28; }
+  const yOf = p => { const x = p.x, a = Math.abs(p.rn); return CY - Math.sign(p.rn) * (Rh(x) + a * (Rc(x) - Rh(x))); };
+  function seed() {
+    for (let i = 0; i < N_IN; i++) { const p = {}; spawn(p, rnd(-20, W)); if (p.x > X.s4) p.burn = true; else if (p.x > X.dome) { const a = Math.abs(p.rn); p.burn = a > .16 && a < .86; } P.push(p); }
+    for (let i = 0; i < N_OUT; i++) OUT.push({ x: rnd(-20, W), s: Math.random() < .5 ? -1 : 1, e: Math.random() });
+    for (let i = 0; i < N_FUEL; i++) FUEL.push({ x: 0, y: 0, vy: 0, life: 0, dead: true, s: 1 });
+  }
+  let tAnim = 0;
+  function stepParticles(dt) {
+    const t = tAnim, Tt3 = G.st["3"].Tt;
+    for (const p of P) {
+      p.x += speedAt(p.x) * dt;
+      if (p.x > W + 12) { spawn(p, -12); continue; }
+      const a = Math.abs(p.rn);
+      let Tt;
+      if (p.x < X.dome) { p.burn = false; p.rt = p.rn; Tt = Tgas(p.x); }
+      else if (p.x < X.s4) {
+        if (!p.burn) {
+          if (a > .16 && a < .86) p.burn = true;
+          else for (const h of HOLES) if (p.x > h[0] && p.x < h[1] && Math.random() < dt * 5) { p.burn = true; p.rt = Math.sign(p.rn) * rnd(.3, .7); }
+        }
+        Tt = p.burn ? Tgas(p.x) : Tt3;
+        if (p.burn && p.x < 720 && G.flame !== null) Tt += FLICKER * Math.sin(t * 17 + p.seed) * Math.sin(t * 5.1 + p.seed * 2);
+      } else { p.burn = true; Tt = Tgas(p.x); }
+      p.rn += (p.rt - p.rn) * Math.min(1, dt * 7);
+      p.T += (Tt - p.T) * Math.min(1, dt * 9);
+    }
+    const v0 = G.V0 * PX;     // the air outside the engine moves at the flight speed (still, standing still)
+    for (const o of OUT) { o.x += v0 * dt; if (o.x > W + 12) { o.x = -12; o.e = Math.random(); o.s = Math.random() < .5 ? -1 : 1; } }
+    let toSpawn = dt * 70;
+    for (const f of FUEL) {
+      if (f.dead) { if (toSpawn >= 1 || Math.random() < toSpawn) { toSpawn -= 1; f.dead = false; f.x = X.dome + 6; f.s = Math.random() < .5 ? -1 : 1; f.y = CY - f.s * (LIN_IN + LIN_OUT) / 2 + rnd(-3, 3); f.vy = rnd(-22, 22); f.life = rnd(.35, .7); } continue; }
+      f.x += 55 * dt; f.y += f.vy * dt; f.life -= dt; if (f.life <= 0) f.dead = true;
+    }
+  }
+
+  // ---- drawing
+  const canvas = $("eng-canvas"), ctx = canvas.getContext("2d");
+  let scale = 1;
+  function resize() {
+    const dpr = Math.min(2, window.devicePixelRatio || 1), w = canvas.clientWidth;
+    if (!w) return;
+    canvas.width = Math.round(w * dpr); canvas.height = Math.round(w * H / W * dpr); scale = canvas.width / W;
+  }
+  function casingPath(top) {
+    const s = top ? -1 : 1;
+    ctx.beginPath(); ctx.moveTo(X.lip, CY + s * (Rc(X.lip) + SKIN * .5));
+    for (let x = X.lip + 4; x <= X.s9; x += 4) ctx.lineTo(x, CY + s * (Rc(x) + SKIN));
+    ctx.lineTo(X.s9, CY + s * Rc(X.s9));
+    for (let x = X.s9 - 4; x >= X.lip; x -= 4) ctx.lineTo(x, CY + s * Rc(x));
+    ctx.closePath();
+  }
+  function hubPath() {
+    ctx.beginPath(); ctx.moveTo(X.tip, CY);
+    for (let x = X.tip; x <= 1000; x += 3) ctx.lineTo(x, CY - Rh(x));
+    ctx.lineTo(1000, CY);
+    for (let x = 1000; x >= X.tip; x -= 3) ctx.lineTo(x, CY + Rh(x));
+    ctx.closePath();
+  }
+  // A blade row seen from the side: blade at angle θ spans y = r·cos θ, the near half cut away.
+  function bladeRow(xa, xb, n, phase, stag, color, alphaBase) {
+    const rh0 = Rh(xa), rh1 = Rh(xb), rc0 = Rc(xa), rc1 = Rc(xb);
+    ctx.fillStyle = color;
+    for (let i = 0; i < n; i++) {
+      const th = phase + i * 2 * Math.PI / n, s = Math.sin(th);
+      if (s >= 0) continue;
+      const c = Math.cos(th), c2 = Math.cos(th + stag);
+      ctx.globalAlpha = alphaBase + (1 - alphaBase) * (-s);
+      ctx.beginPath(); ctx.moveTo(xa, CY - rh0 * c); ctx.lineTo(xb, CY - rh1 * c2); ctx.lineTo(xb, CY - rc1 * c2); ctx.lineTo(xa, CY - rc0 * c);
+      ctx.closePath(); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+  function helix(x0, x1, rFn, turns, phase, color, width) {
+    ctx.strokeStyle = color; ctx.lineWidth = width;
+    let on = false; ctx.beginPath();
+    for (let i = 0; i <= 60; i++) {
+      const s = i / 60, x = lerp(x0, x1, s), th = phase + s * turns * 2 * Math.PI;
+      if (!(Math.sin(th) > 0)) { on = false; continue; }
+      const y = CY - rFn(x) * Math.cos(th);
+      if (!on) { ctx.moveTo(x, y); on = true; } else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+  function flameShape(t, top) {
+    const s = top ? -1 : 1, yc = CY + s * (LIN_IN + LIN_OUT) / 2, x0 = X.dome + 8;
+    for (const [k, col, xe] of [[1, TK.flameOut, 786], [.66, TK.flameMid, 745], [.36, TK.flameCore, 700]]) {
+      ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(x0, yc);
+      const pts = [];
+      for (let x = x0; x <= xe; x += 6) {
+        const u = seg(x, x0, xe), env = Math.pow(Math.sin(Math.PI * Math.min(1, u * 1.15)), .7) * lerp(1, .55, u);
+        const wob = 1 + .22 * Math.sin(x * .07 + t * 9 + k * 3) * Math.sin(x * .031 - t * 6.3) + .1 * Math.sin(t * 13 + x * .11);
+        pts.push([x, 19 * k * env * wob]);
+      }
+      for (const [x, h] of pts) ctx.lineTo(x, yc - h);
+      for (let i = pts.length - 1; i >= 0; i--) ctx.lineTo(pts[i][0], yc + pts[i][1] * (1 + .15 * Math.sin(t * 7 + i)));
+      ctx.closePath(); ctx.fill();
+    }
+  }
+  const ROT = { phase: 0 };
+  function drawFrame() {
+    const t = tAnim;
+    ctx.setTransform(scale, 0, 0, scale, 0, 0);
+    ctx.fillStyle = TK.stage; ctx.fillRect(0, 0, W, H);
+    const vg = ctx.createRadialGradient(W * .5, CY, 200, W * .5, CY, 900); vg.addColorStop(0, "rgba(0,0,0,0)"); vg.addColorStop(1, TK.vig);
+    ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+    { // the plume
+      const g = ctx.createLinearGradient(X.s9, 0, W, 0); g.addColorStop(0, TK.plume); g.addColorStop(1, TK.plumeEdge);
+      ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(X.s9, CY - Rc(X.s9));
+      for (let x = X.s9; x <= W; x += 10) ctx.lineTo(x, CY - (Rc(X.s9) + (x - X.s9) * .12 + 4 * Math.sin(x * .05 - t * 8)));
+      for (let x = W; x >= X.s9; x -= 10) ctx.lineTo(x, CY + (Rc(X.s9) + (x - X.s9) * .12 + 4 * Math.sin(x * .05 - t * 8 + 2)));
+      ctx.closePath(); ctx.fill();
+    }
+    { // the bore: the casing's far inner wall
+      const g = ctx.createLinearGradient(0, CY - 150, 0, CY + 150); g.addColorStop(0, TK.boreLo); g.addColorStop(.5, TK.bore); g.addColorStop(1, TK.boreLo);
+      ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(X.lip, CY - Rc(X.lip));
+      for (let x = X.lip; x <= X.s9; x += 4) ctx.lineTo(x, CY - Rc(x));
+      for (let x = X.s9; x >= X.lip; x -= 4) ctx.lineTo(x, CY + Rc(x));
+      ctx.closePath(); ctx.fill();
+    }
+    // the blades, far half -- COUNTED as drawn (drawn().rows / turbineRows)
+    const phase = -ROT.phase;
+    rowsDrawn = 0; turbDrawn = 0;
+    for (const r of COMP) { bladeRow(r.stator[0], r.stator[1], 22, 0.31, -0.42, TK.stator, .3); bladeRow(r.rotor[0], r.rotor[1], 22, phase, 0.42, TK.rotor, .35); rowsDrawn++; }
+    for (const r of TURB) { bladeRow(r.stator[0], r.stator[1], 16, 0.19, -0.7, TK.stator, .3); bladeRow(r.rotor[0], r.rotor[1], 16, phase, 0.7, TK.rotor, .35); turbDrawn++; }
+    for (const top of [true, false]) { // the liners, the glow, the flame (when there is one), the injectors
+      const s = top ? -1 : 1, yc = CY + s * (LIN_IN + LIN_OUT) / 2;
+      const gl = ctx.createRadialGradient(660, yc, 4, 660, yc, 120); gl.addColorStop(0, TK.flameGlow); gl.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = gl; ctx.fillRect(560, yc - 120, 260, 240);
+      if (G.flame !== null) flameShape(t, top);
+      ctx.strokeStyle = TK.liner; ctx.lineWidth = 2; ctx.lineCap = "round";
+      for (const r of [LIN_IN, LIN_OUT]) {
+        const y = CY + s * r; let xs = LIN_X0;
+        for (const h of HOLES) { ctx.beginPath(); ctx.moveTo(xs, y); ctx.lineTo(h[0], y); ctx.stroke(); xs = h[1]; }
+        ctx.beginPath(); ctx.moveTo(xs, y); ctx.lineTo(LIN_X1, y); ctx.stroke();
+      }
+      ctx.beginPath(); ctx.moveTo(LIN_X0, CY + s * LIN_IN); ctx.quadraticCurveTo(LIN_X0 - 14, yc, LIN_X0, CY + s * LIN_OUT); ctx.stroke();
+      ctx.fillStyle = TK.liner; ctx.beginPath(); ctx.moveTo(LIN_X0 - 12, yc - 4); ctx.lineTo(LIN_X0 + 6, yc - 2.5); ctx.lineTo(LIN_X0 + 6, yc + 2.5); ctx.lineTo(LIN_X0 - 12, yc + 4); ctx.closePath(); ctx.fill();
+      ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(LIN_X0 - 12, yc); ctx.lineTo(LIN_X0 - 40, yc); ctx.stroke();
+    }
+    ctx.fillStyle = TK.fuel;
+    for (const f of FUEL) { if (f.dead) continue; ctx.globalAlpha = clamp(f.life * 2, 0, 1) * .9; ctx.beginPath(); ctx.arc(f.x, f.y, 1.3, 0, 6.29); ctx.fill(); }
+    ctx.globalAlpha = 1;
+    const pt0 = G.st["0"].pt;      // the parcels: colour = temperature, weight = total pressure, streak = speed
+    ctx.lineCap = "round";
+    for (const p of P) {
+      const y = yOf(p), v = speedAt(p.x), sz = 1.4 + (Math.pow(ptgas(p.x) / pt0, .35) - 1), tail = clamp(v * .045, 1.5, 30);
+      ctx.strokeStyle = colorT(p.T); ctx.lineWidth = sz * 1.5; ctx.globalAlpha = p.x < X.lip ? .75 : .95;
+      ctx.beginPath(); ctx.moveTo(p.x - tail, y); ctx.lineTo(p.x, y); ctx.stroke();
+    }
+    const tail0 = clamp(G.V0 * PX * .045, 1.5, 30);
+    ctx.strokeStyle = colorT(G.T0); ctx.lineWidth = 1.6; ctx.globalAlpha = .45;
+    for (const o of OUT) {
+      const y = CY + o.s * (Rc(clamp(o.x, X.lip, X.s9)) + SKIN + 10 + o.e * 50);
+      ctx.beginPath(); ctx.moveTo(o.x - tail0, y); ctx.lineTo(o.x, y); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    { // the hub, spinner and tail cone
+      const g = ctx.createLinearGradient(0, CY - 95, 0, CY + 95); g.addColorStop(0, TK.hubLo); g.addColorStop(.42, TK.hubHi); g.addColorStop(.6, TK.hub); g.addColorStop(1, TK.hubLo);
+      hubPath(); ctx.fillStyle = g; ctx.fill(); ctx.strokeStyle = TK.metalEdge; ctx.lineWidth = 1; ctx.stroke();
+      ctx.save(); hubPath(); ctx.clip();
+      helix(X.tip + 2, X.face, Rh, 2.2, ROT.phase, TK.metalEdge, 1.6);
+      helix(X.tip + 2, X.face, Rh, 2.2, ROT.phase + Math.PI, TK.metalEdge, 1.6);
+      for (let k = 0; k < 5; k++) helix(600, 800, Rh, 1.4, ROT.phase + k * 2 * Math.PI / 5, TK.hubLo, 2.2);
+      ctx.strokeStyle = TK.hubLo; ctx.lineWidth = 1;
+      for (const r of COMP) { ctx.beginPath(); ctx.moveTo(r.rotor[0], CY - Rh(r.rotor[0])); ctx.lineTo(r.rotor[0], CY + Rh(r.rotor[0])); ctx.stroke(); }
+      ctx.restore();
+    }
+    for (const top of [true, false]) {
+      const g = ctx.createLinearGradient(0, CY - 165, 0, CY + 165);
+      if (top) { g.addColorStop(0, TK.metalHi); g.addColorStop(.5, TK.metalLo); } else { g.addColorStop(.5, TK.metalLo); g.addColorStop(1, TK.metalHi); }
+      casingPath(top); ctx.fillStyle = g; ctx.fill(); ctx.strokeStyle = TK.metalEdge; ctx.lineWidth = 1; ctx.lineJoin = "round"; ctx.stroke();
+    }
+    ctx.strokeStyle = TK.metalEdge; ctx.lineWidth = 1;
+    for (const r of COMP.concat(TURB)) for (const s of [-1, 1]) { const x = (r.stator[0] + r.stator[1]) / 2; ctx.beginPath(); ctx.moveTo(x, CY + s * Rc(x)); ctx.lineTo(x, CY + s * (Rc(x) + SKIN)); ctx.stroke(); }
+    ctx.setLineDash([3, 5]); ctx.strokeStyle = TK.station; ctx.globalAlpha = .55; ctx.lineWidth = 1;
+    for (const x of [X.s0, X.face, X.s3, X.s4, X.s5, X.s9]) {
+      const r = x < X.lip || x > X.s9 ? 150 : Rc(x) + SKIN;
+      ctx.beginPath(); ctx.moveTo(x, 70); ctx.lineTo(x, CY - r); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x, CY + r); ctx.lineTo(x, H - 10); ctx.stroke();
+    }
+    ctx.setLineDash([]); ctx.globalAlpha = 1;
+  }
+
+  // ---- the animation: one step turns the shaft at the computed speed (slowed) and moves the parcels
+  let running = false, playing = !window.matchMedia("(prefers-reduced-motion: reduce)").matches, lastNow = null, speedMul = 1;
+  function advance(dt) {
+    const before = ROT.phase;
+    ROT.phase += dt * 2 * Math.PI * (G.rpm / 60 / SLOW);
+    if (dt > 0) lastRps = (ROT.phase - before) / (2 * Math.PI * dt);
+    tAnim += dt; stepParticles(dt);
+  }
+  function frame(now) {
+    if (mode !== "engine" || !G) { running = false; lastNow = null; return; }
+    if (lastNow === null) lastNow = now;
+    const dt = Math.min(.05, (now - lastNow) / 1000); lastNow = now;
+    if (playing) advance(dt * speedMul);
+    drawFrame();
+    requestAnimationFrame(frame);
+  }
+  function start() { if (running) return; running = true; lastNow = null; resize(); requestAnimationFrame(frame); }
+
+  // ---- the HTML around it
+  const STN = [["0", X.s0, "free stream"], ["2", X.face, "compressor face"], ["3", X.s3, "compressor exit"], ["4", X.s4, "turbine inlet"],
+               ["5", X.s5, "turbine exit"], ["9", X.s9, "nozzle exit"]];
+  $("eng-stations").innerHTML = STN.map(([n, x, l]) => `<div class="eng-st" style="left:${(x / W * 100).toFixed(2)}%"><div class="n">${n}</div><div class="l">${l}</div></div>`).join("");
+  const K_ = v => `${Math.round(v)} K`, kPa = v => `${(v / 1000).toFixed(1)} kPa`;
+  function paintReadouts() {
+    $("eng-readouts").innerHTML = STN.map(([n, , l]) => {
+      const s = G.st[n];
+      return `<div class="eng-tile" style="--sw:${colorT(s.Tt)}"><div class="num">${n}</div><div class="name">${l}</div><dl><dt>Tt</dt><dd>${K_(s.Tt)}</dd><dt>pt</dt><dd>${kPa(s.pt)}</dd><dt>f</dt><dd>${s.far.toFixed(4)}</dd></dl></div>`;
+    }).join("");
+  }
+  const probe = $("eng-probe");
+  canvas.addEventListener("mousemove", e => {
+    if (!G) return;
+    const r = canvas.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * W;
+    const f = x < X.dome ? 0 : G.st["4"].far;
+    probe.hidden = false;
+    probe.innerHTML = `<div class="r">${regionAt(x)}</div><div class="v"><span>T</span><span>${K_(Tgas(x))}</span></div><div class="v"><span>pt</span><span>${kPa(ptgas(x))}</span></div><div class="v"><span>f</span><span>${f.toFixed(4)}</span></div>`;
+    const px = e.clientX - r.left, py = e.clientY - r.top;
+    probe.style.left = (px + 190 > r.width ? px - 210 : px) + "px"; probe.style.top = py + "px";
+  });
+  canvas.addEventListener("mouseleave", () => { probe.hidden = true; });
+  $("eng-play").textContent = playing ? "Pause" : "Play";
+  $("eng-play").addEventListener("click", () => { playing = !playing; $("eng-play").textContent = playing ? "Pause" : "Play"; });
+  $("eng-speed").addEventListener("input", () => { speedMul = parseFloat($("eng-speed").value); $("eng-speed-out").textContent = speedMul.toFixed(2).replace(/0$/, "").replace(/\.0$/, "") + "×"; });
+  $("eng-slow").textContent = String(SLOW);
+  window.addEventListener("resize", () => { if (mode === "engine") resize(); });
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", readTokens);
+  new MutationObserver(readTokens).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  readTokens();
+
+  // Draw a `cutaway` reply `r`, the front zone's flame temperature `flame` (null: none drawn).
+  function set(r, flame) {
+    const run = r.run, st = {};
+    for (const s of run.stations) st[s.label] = s;
+    const first = !G;
+    G = { st, T0: run.settings.T0, V0: r.speeds.v0, V9: r.speeds.v9, T9: run.T9, vx: r.speeds.vx, K: r.compressor.stages,
+          nT: r.turbine_stages, rpm: r.compressor.rpm, flame, throatT: r.throat.t, conv: run.settings.nozzle === "convergent" };
+    RC_K = G.conv ? RC_CONV : RC_CD;
+    COMP = rows(G.K, C0, C1, true); TURB = rows(G.nT, T0X, T1X, false);
+    $("eng-nturb").textContent = String(G.nT);
+    if (first) { seed(); for (let i = 0; i < 90; i++) advance(1 / 30); }
+    paintReadouts(); resize(); drawFrame(); start();
+  }
+  // What the drawing USED (see the head of this block): read by the browser check.
+  function drawn() {
+    if (!G) return null;
+    return { rows: rowsDrawn, turbineRows: turbDrawn, rps: lastRps, slow: SLOW,
+             flameT: G.flame === null ? null : Tgas(FLAME_X), throatT: G.conv ? null : Tgas(X.throat),
+             speeds: { v0: speedAt(X.s0) / PX, vx: speedAt((X.face + X.s3) / 2) / PX, v9: speedAt(X.s9) / PX } };
+  }
+  return { set, drawn, advance: dt => { advance(dt); drawFrame(); }, start, SLOW };
+})();
+
+// The Engine view's runs: the design and its ideal twin, each with its flame (a flame request that fails inside the
+// model -- the Burner view's own failure on a design whose gas runs where the equilibrium gas does not -- leaves the
+// engine drawn without a flame, the reason said).
+let engCut = { real: null, ideal: null }, engFlame = { real: null, ideal: null }, engCase = "real", engKey = null, engGen = 0;
+function enterEngine() {
+  if (mode === "engine") return;
+  if (mode === "cooling") stopCool();
+  if (mode === "blades") stopLever();
+  if (mode === "controls") stopCtl();
+  if (mode === "burner") stopBurner();
+  stopSlam();
+  mode = "engine"; lineGen++; pinned = null; $("unpin").hidden = true; $("pin-legend").hidden = true;
+  $("bad").classList.remove("show");
+  engKey = null; showSettings(); change();
+}
+async function runEngine() {
+  if (mode !== "engine") return;
+  const key = JSON.stringify(S);
+  if (key === engKey) { ENG.start(); return; }
+  engKey = key;
+  const my = ++engGen;
+  window.sandbox.engState = "running";
+  $("eng-card").classList.add("stale");
+  const ask = (op, ideal) => model.ask(JSON.stringify(ideal ? { op, settings: S, ideal: 1 } : { op, settings: S }));
+  const t = await ask("cutaway", false);
+  if (my !== engGen) return;
+  $("timing").textContent = `${t.ms.toFixed(1)} ms in the ${model.mode}`;
+  if (t.trap || !t.reply.ok) {
+    const plain = t.trap ? t.trap.plain : t.reply.reason;
+    $("bad-title").textContent = "The cutaway cannot draw this design";
+    $("bad-plain").textContent = plain;
+    $("bad-raw").textContent = t.trap ? "Model message: " + t.trap.message : "";
+    $("bad").classList.add("show");
+    $("eng-card").hidden = true;      // not the previous design's drawing under this design's refusal
+    engCut = { real: null, ideal: null };
+    $("status").textContent = "This design is not drawn.";
+    window.sandbox.state = "does-not-run"; window.sandbox.trap = t.trap || { plain }; window.sandbox.engState = "done";
+    return;
+  }
+  const ti = await ask("cutaway", true), f = await ask("cutaway_flame", false), fi = await ask("cutaway_flame", true);
+  if (my !== engGen) return;
+  const flame = x => x.trap ? { t: null, why: x.trap.plain } : x.reply.ok ? { t: x.reply.t, why: null } : { t: null, why: x.reply.reason };
+  engCut = { real: t.reply, ideal: !ti.trap && ti.reply.ok ? ti.reply : null };
+  engFlame = { real: flame(f), ideal: flame(fi) };
+  $("bad").classList.remove("show"); $("eng-card").classList.remove("stale"); $("eng-card").hidden = false;
+  $("status").textContent = "Drawing: " + $("gas").selectedOptions[0].textContent + ".";
+  showEngine();
+  window.sandbox.state = "ran"; window.sandbox.trap = null; window.sandbox.engState = "done";
+}
+function showEngine() {
+  if (engCase === "ideal" && !engCut.ideal) engCase = "real";
+  $("eng-real").setAttribute("aria-pressed", String(engCase === "real"));
+  $("eng-ideal").setAttribute("aria-pressed", String(engCase === "ideal"));
+  $("eng-ideal").disabled = !engCut.ideal;
+  const c = engCut[engCase], f = engFlame[engCase];
+  if (!c) return;
+  ENG.set(c, f.t);
+  $("eng-note").hidden = f.t !== null;
+  $("eng-note").textContent = f.t === null ? "No separate flame is drawn: " + f.why : "";
+  const cp = c.compressor, th = c.throat, sp = c.speeds;
+  const rows = [
+    ["Front-zone flame", f.t === null ? "none drawn" : `${fmt(f.t)} K`, "the Burner view's flame, at its opening stoichiometric front zone (rungs 8–9)"],
+    ["Compressor stages", String(cp.stages), `rung 85's blade sizing: ${fmt(cp.k_star, 3)} stages' worth of work at the ${cp.binding} limit, rounded up`],
+    ["Blade tip speed", `${fmt(cp.u_tip)} m/s`, "rung 85's blade sizing, front row"],
+    ["Shaft speed", `${fmt(cp.rpm)} rpm`, `the air must pass the compressor face: tip radius ${fmt(cp.r_tip * 100, 3)} cm at hub-to-tip ${cp.h}; turning ${ENG.SLOW} times slower on screen`],
+    ["Air speed at the flight", `${fmt(sp.v0)} m/s`, "the Design view's run"],
+    ["Air speed into the compressor", `${fmt(sp.vx)} m/s`, `rung 85's design flow coefficient times the mean blade speed (${fmt(cp.u_m)} m/s)`],
+    ["Jet speed", `${fmt(sp.v9)} m/s`, "the Design view's run"],
+    ["Nozzle throat", th.choked ? `${fmt(th.t)} K, at the speed of sound` : `${fmt(th.t)} K, at the exit`,
+     th.choked ? "the model's sonic throat on the nozzle's gas" : "the jet never reaches the speed of sound: the exit's own temperature"],
+    ["Stations", "the six tiles", "the Design view's run"],
+  ];
+  $("eng-computed").querySelector("tbody").innerHTML = rows.map(([a, b, w]) =>
+    `<tr><td>${a}</td><td>${b}</td><td style="text-align:left;white-space:normal">${w}</td></tr>`).join("");
+}
+
 // A handle for the page's own browser test (rust/sandbox-wasm/browser.mjs): set knobs, read the result.
 window.sandbox = {
   state: "loading", last: null, trap: null, mode: null, line: 0,
@@ -3930,6 +4521,18 @@ window.sandbox = {
   sweepNow: () => { swKey = null; runSweep(); },
   sweepPoints: () => bnSweep,
   bnState: null, bnLast: null, sweepState: null,
+  // The Engine view (roadmap A9): `patch` sets Design knobs OVER THE OPENING DESIGN (each call stands alone); `which`
+  // picks "real" or "ideal". Resolves once drawn, with the replies and what the DRAWING used (ENG.drawn(), after one
+  // animation step of 0.1 s).
+  engine: async (patch, which = "real") => {
+    if (mode !== "engine") { enterEngine(); await settled(); }
+    S = { ...DEFAULTS, ...(patch || {}) }; showSettings(); engKey = null;
+    await runEngine();
+    if (window.sandbox.state !== "ran") return { state: window.sandbox.state, cut: null, flame: null, drawn: null };
+    engCase = which; showEngine(); ENG.advance(0.1);
+    return { state: window.sandbox.state, cut: engCut[engCase], flame: engFlame[engCase], drawn: ENG.drawn() };
+  },
+  engState: null,
   lever: 0, kills: 0,
   points: () => leverPts,
   view: () => mode,

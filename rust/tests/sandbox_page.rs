@@ -588,3 +588,45 @@ fn the_try_menu_and_its_note_are_declared() {
     let t = read(TEMPLATE);
     for id in ["try-row", "try", "try-note"] { assert!(t.contains(&format!(r#"id="{id}""#)), "#{id} is missing"); }
 }
+
+// ---------------------------------------------------------------- the Engine view (roadmap A9)
+
+/// The Engine view's drawing script: `const ENG = (() => { … })();`.
+fn engine_script(t: &str) -> &str {
+    let i = t.find("const ENG = (() => {").expect("the Engine view's script (const ENG) is missing");
+    let j = i + t[i..].find("\n})();").expect("the Engine view's script is not closed");
+    &t[i..j]
+}
+
+/// What the old cutaway page DREW as a constant and the model now computes: none may come back. The browser check
+/// (browser.mjs § 17f) holds what the drawing USED to the reply; this holds the script's text, so a constant cannot
+/// creep back even where the three check designs happen not to look.
+#[test]
+fn the_engine_view_draws_no_computed_number_as_a_constant() {
+    let t = read(TEMPLATE);
+    let e = engine_script(&t);
+    for banned in ["T_PRIMARY", "2150", "0.87", "*.45", "* .45", "i < 8;", "i<8;"] {
+        assert!(!e.contains(banned), "the Engine script holds the old drawn constant {banned:?}");
+    }
+    // Each computed item is read from the reply where the drawing uses it.
+    for read_from in ["G.rpm / 60 / SLOW", "rows(G.K,", "rows(G.nT,", "G.flame", "G.throatT", "G.V0", "G.vx", "G.V9",
+                      "r.compressor.stages", "r.compressor.rpm", "r.turbine_stages", "r.throat.t", "r.speeds.v0",
+                      "r.speeds.vx", "r.speeds.v9"] {
+        assert!(e.contains(read_from), "the Engine script no longer reads {read_from:?}");
+    }
+}
+
+/// The view says what it draws without the model: each item of the plan's "stays drawn" list is on it.
+#[test]
+fn the_engine_view_lists_what_it_draws() {
+    let t = read(TEMPLATE);
+    let listed: Vec<&str> = spans(&t, "data-drawn=\"", "\"");
+    for item in ["geometry", "turbine", "blades", "speeds", "colours", "slow", "ramp", "flame-gas", "blade-choices"] {
+        assert!(listed.contains(&item), "the Engine view's \"Drawn, not computed\" list lacks {item:?}: {listed:?}");
+    }
+    // The two requests the view sends (built as `ask(op, …)`, so the `op: "…"` scan above cannot see them).
+    for op in ["cutaway", "cutaway_flame"] {
+        assert!(t.contains(&format!("ask(\"{op}\"")), "the Engine view no longer sends {op}");
+        assert!(!call(&format!(r#"{{"op":"{op}"}}"#)).contains("unknown op"), "`sandbox::call` does not answer {op}");
+    }
+}

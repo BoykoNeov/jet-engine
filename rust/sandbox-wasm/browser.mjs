@@ -1133,6 +1133,63 @@ try {
         emptied.every(([, was, now, same]) => was !== '' && now === was && same), JSON.stringify(emptied));
   await s.send('Emulation.setFocusEmulationEnabled', { enabled: false });
 
+  // 17f. THE ENGINE (roadmap A9): the cutaway of the Design engine. On each check design (turbojet::sandbox_cutaway::
+  // check_designs) the page's replies are the native ones, and what the DRAWING used -- the rows its draw loop went over,
+  // the turn rate its animation step applied, the temperature its colours give at the flame, its parcel speed at the
+  // flight, the compressor face and the jet, the throat's temperature -- is that reply's. tests/sandbox_cutaway.rs
+  // measures that the three designs move every one of those, so a drawn constant cannot pass all three.
+  const natLines = readFileSync(nativeTxt, 'utf8').split(/\r?\n/).filter(l => l.startsWith('{"op":"cutaway'))
+    .map(l => l.split('\t')).map(([q, r]) => [JSON.parse(q), JSON.parse(r)]);
+  const opening = first.settings;
+  const natFor = (op, d, ideal = false) => {
+    const want = { ...opening, ...d };
+    const hit = natLines.find(([q]) => q.op === op && !!q.ideal === ideal && q.settings.gas === want.gas && q.settings.nozzle === want.nozzle
+      && ['pi_c', 'mdot', 'M0', 'Tt4', 'T0', 'p0'].every(k => q.settings[k] === want[k]));
+    return hit ? hit[1] : null;
+  };
+  const rel = (a, b) => typeof a === 'number' && typeof b === 'number' && Math.abs(a - b) <= 1e-9 * Math.max(Math.abs(b), 1);
+  const engDesigns = [{}, { pi_c: 25, mdot: 60, M0: 0.6 }, { pi_c: 4, mdot: 5, M0: 1.6, Tt4: 1300 }];
+  const engSeen = [];
+  for (const [i, d] of engDesigns.entries()) {
+    const r = await ev(`window.sandbox.engine(${JSON.stringify(d)})`, 60000);
+    const nat = natFor('cutaway', d), natF = natFor('cutaway_flame', d);
+    const e = r.state !== 'ran' ? `state ${r.state}` : !nat || !natF ? 'no native line' : close(r.cut, nat);
+    const c = r.cut, dr = r.drawn;
+    const drew = dr && [['rows', dr.rows === c.compressor.stages], ['turbine rows', dr.turbineRows === c.turbine_stages],
+      ['turn rate', rel(dr.rps * 60 * dr.slow, c.compressor.rpm)], ['flame', rel(dr.flameT, r.flame.t) && rel(r.flame.t, natF.t)],
+      ['throat', rel(dr.throatT, c.throat.t)], ['v0', rel(dr.speeds.v0, c.speeds.v0)], ['vx', rel(dr.speeds.vx, c.speeds.vx)],
+      ['v9', rel(dr.speeds.v9, c.speeds.v9)]].filter(([, ok]) => !ok).map(([k]) => k);
+    check(`the_engine_draws_check_design_${i}_as_the_model_computes_it`, !e && drew && drew.length === 0,
+          `${e || ''} off: ${JSON.stringify(drew)} drawn ${JSON.stringify(dr)} reply ${JSON.stringify([c?.compressor, c?.speeds, c?.throat, r.flame])}`);
+    engSeen.push(dr);
+  }
+  const moves = ['rows', 'rps', 'flameT', 'throatT'].map(k => [k, new Set(engSeen.map(x => x && x[k])).size > 1])
+    .concat(['v0', 'vx', 'v9'].map(k => [k, new Set(engSeen.map(x => x && x.speeds[k])).size > 1])).filter(([, ok]) => !ok);
+  check('the_engines_check_designs_move_every_drawn_number', moves.length === 0, JSON.stringify(moves));
+  const engVis = await ev(`[window.sandbox.view(), ...['eng-card','cycle-set','components-set','out','ts-card','perf-card','pin'].map(i => document.getElementById(i).hidden),
+    document.getElementById('eng-readouts').children.length, document.getElementById('eng-computed').tBodies[0].rows.length]`);
+  check('the_engine_view_shows_its_card_beside_the_design_knobs', JSON.stringify(engVis) === '["engine",false,false,false,true,true,true,true,6,9]', JSON.stringify(engVis));
+  if (process.env.SANDBOX_SHOTS) { await shot('engine-light'); await shot('engine-dark', 1280, true); await shot('engine-phone', 390); }
+  // Every loss at ideal: the native ideal reply, drawn the same way.
+  const ri = await ev(`window.sandbox.engine({}, 'ideal')`, 60000);
+  const ni = natFor('cutaway', {}, true);
+  const ei = ri.state !== 'ran' ? `state ${ri.state}` : !ni ? 'no native line' : close(ri.cut, ni);
+  check('every_loss_at_ideal_draws_the_native_ideal_design', !ei && ri.drawn.rows === ri.cut.compressor.stages
+        && rel(ri.drawn.flameT, ri.flame.t) && await ev(`document.getElementById('eng-ideal').getAttribute('aria-pressed')`) === 'true', ei || JSON.stringify(ri.drawn));
+  // A flame request that fails INSIDE the model (the equilibrium burner, on a design whose own gas runs -- the first such
+  // case of tests/sandbox_cutaway.rs's survey): the engine is still drawn, with no flame and the reason in words.
+  const engRf = await ev(`window.sandbox.engine({gas: 'perfect', pi_c: 1.5, Tt4: 2400, M0: 0, mdot: 1})`, 60000);
+  const engRfNote = await ev(`[document.getElementById('eng-note').hidden, document.getElementById('eng-note').textContent]`);
+  check('a_flame_the_model_cannot_make_leaves_the_engine_drawn_without_it',
+        engRf.state === 'ran' && engRf.flame.t === null && engRf.drawn.flameT === null && engRfNote[0] === false && engRfNote[1].length > 40, JSON.stringify([engRf.state, engRf.flame, engRfNote]));
+  // A turbofan is not drawn: the panel says so in words.
+  const rt = await ev(`window.sandbox.engine({alpha: 1})`, 60000);
+  const rtText = await ev(`document.getElementById('bad-plain').textContent`);
+  check('a_turbofan_is_refused_in_words', rt.state === 'does-not-run' && /plain turbojet/.test(rtText), JSON.stringify([rt.state, rtText]));
+  const engBack = await ev(`window.sandbox.engine({})`, 60000);
+  check('the_engine_returns_to_the_opening_design', engBack.state === 'ran' && !close(engBack.cut, natFor('cutaway', {})), JSON.stringify(engBack.state));
+  await ev(`window.sandbox.design()`);
+
   // 18. Nothing threw on the page along the way.
   const thrown = s.events.filter(e => e.method === 'Runtime.exceptionThrown').map(e => e.params.exceptionDetails?.exception?.description || e.params.exceptionDetails?.text);
   check('no_uncaught_errors_on_the_page', thrown.length === 0, thrown.join(' | ').slice(0, 400));

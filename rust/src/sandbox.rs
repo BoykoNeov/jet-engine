@@ -939,6 +939,8 @@ fn refusal(reason: &str) -> Json {
 /// - `cooling_defaults`, `cooling_point` (with `"cooling":{…}` and `"Tt4"`), `cooling_knob` → the *Cool the
 ///   turbine* view (rung 93), [`crate::sandbox_cooling::call_op`]. `explain` with `"view":"cooling"` →
 ///   [`crate::sandbox_cooling::explain_cooling`].
+/// - `cutaway`, `cutaway_flame` (with `"settings":{…}` — the design — and optionally `"ideal":1`) → the *Engine*
+///   view (roadmap A9), [`crate::sandbox_cutaway::call_op`].
 pub fn call(request: &str) -> String {
     let req = Json::parse(request);
     let op = match req.get("op") { Some(Json::Str(s)) => s.as_str(), _ => "" };
@@ -1031,6 +1033,7 @@ pub fn call(request: &str) -> String {
             .or_else(|| crate::sandbox_controls::call_op(other, &req))
             .or_else(|| crate::sandbox_burner::call_op(other, &req))
             .or_else(|| crate::sandbox_cooling::call_op(other, &req))
+            .or_else(|| crate::sandbox_cutaway::call_op(other, &req))
             .unwrap_or_else(|| refusal(&format!("unknown op {other:?}"))),
     };
     out.dump_compact()
@@ -1722,6 +1725,7 @@ pub fn check_requests() -> Vec<String> {
     out.extend(check_ab_fly_requests());
     out.extend(crate::sandbox_controls::check_ab_requests());
     out.extend(check_fan_requests());
+    out.extend(crate::sandbox_cutaway::check_requests());
     out
 }
 
