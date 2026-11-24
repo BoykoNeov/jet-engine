@@ -16,6 +16,13 @@ pin-default = []
 # vane) and changes nothing else -- the whole gate under the law (`test-all.ps1 -Features hp-law-default`, gate R1b).
 hp-law-default = []
 
+# The web sandbox's browser build is a member (roadmap A10) so cargo hashes this crate by its path
+# RELATIVE to here: as a non-member it was hashed by its ABSOLUTE folder, which moved the compiled
+# page's code layout, so the same source built in another folder gave a different page. Plain
+# `cargo test` / `cargo run` here still act on this package only (no `default-members`).
+[workspace]
+members = ["sandbox-wasm"]
+
 [profile.release]
 opt-level = 3
 lto = "thin"

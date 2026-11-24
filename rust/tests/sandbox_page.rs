@@ -57,6 +57,34 @@ fn the_built_page_is_the_splice_of_its_template() {
                 change without `rust/sandbox-wasm/build.ps1`");
 }
 
+/// Roadmap A10: the shipped build must not carry the folder it was built in. Rust's panic locations
+/// name each source file by the path rustc was handed — absolute for the model (a path dependency) —
+/// so an unremapped build differs per checkout and a re-cloned or worktree-built page fails
+/// `check.ps1`'s freshness check with no change at all. Building the browser crate as a member of
+/// the `rust/` workspace keeps them relative (`rust/sandbox-wasm/build.ps1`); this holds the
+/// COMMITTED page to it. (The same build from a second folder must also be byte-identical: that
+/// needs the crate hashes folder-free too, which this test cannot see — see the build script.)
+#[test]
+fn the_embedded_build_names_no_absolute_folder() {
+    let page = read(PAGE);
+    let wasm = unbase64(spans(&page, "const WASM_B64 = \"", "\";")[0]);
+    // A drive-letter path: `X:\` or `X:/` at a word start (the start, or after a non-alphanumeric
+    // byte — so a mangled symbol's `…fmt:/_RNv…` is not one).
+    let drive: Vec<String> = (0..wasm.len().saturating_sub(2))
+        .filter(|&i| wasm[i].is_ascii_alphabetic() && wasm[i + 1] == b':' && matches!(wasm[i + 2], b'\\' | b'/')
+                     && (i == 0 || !wasm[i - 1].is_ascii_alphanumeric()))
+        .map(|i| String::from_utf8_lossy(&wasm[i..(i + 60).min(wasm.len())]).into_owned())
+        .collect();
+    assert!(drive.is_empty(), "the embedded build names {} absolute path(s), e.g. {:?}: rebuild with \
+            rust/sandbox-wasm/build.ps1 (a workspace member)", drive.len(), &drive[..drive.len().min(3)]);
+    // And this checkout's own folder, in either spelling — exactly the original bug.
+    let root = std::fs::canonicalize(repo("")).unwrap().to_string_lossy().trim_start_matches(r"\\?\").to_string();
+    for spelling in [root.clone(), root.replace('\\', "/")] {
+        let hits = wasm.windows(spelling.len()).filter(|w| *w == spelling.as_bytes()).count();
+        assert_eq!(hits, 0, "the embedded build names this checkout's folder {spelling:?} {hits} time(s)");
+    }
+}
+
 #[test]
 fn the_template_holds_the_placeholder_once() {
     assert_eq!(read(TEMPLATE).matches(WASM_PLACEHOLDER).count(), 1);

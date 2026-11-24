@@ -1,22 +1,24 @@
 ---
 name: sandbox-build-path-embedded
-description: "The sandbox page's wasm embeds the build folder's absolute path — a page built in a worktree fails the real repo's freshness check"
+description: "FIXED 2026-11-24 (roadmap A10): the sandbox page now builds byte-identically from any folder — a path remap cleaned the strings but NOT the code layout; the cure was workspace membership"
 metadata:
   node_type: memory
   type: feedback
-  originSessionId: 765d0165-d7cd-430a-aa2f-7daab84dc6af
-  modified: 2026-11-20T10:00:01.297Z
+  originSessionId: fb9bd4c6-cd0f-4126-8ce1-588b676faa23
+  modified: 2026-11-24T19:10:13.105Z
 ---
 
-`rust\sandbox-wasm\build.ps1` compiles the model with panic-location strings holding the ABSOLUTE source path
-(42 occurrences of `W:\Claude_projects\jet engine…` in the blob, measured 2026-11-20). Built in a git worktree
-under `W:\temp\claude\…`, the blob differs, so `check.ps1`'s `the_committed_page_is_current` fails in the real
-repo even with identical source.
+Until 2026-11-24 the sandbox page's wasm held 42 absolute source paths (panic locations), so a page built in a
+worktree or re-clone failed `check.ps1`'s freshness check. **Fixed (roadmap A10):** `rust/sandbox-wasm` is a
+member (NOT a default member) of a workspace rooted at `rust/Cargo.toml`; it builds into `rust\target\`;
+`check.ps1` builds through `build.ps1`; `tests/sandbox_page.rs` fails on any drive-letter path in the page.
 
-**Why:** found 2026-11-20 when a template-only change had to be built from a clean worktree because uncommitted
-rung-110 `src/` changes sat on `main`.
+**The lesson:** `--remap-path-prefix` removed every path STRING, and a grep said "clean" — yet a second-folder
+build still differed in ~49 000 bytes of code. Cargo hashes a path dependency that lies OUTSIDE the build's
+workspace by its ABSOLUTE folder (inside: relative), and the crate hash moves the code layout. Only a
+byte-for-byte comparison of two builds from two folders showed it; a two-crate throwaway probe confirmed the
+cause in seconds. (`trim-paths` is not stable in cargo 1.100; stripping symbols did not help either.)
 
-**How to apply:** for a TEMPLATE-only change while `src/` holds uncommitted work: build in a worktree to get the
-fresh page, then apply the same HTML lines to the committed page (keep its blob), and prove equality with the
-fresh build after swapping the blob back (a small node script). Run check.mjs/browser.mjs in the worktree —
-only the freshness check may fail, and only for the path. A `src/` change cannot use this trick.
+**How to apply:** to prove "same from any folder", build in a fresh `git worktree` (apply the change with
+`git diff HEAD --binary | git -C <wt> apply --index`) and compare hashes — and check both files EXIST
+(`Get-FileHash` on a missing path silently compares False). The old `rust\sandbox-wasm\target\` is dead output.

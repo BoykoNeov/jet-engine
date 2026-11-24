@@ -53,11 +53,10 @@ function Run-Node([string]$name, [string[]]$argv) {
 }
 
 try {
-    # 1. the committed page is what the current code builds
-    Invoke-Low $here 'cargo build --release --target wasm32-unknown-unknown --manifest-path Cargo.toml'
-    $wasm = Join-Path $here 'target\wasm32-unknown-unknown\release\sandbox_wasm.wasm'
+    # 1. the committed page is what the current code builds -- through build.ps1 itself, so the
+    #    check builds with exactly the flags the shipped page was built with
     $fresh = Join-Path $work 'fresh.html'
-    Invoke-Low $rust "cargo run --release -q --manifest-path Cargo.toml -- sandbox `"$wasm`" `"$fresh`""
+    & (Join-Path $here 'build.ps1') -Out $fresh
     $same = (Get-FileHash $fresh).Hash -eq (Get-FileHash $page).Hash
     Report 'the_committed_page_is_current' $same 'docs\sandbox\turbojet-sandbox.html is stale: run rust\sandbox-wasm\build.ps1 and commit the page'
 

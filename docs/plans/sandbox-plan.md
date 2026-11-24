@@ -46,7 +46,7 @@ beside the same calls compiled natively.
      natively by the normal gate like any module. No `extern "C"`, no `unsafe`.
   2. `rust/sandbox-wasm/` — a **tiny sibling crate** (its own `Cargo.toml`, `crate-type = ["cdylib"]`,
      a path dependency on `turbojet`). Only the export shell: `init` (panic hook), `alloc`, `free`,
-     `run`, `msg_ptr/len`. **Not a workspace member**, so `cargo test` of the main crate never
+     `run`, `msg_ptr/len`. **Not a workspace member** (since 2026-11-24 a member but not a default one — roadmap A10 — which keeps this property), so `cargo test` of the main crate never
      builds it and the 193-program gate is unchanged.
 - **One self-contained HTML file**, the `.wasm` embedded as base64: it opens from a double-click
   (`file://` refuses a fetch of a sibling `.wasm`), stays fully offline like the two existing

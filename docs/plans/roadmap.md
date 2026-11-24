@@ -357,7 +357,19 @@ view).
 constants for computed ones; or rebuild the cutaway as a live sandbox view that follows the knobs (the
 stronger connection, more work, and the published cutaway link would then point at an old page).
 
-### A10. Keep the folder path out of the sandbox page — not started (found 2026-11-20)
+### A10. Keep the folder path out of the sandbox page — DONE 2026-11-24
+
+**What it took (2026-11-24):** remapping the path (`--remap-path-prefix`) cleaned the 42 strings but the page
+still differed from a second folder in ~49 000 bytes of CODE: cargo hashes a path dependency that lies OUTSIDE
+the build's workspace by its absolute folder, and that hash moves the code layout (shown on two throwaway
+crates: inside the workspace the hash was folder-free, outside it was not). The fix made `rust/sandbox-wasm` a
+member (not a default one) of a workspace rooted at `rust/Cargo.toml`; no remap is needed — the names come out
+relative (`src\nox.rs`). Proof: the wasm and the page built in a fresh worktree are byte-identical to the
+repo's. `build.ps1` builds into `rust\target\`; `check.ps1` now builds THROUGH `build.ps1`;
+`tests/sandbox_page.rs::the_embedded_build_names_no_absolute_folder` fails on a drive-letter path in the
+committed page (red-checked: 42 hits before). The old `rust\sandbox-wasm\target\` is dead build output.
+
+The original note:
 
 The compiled model inside `docs/sandbox/turbojet-sandbox.html` carries the absolute folder it was built in
 (`W:\Claude_projects\jet engine…`, 42 times — Rust's panic-location strings). So a moved or re-cloned

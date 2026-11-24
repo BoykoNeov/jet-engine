@@ -3,5 +3,12 @@
 version = 4
 
 [[package]]
+name = "sandbox-wasm"
+version = "0.1.0"
+dependencies = [
+ "turbojet",
+]
+
+[[package]]
 name = "turbojet"
 version = "0.1.0"
