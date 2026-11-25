@@ -64,9 +64,10 @@ new slices and step links go THERE, not here.
 - [Golden fingerprint gate](golden-fingerprint-gate.md) — the ONLY absolute-value gate; CPython anchor; measure a detector
 - Golden gate slices [2](golden-gate-slice2.md) [3](golden-gate-slice3.md) [4](golden-gate-slice4.md) [5](golden-gate-slice5.md) [6](golden-gate-slice6.md) [7](golden-gate-slice7.md) — drift follows CONDITIONING (one lesson per file)
 - [Visuals artifact](visuals-artifact.md) — the CHARTS page, re-minted 2026-10-06 at G5uobeC9…; read its prose for staleness before a republish
-- [Cutaway binding — PRIORITY](cutaway-binding-priority.md) — user 2026-11-20: bind the cutaway to the model permanently (roadmap A9); ask before/after rung 110 and which design
+- [Cutaway binding](cutaway-binding-priority.md) — user 2026-11-20 priority (roadmap A9); DONE 2026-11-25 as the Engine view
+- [A9 Engine view](a9-engine-view.md) — DONE 2026-11-25: shoot the CROWDED case, not the easy one; grep for every copy of a drawing before retiring one
 - [Sandbox build path embedded](sandbox-build-path-embedded.md) — FIXED 11-24 (A10): a path remap cleaned the strings, not the layout; only a 2nd-folder byte compare showed it
-- [Cutaway artifact](cutaway-artifact.md) — the animated engine cutaway is a SECOND artifact (claude.ai/artifact/KbCcwpVMiJWJm1sN7kYdZm, favicon ⚙️); file:// is refused, serve locally and kill by PID
+- [Cutaway artifact](cutaway-artifact.md) — the old cutaway link (KbCcwpVMiJWJm1sN7kYdZm) is a POINTER page to the Engine view since 2026-11-25; the page itself is deleted
 - [Visuals ↔ model binding](visuals-model-binding.md) — the pages had NO test and looked fine; in SYNC is not BOUND, and the page's own design point was typed markup
 - [Windows file-tooling hazards](windows-tooling-file-hazards.md) — PyPy unflushed writes, PowerShell double-encoding, backticks in `-m`, a status read off the runner, a log still being written, and a text-mode rewrite that flips every line ending, `cmd`'s parse-time `%ERRORLEVEL%`, a `start /b` batch that never exits, the EOL check that was itself the hazard, a silent `pytest.exe` launcher, a scripted Windows path that becomes a TAB, and a `Copy-Item` restore whose OLD mtime cargo never rebuilds, `python` being the Store stub that hangs, and a bash-built `cmd start` path with a literal `$b`, and PowerShell's `*>` typed into Bash (a glob), and a heredoc that halves backslashes / `node -e` that runs backticks
 

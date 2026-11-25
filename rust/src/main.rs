@@ -9,10 +9,10 @@
 //! Two subcommands replace `docs/visuals/`'s scripts, and a third writes the chart data alone
 //! (slice AR):
 //!
-//! * `visuals [DIR]` — `extract_data.py` + `build.py` + `build_cutaway.py`: run the model, write
-//!   `data.json`, and splice both pages. `DIR` defaults to the repo's `docs/visuals`; the
+//! * `visuals [DIR]` — `extract_data.py` + `build.py`: run the model, write `data.json`, and
+//!   splice the charts page. `DIR` defaults to the repo's `docs/visuals`; the
 //!   templates are always read from there.
-//! * `splice [DIR]` — `build.py` + `build_cutaway.py` alone: re-splice both pages from the
+//! * `splice [DIR]` — `build.py` alone: re-splice the charts page from the
 //!   committed `data.json` (a template-only edit needs no model run).
 //! * `ts-diagram` — write `ts_diagram.json` alone, without the ~10-minute panel run.
 //! * `panel NAME [--write]` — run the panel(s) named `NAME` alone and print them. With `--write`
@@ -46,18 +46,15 @@ fn write(p: &Path, text: &str) {
     std::fs::write(p, text).unwrap_or_else(|e| panic!("cannot write {}: {e}", p.display()));
 }
 
-/// Splice both pages from `data_text` (exactly the bytes of `data.json`) into `out`.
+/// Splice the charts page from `data_text` (exactly the bytes of `data.json`) into `out`. (The
+/// cutaway page it also spliced until 2026-11 is the sandbox's *Engine* view now — roadmap A9.)
 fn splice_pages(data_text: &str, out: &Path) {
     let src = visuals_dir();
-    let data = visuals::Json::parse(data_text);
     // The rung map is read from the repository root (CLAUDE.md's rung table + the notes).
     let map = turbojet::rung_map::read_repo(&src.join("..").join(".."));
     let page = visuals::splice_visuals(&read(&src.join("template.html")), data_text, &map);
     write(&out.join("turbojet-visuals.html"), &page);
     println!("built turbojet-visuals.html ({} bytes)", page.len());
-    let cut = visuals::splice_cutaway(&read(&src.join("cutaway-template.html")), &data);
-    write(&out.join("turbojet-cutaway.html"), &cut);
-    println!("{} bytes -> {}", cut.len(), out.join("turbojet-cutaway.html").display());
 }
 
 fn write_ts_diagram(design: &Design) {

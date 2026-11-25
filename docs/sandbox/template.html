@@ -237,6 +237,21 @@ footer h2.sec { margin: 8px 0 4px; }
 .eng-st .n { font-weight: 700; font-size: clamp(13px, 2vw, 22px); }
 .eng-st .l { font-size: clamp(8px, .8vw, 10px); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2);
   margin-top: 2px; max-width: 7em; line-height: 1.2; }
+/* Stations 4 and 5 stand close (the turbine is short): 4's name hangs left of its line, 5's right, so they never meet. */
+.eng-st.end { transform: translateX(calc(-100% + .5em)); text-align: right; }
+.eng-st.end .l { margin-left: auto; }
+.eng-st.start { transform: translateX(-.5em); text-align: left; }
+@media (max-width: 600px) {
+  .eng-st .l { display: none; }   /* too narrow for the names: the tiles below name every station */
+  .eng-st.end, .eng-st.start { transform: translateX(-50%); text-align: center; }
+  /* The computed table: the source goes under its row instead of a third column that runs off the screen. */
+  #eng-computed thead th:nth-child(3) { display: none; }
+  #eng-computed tr { display: grid; grid-template-columns: 1fr auto; }
+  #eng-computed thead tr { grid-template-columns: 1fr auto; }
+  #eng-computed td:nth-child(2) { white-space: normal; text-align: right; }
+  #eng-computed td:nth-child(3) { grid-column: 1 / -1; color: var(--muted); font-size: 12px; padding-top: 0; }
+  #eng-computed td:nth-child(1), #eng-computed td:nth-child(2) { border-bottom: 0; }
+}
 .eng-probe { position: absolute; pointer-events: none; background: var(--surface); color: var(--ink); border: 1px solid var(--border);
   border-radius: 6px; padding: 6px 8px; font-size: 12px; line-height: 1.4; min-width: 160px; transform: translate(14px, -50%);
   box-shadow: 0 6px 20px rgba(0,0,0,.2); }
@@ -263,11 +278,10 @@ footer h2.sec { margin: 8px 0 4px; }
   <h1>Turbojet Sandbox</h1>
   <p class="lede">Change the engine and watch it respond. Every number on this page is computed by the
   project's own Rust model, running in your browser. A design that does not run is shown as such, with the reason.</p>
-  <p class="also">Two more pages, in <code>docs/visuals/</code>:
-  <a href="../visuals/turbojet-cutaway.html">the animated engine cutaway</a> and
-  <a href="../visuals/turbojet-visuals.html">the charts page</a>. (The <b>Engine</b> view here draws the cutaway live, for
-  the design you set.) Both pages show the default design only, with
-  numbers fixed when the pages were built; they do not follow the knobs on this page.</p>
+  <p class="also">One more page, in <code>docs/visuals/</code>:
+  <a href="../visuals/turbojet-visuals.html">the charts page</a>. It shows the default design only, with numbers fixed when
+  the page was built; it does not follow the knobs on this page. The animated engine cutaway is the <b>Engine</b> view
+  here, drawn live for the design you set.</p>
 </header>
 <main>
   <section class="card knobs" aria-label="Design knobs">
@@ -4344,7 +4358,8 @@ const ENG = (() => {
   // ---- the HTML around it
   const STN = [["0", X.s0, "free stream"], ["2", X.face, "compressor face"], ["3", X.s3, "compressor exit"], ["4", X.s4, "turbine inlet"],
                ["5", X.s5, "turbine exit"], ["9", X.s9, "nozzle exit"]];
-  $("eng-stations").innerHTML = STN.map(([n, x, l]) => `<div class="eng-st" style="left:${(x / W * 100).toFixed(2)}%"><div class="n">${n}</div><div class="l">${l}</div></div>`).join("");
+  const STN_SIDE = { "4": " end", "5": " start" };
+  $("eng-stations").innerHTML = STN.map(([n, x, l]) => `<div class="eng-st${STN_SIDE[n] || ""}" style="left:${(x / W * 100).toFixed(2)}%"><div class="n">${n}</div><div class="l">${l}</div></div>`).join("");
   const K_ = v => `${Math.round(v)} K`, kPa = v => `${(v / 1000).toFixed(1)} kPa`;
   function paintReadouts() {
     $("eng-readouts").innerHTML = STN.map(([n, , l]) => {

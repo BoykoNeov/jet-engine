@@ -319,7 +319,17 @@ screenshots (`SANDBOX_SHOTS`) in light, dark and phone width after each.
 kept self-comparison in `rust/src/applied_reference.rs` with `#[allow(clippy::eq_op)]` and its existing
 comment. Nothing may move; the gate proves it. The other 131 warnings are style and may be left.
 
-### A9. Bind the cutaway to the model — PRIORITY (user, 2026-11-20), not started
+### A9. Bind the cutaway to the model — DONE 2026-11-25
+
+*Done:* the user chose the live sandbox view (2026-11-24). The sandbox's **Engine** view draws the cutaway of the
+Design engine from the model (`rust/src/sandbox_cutaway.rs`; plan and what is computed vs drawn:
+`docs/plans/a9-cutaway-view-plan.md`). Permanent by three gates: `tests/sandbox_cutaway.rs` (every number is the
+model's own call), `tests/sandbox_page.rs` (no old drawn constant in the script; the "Drawn, not computed" list
+complete), `browser.mjs` § 17f (what the drawing USED equals the reply on three designs that move every number).
+The stand-alone cutaway page and its gates are deleted; the charts page's own engine animation (a drawn 2450 K
+flame) went too, at the user's choice, for a pointer to the Engine view. The old cutaway link was republished as
+a pointer page (user's choice, 2026-11-25). The record below is as written before the work.
+
 
 **The user's words (2026-11-20):** "for future session (with priority) make stronger connections between
 the computation and the what the cutaway shows and make that connection permanent". Ask the user first

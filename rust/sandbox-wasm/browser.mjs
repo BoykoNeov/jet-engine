@@ -1162,6 +1162,8 @@ try {
     check(`the_engine_draws_check_design_${i}_as_the_model_computes_it`, !e && drew && drew.length === 0,
           `${e || ''} off: ${JSON.stringify(drew)} drawn ${JSON.stringify(dr)} reply ${JSON.stringify([c?.compressor, c?.speeds, c?.throat, r.flame])}`);
     engSeen.push(dr);
+    // The crowded compressor (many rows packed into the drawn length) is the layout most likely to break: look at it too.
+    if (process.env.SANDBOX_SHOTS && i === 1) { await shot('engine-crowded'); await shot('engine-crowded-phone', 390); }
   }
   const moves = ['rows', 'rps', 'flameT', 'throatT'].map(k => [k, new Set(engSeen.map(x => x && x[k])).size > 1])
     .concat(['v0', 'vx', 'v9'].map(k => [k, new Set(engSeen.map(x => x && x.speeds[k])).size > 1])).filter(([, ok]) => !ok);

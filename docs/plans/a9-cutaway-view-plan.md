@@ -1,5 +1,11 @@
 # A9 — the cutaway as a live sandbox view (plan, 2026-11-24)
 
+**Status: DONE 2026-11-25.** All of § 7 landed. Two choices the user made at the end, beyond this plan: the old
+link now shows a short pointer page (§ 5's question), and the charts page's own engine animation (a second drawing
+with its own made-up 2450 K flame, which § 5 never named) was replaced by a pointer card to the Engine view. The
+screenshot pass also fixed the turbine-inlet and turbine-exit labels overlapping and the computed table running off a
+phone screen.
+
 Roadmap A9 (`docs/plans/roadmap.md`). The user's priority of 2026-11-20: "make stronger connections between
 the computation and what the cutaway shows and make that connection permanent". The user's choice
 (2026-11-24, "go with your recommendation"): rebuild the cutaway as a **live sandbox view** that follows the

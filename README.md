@@ -19,6 +19,7 @@ Change the engine and watch it respond. It has six views:
 | View (its button) | What you do there |
 |---|---|
 | Design the engine (**Design**) | Pick the pressure ratio, turbine temperature, losses, gas model and flight condition; read the thrust, fuel use, the station table and the T–s diagram. |
+| The engine, cut open (**Engine**) | The animated cutaway of that design: air coloured by temperature, the flame, the compressor's stages and the shaft's speed, all from the model, with what is only drawn listed beside it. |
 | Fly it (**Fly it**) | Freeze that design's hardware, then move the throttle and the flight: the running line, shaft speed, stall margin; slam the throttle and watch the engine lag. |
 | Size the blades (**Blades**) | Two-shaft engine: blade speeds, stage counts, the speed limit, variable stators. |
 | The fuel controls (**Controls**) | A throttle slam on the two-shaft engine with the fuel limiters, bleed valve, stators, generator load, cooling air and afterburner as switches. |
@@ -28,11 +29,10 @@ Change the engine and watch it respond. It has six views:
 Not sure where to start? [`docs/sandbox/EXPERIMENTS.md`](docs/sandbox/EXPERIMENTS.md) lists short
 experiments — which knobs to move and what to watch for.
 
-Two older pages sit beside it in `docs/visuals/`: an
-[animated engine cutaway](docs/visuals/turbojet-cutaway.html) and a
-[page of charts](docs/visuals/turbojet-visuals.html). They show the default design only, with numbers
-fixed when the pages were built, and the charts cover the first rungs only. The sandbox page links to
-both from its header.
+An older page sits beside it in `docs/visuals/`: a
+[page of charts](docs/visuals/turbojet-visuals.html). It shows the default design only, with numbers
+fixed when the page was built, and covers the first rungs only. The sandbox page links to it from its
+header. The animated engine cutaway is the sandbox's **Engine** view, drawn live for the design you set.
 
 ## Read it
 

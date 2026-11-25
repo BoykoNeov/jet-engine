@@ -23,6 +23,10 @@ an auth problem). The rule then was "do not mint a replacement without asking"; 
 2026-10-06 the user said "Publish a replacement link", and this URL is that replacement.
 Neither page links to the other, so no cross-link needed updating.
 
+**Since 2026-11-25 (roadmap A9, [[a9-engine-view]]) the page has no engine animation**: its hero card points to the
+sandbox's Engine view and keeps the computed station chips. Neither page links to the other any more because the
+cutaway page is gone ([[cutaway-artifact]]).
+
 **Since 2026-11-15 (roadmap A5) the rung map is generated** from CLAUDE.md + the notes ([[rung-map-a5]]),
 so a new rung or a notes edit means `-- splice` AND a republish here, not only a cycle change.
 

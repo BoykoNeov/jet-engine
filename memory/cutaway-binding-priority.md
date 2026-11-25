@@ -1,22 +1,19 @@
 ---
 name: cutaway-binding-priority
-description: "User 2026-11-20 — PRIORITY for a future session: bind the cutaway to the model permanently (roadmap A9); ask before/after rung 110"
+description: "User 2026-11-20 priority: bind the cutaway to the model permanently (roadmap A9) — DONE 2026-11-25 as the sandbox's Engine view"
 metadata:
   node_type: memory
   type: project
-  originSessionId: 765d0165-d7cd-430a-aa2f-7daab84dc6af
-  modified: 2026-11-20T09:59:56.906Z
+  originSessionId: 19af6582-8bb4-4a85-824c-d17edc6db008
+  modified: 2026-11-25T09:11:05.254Z
 ---
 
-On 2026-11-20 the user asked, "with priority" for a future session, to "make stronger connections between the
-computation and what the cutaway shows and make that connection permanent". Written up as **roadmap A9** in
-`docs/plans/roadmap.md` (what the cutaway computes vs draws, the stale Python names in its footer, the open
-choice: separate page with computed constants vs a live sandbox view).
+On 2026-11-20 the user asked, "with priority", to "make stronger connections between the computation and what the
+cutaway shows and make that connection permanent" (roadmap A9).
 
-**Why:** the cutaway draws one baked design point; much of what moves on it (flame temperature 2150 K, parcel
-speeds, stage counts, shaft speed) is hand-drawn, and it does not follow the sandbox knobs.
+**DONE 2026-11-25** — see [[a9-engine-view]]: the user chose the live sandbox view; it shipped as the Engine view,
+gated so a drawn constant cannot creep back. The old page is retired ([[cutaway-artifact]]).
 
-**How to apply:** at the next session start, raise A9 as the priority, but ASK whether it goes before or after
-finishing the paused rung 110 ([[rung110-wip-handoff]]). Ask the user's choice between the two designs before
-building. Cutaway link: [[cutaway-artifact]]. "Permanent" = a gate that fails when a drawn constant creeps back
-or a computed number stops matching the model.
+**Why it mattered:** the old cutaway drew one baked design with a hand-typed flame temperature, stage count, shaft
+speed and parcel speeds, and did not follow the sandbox knobs. "Permanent" = a gate that fails when a drawn constant
+creeps back or a computed number stops matching the model.

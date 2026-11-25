@@ -1188,17 +1188,17 @@ test_variable_cp	test_air_table_isentropic_anchor	1	PORTED	rung3::air_table_isen
 test_variable_cp	test_cengel_9_89_machinery	1	PORTED	rung3::cengel_9_89_machinery	
 test_variable_cp	test_mattingly_2_7_2_8_machinery	1	PORTED	rung3::mattingly_2_7_2_8_machinery	
 test_variable_cp	test_tpg_directional_and_gas_table_effect	1	PORTED	rung3::tpg_directional_and_gas_table_effect	
-test_visuals_data	test_cutaway_html_is_the_current_splice	1	PORTED	visuals::cutaway_html_is_the_current_splice	
+test_visuals_data	test_cutaway_html_is_the_current_splice	1	RETIRED		guarded docs/visuals/turbojet-cutaway.html, deleted 2026-11 (roadmap A9): the sandbox's Engine view draws the cutaway live, gated by tests/sandbox_cutaway.rs, tests/sandbox_page.rs and browser.mjs § 17f
 test_visuals_data	test_visuals_html_is_the_current_splice	1	PORTED	visuals::visuals_html_is_the_current_splice	
 test_visuals_data	test_extract_data_imports_the_design_point_rather_than_copying_it	1	PORTED	visuals::extract_data_imports_the_design_point_rather_than_copying_it	
 test_visuals_data	test_data_json_design_point_is_main_pys	1	PORTED	visuals::data_json_design_point_is_main_pys	
 test_visuals_data	test_data_json_cycle_blocks_match_the_live_model	1	PORTED	visuals::data_json_cycle_blocks_match_the_live_model	
-test_visuals_data	test_the_read_census_can_actually_see	1	PORTED	visuals::the_read_census_can_actually_see	
-test_visuals_data	test_every_field_the_cutaway_reads_survives_the_trim	1	PORTED	visuals::every_field_the_cutaway_reads_survives_the_trim	
-test_visuals_data	test_the_trim_drops_nothing_unnamed	1	PORTED	visuals::the_trim_drops_nothing_unnamed	
-test_visuals_data	test_the_cutaway_renders_its_design_point_from_the_data	1	PORTED	visuals::the_cutaway_renders_its_design_point_from_the_data	
+test_visuals_data	test_the_read_census_can_actually_see	1	RETIRED		guarded docs/visuals/turbojet-cutaway.html, deleted 2026-11 (roadmap A9): the sandbox's Engine view draws the cutaway live, gated by tests/sandbox_cutaway.rs, tests/sandbox_page.rs and browser.mjs § 17f
+test_visuals_data	test_every_field_the_cutaway_reads_survives_the_trim	1	RETIRED		guarded docs/visuals/turbojet-cutaway.html, deleted 2026-11 (roadmap A9): the sandbox's Engine view draws the cutaway live, gated by tests/sandbox_cutaway.rs, tests/sandbox_page.rs and browser.mjs § 17f
+test_visuals_data	test_the_trim_drops_nothing_unnamed	1	RETIRED		guarded docs/visuals/turbojet-cutaway.html, deleted 2026-11 (roadmap A9): the sandbox's Engine view draws the cutaway live, gated by tests/sandbox_cutaway.rs, tests/sandbox_page.rs and browser.mjs § 17f
+test_visuals_data	test_the_cutaway_renders_its_design_point_from_the_data	1	RETIRED		guarded docs/visuals/turbojet-cutaway.html, deleted 2026-11 (roadmap A9): the sandbox's Engine view draws the cutaway live, gated by tests/sandbox_cutaway.rs, tests/sandbox_page.rs and browser.mjs § 17f
 test_visuals_data	test_the_charts_page_renders_its_design_point_from_the_data	1	PORTED	visuals::the_charts_page_renders_its_design_point_from_the_data	
 test_visuals_data	test_every_element_the_pages_look_up_actually_exists	1	PORTED	visuals::every_element_the_pages_look_up_actually_exists	
-test_visuals_data	test_the_cutaway_station_labels_all_exist	1	PORTED	visuals::the_cutaway_station_labels_all_exist	
+test_visuals_data	test_the_cutaway_station_labels_all_exist	1	RETIRED		guarded docs/visuals/turbojet-cutaway.html, deleted 2026-11 (roadmap A9): the sandbox's Engine view draws the cutaway live, gated by tests/sandbox_cutaway.rs, tests/sandbox_page.rs and browser.mjs § 17f
 test_visuals_data	test_sweep_blocks_present_and_finite	1	PORTED	visuals::sweep_blocks_present_and_finite	
 test_visuals_data	test_data_json_has_no_unexpected_top_level_blocks	1	PORTED	visuals::data_json_has_no_unexpected_top_level_blocks	

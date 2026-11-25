@@ -307,6 +307,28 @@ of that view's settings; Fly it's `slam` holds the slam's knobs), text. A multi-
 several entries, each one change from the pinned opening; a sweep in the guide is one representative point, its
 text saying which slider to move next.
 
+## The Engine view (roadmap A9, 2026-11-25)
+
+**Engine** draws the animated cutaway of the engine the Design knobs describe (the same knobs, shown beside it): air
+parcels coloured by temperature through the inlet, the compressor, the burner and its flame, the turbine and the
+nozzle. Change a knob and the drawing is the new design's. Each number it draws is either read from the model or
+listed on the view under **Drawn, not computed**:
+
+- *Computed* (the `cutaway` / `cutaway_flame` requests, `rust/src/sandbox_cutaway.rs`): the six station readouts and
+  the speeds at the flight and the jet (the Design run); the front-zone flame (the Burner view's zoned burner at its
+  opening richness, rungs 8–9); the compressor's stage count, blade tip speed and the speed of the air entering it
+  (rung 85's blade sizing at its default blade choices); the shaft speed (the airflow must pass the compressor face,
+  which sets its radius; tip speed over radius — new arithmetic, checked against NASA's Rotor 37); the nozzle throat's
+  temperature (the model's sonic throat).
+- *Drawn:* the geometry, the turbine's two stages, the blades per row, the parcel speeds between the three computed
+  ones, the colours between stations, the pace (the shaft turns 600 times slower than computed), the colour ramp.
+
+**Every loss at ideal** sets every efficiency and pressure-recovery knob to 1 on the same gas. A turbofan or a lit
+afterburner is not drawn (the cutaway is a plain turbojet): the view says so in words. Like Design, it draws a design
+point, not a throttled engine. It replaced the stand-alone cutaway page (`docs/visuals/turbojet-cutaway.html`, one
+baked design with a drawn 2150 K flame and drawn stage count), deleted 2026-11-25. Plan:
+`docs/plans/a9-cutaway-view-plan.md`.
+
 ## Save and share a setup (roadmap A7, 2026-11-19)
 
 The address keeps the open view and every knob that differs from that view's opening settings, after `#`, as JSON:
@@ -329,10 +351,11 @@ entry), a moment after the knobs stop.
 | `rust/src/sandbox_controls.rs` | Slice 4 (B)'s ops (`controls_defaults`, `controls`), reached through `sandbox::call` (`tests/sandbox_controls.rs`). |
 | `rust/src/sandbox_burner.rs` | Slice 5's ops (`burner_*`), reached through `sandbox::call` (`tests/sandbox_burner.rs`). |
 | `rust/src/sandbox_cooling.rs` | Rung 93's view (`cooling_defaults`, `cooling_point`, `cooling_knob`), reached through `sandbox::call` (`tests/sandbox_cooling.rs`). |
+| `rust/src/sandbox_cutaway.rs` | The Engine view's ops (`cutaway`, `cutaway_flame`), reached through `sandbox::call` (`tests/sandbox_cutaway.rs`). |
 | `rust/src/atmosphere.rs` | The 1976 standard atmosphere (`tests/atmosphere.rs`, held to the published table). |
 | `rust/sandbox-wasm/` | A tiny separate crate: only the browser exports around `sandbox::call`, and the panic hook that keeps a crash's message readable. Not built by `cargo test`. |
 | `template.html` | The page; `/*__SANDBOX_WASM_B64__*/` receives the build as base64. |
-| `turbojet-sandbox.html` | The built page — committed, like the charts and cutaway pages. |
+| `turbojet-sandbox.html` | The built page — committed, like the charts page. |
 
 **Rebuild after any change that can reach the cycle (`rust/src/`) or the template:**
 
@@ -381,6 +404,11 @@ red until the page is rebuilt and committed — the numbers have not changed.
   design flight (the 1500 K point leaves design speed at sea level and 11 km); the march runs in the new air on the
   design clock (accelerations ∝ p0; a march with time ÷ k retraces the design run); the governor's limits scale with
   the density; each new refusal in words.
+- `tests/sandbox_cutaway.rs` — the Engine view: on a grid of designs every number the reply carries IS the model's
+  own call (`zoned_nox`, rung 85's `size`, the sonic throat, the face radius by its written-out formula); the three
+  browser-check designs move every computed number; ideal is every loss knob at 1; each refusal in words.
+  `tests/sandbox_page.rs` holds the view's script free of the old page's drawn constants and its "Drawn, not
+  computed" list complete.
 - `tests/sandbox_page.rs` — the joints: the page is its template + its build; every element the
   script looks up exists; every knob (design and fly) is a setting and back; the dropdowns offer the
   model's choices; every export and op the page uses exists.
@@ -401,7 +429,7 @@ red until the page is rebuilt and committed — the numbers have not changed.
   stopped by a knob move; and the burner — the opening burner against native, the richness sweep, the jet
   sweep's notch, the lean refusal, a model failure in words, a per-pocket point and its sweep stopped by a
   knob move, pin & compare; and Cool the turbine — the opening knob form and sweep against native, pin & compare, the
-  redesigned framing, a refused year, a sweep stopped by a knob move, and the slam's metal readout; and a failure whose message is not ASCII getting its words;
+  redesigned framing, a refused year, a sweep stopped by a knob move, and the slam's metal readout; and the Engine view — on three designs what the drawing USED (rows, turn rate, flame, throat, the three speeds) is the reply's, and every one moves between them; every loss at ideal; a flame the model cannot make; a turbofan refused; and a failure whose message is not ASCII getting its words;
   and Try this — on each view one experiment chosen through the menu moves the way its words say against the
   pinned opening, and Back to the opening settings brings the opening run back exactly; and a shared setup — three
   knobs on three levels, Copy link, the page reopened at that address shows the same results bit for bit; and an

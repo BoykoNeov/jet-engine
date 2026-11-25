@@ -152,7 +152,8 @@ header.hero { padding: 56px 0 8px; }
   border-radius: 10px;
   overflow: hidden;
 }
-#engine-canvas { display: block; width: 100%; height: auto; }
+.engine-pointer { margin: 0; padding: 14px 16px 4px; color: var(--ink-2); font-size: 15px; max-width: 80ch; }
+.engine-pointer b { color: var(--ink); }
 .engine-strip {
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
   padding: 10px 16px 12px; border-top: 1px solid var(--border);
@@ -166,9 +167,6 @@ header.hero { padding: 56px 0 8px; }
 .station-chip:hover, .station-chip.active { color: var(--ink); border-color: var(--accent); }
 .station-readout { margin-left: auto; font-family: "Cascadia Mono", Consolas, monospace; font-size: 12.5px; color: var(--ink-2); min-height: 1.4em; }
 .station-readout b { color: var(--ink); font-weight: 600; }
-.heat-legend { display: flex; align-items: center; gap: 8px; font-family: "Cascadia Mono", Consolas, monospace; font-size: 11px; color: var(--muted); }
-.heat-legend .bar { width: 110px; height: 8px; border-radius: 4px;
-  background: linear-gradient(90deg,#4a7fc1,#8a8f96,#c07f2e,#f0a02c,#ffd978,#fff3c9); }
 
 /* ================= stat tiles ================= */
 .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 26px 0; }
@@ -306,10 +304,13 @@ footer code { font-size: 12px; }
   <b>Every number below is computed by the model itself.</b></p>
 
   <div class="engine-card">
-    <canvas id="engine-canvas" aria-label="Animated cutaway of the turbojet: flow particles colored by local total temperature move through inlet, compressor, combustor, turbine, and nozzle"></canvas>
+    <p class="engine-pointer">The animated cutaway of the engine lives in the <b>sandbox</b> now: its <b>Engine</b> view
+      draws the engine you design, live, with every number it shows taken from the model. Open
+      <code>docs/sandbox/turbojet-sandbox.html</code> from the repository
+      (<a href="../sandbox/turbojet-sandbox.html#%7B%22view%22%3A%22engine%22%7D">straight to the Engine view</a>, when
+      this page is opened from the repository too). The stations of this page's design, from <code>data.json</code>:</p>
     <div class="engine-strip">
       <span id="station-chips"></span>
-      <span class="heat-legend"><span>250 K</span><span class="bar"></span><span>2500 K</span></span>
       <span class="station-readout" id="station-readout">hover a station</span>
     </div>
   </div>
@@ -773,208 +774,21 @@ function tableTwin(id, caption, headers, rows) {
       `V0 ${fmt(R.V0, 3)} m/s → M9 = ${R.M9.toFixed(2)}`);
 })();
 
-/* ============================================================ engine canvas */
-(function engine() {
-  const canvas = document.getElementById("engine-canvas");
-  const ctx = canvas.getContext("2d");
+/* ============================================================ station chips */
+/* The animated cutaway that stood here (with its own drawn flame and speeds) went in 2026-11: the sandbox's Engine
+   view draws it live from the model (roadmap A9). The stations themselves are data.json's. */
+(function stations() {
   const ST = DATA.real.stations;
-  /* axial positions (canvas-normalized) of stations + the primary-zone hot spot */
-  const SX = { "0": .045, "2": .205, "3": .425, "4": .585, "5": .705, "9": .875 };
-  const Tnodes = [
-    [0, 250], [SX["2"], ST["2"].Tt], [SX["3"], ST["3"].Tt],
-    [.475, 2450],                               /* primary zone (rung 8's point) */
-    [SX["4"], ST["4"].Tt], [SX["5"], ST["5"].Tt], [SX["9"], DATA.real.T9], [1.18, 420]];
-  const Tof = x => {
-    for (let i = 1; i < Tnodes.length; i++) if (x <= Tnodes[i][0]) {
-      const [x0, t0] = Tnodes[i - 1], [x1, t1] = Tnodes[i];
-      return t0 + (t1 - t0) * (x - x0) / (x1 - x0);
-    }
-    return Tnodes[Tnodes.length - 1][1];
-  };
-  /* heat colormap 250..2500 K */
-  const stops = [[250, [74,127,193]], [600, [125,138,150]], [950, [180,122,52]],
-    [1400, [235,157,40]], [1900, [252,193,84]], [2500, [255,243,201]]];
-  const heat = T => {
-    T = Math.max(250, Math.min(2500, T));
-    for (let i = 1; i < stops.length; i++) if (T <= stops[i][0]) {
-      const [t0, c0] = stops[i - 1], [t1, c1] = stops[i], u = (T - t0) / (t1 - t0);
-      return `rgb(${c0.map((c, k) => Math.round(c + (c1[k] - c) * u)).join(",")})`;
-    }
-  };
-  /* duct geometry: outer wall + centerbody radius as fraction of rMax, vs x */
-  const lerpN = (nodes, x) => {
-    for (let i = 1; i < nodes.length; i++) if (x <= nodes[i][0]) {
-      const [x0, r0] = nodes[i - 1], [x1, r1] = nodes[i];
-      return r0 + (r1 - r0) * (x - x0) / (x1 - x0);
-    }
-    return nodes[nodes.length - 1][1];
-  };
-  const outN = [[.13, .96], [.20, .90], [.42, .84], [.60, .86], [.70, .80], [.79, .62], [.875, .46]];
-  const hubN = [[.155, 0], [.21, .34], [.42, .46], [.47, .40], [.60, .40], [.70, .34], [.80, .10], [.84, 0]];
-  const rOut = x => (x < .13 || x > .875) ? null : lerpN(outN, x);
-  const rHub = x => (x < .155 || x > .84) ? 0 : lerpN(hubN, x);
-  /* axial speed profile (canvas widths / s) */
-  const vN = [[0, .105], [.20, .085], [.42, .055], [.60, .085], [.70, .105], [.875, .30], [1.2, .27]];
-  const vOf = x => lerpN(vN, x);
-
-  let W = 0, H = 0, cy = 0, rMax = 0, dpr = 1;
-  function resize() {
-    const w = canvas.clientWidth || canvas.parentElement.clientWidth;
-    dpr = Math.min(devicePixelRatio || 1, 2);
-    W = w; H = Math.max(240, Math.min(360, w * .34));
-    canvas.width = W * dpr; canvas.height = H * dpr;
-    canvas.style.height = H + "px";
-    cy = H * .52; rMax = H * .335;
-  }
-  resize();
-  addEventListener("resize", () => { resize(); if (REDUCED) frame(0); });
-
-  const NP = 190;
-  const parts = Array.from({ length: NP }, () => ({
-    x: Math.random() * 1.2, u: Math.random(), side: Math.random() < .5 ? -1 : 1,
-    jit: (Math.random() - .5) * .012, sz: .8 + Math.random() * 1.4
-  }));
-
-  let hoverStation = null;
-  function drawEngine(t) {
-    const ink = css("--ink"), ink2 = css("--ink-2"), mutedC = css("--muted"), surf = css("--surface");
-    ctx.clearRect(0, 0, W, H);
-    ctx.lineWidth = 1.5; ctx.lineJoin = "round";
-
-    /* combustor glow (behind everything) */
-    const gx = .50 * W, flick = REDUCED ? 1 : (1 + .07 * Math.sin(t * .006) + .04 * Math.sin(t * .013 + 2));
-    for (const s of [-1, 1]) {
-      const gy = cy + s * rMax * .42;
-      const g = ctx.createRadialGradient(gx, gy, 2, gx, gy, rMax * 1.05 * flick);
-      g.addColorStop(0, "rgba(255,190,80,.50)");
-      g.addColorStop(.4, "rgba(245,140,30,.22)");
-      g.addColorStop(1, "rgba(245,140,30,0)");
-      ctx.fillStyle = g;
-      ctx.fillRect(gx - rMax * 1.6, gy - rMax * 1.2, rMax * 3.2, rMax * 2.4);
-    }
-
-    /* particles */
-    for (const p of parts) {
-      const T = Tof(p.x);
-      let y;
-      if (p.x < .13 || p.x > .875) {
-        const spread = p.x > .875 ? .46 + (p.x - .875) * .5 : .96;
-        y = cy + p.side * (p.u * spread * rMax) + p.jit * H;
-      } else {
-        const ro = rOut(p.x) - .05, rh = rHub(p.x) + .04;
-        y = cy + p.side * (rh + p.u * Math.max(0.02, ro - rh)) * rMax + p.jit * H;
-      }
-      const fade = p.x > 1.0 ? Math.max(0, 1 - (p.x - 1.0) / .2) : 1;
-      ctx.globalAlpha = .85 * fade;
-      ctx.fillStyle = heat(T);
-      const stretch = 1 + vOf(p.x) * 26;
-      ctx.fillRect(p.x * W, y, p.sz * stretch, p.sz);
-    }
-    ctx.globalAlpha = 1;
-
-    /* nacelle outer + inner walls */
-    ctx.strokeStyle = ink; ctx.lineWidth = 2;
-    for (const s of [-1, 1]) {
-      ctx.beginPath();
-      outN.forEach(([x, r], i) => { const px = x * W, py = cy + s * r * rMax; i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); });
-      ctx.stroke();
-      /* cowl thickness line */
-      ctx.beginPath();
-      outN.forEach(([x, r], i) => { const px = x * W, py = cy + s * (r * rMax + 5); i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); });
-      ctx.strokeStyle = mutedC; ctx.lineWidth = 1; ctx.stroke();
-      ctx.strokeStyle = ink; ctx.lineWidth = 2;
-    }
-    /* centerbody */
-    ctx.beginPath();
-    hubN.forEach(([x, r], i) => { const px = x * W, py = cy - r * rMax; i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); });
-    for (let i = hubN.length - 1; i >= 0; i--) { const [x, r] = hubN[i]; ctx.lineTo(x * W, cy + r * rMax); }
-    ctx.closePath();
-    ctx.fillStyle = surf; ctx.globalAlpha = .92; ctx.fill(); ctx.globalAlpha = 1;
-    ctx.strokeStyle = ink; ctx.stroke();
-
-    /* compressor blades (7 rows) + turbine blades (2 rows) */
-    const blades = (x0, x1, rows, leanDir) => {
-      for (let i = 0; i < rows; i++) {
-        const x = x0 + (x1 - x0) * (i + .5) / rows;
-        const lean = (i % 2 ? -1 : 1) * leanDir * .012;
-        const rh = rHub(x), ro = rOut(x) - .05;
-        for (const s of [-1, 1]) {
-          ctx.beginPath();
-          ctx.moveTo((x - lean) * W, cy + s * rh * rMax);
-          ctx.lineTo((x + lean) * W, cy + s * ro * rMax);
-          ctx.strokeStyle = i % 2 ? mutedC : ink2; ctx.lineWidth = i % 2 ? 1.4 : 2.2;
-          ctx.stroke();
-        }
-      }
-    };
-    blades(.225, .415, 7, 1);
-    blades(.615, .695, 3, -1);
-
-    /* combustor liner */
-    ctx.strokeStyle = ink2; ctx.lineWidth = 1.6;
-    for (const s of [-1, 1]) {
-      ctx.beginPath();
-      ctx.moveTo(.435 * W, cy + s * rMax * .62);
-      ctx.quadraticCurveTo(.445 * W, cy + s * rMax * .22, .48 * W, cy + s * rMax * .22);
-      ctx.lineTo(.585 * W, cy + s * rMax * .26);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(.45 * W, cy + s * rMax * .70);
-      ctx.lineTo(.585 * W, cy + s * rMax * .58);
-      ctx.stroke();
-      /* fuel injector */
-      ctx.fillStyle = ink;
-      ctx.fillRect(.437 * W - 2, cy + s * rMax * .42 - 2.5, 9, 5);
-    }
-
-    /* station markers */
-    ctx.setLineDash([2, 5]);
-    for (const [lbl, x] of Object.entries(SX)) {
-      const active = hoverStation === lbl;
-      ctx.strokeStyle = active ? css("--accent") : mutedC;
-      ctx.lineWidth = active ? 1.6 : 1;
-      ctx.beginPath(); ctx.moveTo(x * W, cy - rMax * 1.06); ctx.lineTo(x * W, cy + rMax * 1.06); ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.fillStyle = active ? css("--accent-ink") : mutedC;
-      ctx.font = `${active ? 700 : 500} 12px Cascadia Mono, Consolas, monospace`;
-      ctx.textAlign = "center";
-      ctx.fillText(lbl, x * W, cy - rMax * 1.06 - 6);
-      ctx.setLineDash([2, 5]);
-    }
-    ctx.setLineDash([]);
-
-    /* part names */
-    ctx.fillStyle = mutedC; ctx.font = "11px Cascadia Mono, Consolas, monospace"; ctx.textAlign = "center";
-    const names = [[.155, "inlet"], [.32, "compressor"], [.51, "combustor"], [.655, "turbine"], [.80, "nozzle"]];
-    for (const [x, n] of names) ctx.fillText(n, x * W, cy + rMax * 1.06 + 16);
-  }
-
-  let last = 0;
-  function frame(t) {
-    const dt = Math.min(50, t - last) / 1000; last = t;
-    if (!REDUCED) for (const p of parts) {
-      p.x += vOf(p.x) * dt * 1.15;
-      if (p.x > 1.2) { p.x = -.01; p.u = Math.random(); p.side = Math.random() < .5 ? -1 : 1; }
-    }
-    drawEngine(t);
-    if (!REDUCED) requestAnimationFrame(frame);
-  }
-  requestAnimationFrame(frame);
-  rebuilders.push(() => { if (REDUCED) frame(0); });
-
-  /* station chips + readout */
   const chips = document.getElementById("station-chips");
   const read = document.getElementById("station-readout");
   const stName = { "0": "freestream", "2": "compressor face", "3": "compressor exit", "4": "turbine inlet", "5": "turbine exit", "9": "nozzle exit" };
-  for (const lbl of Object.keys(SX)) {
+  for (const lbl of Object.keys(stName)) {
     const b = document.createElement("button");
     b.className = "station-chip"; b.textContent = lbl;
     const show = () => {
-      hoverStation = lbl;
       document.querySelectorAll(".station-chip").forEach(c => c.classList.toggle("active", c === b));
       const s = ST[lbl];
       read.innerHTML = `<b>${lbl}</b> ${stName[lbl]} — Tt <b>${fmt(s.Tt, 4)} K</b> · pt <b>${fmt(s.pt / 1000, 4)} kPa</b>${s.far ? ` · f <b>${s.far.toFixed(4)}</b>` : ""}`;
-      if (REDUCED) drawEngine(0);
     };
     b.addEventListener("mouseenter", show);
     b.addEventListener("focus", show);

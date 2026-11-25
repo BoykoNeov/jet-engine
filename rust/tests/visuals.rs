@@ -1,5 +1,5 @@
-//! PHASE 8, slice AR — **the two published pages are the MODEL's, and they are what the build
-//! actually produces** (`docs/plans/todo-rust-port.md` § 8.9).
+//! PHASE 8, slice AR — **the published charts page is the MODEL's (the cutaway page was too, until
+//! 2026-11), and it is what the build actually produces** (`docs/plans/todo-rust-port.md` § 8.9).
 //!
 //! The Rust twin of `tests/test_visuals_data.py`'s fourteen gates, one `#[test]` per Python test
 //! and under the same name, plus what the port adds:
@@ -10,9 +10,9 @@
 //!   the failure mode the Python file's docstring names first ("a cycle change ... leaves
 //!   `data.json` on yesterday's numbers") is now caught for every block, not five.
 //! * (retired at slice AU) `keep_is_build_cutaways` held the Rust `KEEP` equal to
-//!   `build_cutaway.py`'s while both existed; the script is deleted, so the Rust list is the only
-//!   one, and `the_trim_drops_nothing_unnamed` / `every_field_the_cutaway_reads_survives_the_trim`
-//!   still bind it to the data and the page.
+//!   `build_cutaway.py`'s while both existed. (2026-11, roadmap A9: the cutaway page itself is
+//!   retired — the sandbox's *Engine* view draws it live — and with it `KEEP`, the trim and the
+//!   six gates that bound them; `rust/tests/coverage_ledger.tsv` rows them RETIRED.)
 //! * `the_ts_diagram_is_what_plot_ts_diagram_drew` — every array `main.py`'s chart handed to
 //!   matplotlib, bit for bit (`rust/oracle/ts_diagram_pypy.tsv`, recorded at the call in slice AK).
 //!
@@ -29,7 +29,7 @@
 use std::path::{Path, PathBuf};
 
 use turbojet::panels::{flight, real_losses, Design, PI_C, TT4};
-use turbojet::visuals::{self, cutaway_payload, Json, KEEP, SWEEP_BLOCKS};
+use turbojet::visuals::{self, Json, SWEEP_BLOCKS};
 
 fn vis_dir() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("..").join("docs").join("visuals")
@@ -49,58 +49,13 @@ fn data() -> Json { Json::parse(&data_text()) }
 // ------------------------------------------------------------------- the hand-written censuses
 
 fn is_word(c: char) -> bool { c.is_alphanumeric() || c == '_' }
-fn is_ident_start(c: char) -> bool { c.is_ascii_alphabetic() || c == '_' }
-fn is_ident(c: char) -> bool { c.is_ascii_alphanumeric() || c == '_' }
 
 /// `\b` at char index `i` before a word character: the previous char is not a word char.
 fn boundary_before(s: &[char], i: usize) -> bool { i == 0 || !is_word(s[i - 1]) }
 
-/// `[A-Za-z_][A-Za-z_0-9]*` starting at `i`; returns its end, or `None`.
-fn ident_at(s: &[char], i: usize) -> Option<usize> {
-    if i < s.len() && is_ident_start(s[i]) {
-        let mut j = i + 1;
-        while j < s.len() && is_ident(s[j]) {
-            j += 1;
-        }
-        Some(j)
-    } else {
-        None
-    }
-}
-
 fn starts(s: &[char], i: usize, lit: &str) -> bool {
     let l: Vec<char> = lit.chars().collect();
     i + l.len() <= s.len() && s[i..i + l.len()] == l[..]
-}
-
-/// `re.findall(r"\b(?:D\(\)|DATA|[IRd])\.([A-Za-z_][A-Za-z_0-9]*)", src)` as a set.
-fn read_census(src: &str) -> std::collections::BTreeSet<String> {
-    let s: Vec<char> = src.chars().collect();
-    let mut out = std::collections::BTreeSet::new();
-    let mut i = 0;
-    while i < s.len() {
-        if is_word(s[i]) && boundary_before(&s, i) {
-            // The alternatives in the regex's order; each must be followed by `.` + identifier.
-            let heads: &[&str] = &["D()", "DATA", "I", "R", "d"];
-            let mut matched = None;
-            for h in heads {
-                if starts(&s, i, h) && starts(&s, i + h.chars().count(), ".") {
-                    let k = i + h.chars().count() + 1;
-                    if let Some(e) = ident_at(&s, k) {
-                        matched = Some((k, e));
-                        break;
-                    }
-                }
-            }
-            if let Some((k, e)) = matched {
-                out.insert(s[k..e].iter().collect());
-                i = e;
-                continue;
-            }
-        }
-        i += 1;
-    }
-    out
 }
 
 /// `[A-Za-z0-9_-]+` starting at `i`; returns its end, or `None`.
@@ -150,68 +105,9 @@ fn declared_ids(src: &str) -> std::collections::BTreeSet<String> {
     out
 }
 
-/// `re.search(open + "(.*?)" + close, src, re.S).group(1)` for literal `open`/`close`.
-fn block<'a>(src: &'a str, open: &str, close: &str) -> Option<&'a str> {
-    let a = src.find(open)? + open.len();
-    let b = src[a..].find(close)?;
-    Some(&src[a..a + b])
-}
-
-/// `re.findall(r"([A-Za-z_][A-Za-z_0-9]*):", body)` as a set. The regex's match at a run of word
-/// characters followed by `:` starts at the run's first letter/underscore (a leading digit is
-/// skipped, never a later letter), and a run not followed by `:` never matches.
-fn colon_keys(body: &str) -> std::collections::BTreeSet<String> {
-    let s: Vec<char> = body.chars().collect();
-    let mut out = std::collections::BTreeSet::new();
-    let mut i = 0;
-    while i < s.len() {
-        if is_ident(s[i]) {
-            let start = i;
-            while i < s.len() && is_ident(s[i]) {
-                i += 1;
-            }
-            if i < s.len() && s[i] == ':' {
-                if let Some(k) = (start..i).find(|&k| is_ident_start(s[k])) {
-                    out.insert(s[k..i].iter().collect());
-                }
-            }
-        } else {
-            i += 1;
-        }
-    }
-    out
-}
-
-/// `re.findall(r"\['([0-9]+)'", body)`, in order.
-fn stn_labels(body: &str) -> Vec<String> {
-    let s: Vec<char> = body.chars().collect();
-    let mut out = Vec::new();
-    for i in 0..s.len() {
-        if starts(&s, i, "['") {
-            let mut j = i + 2;
-            while j < s.len() && s[j].is_ascii_digit() {
-                j += 1;
-            }
-            if j > i + 2 && j < s.len() && s[j] == '\'' {
-                out.push(s[i + 2..j].iter().collect());
-            }
-        }
-    }
-    out
-}
-
 fn set(items: &[&str]) -> std::collections::BTreeSet<String> { items.iter().map(|s| s.to_string()).collect() }
 
 // ---------------------------------------------------------------------------------- 1. splices
-
-#[test]
-fn cutaway_html_is_the_current_splice() {
-    let expected = visuals::splice_cutaway(&text("cutaway-template.html"), &data());
-    assert!(expected == text("turbojet-cutaway.html"),
-            "docs/visuals/turbojet-cutaway.html is not the splice of its template and data.json — \
-             hand-edited, or a template/data change committed without `cargo run --release -- splice`. \
-             Rebuild, then republish the artifact (memory/cutaway-artifact.md).");
-}
 
 #[test]
 fn visuals_html_is_the_current_splice() {
@@ -300,82 +196,11 @@ fn data_json_is_the_models_byte_for_byte() {
 }
 
 /// The reader and the writer are each other's inverse on the committed file — which is what lets
-/// the splice gates parse `data.json` and the cutaway re-serialise it.
+/// the splice gate parse `data.json`.
 #[test]
 fn the_json_writer_round_trips_the_committed_file() {
     let t = data_text();
     assert_eq!(Json::parse(&t).dump(), t);
-}
-
-// -------------------------------------------- 4. what the page READS survives the trim
-
-const NOT_A_CYCLE_FIELD: [&str; 3] = ["design", "ideal", "real"];
-/// The cutaway's perf table shows the three efficiencies a reader can act on; the Brayton bound
-/// is the charts page's story, not the cutaway's.
-const DELIBERATELY_DROPPED: [&str; 1] = ["eta_brayton"];
-
-fn fields_the_cutaway_reads() -> std::collections::BTreeSet<String> {
-    let mut f = read_census(&text("cutaway-template.html"));
-    for n in NOT_A_CYCLE_FIELD {
-        f.remove(n);
-    }
-    f
-}
-
-#[test]
-fn the_read_census_can_actually_see() {
-    // Python's `_READ_RE` on the committed template found exactly these (census.py).
-    let python = set(&["M9", "T9", "V0", "V9", "design", "eta_overall", "eta_propulsive", "eta_thermal",
-                       "ideal", "legs", "points", "real", "specific_thrust", "stations", "tsfc"]);
-    assert_eq!(read_census(&text("cutaway-template.html")), python,
-               "the read census no longer finds what Python's regex found — either the template \
-                changed (re-pin from the regex) or this matcher drifted from it");
-}
-
-#[test]
-fn every_field_the_cutaway_reads_survives_the_trim() {
-    let payload = cutaway_payload(&data());
-    for field in fields_the_cutaway_reads() {
-        for case in ["ideal", "real"] {
-            assert!(payload.at(case).get(&field).is_some(),
-                    "cutaway-template.html reads `{field}`, but KEEP drops it from '{case}' — the page \
-                     renders undefined/NaN there");
-        }
-    }
-}
-
-#[test]
-fn the_trim_drops_nothing_unnamed() {
-    for k in DELIBERATELY_DROPPED {
-        assert!(!KEEP.contains(&k), "{k} is both KEPT and listed as deliberately dropped");
-    }
-    let d = data();
-    for case in ["ideal", "real"] {
-        let fields = d.at(case).keys();
-        let unaccounted: Vec<_> = fields.iter().filter(|f| !KEEP.contains(f) && !DELIBERATELY_DROPPED.contains(f)).collect();
-        assert!(unaccounted.is_empty(), "data.json['{case}'] carries {unaccounted:?}, neither KEPT nor named as dropped");
-        let missing: Vec<_> = KEEP.iter().filter(|k| !fields.contains(k)).collect();
-        assert!(missing.is_empty(), "KEEP names {missing:?}, which data.json['{case}'] does not have");
-    }
-}
-
-#[test]
-fn the_cutaway_renders_its_design_point_from_the_data() {
-    let tpl = text("cutaway-template.html");
-    assert!(tpl.contains("function paintChrome()") && tpl.contains("paintChrome();"),
-            "cutaway-template.html no longer defines/calls paintChrome()");
-    let d = data();
-    let design = d.at("design");
-    for field in ["M0", "T0", "p0", "pi_c", "Tt4", "losses"] {
-        assert!(design.get(field).is_some(), "data.json['design'] has no `{field}`, which paintChrome() reads");
-    }
-    let labels = block(&tpl, "const LOSS_LABEL = {", "};").expect("cutaway-template.html no longer declares LOSS_LABEL");
-    let known = colon_keys(labels);
-    assert_eq!(known, set(&["eta_b", "eta_c", "eta_m", "eta_t", "pi_b", "pi_d", "pi_n"]),
-               "the LOSS_LABEL census no longer finds what Python's regex found (census.py)");
-    for loss in design.at("losses").keys() {
-        assert!(known.contains(loss), "data.json's losses carry `{loss}`, which LOSS_LABEL does not name");
-    }
 }
 
 /// The design-point spellings that used to be typed into `template.html`'s prose.
@@ -404,14 +229,14 @@ fn the_charts_page_renders_its_design_point_from_the_data() {
 
 #[test]
 fn every_element_the_pages_look_up_actually_exists() {
-    // What Python's two regexes found on the committed templates (census.py): 15 + 21 lookups.
+    // What Python's two regexes found on the committed templates (census.py): 21 lookups, 20 since the
+    // charts page's own engine animation (`engine-canvas`) went, 2026-11. (The cutaway
+    // page's 15 went with that page in 2026-11 — roadmap A9.)
     let pinned = [
-        ("cutaway-template.html", set(&["btn-ideal", "btn-play", "btn-real", "cbar", "chips", "cutaway", "legend",
-                                        "losses", "perf", "probe", "readouts", "speed", "speed-out", "stations", "ts"]), 18),
-        ("template.html", set(&["aft-chart", "bell-chart", "dwell-chart", "engine-canvas", "hero-tiles", "jsweep-chart",
+        ("template.html", set(&["aft-chart", "bell-chart", "dwell-chart", "hero-tiles", "jsweep-chart",
                                 "ladder-chart", "ladder-fig", "lede-eta", "m-chart", "quenchT-chart", "ratio-chart",
                                 "rung-list", "spatial-C", "spatial-J", "spatial-chart", "station-chips",
-                                "station-readout", "station-table", "tauq-chart", "ts-chart"]), 47),
+                                "station-readout", "station-table", "tauq-chart", "ts-chart"]), 46),
     ];
     for (name, python_lookups, python_declared) in pinned {
         let src = text(name);
@@ -421,24 +246,6 @@ fn every_element_the_pages_look_up_actually_exists() {
         assert_eq!(declared.len(), python_declared, "{name}: the id= census no longer finds Python's count");
         let missing: Vec<_> = looked.iter().filter(|i| !declared.contains(*i)).collect();
         assert!(missing.is_empty(), "{name} looks up {missing:?} but declares no such id");
-    }
-}
-
-#[test]
-fn the_cutaway_station_labels_all_exist() {
-    let tpl = text("cutaway-template.html");
-    let body = block(&tpl, "const STN = [", "];").expect("cutaway-template.html no longer declares `const STN = [...]`");
-    let labels = stn_labels(body);
-    assert_eq!(labels, ["0", "2", "3", "4", "5", "9"], "the STN census no longer finds what Python's regex found");
-    let payload = cutaway_payload(&data());
-    for case in ["ideal", "real"] {
-        for l in &labels {
-            let s = payload.at(case).at("stations").get(l)
-                .unwrap_or_else(|| panic!("the cutaway draws station {l}, but data.json['{case}'] has none"));
-            for f in ["Tt", "pt", "far"] {
-                assert!(s.get(f).is_some(), "station {l} in '{case}' has no {f}");
-            }
-        }
     }
 }
 

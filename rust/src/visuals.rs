@@ -1,13 +1,14 @@
-//! **The two published pages' data, and the T–s chart's** — `docs/visuals/extract_data.py`,
-//! `build.py`, `build_cutaway.py` and `main.py`'s `plot_ts_diagram`, ported (phase 8, slice AR;
+//! **The charts page's data, and the T–s chart's** — `docs/visuals/extract_data.py`,
+//! `build.py`, `build_cutaway.py` (retired with its page, 2026-11) and `main.py`'s `plot_ts_diagram`, ported (phase 8, slice AR;
 //! `docs/plans/todo-rust-port.md` § 8.1 (iii)–(iv), § 8.9).
 //!
 //! * [`build_data`] runs the model at `main.py`'s design point and returns `data.json` as a
 //!   [`Json`] value. [`Json::dump`] writes it exactly as Python's `json.dump(OUT, fh)` did — the
 //!   committed `docs/visuals/data.json` is the reference, and `tests/visuals.rs` holds the two
 //!   BYTE-equal.
-//! * [`splice_visuals`] / [`splice_cutaway`] are the two template splices; [`cutaway_payload`] is
-//!   `build_cutaway.py`'s trim, emitted from the value rather than parsed back.
+//! * [`splice_visuals`] is the charts page's template splice. (The cutaway page's splice and trim,
+//!   `build_cutaway.py`'s, went with that page in 2026-11: the sandbox's *Engine* view draws the
+//!   cutaway live — roadmap A9.)
 //! * [`ts_diagram`] computes the points `plot_ts_diagram` drew — the work legs, the two 80-point
 //!   isobar-shaped curves per cycle and the six station points — and the title, so the surviving
 //!   Python (`plot_ts_diagram.py`) only DRAWS: it reads no engine code and does no physics.
@@ -108,7 +109,7 @@ impl Json {
         s
     }
 
-    /// `json.dumps(x, separators=(",", ":"))` — the cutaway's compact form.
+    /// `json.dumps(x, separators=(",", ":"))` — the compact form.
     pub fn dump_compact(&self) -> String {
         let mut s = String::new();
         self.write(&mut s, ",", ":");
@@ -680,23 +681,8 @@ pub fn build_data(d: &Design, mark: &mut dyn FnMut(&str)) -> Json {
 
 // ------------------------------------------------------------------------------------ the splices
 
-/// `build_cutaway.py`'s `KEEP` — the cycle fields the cutaway embeds. `eta_brayton` is dumped and
-/// deliberately NOT kept (the Brayton bound is the charts page's story). While the Python
-/// exists, `tests/visuals.rs` holds this list equal to `build_cutaway.py`'s.
-pub const KEEP: [&str; 12] = ["stations", "V0", "V9", "M9", "T9", "specific_thrust", "tsfc",
-                              "eta_thermal", "eta_propulsive", "eta_overall", "points", "legs"];
-
 /// The placeholder `template.html` carries, replaced by `data.json` verbatim.
 pub const VISUALS_PLACEHOLDER: &str = "/*__DATA_JSON__*/";
-/// The placeholder `cutaway-template.html` carries, replaced by the compact trimmed payload.
-pub const CUTAWAY_PLACEHOLDER: &str = "/*__DATA__*/";
-
-/// `{"design": …, "ideal": {k: … for k in KEEP}, "real": {…}}` — in KEEP's order, as the Python's
-/// dict comprehension builds it.
-pub fn cutaway_payload(data: &Json) -> Json {
-    let trim = |case: &str| Json::Obj(KEEP.iter().map(|k| (k.to_string(), data.at(case).at(k).clone())).collect());
-    jobj! { "design" => data.at("design").clone(), "ideal" => trim("ideal"), "real" => trim("real") }
-}
 
 /// The second placeholder `template.html` carries: the rung map ([`crate::rung_map::build`]),
 /// generated from `CLAUDE.md`'s rung table and the plain-language notes (roadmap A5).
@@ -713,13 +699,6 @@ pub fn splice_visuals(template: &str, data_json: &str, rung_map: &Json) -> Strin
     assert!(tpl.matches(RUNG_MAP_PLACEHOLDER).count() == 1, "template rung-map placeholder missing/duplicated");
     let map = rung_map.dump_compact().replace("</", "<\\/");
     tpl.replacen(RUNG_MAP_PLACEHOLDER, &map, 1).replacen(VISUALS_PLACEHOLDER, data_json, 1)
-}
-
-/// `build_cutaway.py`: the cutaway template with its placeholder replaced by the compact payload.
-pub fn splice_cutaway(template: &str, data: &Json) -> String {
-    let tpl = template.replace("\r\n", "\n");
-    assert!(tpl.matches(CUTAWAY_PLACEHOLDER).count() == 1, "cutaway template placeholder missing/duplicated");
-    tpl.replace(CUTAWAY_PLACEHOLDER, &cutaway_payload(data).dump_compact())
 }
 
 // -------------------------------------------------------------------------------- the T–s chart
