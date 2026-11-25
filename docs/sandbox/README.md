@@ -363,7 +363,10 @@ entry), a moment after the knobs stop.
 powershell -File rust\sandbox-wasm\build.ps1
 ```
 
-then commit the page. The gate fails while it is stale.
+then commit the page. The gate fails while it is stale. Then **republish it**: since 2026-11-25 the page is also
+published at https://claude.ai/artifact/Qa5z3vGwo3E8GxuMThDrWD (the user's choice, so that the old cutaway link and
+the charts page can point readers without the repository at the Engine view). Rebuilding the file does not update
+the published page.
 
 **Expected red, not a broken model:** the "page is current" check compares the browser build's
 BYTES, and those carry the compiler version and the source files' absolute paths (in the model's

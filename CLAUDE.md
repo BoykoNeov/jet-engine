@@ -235,7 +235,7 @@ The code is the Rust crate `rust/`. The deleted Python lives at tag **`python-fi
   `data.json` and splices it (`-- splice` only splices). Cycle, rung or notes change ⇒
   rebuild **and republish**; `tests/visuals.rs` gates the joints.
 - `docs/sandbox/` — the SANDBOX page (not a rung): `src/sandbox.rs` + one `src/sandbox_*.rs` per view + `src/atmosphere.rs`, browser shell
-  `rust/sandbox-wasm/`. Cycle/template change ⇒ `rust/sandbox-wasm/build.ps1` + commit (gated). See its README.
+  `rust/sandbox-wasm/`. Cycle/template change ⇒ `rust/sandbox-wasm/build.ps1` + commit (gated) + republish. See its README.
 - `docs/rungN-spec.md` (contents: see the banner); `docs/plans/rungN-anchor-*.md` — that rung's
   verified anchor data. `docs/plans/` holds the plan/tasks.
 

@@ -66,6 +66,7 @@ new slices and step links go THERE, not here.
 - [Visuals artifact](visuals-artifact.md) — the CHARTS page, re-minted 2026-10-06 at G5uobeC9…; read its prose for staleness before a republish
 - [Cutaway binding](cutaway-binding-priority.md) — user 2026-11-20 priority (roadmap A9); DONE 2026-11-25 as the Engine view
 - [A9 Engine view](a9-engine-view.md) — DONE 2026-11-25: shoot the CROWDED case, not the easy one; grep for every copy of a drawing before retiring one
+- [Sandbox artifact](sandbox-artifact.md) — the sandbox page is PUBLISHED at Qa5z3vGw… (2026-11-25): republish after every build.ps1
 - [Sandbox build path embedded](sandbox-build-path-embedded.md) — FIXED 11-24 (A10): a path remap cleaned the strings, not the layout; only a 2nd-folder byte compare showed it
 - [Cutaway artifact](cutaway-artifact.md) — the old cutaway link (KbCcwpVMiJWJm1sN7kYdZm) is a POINTER page to the Engine view since 2026-11-25; the page itself is deleted
 - [Visuals ↔ model binding](visuals-model-binding.md) — the pages had NO test and looked fine; in SYNC is not BOUND, and the page's own design point was typed markup

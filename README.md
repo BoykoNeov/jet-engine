@@ -33,6 +33,8 @@ An older page sits beside it in `docs/visuals/`: a
 [page of charts](docs/visuals/turbojet-visuals.html). It shows the default design only, with numbers
 fixed when the page was built, and covers the first rungs only. The sandbox page links to it from its
 header. The animated engine cutaway is the sandbox's **Engine** view, drawn live for the design you set.
+The sandbox is also published online (private until shared):
+[Turbojet Sandbox](https://claude.ai/artifact/Qa5z3vGwo3E8GxuMThDrWD).
 
 ## Read it
 
