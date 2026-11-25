@@ -16,6 +16,13 @@ Rules that apply to every task here (they are the project's own, from `CLAUDE.md
   `powershell -File rust\sandbox-wasm\build.ps1`, then the gate `powershell -File rust\test-all.ps1`,
   then a commit that includes the rebuilt page.
 - A change must not move any existing number unless the task says so. The gate proves it.
+- **A change to the engine's hardware reaches the Engine view (the cutaway).** Any task that adds or changes
+  a part of the engine — a fan and bypass duct, an afterburner, a second shaft, a mixed exhaust, a variable
+  nozzle, a new stage — is not done until the sandbox's **Engine** view draws it, from the model's numbers,
+  with the drawn-not-computed list and the gates of `docs/plans/a9-cutaway-view-plan.md` § 6 extended to the
+  new part (user, 2026-11-25). Until then the view must say in words that it cannot draw that engine, never
+  draw a wrong one. Plan the cutaway step in the task's own plan, not as an afterthought. Debt already owed:
+  task A11.
 - `CLAUDE.md` is within 20 bytes of its size budget. Do not add to it; a new rung's row is the only
   growth allowed, and that needs the budget raised in the same commit
   (`rust/tests/claude_md_reference.rs`).
@@ -390,13 +397,27 @@ for the repo root, set in BOTH `rust/sandbox-wasm/build.ps1` and `check.ps1`, or
 the blob contains no drive-letter path. Do it when `rust/src/` is clean and the gate is green (not while
 rung 110's wip sits on `main`), since the rebuilt page bakes in whatever `src/` holds.
 
+### A11. Draw the turbofan and the afterburner on the Engine view — OPEN
+
+The rule at the top of this file (user, 2026-11-25): engine modifications must reach the cutaway. Two already
+shipped without it. The Engine view (`rust/src/sandbox_cutaway.rs`, `docs/sandbox/template.html`) draws a plain
+turbojet and refuses, in words, a design with a fan (rung 109's bypass ratio > 0) or a lit afterburner (rung 102,
+Part A) — `docs/plans/a9-cutaway-view-plan.md` § 2's "out of scope". The task: draw both from the Design run's own
+reply — the fan, the bypass duct and its own nozzle with the bypass stream's station readouts; the afterburner's
+flame holders, its burning zone at the model's exit temperature and the larger nozzle — and add each new drawn item
+to the "Drawn, not computed" list. Gates as A9's § 6: the native test (every new number is the model's own call),
+the template check, and the browser check on designs that move every new number (fan on/off, afterburner lit/unlit).
+Then remove the two refusals and their browser checks' "refused" cases. When rung 111 puts Fly it on the turbofan,
+the Engine view still draws the design point (as today) unless the user asks otherwise.
+
 ---
 
 ## Part 3 — Larger directions (the user chooses)
 
 Each of these is a new family of rungs or a new view. None should start without the user picking it
 and without the project's usual first step: an anchor document with a published case to check against
-and predictions written before the code.
+and predictions written before the code. Any of them that changes the engine's hardware also carries the
+Engine view step (the rule at the top of this file).
 
 ### B1. A turbofan
 
@@ -416,7 +437,8 @@ the core.
   (turbofan)* box). **Flown off design: DONE — rung 110, 2026-11-24** (`docs/rung110-spec.md`; the textbook method,
   no maps, on the two-shaft engine — model and a CLI panel, no page change). Open: rung 111 (the fan and compressor
   maps, Fly it switched to this engine for every design, and the edge-of-running message the spec leaves OPEN), a mixed
-  exhaust (and with it an afterburning turbofan).
+  exhaust (and with it an afterburning turbofan), and the fan on the Engine view (task A11; each later step draws its
+  own change there too).
 
 ### B2. Real seconds
 

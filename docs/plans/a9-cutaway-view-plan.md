@@ -36,6 +36,8 @@ stations (interpolated); the animation's slow-down factor.
 **Out of scope for this view (said on it, in plain words):** a turbofan (bypass ratio > 0) or a lit afterburner —
 the cutaway draws a plain turbojet, and with either switched on the view says so instead of drawing a wrong
 engine. Off-design (Fly) and the slam are not drawn either: the view draws the design point.
+*Later (user, 2026-11-25):* this exclusion is debt, not a boundary. Every engine modification — these two first —
+must reach this view; see the rule at the top of `docs/plans/roadmap.md` and its task A11.
 
 ## 3. The model side
 
