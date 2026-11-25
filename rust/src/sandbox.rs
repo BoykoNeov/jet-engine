@@ -1624,7 +1624,7 @@ pub fn map_lines(s: &FlySettings) -> Json {
 // ---------------------------------------------------------------------------------------------
 // The page: the browser build is spliced into `docs/sandbox/template.html` as base64, so the page
 // is ONE self-contained file that runs from a double-click (`file://` refuses a fetch of a
-// sibling `.wasm`) and stays fully offline, like the charts and cutaway pages.
+// sibling `.wasm`) and stays fully offline, like the charts page.
 
 /// Where the template takes the base64 of the browser build.
 pub const WASM_PLACEHOLDER: &str = "/*__SANDBOX_WASM_B64__*/";

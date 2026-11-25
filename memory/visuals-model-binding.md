@@ -8,6 +8,11 @@ metadata:
   modified: 2026-09-07T08:32:13.767Z
 ---
 
+**Since 2026-11-25 (roadmap A9, [[a9-engine-view]]) only the CHARTS page is left in `docs/visuals/`:** the cutaway page,
+its `KEEP` trim and the gates on them are deleted, and the charts page's own engine animation is gone. The cutaway
+is the sandbox's Engine view, bound by `tests/sandbox_cutaway.rs`, `tests/sandbox_page.rs` and `browser.mjs`. What
+follows about the cutaway is history; the lessons stand.
+
 **Since 2026-10-05 the Python below is deleted (tag `python-final`); the same bindings live in `rust/tests/visuals.rs`, and `cargo run --release -- visuals` replaced the three scripts. Read what follows as the lesson.**
 
 On 2026-09-07 the two published pages in `docs/visuals/` (charts + engine

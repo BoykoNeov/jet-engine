@@ -251,6 +251,8 @@ footer h2.sec { margin: 8px 0 4px; }
   #eng-computed td:nth-child(2) { white-space: normal; text-align: right; }
   #eng-computed td:nth-child(3) { grid-column: 1 / -1; color: var(--muted); font-size: 12px; padding-top: 0; }
   #eng-computed td:nth-child(1), #eng-computed td:nth-child(2) { border-bottom: 0; }
+  #eng-card .eng-cbar { grid-template-columns: 1fr; gap: 4px; }   /* the ramp gets the full width, so its labels fit on one line (#eng-card: the base rule comes later) */
+  .eng-ticks span { white-space: nowrap; }
 }
 .eng-probe { position: absolute; pointer-events: none; background: var(--surface); color: var(--ink); border: 1px solid var(--border);
   border-radius: 6px; padding: 6px 8px; font-size: 12px; line-height: 1.4; min-width: 160px; transform: translate(14px, -50%);
